@@ -141,3 +141,45 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# ===== Expo / React Native =====
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native iOS / Android build output (Expo prebuild)
+ios/
+android/
+!ios/.gitkeep
+!android/.gitkeep
+
+# Metro / Babel cache
+.metro-health-check*
+.tamagui/
+
+# EAS / Sentry
+.eas-build/
+.sentryclirc
+
+# Generated keys / signing
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
