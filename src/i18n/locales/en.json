@@ -1,0 +1,61 @@
+{
+  "app": {
+    "name": "eZAZI FHW"
+  },
+  "auth": {
+    "splash": {
+      "loading": "Loading..."
+    },
+    "setup": {
+      "title": "First-time setup",
+      "location": "Location",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Set up"
+    },
+    "login": {
+      "title": "Sign in",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "invalidCredentials": "Invalid username or password",
+      "lockedOut": "Account locked. Try again in 15 minutes."
+    },
+    "forgotPassword": {
+      "request": {
+        "title": "Forgot password",
+        "phone": "Registered phone",
+        "submit": "Send OTP"
+      },
+      "verify": {
+        "title": "Enter OTP",
+        "otp": "6-digit code",
+        "resend": "Resend code"
+      },
+      "reset": {
+        "title": "Set new password",
+        "newPassword": "New password",
+        "confirm": "Confirm password",
+        "submit": "Update password"
+      }
+    },
+    "privacy": {
+      "title": "Privacy notice",
+      "consent": "I (Health Worker) confirm I have read and accept the privacy notice.",
+      "accept": "Accept",
+      "reject": "Reject"
+    },
+    "logout": "Log out",
+    "biometric": {
+      "prompt": "Authenticate to unlock eZAZI"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "loading": "Loading...",
+    "error": "Something went wrong"
+  }
+}

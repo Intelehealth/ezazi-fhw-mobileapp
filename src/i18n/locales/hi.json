@@ -1,0 +1,8 @@
+{
+  "app": { "name": "eZAZI FHW" },
+  "auth": {
+    "login": { "title": "साइन इन करें", "submit": "साइन इन" },
+    "logout": "लॉग आउट"
+  },
+  "common": { "cancel": "रद्द करें", "confirm": "पुष्टि करें", "save": "सहेजें", "loading": "लोड हो रहा है..." }
+}
