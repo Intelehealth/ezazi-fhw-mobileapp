@@ -17,10 +17,12 @@ module.exports = {
     'prettier',
   ],
   settings: { react: { version: 'detect' } },
-  env: { node: true, es2022: true, jest: true, 'react-native/react-native': true },
+  env: { node: true, es2022: true, jest: true },
   rules: {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn',
+    // RN static assets are loaded with require('./img.png') by design
+    '@typescript-eslint/no-var-requires': 'off',
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
   },

@@ -2,60 +2,150 @@
   "app": {
     "name": "eZAZI FHW"
   },
-  "auth": {
-    "splash": {
-      "loading": "Loading..."
-    },
-    "setup": {
-      "title": "First-time setup",
-      "location": "Location",
-      "username": "Username",
-      "password": "Password",
-      "submit": "Set up"
-    },
-    "login": {
-      "title": "Sign in",
-      "username": "Username",
-      "password": "Password",
-      "submit": "Sign in",
-      "forgotPassword": "Forgot password?",
-      "invalidCredentials": "Invalid username or password",
-      "lockedOut": "Account locked. Try again in 15 minutes."
-    },
-    "forgotPassword": {
-      "request": {
-        "title": "Forgot password",
-        "phone": "Registered phone",
-        "submit": "Send OTP"
-      },
-      "verify": {
-        "title": "Enter OTP",
-        "otp": "6-digit code",
-        "resend": "Resend code"
-      },
-      "reset": {
-        "title": "Set new password",
-        "newPassword": "New password",
-        "confirm": "Confirm password",
-        "submit": "Update password"
-      }
-    },
-    "privacy": {
-      "title": "Privacy notice",
-      "consent": "I (Health Worker) confirm I have read and accept the privacy notice.",
-      "accept": "Accept",
-      "reject": "Reject"
-    },
-    "logout": "Log out",
-    "biometric": {
-      "prompt": "Authenticate to unlock eZAZI"
-    }
-  },
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
+    "continue": "Continue",
     "loading": "Loading...",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "a11y": {
+      "goBack": "Go back",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "otpInput": "OTP input"
+    }
+  },
+  "splash": {
+    "tagline": "Empowering labor management through\ndigital precision",
+    "from": "from"
+  },
+  "permissions": {
+    "title": "Permissions Required",
+    "descriptionDenied": "This app needs the following permissions to function correctly. Please grant them to continue.",
+    "descriptionPermanent": "Some permissions were permanently denied. Please enable them in App Settings to continue.",
+    "settingsHint": "Settings → Apps → eZAZI FHW → Permissions",
+    "closeNow": "Close Now",
+    "retry": "Retry",
+    "openSettings": "Open Settings",
+    "camera": "Camera",
+    "cameraReason": "Capture patient photos for ward verification",
+    "storage": "Storage (Read & Write)",
+    "storageReason": "Store clinical data and sync files offline",
+    "contacts": "Contacts",
+    "contactsReason": "Auto-complete patient and account details",
+    "notifications": "Notifications",
+    "notificationsReason": "Receive prolonged-labour alerts and teleconsult calls",
+    "a11y": {
+      "closeApp": "Close app",
+      "openSettings": "Open app settings",
+      "retry": "Retry permission request"
+    }
+  },
+  "setup": {
+    "title": "Setup",
+    "subtitle": "Please complete your one-time set-up activity",
+    "location": "Location",
+    "locationPlaceholder": "Select location",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot Password?",
+    "submit": "Setup",
+    "tempNavLogin": "Login",
+    "tempNavPrivacy": "Privacy Notice",
+    "errors": {
+      "locationRequired": "Please select the location.",
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "passwordTooShort": "8+ characters required for password"
+    }
+  },
+  "login": {
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submit": "Login",
+    "forgotPassword": "Forgot Password?",
+    "errors": {
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "passwordTooShort": "8+ characters required for password"
+    }
+  },
+  "forgotPassword": {
+    "title": "Forgot Password?",
+    "subtitle": "Follow the instructions below to use\nyou account again.",
+    "request": {
+      "heading": "Enter Mobile Number",
+      "instruction": "Please enter the mobile number registered with Intelehealth",
+      "phonePlaceholder": "Enter Mobile Number",
+      "submit": "Continue",
+      "errors": {
+        "phoneRequired": "Phone number can't be empty",
+        "phoneInvalid": "Enter 10 digits"
+      }
+    },
+    "verify": {
+      "heading": "Enter Verification code",
+      "instruction": "6-digit OTP sent on your registered number and email. Please check and enter the OTP.",
+      "notReceived": "Didn't receive OTP?",
+      "resend": "Resend",
+      "resendCountdown": "Resend in {{seconds}} seconds",
+      "submit": "Continue",
+      "a11y": {
+        "resendOtp": "Resend OTP"
+      },
+      "errors": {
+        "otpRequired": "Please enter received OTP"
+      }
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Please reset new password for your account.",
+      "heading": "Enter your new password",
+      "newPassword": "New password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm new password",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "passwordHint": "Password must be of atleast 8 characters & a mix of upper & lower case letters, numbers & symbols.",
+      "submit": "Save",
+      "errors": {
+        "newPasswordRequired": "Please enter new password",
+        "passwordInvalid": "8+ characters required for password",
+        "confirmRequired": "Please reenter password",
+        "noMatch": "Passwords doesn't match"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Notice",
+    "consent": "*I (Health Worker) confirm that I have read out the privacy notice and consent to the patient.",
+    "toastReadFirst": "Please read out the Privacy Consent first.",
+    "toastReject": "You cannot register a patient without consent",
+    "accept": "Accept",
+    "reject": "Reject",
+    "sections": {
+      "personalInfoHeading": "Personal Information",
+      "personalInfoBody": "Health Worker will collect personal information and health information from you for your medical records.",
+      "useHeading": "Use",
+      "useBody": "Your information is\n-  used for diagnosing and treating you.\n-  used to send you reminders, prescription information, and other related communication.",
+      "disclosureBody": "Your personal information will be anonymized for use in research, disease monitoring, and analysis to help us improve our products and services. We may disclose your personal information in certain specific circumstances given here ",
+      "disclosureLinkSuffix": ".",
+      "protectionHeading": "Protection Measures",
+      "protectionBody": "We provide physical, electronic, and procedural safeguards to protect information we process and maintain.",
+      "accessHeading": "Access and Correction",
+      "accessBody": "You have the right to ask for a copy of any personal information we hold about you, as well as to ask for it to be corrected if you think it is wrong. If you'd like us to delete or modify your personal data that you have provided to us, please contact the Data Privacy Officer at support@intelehealth.io and we will respond in a reasonable time.\n\nOn clicking \"Accept\", I consent to the collection and use of my personal data, including health information, and to give access to the above-mentioned entities."
+    }
+  },
+  "home": {
+    "title": "Home",
+    "note": "Logged in. Active cases will appear here.",
+    "logout": "Log out (EZ-943)"
+  },
+  "biometric": {
+    "prompt": "Authenticate to unlock eZAZI"
   }
 }
