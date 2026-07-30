@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/auth.store';
 import { colors, spacing, typography } from '@/config/theme';
 
@@ -8,13 +9,15 @@ import { colors, spacing, typography } from '@/config/theme';
  * Sprint 42 only needs Logout from here (EZ-943).
  */
 export const HomeScreen: React.FC = () => {
+  const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.note}>Logged in. Active cases will appear here.</Text>
+      <Text style={styles.title}>{t('home.title')}</Text>
+      <Text style={styles.note}>{t('home.note')}</Text>
       <View style={styles.btn}>
-        <Button title="Log out (EZ-943)" onPress={() => void logout()} color={colors.error} />
+        <Button title={t('home.logout')} onPress={() => void logout()} color={colors.error} />
       </View>
     </View>
   );
