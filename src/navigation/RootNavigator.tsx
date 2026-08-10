@@ -8,8 +8,8 @@ import { SplashScreen } from '@/screens/auth/SplashScreen';
 import { SetupScreen } from '@/screens/auth/SetupScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { PrivacyNoticeScreen } from '@/screens/auth/PrivacyNoticeScreen';
-import { ForgotPasswordRequestScreen } from '@/screens/auth/ForgotPasswordRequestScreen';
-import { ForgotPasswordVerifyScreen } from '@/screens/auth/ForgotPasswordVerifyScreen';
+import { ForgotPasswordRequestOtpScreen } from '@/screens/auth/ForgotPasswordRequestOtpScreen';
+import { ForgotPasswordVerifyOtpScreen } from '@/screens/auth/ForgotPasswordVerifyOtpScreen';
 import { ForgotPasswordResetScreen } from '@/screens/auth/ForgotPasswordResetScreen';
 import { HomeScreen } from '@/screens/home/HomeScreen';
 
@@ -30,11 +30,11 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="PrivacyNotice" component={PrivacyNoticeScreen} />
             <Stack.Screen
               name="ForgotPasswordRequest"
-              component={ForgotPasswordRequestScreen}
+              component={ForgotPasswordRequestOtpScreen}
             />
             <Stack.Screen
               name="ForgotPasswordVerify"
-              component={ForgotPasswordVerifyScreen}
+              component={ForgotPasswordVerifyOtpScreen}
             />
             <Stack.Screen
               name="ForgotPasswordReset"

@@ -5,8 +5,8 @@
 | EZ-920 | Splash | `SplashScreen.tsx` | `SplashActivity` |
 | EZ-928 | First-run Setup | `SetupScreen.tsx` | `SetupActivity` |
 | EZ-932 | Login | `LoginScreen.tsx` | `LoginActivity` |
-| EZ-933 | Forgot Pwd — request OTP | `ForgotPasswordRequestScreen.tsx` | `ForgotPasswordActivity` |
-| EZ-934 | Forgot Pwd — verify OTP | `ForgotPasswordVerifyScreen.tsx` | `ForgotPasswordActivity` (Fragment 2) |
+| EZ-933 | Forgot Pwd — request OTP | `ForgotPasswordRequestOtpScreen.tsx` | `ForgotPasswordActivity` |
+| EZ-934 | Forgot Pwd — verify OTP | `ForgotPasswordVerifyOtpScreen.tsx` | `ForgotPasswordActivity` (Fragment 2) |
 | EZ-939 | Forgot Pwd — reset password | `ForgotPasswordResetScreen.tsx` | `ForgotPasswordActivity` (Fragment 3) |
 | EZ-940 | Biometric unlock | (composed inside Splash + Login) — uses `expo-local-authentication` | (new — not in legacy) |
 | EZ-941 | Privacy / DPDPA notice | `PrivacyNoticeScreen.tsx` | `PrivacyNoticeActivity` |
