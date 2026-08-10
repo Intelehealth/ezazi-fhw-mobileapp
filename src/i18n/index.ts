@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import * as Localization from 'expo-localization';
-import { env } from '@/config/env';
+import { clientConfig } from '@/config/clients';
 import en from './locales/en.json';
 import hi from './locales/hi.json';
 import ne from './locales/ne.json';
@@ -12,11 +12,11 @@ const resources = {
   ne: { translation: ne },
 } as const;
 
-const deviceLocale = Localization.getLocales()[0]?.languageCode ?? env.DEFAULT_LOCALE;
+const deviceLocale = Localization.getLocales()[0]?.languageCode ?? clientConfig.locale;
 
 void i18n.use(initReactI18next).init({
   resources,
-  lng: deviceLocale in resources ? deviceLocale : env.DEFAULT_LOCALE,
+  lng: deviceLocale in resources ? deviceLocale : clientConfig.locale,
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
   compatibilityJSON: 'v4',

@@ -1,11 +1,14 @@
+import { clientConfig } from './clients';
+
 /**
  * SINGLE source of design tokens — the RN equivalent of Android's
  * colors.xml + dimens.xml (IHRDMP-592 / IHRDMP-593).
  *
  * `palette` mirrors the legacy Android colors.xml 1:1 (names kept identical
- * for cross-referencing). Screens/components should normally use the SEMANTIC
- * aliases at the bottom of `colors` — a future re-brand is then a change in
- * this file only.
+ * for cross-referencing) and stays fixed across clients. The brand colors
+ * (`colors.primary/primaryDark/secondary`) instead come from the resolved
+ * `clientConfig` — see src/config/clients — so re-theming per client/country
+ * never requires touching a screen or component.
  *
  * NOTE on translucent values: Android hex is #AARRGGBB, React Native is
  * #RRGGBBAA. Every 8-digit value below has been converted to RN order; the
@@ -129,8 +132,10 @@ export const colors = {
   ...palette,
 
   // ── Semantic aliases — prefer these in shared components/screens ───────────
-  primary: palette.colorPrimary,
-  primaryDark: palette.colorPrimaryDark,
+  // Brand colors come from the resolved client, not the static palette above.
+  primary: clientConfig.theme.primary,
+  primaryDark: clientConfig.theme.primaryDark,
+  secondary: clientConfig.theme.secondary,
   onPrimary: palette.white,
   black: palette.colorBlack,
   error: palette.error_red,

@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { PermissionDeniedDialog } from '@/components/PermissionDeniedDialog';
 import { wavePaths } from '@/components/ui/icons';
+import { clientConfig } from '@/config/clients';
 import { colors } from '@/config/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAuthStore } from '@/stores/auth.store';
@@ -14,9 +15,8 @@ import {
   requestAppPermissions,
 } from '@/utils/permissions';
 
-// ─── Assets ──────────────────────────────────────────────────────────────────
-const SPLASH_LOGO = require('../../../assets/splash_logo.png');
-const IH_LOGO     = require('../../../assets/intelehealth_logo.png');
+// Powered-by logo — shared across all clients, not part of client branding.
+const IH_LOGO = require('../../../assets/intelehealth_logo.png');
 
 // ─── Permission state ─────────────────────────────────────────────────────────
 
@@ -111,10 +111,11 @@ export const SplashScreen: React.FC = () => {
 
   const { width, height, isTablet } = useResponsive();
 
-  // ── Logo dimensions (from dimens.xml → splash_logo_width/height_nepal) ──
+  // ── Logo dimensions — per-client (dimens.xml); falls back to Nepal values ──
   // SplashActivity.java: logo.setScaleX(1.3f); logo.setScaleY(1.3f)
-  const LOGO_W     = isTablet ? 280 : 240;
-  const LOGO_H     = isTablet ? 250 : 200;
+  const _splashSize = clientConfig.assets.logoSize?.splash;
+  const LOGO_W     = _splashSize ? (isTablet ? _splashSize.tablet.width  : _splashSize.phone.width)  : (isTablet ? 280 : 240);
+  const LOGO_H     = _splashSize ? (isTablet ? _splashSize.tablet.height : _splashSize.phone.height) : (isTablet ? 250 : 200);
   const LOGO_SCALE = 1.3;
 
   // ── Intelehealth logo (from dimens.xml → power_by_logo_width/height) ──
@@ -160,7 +161,7 @@ export const SplashScreen: React.FC = () => {
 
       {/* ── Logo ── */}
       <Image
-        source={SPLASH_LOGO}
+        source={clientConfig.assets.splashLogo ?? clientConfig.assets.logo}
         style={[
           styles.logo,
           {

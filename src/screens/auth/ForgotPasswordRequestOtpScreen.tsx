@@ -9,13 +9,11 @@ import { AppButton } from '@/components/ui/AppButton';
 import { FormScreenLayout } from '@/components/ui/FormScreenLayout';
 import { AppIcon } from '@/components/ui/icons';
 import { commonStyles } from '@/components/ui/commonStyles';
+import { clientConfig } from '@/config/clients';
 import { colors, dimens } from '@/config/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 
-const COUNTRY_FLAG = '🇮🇳';
-const COUNTRY_CODE = '+91';
-const PHONE_LENGTH = 10;
-const PHONE_REGEX  = new RegExp(`^\\d{${PHONE_LENGTH}}$`);
+const PHONE_REGEX = new RegExp(`^\\d{${clientConfig.phone.numberLength}}$`);
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPasswordRequest'>;
 
@@ -44,7 +42,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   const handleContinue = () => {
     if (!validate()) return;
     navigation.navigate('ForgotPasswordVerify', {
-      phone: `${COUNTRY_CODE}${phone.trim()}`,
+      phone: `${clientConfig.phone.dialCode}${phone.trim()}`,
     });
   };
 
@@ -86,9 +84,9 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
             isTablet && { paddingHorizontal: 14 },
           ]}
         >
-          <Text style={styles.flag}>{COUNTRY_FLAG}</Text>
+          <Text style={styles.flag}>{clientConfig.phone.flag}</Text>
           <Text style={[styles.countryCode, { fontSize: fs('input') }]}>
-            {COUNTRY_CODE}
+            {clientConfig.phone.dialCode}
           </Text>
           <View style={styles.countryChevron}>
             <AppIcon name="chevronDown" size={16} color={colors.darkGray} />
@@ -113,7 +111,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
                 if (error) setError('');
               }}
               keyboardType="number-pad"
-              maxLength={PHONE_LENGTH}
+              maxLength={clientConfig.phone.numberLength}
               returnKeyType="done"
               onSubmitEditing={handleContinue}
             />

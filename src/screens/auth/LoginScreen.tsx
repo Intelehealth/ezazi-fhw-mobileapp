@@ -19,11 +19,9 @@ import { AppButton } from '@/components/ui/AppButton';
 import { AppTextField } from '@/components/ui/AppTextField';
 import { wavePaths } from '@/components/ui/icons';
 import { commonStyles } from '@/components/ui/commonStyles';
+import { clientConfig } from '@/config/clients';
 import { colors, dimens } from '@/config/theme';
 import { useResponsive } from '@/hooks/useResponsive';
-
-// nepal_ezazi_spalsh_icon.png — government emblem + institution text block
-const GOVT_LOGO = require('../../../assets/nepal_login_logo.png');
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 type FormErrors = { username?: string; password?: string };
@@ -37,9 +35,12 @@ export const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [errors, setErrors]     = useState<FormErrors>({});
 
-  // login_logo_width/height_nepal — phone: 300×280dp, tablet: 340×340dp
-  const logoW = isTablet ? 340 : 300;
-  const logoH = isTablet ? 340 : 280;
+  // logo dimensions — per-client (dimens.xml); falls back to Nepal values
+  const _loginSize = clientConfig.assets.logoSize?.login;
+  const logoW         = _loginSize ? (isTablet ? _loginSize.tablet.width     : _loginSize.phone.width)     : (isTablet ? 340 : 300);
+  const logoH         = _loginSize ? (isTablet ? _loginSize.tablet.height    : _loginSize.phone.height)    : (isTablet ? 340 : 280);
+  const logoMarginTop  = _loginSize ? (isTablet ? (_loginSize.tablet.marginTop   ?? 0) : (_loginSize.phone.marginTop   ?? 0)) : 0;
+  const formMarginTop  = _loginSize ? (isTablet ? (_loginSize.tablet.gapBelowIcon ?? 0) : (_loginSize.phone.gapBelowIcon ?? 0)) : 0;
 
   // Wave heights — drawables are 400dp wide, scale to screen width
   const lightWaveH = width * (175 / 400);
@@ -116,10 +117,10 @@ export const LoginScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
 
-          {/* Government emblem + institution text — single image asset */}
+          {/* Client-branded logo — uses loginIcon if provided (e.g. eZAZI emblem), else logo */}
           <Image
-            source={GOVT_LOGO}
-            style={[styles.logo, { width: logoW, height: logoH }]}
+            source={clientConfig.assets.loginIcon ?? clientConfig.assets.logo}
+            style={[styles.logo, { width: logoW, height: logoH, marginTop: logoMarginTop }]}
             resizeMode="contain"
           />
 
@@ -132,7 +133,7 @@ export const LoginScreen: React.FC = () => {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
-            containerStyle={styles.usernameGap}
+            containerStyle={[styles.usernameGap, formMarginTop > 0 && { marginTop: formMarginTop }]}
           />
 
           <View style={commonStyles.fieldGap}>

@@ -6,12 +6,12 @@
 import dayjs from 'dayjs';
 import NepaliDate from 'nepali-date-converter';
 
-import { env } from '@/config/env';
+import { clientConfig } from '@/config/clients';
 
 export type CalendarSystem = 'AD' | 'BS';
 
-export const isNepalDeployment = (): boolean => env.DEFAULT_COUNTRY === 'NP';
-export const isBsDefault = (): boolean => env.DEFAULT_CALENDAR === 'BS';
+export const isNepalDeployment = (): boolean => clientConfig.countryCode === 'NP';
+export const isBsDefault = (): boolean => clientConfig.calendar === 'BS';
 
 /** Format a Gregorian Date for display in the deployment's preferred calendar. */
 export const formatDate = (date: Date | string, system?: CalendarSystem): string => {
