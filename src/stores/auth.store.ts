@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { secureStorage } from '@/services/storage/secure-storage';
 import { authApi } from '@/services/api/auth.api';
+import { useFeatureConfigStore } from '@/stores/featureConfig.store';
 
 export type AuthStatus = 'unknown' | 'unauthenticated' | 'authenticated';
 
@@ -18,13 +19,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   userUuid: null,
   role: null,
 
-  /** Called from SplashScreen — decides where to route based on token presence. */
+  /** Called from SplashScreen — decides where to route based on token presence.
+   *  Holds for at least SPLASH_MIN_MS so the splash is visible long enough. */
   bootstrap: async () => {
-    const token = await secureStorage.get('accessToken');
-    const userUuid = await secureStorage.get('userUuid');
-    if (token && userUuid) {
-      set({ status: 'authenticated', userUuid });
-    } else {
+    const SPLASH_MIN_MS = 3_000;
+    // Fire config sync in parallel — auth routing does not depend on its result.
+    // Errors inside syncConfig are swallowed by the store; we never let them surface here.
+    void useFeatureConfigStore.getState().syncConfig();
+    try {
+      const [token, userUuid] = await Promise.all([
+        secureStorage.get('accessToken'),
+        secureStorage.get('userUuid'),
+        new Promise<void>((resolve) => setTimeout(resolve, SPLASH_MIN_MS)),
+      ]);
+      if (token && userUuid) {
+        set({ status: 'authenticated', userUuid });
+      } else {
+        set({ status: 'unauthenticated' });
+      }
+    } catch {
+      // SecureStore can throw on certain Android keystores (e.g. first-boot,
+      // locked device, or manufacturer keystore errors). Always unblock navigation.
       set({ status: 'unauthenticated' });
     }
   },

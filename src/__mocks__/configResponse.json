@@ -1,0 +1,51 @@
+{
+  "_note": "Keep in sync with src/types/config.types.ts — update both when adding flags.",
+  "configVersion": 1,
+  "featureFlags": {
+    "partographSection": true,
+    "fetalHeartRateSection": true,
+    "contractionMonitoring": true,
+    "riskAssessmentSection": true,
+    "referralSection": true,
+    "newbornCareSection": true,
+    "deliveryOutcomeSection": true,
+    "postpartumMonitoring": true,
+    "stage3Features": true,
+    "notesSection": true,
+    "attachmentSection": true,
+    "priorityVisitSection": true,
+    "hwFollowUpSection": true,
+    "activeStatusMotherAddress": true,
+    "activeStatusMotherOther": true,
+    "chatSection": true,
+    "videoCallSection": true,
+    "hmisReportingSection": true,
+    "draftSurveySection": true
+  },
+  "motherRegFields": {
+    "personal": [
+      { "key": "p_first_name",    "isEnabled": true, "isMandatory": true,  "isEditable": true },
+      { "key": "p_last_name",     "isEnabled": true, "isMandatory": true,  "isEditable": true },
+      { "key": "p_gender",        "isEnabled": true, "isMandatory": true,  "isEditable": true },
+      { "key": "p_date_of_birth", "isEnabled": true, "isMandatory": true,  "isEditable": true },
+      { "key": "p_phone_number",  "isEnabled": true, "isMandatory": false, "isEditable": true },
+      { "key": "p_guardian_name", "isEnabled": true, "isMandatory": false, "isEditable": true }
+    ],
+    "address": [
+      { "key": "a_state",    "isEnabled": true, "isMandatory": true,  "isEditable": true },
+      { "key": "a_district", "isEnabled": true, "isMandatory": true,  "isEditable": true },
+      { "key": "a_village",  "isEnabled": true, "isMandatory": false, "isEditable": true }
+    ],
+    "other": [
+      { "key": "o_national_id", "isEnabled": true, "isMandatory": false, "isEditable": true },
+      { "key": "o_occupation",  "isEnabled": true, "isMandatory": false, "isEditable": true }
+    ]
+  },
+  "homeScreen": [
+    { "key": "labour_care",    "isEnabled": true, "order": 1, "lang": { "en": "Labour Care",    "hi": "प्रसव देखभाल",  "ne": "प्रसव हेरचाह" } },
+    { "key": "antenatal_care", "isEnabled": true, "order": 2, "lang": { "en": "Antenatal Care", "hi": "प्रसव पूर्व",   "ne": "प्रसवपूर्व" } },
+    { "key": "postnatal_care", "isEnabled": true, "order": 3, "lang": { "en": "Postnatal Care", "hi": "प्रसव उपरांत", "ne": "प्रसवोत्तर" } },
+    { "key": "reports",        "isEnabled": true, "order": 4, "lang": { "en": "Reports",        "hi": "रिपोर्ट",      "ne": "रिपोर्ट" } }
+  ],
+  "supportedLanguages": ["en", "hi", "ne"]
+}
