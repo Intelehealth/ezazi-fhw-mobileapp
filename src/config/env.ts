@@ -1,27 +1,30 @@
 import Constants from 'expo-constants';
+import { clientConfig, type AppEnvironment } from './clients';
 
 /**
  * Public, build-time env vars. Anything secret must NEVER live here —
  * use server-side env in the backend services instead.
  *
  * EXPO_PUBLIC_* vars are inlined into the JS bundle at build time.
+ *
+ * Server URLs are resolved as clientConfig × APP_ENV — each client defines
+ * its own development/preview/production endpoints (src/config/clients);
+ * this file just picks the right one for the current build.
  */
+const APP_ENV = (process.env.EXPO_PUBLIC_APP_ENV ?? 'development') as AppEnvironment;
+const servers = clientConfig.servers[APP_ENV] ?? clientConfig.servers.development;
+
 export const env = {
-  AUTH_GATEWAY_URL:
-    process.env.EXPO_PUBLIC_AUTH_GATEWAY_URL ?? 'http://localhost:3001',
-  PORTAL_URL: process.env.EXPO_PUBLIC_PORTAL_URL ?? 'http://localhost:3002',
-  WEBRTC_URL: process.env.EXPO_PUBLIC_WEBRTC_URL ?? 'http://localhost:3003',
-  CONFIG_URL: process.env.EXPO_PUBLIC_CONFIG_URL ?? 'http://localhost:3004',
+  AUTH_GATEWAY_URL: servers.authGatewayUrl,
+  PORTAL_URL: servers.portalUrl,
+  WEBRTC_URL: servers.webrtcUrl,
+  CONFIG_URL: servers.configUrl,
 
-  APP_ENV: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
-  DEFAULT_COUNTRY: process.env.EXPO_PUBLIC_DEFAULT_COUNTRY ?? 'NP',
-  DEFAULT_LOCALE: process.env.EXPO_PUBLIC_DEFAULT_LOCALE ?? 'en',
-  DEFAULT_CALENDAR: process.env.EXPO_PUBLIC_DEFAULT_CALENDAR ?? 'BS',
+  APP_ENV,
 
-  FEATURE_FLAG_STAGE3:
-    (process.env.EXPO_PUBLIC_FEATURE_FLAG_STAGE3 ?? 'true') === 'true',
-  FEATURE_FLAG_POSTPARTUM_MONITORING:
-    (process.env.EXPO_PUBLIC_FEATURE_FLAG_POSTPARTUM_MONITORING ?? 'true') === 'true',
+  // FEATURE_FLAG_STAGE3 and FEATURE_FLAG_POSTPARTUM_MONITORING were here.
+  // Replaced by remote config — use useFeatureConfigStore().isEnabled('stage3Features')
+  // and isEnabled('postpartumMonitoring') instead.
 
   SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
 

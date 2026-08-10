@@ -9,18 +9,44 @@
       "distribution": "internal",
       "channel": "development",
       "android": { "buildType": "apk" },
-      "env": { "APP_ENV": "development" }
+      "env": { "EXPO_PUBLIC_APP_ENV": "development", "EXPO_PUBLIC_CLIENT_ID": "nepal" }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "android": { "buildType": "apk" },
-      "env": { "APP_ENV": "preview" }
+      "env": { "EXPO_PUBLIC_APP_ENV": "preview", "EXPO_PUBLIC_CLIENT_ID": "nepal" }
     },
     "production": {
       "channel": "production",
       "autoIncrement": true,
-      "env": { "APP_ENV": "production" }
+      "env": { "EXPO_PUBLIC_APP_ENV": "production", "EXPO_PUBLIC_CLIENT_ID": "nepal" }
+    },
+
+    "nepal-development": {
+      "extends": "development",
+      "env": { "EXPO_PUBLIC_APP_ENV": "development", "EXPO_PUBLIC_CLIENT_ID": "nepal" }
+    },
+    "nepal-preview": {
+      "extends": "preview",
+      "env": { "EXPO_PUBLIC_APP_ENV": "preview", "EXPO_PUBLIC_CLIENT_ID": "nepal" }
+    },
+    "nepal-production": {
+      "extends": "production",
+      "env": { "EXPO_PUBLIC_APP_ENV": "production", "EXPO_PUBLIC_CLIENT_ID": "nepal" }
+    },
+
+    "default-development": {
+      "extends": "development",
+      "env": { "EXPO_PUBLIC_APP_ENV": "development", "EXPO_PUBLIC_CLIENT_ID": "default" }
+    },
+    "default-preview": {
+      "extends": "preview",
+      "env": { "EXPO_PUBLIC_APP_ENV": "preview", "EXPO_PUBLIC_CLIENT_ID": "default" }
+    },
+    "default-production": {
+      "extends": "production",
+      "env": { "EXPO_PUBLIC_APP_ENV": "production", "EXPO_PUBLIC_CLIENT_ID": "default" }
     }
   },
   "submit": {
