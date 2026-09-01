@@ -22,7 +22,8 @@
         "src/*"
       ]
     },
-    "types": ["jest"]
+    "types": ["jest"],
+    "experimentalDecorators": true
   },
   "include": [
     "src/**/*",

@@ -48,7 +48,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: 'com.intelehealth.ezazi.fhw',
+      bundleIdentifier: 'org.intelehealth.ezazi',
       buildNumber: '1',
       infoPlist: {
         NSCameraUsageDescription: 'We need camera access to capture patient photos for ward verification.',
@@ -57,7 +57,7 @@ module.exports = {
       },
     },
     android: {
-      package: 'com.intelehealth.ezazi.fhw',
+      package: 'org.intelehealth.ezazi',
       versionCode: 1,
       adaptiveIcon: {
         foregroundImage: client.adaptiveIcon,
