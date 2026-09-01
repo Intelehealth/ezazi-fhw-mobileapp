@@ -54,4 +54,7 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
       configUrl: 'https://config.ezazi.example.org',
     },
   },
+  branding: {
+    showPoweredByLogo: true,
+  },
 };

@@ -143,6 +143,14 @@ describe('DEFAULT_CLIENT_CONFIG', () => {
     });
   });
 
+  // ── Branding ─────────────────────────────────────────────────────────────
+
+  describe('branding', () => {
+    it('shows the powered-by logo on the splash screen', () => {
+      expect(DEFAULT_CLIENT_CONFIG.branding.showPoweredByLogo).toBe(true);
+    });
+  });
+
   // ── Servers ───────────────────────────────────────────────────────────────
 
   describe('servers', () => {

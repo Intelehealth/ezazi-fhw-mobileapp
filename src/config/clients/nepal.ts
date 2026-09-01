@@ -45,4 +45,7 @@ export const NEPAL_CLIENT_CONFIG: ClientConfig = {
       configUrl: 'https://config.nepal.example.org',
     },
   },
+  branding: {
+    showPoweredByLogo: false,
+  },
 };

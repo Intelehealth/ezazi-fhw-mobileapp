@@ -139,6 +139,14 @@ describe('NEPAL_CLIENT_CONFIG', () => {
     });
   });
 
+  // ── Branding ─────────────────────────────────────────────────────────────
+
+  describe('branding', () => {
+    it('hides the powered-by logo on the splash screen', () => {
+      expect(NEPAL_CLIENT_CONFIG.branding.showPoweredByLogo).toBe(false);
+    });
+  });
+
   // ── Servers ───────────────────────────────────────────────────────────────
 
   describe('servers', () => {

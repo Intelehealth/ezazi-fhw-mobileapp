@@ -56,4 +56,8 @@ export interface ClientConfig {
   };
   /** This client's backend URLs, one set per environment tier. */
   servers: Record<AppEnvironment, ServerUrls>;
+  branding: {
+    /** Whether the "from [intelehealth]" mark shows on the splash screen. */
+    showPoweredByLogo: boolean;
+  };
 }

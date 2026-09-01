@@ -183,15 +183,19 @@ export const SplashScreen: React.FC = () => {
       >
         <Text style={styles.tagline}>{t('splash.tagline')}</Text>
 
-        <Text style={[styles.fromText, { marginBottom: IH_OVERLAP }]}>
-          {t('splash.from')}
-        </Text>
+        {clientConfig.branding.showPoweredByLogo && (
+          <>
+            <Text style={[styles.fromText, { marginBottom: IH_OVERLAP }]}>
+              {t('splash.from')}
+            </Text>
 
-        <Image
-          source={IH_LOGO}
-          style={{ width: IH_W, height: IH_H }}
-          resizeMode="contain"
-        />
+            <Image
+              source={IH_LOGO}
+              style={{ width: IH_W, height: IH_H }}
+              resizeMode="contain"
+            />
+          </>
+        )}
       </View>
 
       {/* ── Permission denied dialog — rendered on top of splash ── */}
@@ -236,12 +240,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  // 14sp, colorPrimary, center, lineSpacingExtra 2dp
+  // colorPrimary, center — sized to match the native app's splash tagline
   tagline: {
     color:       colors.primary,
-    fontSize:    14,
+    fontSize:    24,
     textAlign:   'center',
-    lineHeight:  14 + 2 + 6,
+    lineHeight:  36,
     marginBottom: 16,
   },
 
