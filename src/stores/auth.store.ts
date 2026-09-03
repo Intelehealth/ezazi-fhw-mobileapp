@@ -50,11 +50,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    try {
-      await authApi.logout();
-    } catch {
-      /* server may be offline — we still clear local state */
-    }
+    // Result intentionally unused — server may be offline, we still clear local state.
+    await authApi.logout();
     await secureStorage.clear();
     set({ status: 'unauthenticated', userUuid: null, role: null });
   },

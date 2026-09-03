@@ -56,25 +56,27 @@ export const useFeatureConfigStore = create<FeatureConfigState>((set, get) => ({
     await get().loadFromStorage();
 
     // Step 2 — fetch from API; update only if server has a newer version
-    try {
-      const remote = await fetchPublishedConfig();
-      const cachedVersion = await configStorage.loadVersion();
-
-      if (remote.configVersion > cachedVersion) {
-        await configStorage.save(remote);
-        set({
-          flags: { ...defaultFeatureFlags, ...remote.featureFlags },
-          config: remote,
-          status: 'ready',
-        });
-      } else {
-        // Remote version same or older — cached copy is current; ensure status is ready
-        set(s => ({ ...s, status: 'ready' }));
-      }
-    } catch (err) {
-      logger.debug('[FeatureConfig] Sync failed — using cached/default flags', err);
+    const result = await fetchPublishedConfig();
+    if (!result.ok) {
+      logger.debug('[FeatureConfig] Sync failed — using cached/default flags', result.error);
       // Only set error status if we have no usable config at all
       set(s => (s.status !== 'ready' ? { ...s, status: 'error' } : s));
+      return;
+    }
+
+    const remote = result.data;
+    const cachedVersion = await configStorage.loadVersion();
+
+    if (remote.configVersion > cachedVersion) {
+      await configStorage.save(remote);
+      set({
+        flags: { ...defaultFeatureFlags, ...remote.featureFlags },
+        config: remote,
+        status: 'ready',
+      });
+    } else {
+      // Remote version same or older — cached copy is current; ensure status is ready
+      set(s => ({ ...s, status: 'ready' }));
     }
   },
 
