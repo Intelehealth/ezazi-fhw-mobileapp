@@ -40,9 +40,6 @@ module.exports = {
     scheme: 'ezazi-fhw',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
-    // Keep OLD architecture until the WatermelonDB→Drizzle swap (Phase 4).
-    // New Arch becomes default-ON at SDK 53; WMDB 0.28 can't run on it, so pin it off.
-    newArchEnabled: false,
     icon: client.icon,
     ios: {
       supportsTablet: false,
