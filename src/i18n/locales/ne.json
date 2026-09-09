@@ -1,1 +1,43 @@
-{}
+{
+  "auth": {
+    "errorBanner": {
+      "invalidCredentials": {
+        "title": "Username or password is incorrect",
+        "subtitle": "Please check your credentials and try again."
+      },
+      "accountLocked": {
+        "title": "Account temporarily locked",
+        "subtitle": "Too many failed attempts. Please try again later.",
+        "subtitleWithMinutes": "Too many failed attempts. Try again in {{minutes}} minutes."
+      },
+      "rateLimited": {
+        "title": "Too many attempts",
+        "subtitle": "Please wait a moment and try again."
+      },
+      "doctorBlocked": {
+        "title": "Use the web portal",
+        "subtitle": "Doctor accounts cannot reset their password from the mobile app."
+      },
+      "userNotFound": {
+        "title": "Account not found",
+        "subtitle": "We could not find an account for that phone number."
+      },
+      "otpInvalid": {
+        "title": "Wrong code",
+        "subtitle": "The code you entered doesn’t match. Please try again."
+      },
+      "otpExpired": {
+        "title": "Code expired",
+        "subtitle": "Please request a new code and try again."
+      },
+      "networkError": {
+        "title": "No internet connection",
+        "subtitle": "Please check your connection and try again."
+      },
+      "genericError": {
+        "title": "Something went wrong",
+        "subtitle": "Please check your connection and try again."
+      }
+    }
+  }
+}

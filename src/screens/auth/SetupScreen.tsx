@@ -5,7 +5,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 import type { RootStackParamList } from '@/navigation/types';
+import { FieldError } from '@/components/auth/FieldError';
 import { PasswordField } from '@/components/auth/PasswordField';
+import { ServerErrorBanner } from '@/components/auth/ServerErrorBanner';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppTextField } from '@/components/ui/AppTextField';
 import { FormScreenLayout } from '@/components/ui/FormScreenLayout';
@@ -14,10 +16,11 @@ import { commonStyles } from '@/components/ui/commonStyles';
 import { colors, dimens } from '@/config/theme';
 import { useResponsive } from '@/hooks/useResponsive';
 import { authApi } from '@/services/api/auth.api';
-import type { ApiError } from '@/services/api/errors/ApiError';
 import { logApiError } from '@/services/api/errors/logApiError';
 import { secureStorage } from '@/services/storage/secure-storage';
 import { useAuthStore } from '@/stores/auth.store';
+import type { BannerCopy } from '@/utils/authErrorMapping';
+import { mapAuthApiError } from '@/utils/authErrorMapping';
 import { logger } from '@/utils/logger';
 import { showToast } from '@/utils/toast';
 
@@ -38,6 +41,7 @@ export const SetupScreen: React.FC = () => {
   const [password, setPassword]                 = useState('');
   const [errors, setErrors]                     = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting]         = useState(false);
+  const [serverError, setServerError]           = useState<BannerCopy | null>(null);
 
   // Header layout is intentionally separate from WaveHeader: no back button,
   // bottom-aligned text, larger tablet title (setup_top_vector.xml).
@@ -71,34 +75,15 @@ export const SetupScreen: React.FC = () => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  // ── API error → user-facing message — see api error.tsv for the status/code table ──
-  const getErrorMessage = (error: ApiError): string => {
-    switch (error.code) {
-      case 'INVALID_CREDENTIALS':
-        return t('setup.errors.invalidCredentials');
-      case 'ACCOUNT_LOCKED': {
-        const retryAfterSeconds = (error.details as { retryAfterSeconds?: number } | undefined)?.retryAfterSeconds;
-        return retryAfterSeconds
-          ? t('setup.errors.accountLocked', { minutes: Math.ceil(retryAfterSeconds / 60) })
-          : t('setup.errors.accountLockedGeneric');
-      }
-      case 'RATE_LIMITED':
-        return t('setup.errors.rateLimited');
-      case 'VALIDATION_ERROR':
-        return error.message || t('setup.errors.genericError');
-      default:
-        break;
-    }
-    if (error.kind === 'network' || error.kind === 'timeout') {
-      return t('setup.errors.networkError');
-    }
-    return t('setup.errors.genericError');
-  };
+  // ── API error → user-facing message — mapping lives in @/utils/authErrorMapping ──
+  // Screens no longer duplicate the code→copy switch; the shared mapper drives
+  // both this screen's ServerErrorBanner and every other auth screen.
 
   const handleSetup = async () => {
     if (!validate() || isSubmitting) return;
 
     setIsSubmitting(true);
+    setServerError(null);
     const result = await authApi.login({ username, password });
     setIsSubmitting(false);
 
@@ -123,9 +108,9 @@ export const SetupScreen: React.FC = () => {
       });
     } else {
       // Every user sees this — the only user-facing feedback on failure.
-      // getErrorMessage() maps to a friendly, translated string; never show
-      // result.error's kind/status/code/message directly to a real user.
-      showToast(getErrorMessage(result.error));
+      // mapAuthApiError() returns { title, subtitle } for the banner; never
+      // show result.error's kind/status/code/message directly to a real user.
+      setServerError(mapAuthApiError(result.error, { t }));
 
       // Console-only — never shown on screen, in dev or production builds.
       logApiError('Setup login', result.error);
@@ -190,11 +175,7 @@ export const SetupScreen: React.FC = () => {
         </Text>
         <AppIcon name="chevronDown" size={20} color={colors.icon} />
       </TouchableOpacity>
-      {!!errors.location && (
-        <Text style={[commonStyles.errorText, styles.errorText, { fontSize: fs('error') }]}>
-          {errors.location}
-        </Text>
-      )}
+      <FieldError message={errors.location} align="right" style={styles.errorText} />
 
       {/* ── Username ── */}
       <AppTextField
@@ -257,6 +238,16 @@ export const SetupScreen: React.FC = () => {
           {t('setup.tempNavPrivacy')}
         </Text>
       </TouchableOpacity>
+
+      {/* ── Server error banner ── */}
+      {serverError && (
+        <ServerErrorBanner
+          title={serverError.title}
+          subtitle={serverError.subtitle}
+          onDismiss={() => setServerError(null)}
+          style={styles.serverErrorGap}
+        />
+      )}
 
       {/* ── Setup button ── */}
       <AppButton
@@ -336,6 +327,10 @@ const styles = StyleSheet.create({
 
   errorText: {
     marginTop: 4,  // RightAlignErrorTextInputLayout — error sits at the right edge
+  },
+
+  serverErrorGap: {
+    marginTop: dimens.labelGap,
   },
 
   // ── Links ─────────────────────────────────────────────────────────────────
