@@ -1,222 +1,218 @@
-import { appSchema, tableSchema } from '@nozbe/watermelondb';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
-export const schema = appSchema({
-  version: 1,
-  tables: [
+/**
+ * Offline SQLite schema (OpenMRS data model), ported 1:1 from the Android /
+ * WatermelonDB layer. See ARCHITECTURE_RULES §6:
+ *  - `uuid` is the real PRIMARY KEY (Android/Java-UUID format) — except
+ *    tbl_location (keys on `locationuuid`) and tbl_user_credentials (no uuid in
+ *    Android → synthetic autoincrement id).
+ *  - `sync` (dirty flag: 'false'/'true') and `voided` (soft-delete: '0'/'1') are
+ *    kept as TEXT with their Android defaults and are managed by the sync engine.
+ *  - Every column is TEXT unless noted; optional columns are nullable.
+ * TODO: add explicit indexes on FK columns (patientuuid, visituuid, encounteruuid,
+ * …) and the `sync` dirty-flag columns before the query layer / sync engine land.
+ */
 
-    tableSchema({
-      name: 'tbl_patient',
-      columns: [
-        { name: 'uuid',             type: 'string' },   // uuid column from Android
-        { name: 'openmrs_id',       type: 'string', isOptional: true },
-        { name: 'first_name',       type: 'string', isOptional: true },
-        { name: 'middle_name',      type: 'string', isOptional: true },
-        { name: 'last_name',        type: 'string', isOptional: true },
-        { name: 'date_of_birth',    type: 'string', isOptional: true },
-        { name: 'phone_number',     type: 'string', isOptional: true },
-        { name: 'address1',         type: 'string', isOptional: true },
-        { name: 'address2',         type: 'string', isOptional: true },
-        { name: 'city_village',     type: 'string', isOptional: true },
-        { name: 'state_province',   type: 'string', isOptional: true },
-        { name: 'postal_code',      type: 'string', isOptional: true },
-        { name: 'country',          type: 'string', isOptional: true },
-        { name: 'gender',           type: 'string', isOptional: true },
-        { name: 'sdw',              type: 'string', isOptional: true },
-        { name: 'creatoruuid',      type: 'string', isOptional: true },
-        { name: 'occupation',       type: 'string', isOptional: true },
-        { name: 'patient_photo',    type: 'string', isOptional: true },
-        { name: 'economic_status',  type: 'string', isOptional: true },
-        { name: 'education_status', type: 'string', isOptional: true },
-        { name: 'caste',            type: 'string', isOptional: true },
-        { name: 'dead',             type: 'string', isOptional: true },
-        { name: 'dateCreated',      type: 'string', isOptional: true },
-        { name: 'modified_date',    type: 'string', isOptional: true },
-        { name: 'voided',           type: 'string' },   // DEFAULT '0'
-        { name: 'sync',             type: 'string' },   // DEFAULT 'false'
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_patient_attribute',
-      columns: [
-        { name: 'uuid',                        type: 'string' },   // uuid column from Android
-        { name: 'value',                       type: 'string', isOptional: true },
-        { name: 'person_attribute_type_uuid',  type: 'string', isOptional: true },
-        { name: 'patientuuid',                 type: 'string', isOptional: true },
-        { name: 'modified_date',               type: 'string', isOptional: true },
-        { name: 'voided',                      type: 'string' },
-        { name: 'sync',                        type: 'string' },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_patient_attribute_master',
-      columns: [
-        { name: 'uuid',          type: 'string' },   // uuid column from Android
-        { name: 'name',          type: 'string', isOptional: true },
-        { name: 'modified_date', type: 'string', isOptional: true },
-        { name: 'voided',        type: 'string' },
-        { name: 'sync',          type: 'string' },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_visit',
-      columns: [
-        { name: 'uuid',            type: 'string' },   // uuid column from Android
-        { name: 'patientuuid',     type: 'string', isOptional: true },
-        { name: 'startdate',       type: 'string', isOptional: true },
-        { name: 'enddate',         type: 'string', isOptional: true },
-        { name: 'visit_type_uuid', type: 'string', isOptional: true },
-        { name: 'locationuuid',    type: 'string', isOptional: true },
-        { name: 'creator',         type: 'string', isOptional: true },
-        { name: 'modified_date',   type: 'string', isOptional: true },
-        { name: 'isdownloaded',    type: 'string' },   // DEFAULT 'false'
-        { name: 'voided',          type: 'string' },   // DEFAULT '0'
-        { name: 'sync',            type: 'string' },   // DEFAULT 'false'
-        { name: 'issubmitted',     type: 'number' },   // Integer DEFAULT 0
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_visit_attribute',
-      columns: [
-        { name: 'uuid',                      type: 'string' },   // uuid column from Android
-        { name: 'visit_uuid',                type: 'string', isOptional: true },
-        { name: 'value',                     type: 'string', isOptional: true },
-        { name: 'visit_attribute_type_uuid', type: 'string', isOptional: true },
-        { name: 'voided',                    type: 'string', isOptional: true },
-        { name: 'sync',                      type: 'string', isOptional: true },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_encounter',
-      columns: [
-        { name: 'uuid',                type: 'string' },   // uuid column from Android
-        { name: 'visituuid',           type: 'string', isOptional: true },
-        { name: 'encounter_time',      type: 'string', isOptional: true },
-        { name: 'provider_uuid',       type: 'string', isOptional: true },
-        { name: 'encounter_type_uuid', type: 'string', isOptional: true },
-        { name: 'modified_date',       type: 'string', isOptional: true },
-        { name: 'sync',                type: 'string' },   // DEFAULT 'false'
-        { name: 'voided',              type: 'string' },   // DEFAULT '0'
-        { name: 'privacynotice_value', type: 'string', isOptional: true },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_obs',
-      columns: [
-        { name: 'uuid',                   type: 'string' },   // uuid column from Android
-        { name: 'encounteruuid',         type: 'string', isOptional: true },
-        { name: 'conceptuuid',           type: 'string', isOptional: true },
-        { name: 'value',                 type: 'string', isOptional: true },
-        { name: 'comment',              type: 'string', isOptional: true },
-        { name: 'creator',              type: 'string', isOptional: true },
-        { name: 'creatoruuid',          type: 'string', isOptional: true },
-        { name: 'voided',               type: 'string' },   // DEFAULT '0'
-        { name: 'obsservermodifieddate', type: 'string', isOptional: true },
-        { name: 'modified_date',         type: 'string', isOptional: true },
-        { name: 'created_date',          type: 'string', isOptional: true },
-        { name: 'sync',                  type: 'string' },   // DEFAULT 'false'
-      ],
-    }),
-
-    // All the facility locations will be added in this table, and as per the
-    // location selected in the visit table, will insert the location uuid.
-    tableSchema({
-      name: 'tbl_location',
-      columns: [
-        { name: 'name',          type: 'string', isOptional: true },
-        { name: 'locationuuid',  type: 'string' },   // uuid column from Android
-        { name: 'retired',       type: 'number', isOptional: true },   // integer(10)
-        { name: 'modified_date', type: 'string', isOptional: true },
-        { name: 'voided',        type: 'string' },
-        { name: 'sync',          type: 'string' },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_provider',
-      columns: [
-        { name: 'uuid',          type: 'string' },   // uuid column from Android
-        { name: 'identifier',    type: 'string', isOptional: true },
-        { name: 'given_name',    type: 'string', isOptional: true },
-        { name: 'family_name',   type: 'string', isOptional: true },
-        { name: 'role',          type: 'string', isOptional: true },
-        { name: 'useruuid',      type: 'string', isOptional: true },
-        { name: 'voided',        type: 'string' },
-        { name: 'modified_date', type: 'string', isOptional: true },
-        { name: 'sync',          type: 'string' },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_provider_attribute',
-      columns: [
-        { name: 'uuid',              type: 'string' },   // uuid column from Android
-        { name: 'provideruuid',      type: 'string', isOptional: true },
-        { name: 'attributetypeuuid', type: 'string', isOptional: true },
-        { name: 'value',             type: 'string', isOptional: true },
-        { name: 'voided',            type: 'string', isOptional: true },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_dr_speciality',
-      columns: [
-        { name: 'uuid',              type: 'string' },   // uuid column from Android
-        { name: 'provideruuid',      type: 'string', isOptional: true },
-        { name: 'attributetypeuuid', type: 'string', isOptional: true },
-        { name: 'value',             type: 'string', isOptional: true },   // UNIQUE in Android
-        { name: 'voided',            type: 'string', isOptional: true },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_uuid_dictionary',
-      columns: [
-        { name: 'uuid', type: 'string' },   // uuid column from Android
-        { name: 'name', type: 'string', isOptional: true },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_image_records',
-      columns: [
-        { name: 'uuid',           type: 'string' },   // uuid column from Android
-        { name: 'patientuuid',    type: 'string', isOptional: true },
-        { name: 'visituuid',      type: 'string', isOptional: true },
-        { name: 'encounteruuid',  type: 'string', isOptional: true },
-        { name: 'image_path',     type: 'string', isOptional: true },
-        { name: 'obs_time_date',  type: 'string', isOptional: true },
-        { name: 'image_type',     type: 'string', isOptional: true },
-        { name: 'voided',         type: 'string' },
-        { name: 'sync',           type: 'string' },
-      ],
-    }),
-
-    // No uuid PK in Android — WatermelonDB auto-generates id
-    tableSchema({
-      name: 'tbl_user_credentials',
-      columns: [
-        { name: 'username',           type: 'string', isOptional: true },
-        { name: 'password',           type: 'string', isOptional: true },   // UNIQUE in Android
-        { name: 'creator_uuid_cred',  type: 'string', isOptional: true },
-        { name: 'chwname',            type: 'string', isOptional: true },
-        { name: 'provider_uuid_cred', type: 'string', isOptional: true },
-      ],
-    }),
-
-    tableSchema({
-      name: 'tbl_rtc_connection_log',
-      columns: [
-        { name: 'uuid',            type: 'string' },   // uuid column from Android
-        { name: 'visit_uuid',      type: 'string', isOptional: true },
-        { name: 'connection_info', type: 'string', isOptional: true },
-      ],
-    }),
-
-  ],
+export const patient = sqliteTable('tbl_patient', {
+  uuid: text('uuid').primaryKey(),
+  openmrs_id: text('openmrs_id'),
+  first_name: text('first_name'),
+  middle_name: text('middle_name'),
+  last_name: text('last_name'),
+  date_of_birth: text('date_of_birth'),
+  phone_number: text('phone_number'),
+  address1: text('address1'),
+  address2: text('address2'),
+  city_village: text('city_village'),
+  state_province: text('state_province'),
+  postal_code: text('postal_code'),
+  country: text('country'),
+  gender: text('gender'),
+  sdw: text('sdw'),
+  creatoruuid: text('creatoruuid'),
+  occupation: text('occupation'),
+  patient_photo: text('patient_photo'),
+  economic_status: text('economic_status'),
+  education_status: text('education_status'),
+  caste: text('caste'),
+  dead: text('dead'),
+  dateCreated: text('dateCreated'),
+  modified_date: text('modified_date'),
+  voided: text('voided').notNull().default('0'),
+  sync: text('sync').notNull().default('false'),
 });
+
+export const patientAttribute = sqliteTable('tbl_patient_attribute', {
+  uuid: text('uuid').primaryKey(),
+  value: text('value'),
+  person_attribute_type_uuid: text('person_attribute_type_uuid'),
+  patientuuid: text('patientuuid'),
+  modified_date: text('modified_date'),
+  voided: text('voided').notNull().default('0'),
+  sync: text('sync').notNull().default('false'),
+});
+
+export const patientAttributeMaster = sqliteTable('tbl_patient_attribute_master', {
+  uuid: text('uuid').primaryKey(),
+  name: text('name'),
+  modified_date: text('modified_date'),
+  voided: text('voided').notNull().default('0'),
+  sync: text('sync').notNull().default('false'),
+});
+
+export const visit = sqliteTable('tbl_visit', {
+  uuid: text('uuid').primaryKey(),
+  patientuuid: text('patientuuid'),
+  startdate: text('startdate'),
+  enddate: text('enddate'),
+  visit_type_uuid: text('visit_type_uuid'),
+  locationuuid: text('locationuuid'),
+  creator: text('creator'),
+  modified_date: text('modified_date'),
+  isdownloaded: text('isdownloaded').notNull().default('false'),
+  voided: text('voided').notNull().default('0'),
+  sync: text('sync').notNull().default('false'),
+  issubmitted: integer('issubmitted').notNull().default(0),
+});
+
+export const visitAttribute = sqliteTable('tbl_visit_attribute', {
+  uuid: text('uuid').primaryKey(),
+  visit_uuid: text('visit_uuid'),
+  value: text('value'),
+  visit_attribute_type_uuid: text('visit_attribute_type_uuid'),
+  voided: text('voided'),
+  sync: text('sync'),
+});
+
+export const encounter = sqliteTable('tbl_encounter', {
+  uuid: text('uuid').primaryKey(),
+  visituuid: text('visituuid'),
+  encounter_time: text('encounter_time'),
+  provider_uuid: text('provider_uuid'),
+  encounter_type_uuid: text('encounter_type_uuid'),
+  modified_date: text('modified_date'),
+  sync: text('sync').notNull().default('false'),
+  voided: text('voided').notNull().default('0'),
+  privacynotice_value: text('privacynotice_value'),
+});
+
+export const obs = sqliteTable('tbl_obs', {
+  uuid: text('uuid').primaryKey(),
+  encounteruuid: text('encounteruuid'),
+  conceptuuid: text('conceptuuid'),
+  value: text('value'),
+  comment: text('comment'),
+  creator: text('creator'),
+  creatoruuid: text('creatoruuid'),
+  voided: text('voided').notNull().default('0'),
+  obsservermodifieddate: text('obsservermodifieddate'),
+  modified_date: text('modified_date'),
+  created_date: text('created_date'),
+  sync: text('sync').notNull().default('false'),
+});
+
+export const location = sqliteTable('tbl_location', {
+  name: text('name'),
+  locationuuid: text('locationuuid').primaryKey(),
+  retired: integer('retired'),
+  modified_date: text('modified_date'),
+  voided: text('voided').notNull().default('0'),
+  sync: text('sync').notNull().default('false'),
+});
+
+export const provider = sqliteTable('tbl_provider', {
+  uuid: text('uuid').primaryKey(),
+  identifier: text('identifier'),
+  given_name: text('given_name'),
+  family_name: text('family_name'),
+  role: text('role'),
+  useruuid: text('useruuid'),
+  voided: text('voided').notNull().default('0'),
+  modified_date: text('modified_date'),
+  sync: text('sync').notNull().default('false'),
+});
+
+export const providerAttribute = sqliteTable('tbl_provider_attribute', {
+  uuid: text('uuid').primaryKey(),
+  provideruuid: text('provideruuid'),
+  attributetypeuuid: text('attributetypeuuid'),
+  value: text('value'),
+  voided: text('voided'),
+});
+
+export const drSpeciality = sqliteTable('tbl_dr_speciality', {
+  uuid: text('uuid').primaryKey(),
+  provideruuid: text('provideruuid'),
+  attributetypeuuid: text('attributetypeuuid'),
+  value: text('value'),
+  voided: text('voided'),
+});
+
+export const uuidDictionary = sqliteTable('tbl_uuid_dictionary', {
+  uuid: text('uuid').primaryKey(),
+  name: text('name'),
+});
+
+export const imageRecords = sqliteTable('tbl_image_records', {
+  uuid: text('uuid').primaryKey(),
+  patientuuid: text('patientuuid'),
+  visituuid: text('visituuid'),
+  encounteruuid: text('encounteruuid'),
+  image_path: text('image_path'),
+  obs_time_date: text('obs_time_date'),
+  image_type: text('image_type'),
+  voided: text('voided').notNull().default('0'),
+  sync: text('sync').notNull().default('false'),
+});
+
+// Android has no uuid PK here (WatermelonDB auto-generated an id) → synthetic PK.
+export const userCredentials = sqliteTable('tbl_user_credentials', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  username: text('username'),
+  password: text('password'),
+  creator_uuid_cred: text('creator_uuid_cred'),
+  chwname: text('chwname'),
+  provider_uuid_cred: text('provider_uuid_cred'),
+});
+
+export const rtcConnectionLog = sqliteTable('tbl_rtc_connection_log', {
+  uuid: text('uuid').primaryKey(),
+  visit_uuid: text('visit_uuid'),
+  connection_info: text('connection_info'),
+});
+
+/** All tables, for `drizzle(expoDb, { schema })` and drizzle-kit. */
+export const schema = {
+  patient,
+  patientAttribute,
+  patientAttributeMaster,
+  visit,
+  visitAttribute,
+  encounter,
+  obs,
+  location,
+  provider,
+  providerAttribute,
+  drSpeciality,
+  uuidDictionary,
+  imageRecords,
+  userCredentials,
+  rtcConnectionLog,
+};
+
+// Inferred row types (replace the old WatermelonDB Model classes).
+export type Patient = typeof patient.$inferSelect;
+export type PatientAttribute = typeof patientAttribute.$inferSelect;
+export type PatientAttributeMaster = typeof patientAttributeMaster.$inferSelect;
+export type Visit = typeof visit.$inferSelect;
+export type VisitAttribute = typeof visitAttribute.$inferSelect;
+export type Encounter = typeof encounter.$inferSelect;
+export type Obs = typeof obs.$inferSelect;
+export type Location = typeof location.$inferSelect;
+export type Provider = typeof provider.$inferSelect;
+export type ProviderAttribute = typeof providerAttribute.$inferSelect;
+export type DrSpeciality = typeof drSpeciality.$inferSelect;
+export type UuidDictionary = typeof uuidDictionary.$inferSelect;
+export type ImageRecord = typeof imageRecords.$inferSelect;
+export type UserCredentials = typeof userCredentials.$inferSelect;
+export type RtcConnectionLog = typeof rtcConnectionLog.$inferSelect;

@@ -3,8 +3,8 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      ['@babel/plugin-proposal-decorators', { legacy: true }],
-      ['@babel/plugin-proposal-class-properties', { loose: true }],
+      // Drizzle: inline bundled .sql migration files (paired with metro sourceExts 'sql').
+      ['inline-import', { extensions: ['.sql'] }],
       [
         'module-resolver',
         {

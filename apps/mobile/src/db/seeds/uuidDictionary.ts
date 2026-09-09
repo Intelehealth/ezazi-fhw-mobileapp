@@ -1,9 +1,9 @@
-import { database } from '../index';
-import UuidDictionary from '../models/UuidDictionary';
+import { db } from '../index';
+import { uuidDictionary } from '../schema';
 
-// All entries from InteleHealthDatabaseHelper.uuidInsert() — exact UUIDs and names from Android.
-// Duplicates in the Android source are included once; INSERT OR REPLACE semantics preserved
-// by WatermelonDB's prepareCreateFromDirtyRaw which uses the uuid as id.
+// All entries from InteleHealthDatabaseHelper.uuidInsert() — exact UUIDs and names
+// from Android. INSERT-OR-IGNORE on the uuid primary key preserves the Android
+// "don't duplicate" semantics.
 const UUID_ENTRIES: { uuid: string; name: string }[] = [
   { uuid: '3edb0e09-9135-481e-b8f0-07a26fa9a5ce', name: 'CURRENTCOMPLAINT' },
   { uuid: 'e1761e85-9b50-48ae-8c4d-e6b7eeeba084', name: 'PHYSICAL_EXAMINATION' },
@@ -104,24 +104,6 @@ const UUID_ENTRIES: { uuid: string; name: string }[] = [
 ];
 
 export async function seedUuidDictionary(): Promise<void> {
-  const collection = database.get<UuidDictionary>('tbl_uuid_dictionary');
-
-  await database.write(async () => {
-    const existing = await collection.query().fetchIds();
-    const existingSet = new Set(existing);
-
-    const toCreate = UUID_ENTRIES
-      .filter((entry) => !existingSet.has(entry.uuid))
-      .map((entry) =>
-        collection.prepareCreateFromDirtyRaw({
-          id: entry.uuid,
-          uuid: entry.uuid,
-          name: entry.name,
-        }),
-      );
-
-    if (toCreate.length > 0) {
-      await database.batch(...toCreate);
-    }
-  });
+  // INSERT OR IGNORE on the uuid PK — idempotent, matches Android's non-duplicating insert.
+  await db.insert(uuidDictionary).values(UUID_ENTRIES).onConflictDoNothing();
 }

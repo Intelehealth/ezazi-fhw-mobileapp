@@ -12,6 +12,9 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
+// Drizzle: allow importing bundled .sql migration files (with babel inline-import).
+config.resolver.sourceExts.push('sql');
+
 // #1 — watch the whole workspace, not just this app, so edits to
 // packages/@ezazi/* trigger a Fast Refresh.
 config.watchFolders = [workspaceRoot];

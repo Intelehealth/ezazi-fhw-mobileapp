@@ -84,6 +84,7 @@ module.exports = {
         },
       ],
       'expo-asset',
+      'expo-sqlite',
       'expo-localization',
       'expo-secure-store',
       'expo-local-authentication',
