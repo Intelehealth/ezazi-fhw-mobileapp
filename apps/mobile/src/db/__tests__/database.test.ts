@@ -10,6 +10,7 @@ import Encounter from '../models/Encounter';
 import Obs from '../models/Obs';
 import Location from '../models/Location';
 import Provider from '../models/Provider';
+import ProviderAttribute from '../models/ProviderAttribute';
 import UuidDictionary from '../models/UuidDictionary';
 import UserCredentials from '../models/UserCredentials';
 
@@ -175,7 +176,7 @@ describe('WatermelonDB Database', () => {
           r.voided      = '0';
           r.sync        = 'false';
         });
-        const attr = await db.get('tbl_provider_attribute').create((r: any) => {
+        const attr = await db.get<ProviderAttribute>('tbl_provider_attribute').create((r) => {
           r.provideruuid      = provider.id;
           r.attributetypeuuid = 'some-type-uuid';
           r.value             = 'Cardiology';

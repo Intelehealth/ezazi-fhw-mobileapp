@@ -142,7 +142,7 @@ export const SplashScreen: React.FC = () => {
           preserveAspectRatio="none"
           width={width}
           height={WAVE_REGION_H}
-          style={StyleSheet.absoluteFill}
+          style={StyleSheet.absoluteFillObject}
         >
           <Path d={wavePaths.splashLight.d} fill={colors.wavePink} fillOpacity={0.39} />
         </Svg>
@@ -152,7 +152,7 @@ export const SplashScreen: React.FC = () => {
           preserveAspectRatio="none"
           width={width}
           height={WAVE_REGION_H}
-          style={StyleSheet.absoluteFill}
+          style={StyleSheet.absoluteFillObject}
         >
           <Path d={wavePaths.splashDark.d} fill={colors.wavePinkDark} fillOpacity={0.39} />
         </Svg>

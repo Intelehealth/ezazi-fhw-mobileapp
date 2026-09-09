@@ -59,7 +59,7 @@ export const WaveHeader: React.FC<WaveHeaderProps> = ({
         preserveAspectRatio="none"
         width={width}
         height={headerH}
-        style={StyleSheet.absoluteFill}
+        style={StyleSheet.absoluteFillObject}
       >
         <Path d={wavePaths.headerTop.d} fill={colors.wavePink} fillOpacity={0.39} />
       </Svg>

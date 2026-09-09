@@ -83,7 +83,7 @@ export const LoginScreen: React.FC = () => {
           preserveAspectRatio="none"
           width={width}
           height={lightWaveH}
-          style={StyleSheet.absoluteFill}
+          style={StyleSheet.absoluteFillObject}
         >
           <Path d={wavePaths.loginLight.d} fill={colors.wavePink} fillOpacity={0.39} />
         </Svg>
@@ -95,7 +95,7 @@ export const LoginScreen: React.FC = () => {
           preserveAspectRatio="none"
           width={width}
           height={darkWaveH}
-          style={StyleSheet.absoluteFill}
+          style={StyleSheet.absoluteFillObject}
         >
           <Path d={wavePaths.loginDark.d} fill={colors.wavePinkDark} fillOpacity={0.39} />
         </Svg>
