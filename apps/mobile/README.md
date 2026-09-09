@@ -23,8 +23,6 @@ eLCG mobile app for the FHW (Frontline Health Worker / Nurse). Built with **Reac
 | Offline DB | **expo-sqlite + Drizzle ORM** (`useLiveQuery` for reactivity) |
 | Build | EAS Build, or a local dev-client build via `npm run android` |
 
-> **Windows note:** native gradle builds need a shortened path — the New-Arch C++ codegen mirrors the repo path under the build dir and blows past Windows' 260-char limit. Run `subst X: "D:\react-native-projects\ezazi-fhw-mobileapp"` and build from `X:\apps\mobile`. Metro and all JS work run from the real path. See [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) §1.
-
 ## Quick start
 
 ```bash
