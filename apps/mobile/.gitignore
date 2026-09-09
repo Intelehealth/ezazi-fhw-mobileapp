@@ -182,3 +182,6 @@ android/
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal, machine-specific notes — never shared with the team
+RUNBOOK.md
