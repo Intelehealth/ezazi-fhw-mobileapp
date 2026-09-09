@@ -12,6 +12,7 @@ export type { TokenProvider, UnauthorizedHandler } from './client/interceptors';
 export { ApiError, NetworkError, ServerError, TimeoutError, UnauthorizedError } from './errors/ApiError';
 export type { ApiErrorKind, ApiErrorOptions } from './errors/ApiError';
 export { mapAxiosError } from './errors/mapAxiosError';
+export { logApiError } from './errors/logApiError';
 
 export { failure, isFailure, isSuccess, success } from './result/ApiResult';
 export type { ApiResult, Failure, Success } from './result/ApiResult';

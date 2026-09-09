@@ -26,7 +26,9 @@ async function refreshAccessToken(): Promise<string | null> {
       if (newRefresh) await secureStorage.set('refreshToken', newRefresh);
       return newAccess ?? null;
     } catch (err) {
-      logger.warn('Token refresh failed', err);
+      // logger.info, not .warn — a failed refresh is handled here (falls back to
+      // unauthenticated) and must never pop React Native's LogBox on screen.
+      logger.info('Token refresh failed', err);
       await secureStorage.clear();
       return null;
     } finally {

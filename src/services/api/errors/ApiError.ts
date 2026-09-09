@@ -7,7 +7,10 @@ export type ApiErrorKind = 'network' | 'timeout' | 'unauthorized' | 'server' | '
 
 export interface ApiErrorOptions {
   status?: number;
+  /** Transport-level code (e.g. 'ECONNABORTED') or the backend's business error code (e.g. 'ACCOUNT_LOCKED'). */
   code?: string;
+  /** Extra machine-readable payload from the backend's error body, e.g. { retryAfterSeconds: 900 }. */
+  details?: unknown;
   cause?: unknown;
 }
 
@@ -15,6 +18,7 @@ export class ApiError extends Error {
   readonly kind: ApiErrorKind;
   readonly status?: number;
   readonly code?: string;
+  readonly details?: unknown;
   readonly cause?: unknown;
 
   constructor(kind: ApiErrorKind, message: string, options: ApiErrorOptions = {}) {
@@ -23,6 +27,7 @@ export class ApiError extends Error {
     this.kind = kind;
     this.status = options.status;
     this.code = options.code;
+    this.details = options.details;
     this.cause = options.cause;
   }
 }

@@ -55,11 +55,18 @@
     "submit": "Setup",
     "tempNavLogin": "Login",
     "tempNavPrivacy": "Privacy Notice",
+    "toastSuccess": "Setup successful",
     "errors": {
       "locationRequired": "Please select the location.",
       "usernameRequired": "Username is required",
       "passwordRequired": "Password is required",
-      "passwordTooShort": "8+ characters required for password"
+      "passwordTooShort": "8+ characters required for password",
+      "invalidCredentials": "Invalid username or password",
+      "accountLocked": "Too many failed attempts. Try again in {{minutes}} minutes.",
+      "accountLockedGeneric": "Too many failed attempts. Please try again later.",
+      "rateLimited": "Too many attempts, please try again later",
+      "networkError": "No internet connection. Please try again.",
+      "genericError": "Something went wrong. Please try again."
     }
   },
   "login": {

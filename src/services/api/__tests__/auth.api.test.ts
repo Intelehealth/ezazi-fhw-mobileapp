@@ -21,10 +21,22 @@ describe('authApi', () => {
     expect(http.get).toHaveBeenCalledWith('/auth/check');
   });
 
-  it('login() POSTs credentials to /auth/login', () => {
-    const body = { username: 'nurse1', password: 'secret' };
-    authApi.login(body);
-    expect(http.post).toHaveBeenCalledWith('/auth/login', body);
+  it('login() POSTs credentials to /auth/login with rememberme hardcoded true', () => {
+    authApi.login({ username: 'nurse1', password: 'secret' });
+    expect(http.post).toHaveBeenCalledWith(
+      '/auth/login',
+      { username: 'nurse1', password: 'secret', rememberme: true },
+      expect.anything(),
+    );
+  });
+
+  it('login() sends a Basic-auth Authorization header encoding username:password', () => {
+    authApi.login({ username: 'nurse1', password: 'secret' });
+    expect(http.post).toHaveBeenCalledWith(
+      '/auth/login',
+      expect.anything(),
+      { headers: { Authorization: 'Basic bnVyc2UxOnNlY3JldA==' } },
+    );
   });
 
   it('requestOtp() POSTs to /auth/requestOtp', () => {

@@ -13,6 +13,13 @@ import { AppIcon, wavePaths } from '@/components/ui/icons';
 import { commonStyles } from '@/components/ui/commonStyles';
 import { colors, dimens } from '@/config/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+import { authApi } from '@/services/api/auth.api';
+import type { ApiError } from '@/services/api/errors/ApiError';
+import { logApiError } from '@/services/api/errors/logApiError';
+import { secureStorage } from '@/services/storage/secure-storage';
+import { useAuthStore } from '@/stores/auth.store';
+import { logger } from '@/utils/logger';
+import { showToast } from '@/utils/toast';
 
 // Parent container padding — setup screen uses 30dp
 const FORM_H_PAD = 30;
@@ -24,11 +31,13 @@ export const SetupScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const { width, isTablet, fs, cornerRadius } = useResponsive();
+  const setAuthenticated = useAuthStore(s => s.setAuthenticated);
 
   const [selectedLocation, setSelectedLocation] = useState('');
   const [username, setUsername]                 = useState('');
   const [password, setPassword]                 = useState('');
   const [errors, setErrors]                     = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting]         = useState(false);
 
   // Header layout is intentionally separate from WaveHeader: no back button,
   // bottom-aligned text, larger tablet title (setup_top_vector.xml).
@@ -62,10 +71,65 @@ export const SetupScreen: React.FC = () => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const handleSetup = () => {
-    if (!validate()) return;
-    // TODO: call setup API — navigate to Login on success
-    navigation.navigate('Login');
+  // ── API error → user-facing message — see api error.tsv for the status/code table ──
+  const getErrorMessage = (error: ApiError): string => {
+    switch (error.code) {
+      case 'INVALID_CREDENTIALS':
+        return t('setup.errors.invalidCredentials');
+      case 'ACCOUNT_LOCKED': {
+        const retryAfterSeconds = (error.details as { retryAfterSeconds?: number } | undefined)?.retryAfterSeconds;
+        return retryAfterSeconds
+          ? t('setup.errors.accountLocked', { minutes: Math.ceil(retryAfterSeconds / 60) })
+          : t('setup.errors.accountLockedGeneric');
+      }
+      case 'RATE_LIMITED':
+        return t('setup.errors.rateLimited');
+      case 'VALIDATION_ERROR':
+        return error.message || t('setup.errors.genericError');
+      default:
+        break;
+    }
+    if (error.kind === 'network' || error.kind === 'timeout') {
+      return t('setup.errors.networkError');
+    }
+    return t('setup.errors.genericError');
+  };
+
+  const handleSetup = async () => {
+    if (!validate() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const result = await authApi.login({ username, password });
+    setIsSubmitting(false);
+
+    if (result.ok) {
+      const { accessToken, refreshToken, sessionId, user, provider } = result.data;
+      await secureStorage.set('accessToken', accessToken);
+      await secureStorage.set('refreshToken', refreshToken);
+      // provider.uuid (not the auth-gateway's own user.uuid) — matches Android's ProviderDAO
+      // identity and the offline DB schema's creatoruuid/provideruuid record-attribution fields.
+      // No role is stored: Android doesn't persist one from login either.
+      await setAuthenticated(provider.uuid, '');
+      // Every user sees this — the only user-facing feedback on success.
+      showToast(t('setup.toastSuccess'));
+
+      // Console-only — never shown on screen. Tokens intentionally omitted.
+      logger.debug('[Setup] Login succeeded', {
+        sessionId,
+        userUuid: user.uuid,
+        username: user.username,
+        roles: user.roles,
+        providerUuid: provider.uuid,
+      });
+    } else {
+      // Every user sees this — the only user-facing feedback on failure.
+      // getErrorMessage() maps to a friendly, translated string; never show
+      // result.error's kind/status/code/message directly to a real user.
+      showToast(getErrorMessage(result.error));
+
+      // Console-only — never shown on screen, in dev or production builds.
+      logApiError('Setup login', result.error);
+    }
   };
 
   const isFormValid =
@@ -198,7 +262,7 @@ export const SetupScreen: React.FC = () => {
       <AppButton
         label={t('setup.submit')}
         onPress={handleSetup}
-        disabled={!isFormValid}
+        disabled={!isFormValid || isSubmitting}
         showArrow
       />
     </FormScreenLayout>
