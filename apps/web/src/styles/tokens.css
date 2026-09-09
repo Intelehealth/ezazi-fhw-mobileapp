@@ -1,0 +1,8 @@
+/* Minimal design tokens — expand as modules/components are migrated. */
+:root {
+  --color-primary: #0b6e4f;
+  --color-dark: #1a1a1a;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-app-bg: #f9fafb;
+}
