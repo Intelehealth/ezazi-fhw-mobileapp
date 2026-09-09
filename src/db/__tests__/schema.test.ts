@@ -36,9 +36,9 @@ describe('WatermelonDB Schema', () => {
     const cols = schema.tables['tbl_patient'].columns;
     const names = () => Object.keys(cols);
 
-    it('has all 25 Android columns', () => {
+    it('has all 26 Android columns', () => {
       const expected = [
-        'openmrs_id', 'first_name', 'middle_name', 'last_name',
+        'uuid', 'openmrs_id', 'first_name', 'middle_name', 'last_name',
         'date_of_birth', 'phone_number', 'address1', 'address2',
         'city_village', 'state_province', 'postal_code', 'country',
         'gender', 'sdw', 'creatoruuid', 'occupation', 'patient_photo',
@@ -113,8 +113,8 @@ describe('WatermelonDB Schema', () => {
       expect(cols['retired'].type).toBe('number');
     });
 
-    it('does NOT have a locationuuid column (it is the WatermelonDB id)', () => {
-      expect(cols['locationuuid']).toBeUndefined();
+    it('has a locationuuid column (Android PRIMARY KEY)', () => {
+      expect(cols['locationuuid']).toBeDefined();
     });
   });
 
@@ -131,9 +131,9 @@ describe('WatermelonDB Schema', () => {
   describe('tbl_uuid_dictionary columns', () => {
     const cols = schema.tables['tbl_uuid_dictionary'].columns;
 
-    it('has only name column (uuid is the WatermelonDB id)', () => {
+    it('has uuid (Android PRIMARY KEY) and name columns', () => {
       expect(cols['name']).toBeDefined();
-      expect(cols['uuid']).toBeUndefined();
+      expect(cols['uuid']).toBeDefined();
     });
   });
 

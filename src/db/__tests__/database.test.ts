@@ -149,18 +149,17 @@ describe('WatermelonDB Database', () => {
     });
   });
 
-  describe('Location (locationuuid as id)', () => {
-    it('stores locationuuid as WatermelonDB id', async () => {
+  describe('Location (locationuuid column)', () => {
+    it('stores locationuuid as its own column', async () => {
       const locationUuid = 'loc-uuid-1234';
       const loc = await db.write(async () =>
         db.get<Location>('tbl_location').create((r) => {
-          r._raw.id    = locationUuid;
-          r.name       = 'District Hospital';
-          r.voided     = '0';
-          r.sync       = 'false';
+          r.locationuuid = locationUuid;
+          r.name         = 'District Hospital';
+          r.voided       = '0';
+          r.sync         = 'false';
         }),
       );
-      expect(loc.id).toBe(locationUuid);
       expect(loc.locationuuid).toBe(locationUuid);
       expect(loc.name).toBe('District Hospital');
     });
@@ -188,15 +187,14 @@ describe('WatermelonDB Database', () => {
   });
 
   describe('UuidDictionary seed data', () => {
-    it('stores uuid as WatermelonDB id', async () => {
+    it('stores uuid as its own column', async () => {
       const uuid = '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
       const entry = await db.write(async () =>
         db.get<UuidDictionary>('tbl_uuid_dictionary').create((r) => {
-          r._raw.id = uuid;
-          r.name    = 'HEIGHT';
+          r.uuid = uuid;
+          r.name = 'HEIGHT';
         }),
       );
-      expect(entry.id).toBe(uuid);
       expect(entry.uuid).toBe(uuid);
       expect(entry.name).toBe('HEIGHT');
     });
@@ -205,7 +203,7 @@ describe('WatermelonDB Database', () => {
       const uuid = '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
       await db.write(async () =>
         db.get<UuidDictionary>('tbl_uuid_dictionary').create((r) => {
-          r._raw.id = uuid; r.name = 'WEIGHT';
+          r._raw.id = uuid; r.uuid = uuid; r.name = 'WEIGHT';
         }),
       );
       const all = await db.get<UuidDictionary>('tbl_uuid_dictionary').query().fetch();

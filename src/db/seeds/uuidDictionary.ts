@@ -115,6 +115,7 @@ export async function seedUuidDictionary(): Promise<void> {
       .map((entry) =>
         collection.prepareCreateFromDirtyRaw({
           id: entry.uuid,
+          uuid: entry.uuid,
           name: entry.name,
         }),
       );

@@ -13,6 +13,7 @@ export default class Encounter extends Model {
     tbl_obs:   { type: 'has_many'   as const, foreignKey: 'encounteruuid' },
   };
 
+  @field('uuid')                uuid!: string;   // PRIMARY KEY in Android
   @field('visituuid')           visituuid!: string;
   @field('encounter_time')      encounter_time!: string;
   @field('provider_uuid')       provider_uuid!: string;

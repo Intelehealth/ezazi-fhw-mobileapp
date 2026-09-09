@@ -10,6 +10,7 @@ export default class ImageRecord extends Model {
     tbl_patient: { type: 'belongs_to' as const, key: 'patientuuid' },
   };
 
+  @field('uuid')          uuid!: string;   // PRIMARY KEY in Android
   @field('patientuuid')   patientuuid!: string;
   @field('visituuid')     visituuid!: string;
   @field('encounteruuid') encounteruuid!: string;

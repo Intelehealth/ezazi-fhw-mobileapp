@@ -10,6 +10,7 @@ export default class VisitAttribute extends Model {
     tbl_visit: { type: 'belongs_to' as const, key: 'visit_uuid' },
   };
 
+  @field('uuid')                      uuid!: string;   // PRIMARY KEY in Android
   @field('visit_uuid')                visit_uuid!: string;
   @field('value')                     value!: string;
   @field('visit_attribute_type_uuid') visit_attribute_type_uuid!: string;

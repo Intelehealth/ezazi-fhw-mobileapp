@@ -15,6 +15,7 @@ export default class Patient extends Model {
     tbl_image_records:     { type: 'has_many' as const, foreignKey: 'patientuuid' },
   };
 
+  @field('uuid')              uuid!: string;   // PRIMARY KEY in Android
   @field('openmrs_id')       openmrs_id!: string;
   @field('first_name')       first_name!: string;
   @field('middle_name')      middle_name!: string;

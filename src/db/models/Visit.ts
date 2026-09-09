@@ -17,6 +17,7 @@ export default class Visit extends Model {
     tbl_encounter:       { type: 'has_many' as const, foreignKey: 'visituuid' },
   };
 
+  @field('uuid')            uuid!: string;   // PRIMARY KEY in Android
   @field('patientuuid')     patientuuid!: string;
   @field('startdate')       startdate!: string;
   @field('enddate')         enddate!: string;

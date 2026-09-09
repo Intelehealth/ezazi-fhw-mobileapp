@@ -7,6 +7,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_patient',
       columns: [
+        { name: 'uuid',             type: 'string' },   // PRIMARY KEY in Android
         { name: 'openmrs_id',       type: 'string', isOptional: true },
         { name: 'first_name',       type: 'string', isOptional: true },
         { name: 'middle_name',      type: 'string', isOptional: true },
@@ -38,6 +39,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_patient_attribute',
       columns: [
+        { name: 'uuid',                        type: 'string' },   // PRIMARY KEY in Android
         { name: 'value',                       type: 'string', isOptional: true },
         { name: 'person_attribute_type_uuid',  type: 'string', isOptional: true },
         { name: 'patientuuid',                 type: 'string', isOptional: true },
@@ -50,6 +52,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_patient_attribute_master',
       columns: [
+        { name: 'uuid',          type: 'string' },   // PRIMARY KEY in Android
         { name: 'name',          type: 'string', isOptional: true },
         { name: 'modified_date', type: 'string', isOptional: true },
         { name: 'voided',        type: 'string' },
@@ -60,6 +63,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_visit',
       columns: [
+        { name: 'uuid',            type: 'string' },   // PRIMARY KEY in Android
         { name: 'patientuuid',     type: 'string', isOptional: true },
         { name: 'startdate',       type: 'string', isOptional: true },
         { name: 'enddate',         type: 'string', isOptional: true },
@@ -77,6 +81,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_visit_attribute',
       columns: [
+        { name: 'uuid',                      type: 'string' },   // PRIMARY KEY in Android
         { name: 'visit_uuid',                type: 'string', isOptional: true },
         { name: 'value',                     type: 'string', isOptional: true },
         { name: 'visit_attribute_type_uuid', type: 'string', isOptional: true },
@@ -88,6 +93,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_encounter',
       columns: [
+        { name: 'uuid',                type: 'string' },   // PRIMARY KEY in Android
         { name: 'visituuid',           type: 'string', isOptional: true },
         { name: 'encounter_time',      type: 'string', isOptional: true },
         { name: 'provider_uuid',       type: 'string', isOptional: true },
@@ -102,6 +108,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_obs',
       columns: [
+        { name: 'uuid',                   type: 'string' },   // PRIMARY KEY in Android
         { name: 'encounteruuid',         type: 'string', isOptional: true },
         { name: 'conceptuuid',           type: 'string', isOptional: true },
         { name: 'value',                 type: 'string', isOptional: true },
@@ -116,11 +123,13 @@ export const schema = appSchema({
       ],
     }),
 
-    // PK in Android is locationuuid — mapped to WatermelonDB id
+    // All the facility locations will be added in this table, and as per the
+    // location selected in the visit table, will insert the location uuid.
     tableSchema({
       name: 'tbl_location',
       columns: [
         { name: 'name',          type: 'string', isOptional: true },
+        { name: 'locationuuid',  type: 'string' },   // PRIMARY KEY in Android
         { name: 'retired',       type: 'number', isOptional: true },   // integer(10)
         { name: 'modified_date', type: 'string', isOptional: true },
         { name: 'voided',        type: 'string' },
@@ -131,6 +140,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_provider',
       columns: [
+        { name: 'uuid',          type: 'string' },   // PRIMARY KEY in Android
         { name: 'identifier',    type: 'string', isOptional: true },
         { name: 'given_name',    type: 'string', isOptional: true },
         { name: 'family_name',   type: 'string', isOptional: true },
@@ -145,6 +155,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_provider_attribute',
       columns: [
+        { name: 'uuid',              type: 'string' },   // PRIMARY KEY in Android
         { name: 'provideruuid',      type: 'string', isOptional: true },
         { name: 'attributetypeuuid', type: 'string', isOptional: true },
         { name: 'value',             type: 'string', isOptional: true },
@@ -155,6 +166,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_dr_speciality',
       columns: [
+        { name: 'uuid',              type: 'string' },   // PRIMARY KEY in Android
         { name: 'provideruuid',      type: 'string', isOptional: true },
         { name: 'attributetypeuuid', type: 'string', isOptional: true },
         { name: 'value',             type: 'string', isOptional: true },   // UNIQUE in Android
@@ -165,6 +177,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_uuid_dictionary',
       columns: [
+        { name: 'uuid', type: 'string' },   // PRIMARY KEY in Android
         { name: 'name', type: 'string', isOptional: true },
       ],
     }),
@@ -172,6 +185,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_image_records',
       columns: [
+        { name: 'uuid',           type: 'string' },   // PRIMARY KEY in Android
         { name: 'patientuuid',    type: 'string', isOptional: true },
         { name: 'visituuid',      type: 'string', isOptional: true },
         { name: 'encounteruuid',  type: 'string', isOptional: true },
@@ -198,6 +212,7 @@ export const schema = appSchema({
     tableSchema({
       name: 'tbl_rtc_connection_log',
       columns: [
+        { name: 'uuid',            type: 'string' },   // PRIMARY KEY in Android
         { name: 'visit_uuid',      type: 'string', isOptional: true },
         { name: 'connection_info', type: 'string', isOptional: true },
       ],

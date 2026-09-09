@@ -10,6 +10,7 @@ export default class PatientAttribute extends Model {
     tbl_patient: { type: 'belongs_to' as const, key: 'patientuuid' },
   };
 
+  @field('uuid')                       uuid!: string;   // PRIMARY KEY in Android
   @field('value')                      value!: string;
   @field('person_attribute_type_uuid') person_attribute_type_uuid!: string;
   @field('patientuuid')                patientuuid!: string;

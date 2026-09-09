@@ -13,6 +13,7 @@ export default class Provider extends Model {
     tbl_dr_speciality:      { type: 'has_many' as const, foreignKey: 'provideruuid' },
   };
 
+  @field('uuid')          uuid!: string;   // PRIMARY KEY in Android
   @field('identifier')    identifier!: string;
   @field('given_name')    given_name!: string;
   @field('family_name')   family_name!: string;

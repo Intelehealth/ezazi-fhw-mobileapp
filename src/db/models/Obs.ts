@@ -10,6 +10,7 @@ export default class Obs extends Model {
     tbl_encounter: { type: 'belongs_to' as const, key: 'encounteruuid' },
   };
 
+  @field('uuid')                    uuid!: string;   // PRIMARY KEY in Android
   @field('encounteruuid')          encounteruuid!: string;
   @field('conceptuuid')            conceptuuid!: string;
   @field('value')                  value!: string;
