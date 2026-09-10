@@ -25,7 +25,7 @@ export const NEPAL_CLIENT_CONFIG: ClientConfig = {
   },
   servers: {
     development: {
-      authGatewayUrl: 'http://localhost:3001',
+      authGatewayUrl: 'https://erevamp.intelehealth.org:3030',
       portalUrl: 'http://localhost:3002',
       webrtcUrl: 'http://localhost:3003',
       configUrl: 'http://localhost:3004',
