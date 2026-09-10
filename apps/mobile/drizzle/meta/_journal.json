@@ -8,6 +8,13 @@
       "when": 1788969943386,
       "tag": "0000_tiny_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789035855469,
+      "tag": "0001_kind_blue_blade",
+      "breakpoints": true
     }
   ]
 }

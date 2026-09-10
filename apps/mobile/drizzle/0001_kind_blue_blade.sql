@@ -1,0 +1,23 @@
+CREATE INDEX `idx_tbl_dr_speciality_provideruuid` ON `tbl_dr_speciality` (`provideruuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_encounter_visituuid` ON `tbl_encounter` (`visituuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_encounter_sync` ON `tbl_encounter` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_image_records_patientuuid` ON `tbl_image_records` (`patientuuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_image_records_visituuid` ON `tbl_image_records` (`visituuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_image_records_encounteruuid` ON `tbl_image_records` (`encounteruuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_image_records_sync` ON `tbl_image_records` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_location_sync` ON `tbl_location` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_obs_encounteruuid` ON `tbl_obs` (`encounteruuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_obs_conceptuuid` ON `tbl_obs` (`conceptuuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_obs_sync` ON `tbl_obs` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_patient_sync` ON `tbl_patient` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_patient_attribute_patientuuid` ON `tbl_patient_attribute` (`patientuuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_patient_attribute_sync` ON `tbl_patient_attribute` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_patient_attribute_master_sync` ON `tbl_patient_attribute_master` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_provider_sync` ON `tbl_provider` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_provider_attribute_provideruuid` ON `tbl_provider_attribute` (`provideruuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_rtc_connection_log_visit_uuid` ON `tbl_rtc_connection_log` (`visit_uuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_visit_patientuuid` ON `tbl_visit` (`patientuuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_visit_locationuuid` ON `tbl_visit` (`locationuuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_visit_sync` ON `tbl_visit` (`sync`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_visit_attribute_visit_uuid` ON `tbl_visit_attribute` (`visit_uuid`);--> statement-breakpoint
+CREATE INDEX `idx_tbl_visit_attribute_sync` ON `tbl_visit_attribute` (`sync`);
