@@ -218,8 +218,25 @@ export const rtcConnectionLog = sqliteTable('tbl_rtc_connection_log', {
   index('idx_tbl_rtc_connection_log_visit_uuid').on(table.visit_uuid),
 ]);
 
+/**
+ * Local DB-lifecycle bookkeeping — a single row, always `id = 1`.
+ *
+ * Never synced (hence no `sync`/`voided` columns), and deliberately NOT the
+ * schema version: Drizzle's own journal owns that, so a future migration must
+ * never re-trigger hydration. See ARCHITECTURE_RULES §6 "DB lifecycle".
+ */
+export const appState = sqliteTable('tbl_app_state', {
+  id: integer('id').primaryKey(),
+  hydration_state: text('hydration_state').notNull().default('pending'),
+  hydration_attempts: integer('hydration_attempts').notNull().default(0),
+  last_error: text('last_error'),
+  staged_manifest: text('staged_manifest'),
+  updated_at: text('updated_at'),
+});
+
 /** All tables, for `drizzle(expoDb, { schema })` and drizzle-kit. */
 export const schema = {
+  appState,
   patient,
   patientAttribute,
   patientAttributeMaster,
@@ -238,6 +255,7 @@ export const schema = {
 };
 
 // Inferred row types (replace the old WatermelonDB Model classes).
+export type AppState = typeof appState.$inferSelect;
 export type Patient = typeof patient.$inferSelect;
 export type PatientAttribute = typeof patientAttribute.$inferSelect;
 export type PatientAttributeMaster = typeof patientAttributeMaster.$inferSelect;

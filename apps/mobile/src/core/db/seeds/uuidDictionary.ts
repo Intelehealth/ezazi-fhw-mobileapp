@@ -1,4 +1,4 @@
-import { db } from '../index';
+import { getDb } from '../index';
 import { uuidDictionary } from '../schema';
 
 // All entries from InteleHealthDatabaseHelper.uuidInsert() — exact UUIDs and names
@@ -105,5 +105,5 @@ const UUID_ENTRIES: { uuid: string; name: string }[] = [
 
 export async function seedUuidDictionary(): Promise<void> {
   // INSERT OR IGNORE on the uuid PK — idempotent, matches Android's non-duplicating insert.
-  await db.insert(uuidDictionary).values(UUID_ENTRIES).onConflictDoNothing();
+  await getDb().insert(uuidDictionary).values(UUID_ENTRIES).onConflictDoNothing();
 }
