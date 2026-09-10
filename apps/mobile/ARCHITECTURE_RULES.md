@@ -101,7 +101,17 @@ Before adding/bumping any native package: (1) check **reactnative.directory** fo
 - **`z.guid()`, never `z.uuid()`.** zod v4's `uuid()` **rejects** OpenMRS/Java UUIDs. Every UUID field in every schema uses `z.guid()`. (zod v4 also: issues are on `err.issues`; use `.prefault()` for input-typed defaults.)
 - **`openDatabaseSync('localrecords.db', { enableChangeListener: true })` is mandatory** — without it Drizzle's `useLiveQuery` never updates.
 - **`useLiveQuery` is component-only.** In the sync engine and in stores use `addDatabaseChangeListener` instead. Known bug: `useLiveQuery` can miss JOINed / `with:` changes — prefer per-table live queries.
-- **drizzle-kit: `generate` only — never `migrate` or `push`.** Migrations are generated into `apps/mobile/drizzle/` and applied on-device via `useMigrations`.
+- **drizzle-kit: `generate` only — never `migrate` or `push`.** Migrations are generated into `apps/mobile/drizzle/` and applied **on device by the post-auth bootstrap**, never by drizzle-kit.
+- **Every table is indexed** on its FK/lookup columns plus the `sync` dirty flag (23 indexes, migration `0001`). The one place they cost you is bulk insert: if the initial data load is slow, drop → insert → recreate inside the same transaction rather than deleting them outright.
+
+### DB lifecycle (locked)
+
+- **The database is created only after authentication.** No session token → it is not created, not opened, not touched. `core/db` therefore exposes a **lazy, memoised, invalidatable** handle: opening at module import time is a bug, because merely *importing* `db` would create `localrecords.db` for a logged-out user. Schema init and the initial data pull are driven from the **Home screen** (matching the native Android flow), via a store — screens may not import `core/db` directly.
+- **Schema init and data hydration are separate phases with opposite failure policies.** Schema (migrations + static seeds) is idempotent and freely retryable. **Initial hydration is atomic** — one transaction, so a failure or an app kill rolls the data back and keeps the schema. **Incremental sync is the opposite:** idempotent upsert-by-uuid, resumable, never rolled back. Do not let hydration's rollback logic leak into incremental sync.
+- **Logout destroys the local store**, in this order: cancel in-flight sync → close the connection → delete the database **via expo-sqlite's delete API** (never plain filesystem deletion: SQLite leaves `-wal`/`-shm` sidecars, and removing only the `.db` can leave a fresh database picking up a stale WAL) → delete any staged payload files, which hold clinical data → invalidate the memoised handle. A second provider on the same device therefore starts clean.
+- **SQLite has a single writer.** Async DB APIs do **not** make writes parallel — concurrent writers serialise at best and throw `SQLITE_BUSY` at worst. "Async" here means "does not block the JS thread", never "concurrent".
+- **Rows arriving from the server are written with `sync = 'true'`**, or the push engine will try to re-upload the entire initial pull.
+- **`tbl_user_credentials` is unused.** It exists only because it existed in the native Android app; its purpose is not documented and **nothing is designed around it**. Do not infer one.
 
 ## 7. White-label boundary (what may / may not differ per client)
 

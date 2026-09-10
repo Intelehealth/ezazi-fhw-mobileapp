@@ -28,7 +28,9 @@ Offline-first Expo/React Native app for frontline health workers (clinical data)
 7. **`android/` is generated** by `expo prebuild` — never hand-edit it (edits are wiped). Native config goes through `app.config.js` plugins.
 8. **Gradle-layer failure → regenerate native** (`npx expo prebuild --clean -p android`). **Metro/npm resolution failure → reinstall `node_modules`.** Different layers; never cross the fixes.
 9. **Clinical data lives in the DB** (Drizzle live queries), never in Zustand. Forms are RHF + zod, never `useState`.
-10. **One sync seam** — features never call sync/API endpoints directly; go through repositories and `src/db/sync`.
+10. **One sync seam** — features never call sync/API endpoints directly; go through repositories and `src/core/db/sync`.
+11. **The DB is created only after login** — `core/db` opens **lazily** (memoised, invalidatable). Opening at import time silently creates `localrecords.db` for logged-out users. Logout deletes the DB via expo-sqlite's delete API; plain file deletion leaves `-wal`/`-shm` behind. See ARCHITECTURE_RULES §6 "DB lifecycle".
+12. **SQLite has a single writer** — async APIs do not parallelise writes; concurrent writers give `SQLITE_BUSY`. "Async" means "doesn't block the JS thread".
 
 ## Where to look (read only what the task needs)
 
