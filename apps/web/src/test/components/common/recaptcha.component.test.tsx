@@ -16,7 +16,9 @@ describe('RecaptchaComponent', () => {
     render(<RecaptchaComponent siteKey="test-site-key" onChange={vi.fn()} />);
 
     expect(render_).toHaveBeenCalledTimes(1);
-    expect(render_.mock.calls[0][1]).toMatchObject({ sitekey: 'test-site-key' });
+    expect(render_.mock.calls[0][1]).toMatchObject({
+      sitekey: 'test-site-key',
+    });
   });
 
   it('calls onChange with the token when the widget callback fires', () => {
@@ -61,5 +63,63 @@ describe('RecaptchaComponent', () => {
     window.__onGrecaptchaLoad?.();
 
     expect(render_).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onChange with null when the widget reports the token expired', () => {
+    const onChange = vi.fn();
+    window.grecaptcha = {
+      render: (_container, params: Record<string, unknown>) => {
+        (params['expired-callback'] as () => void)();
+        return 1;
+      },
+    };
+
+    render(<RecaptchaComponent siteKey="test-site-key" onChange={onChange} />);
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('does not render a second widget if the onload callback ever fires again', () => {
+    // grecaptcha is NOT pre-loaded here (unlike the other tests), so the
+    // effect registers this instance's own renderWidget as
+    // window.__onGrecaptchaLoad — calling it twice must only render once.
+    const render_ = vi.fn().mockReturnValue(1);
+
+    render(<RecaptchaComponent siteKey="test-site-key" onChange={vi.fn()} />);
+
+    window.grecaptcha = { render: render_ };
+    window.__onGrecaptchaLoad?.();
+    expect(render_).toHaveBeenCalledTimes(1);
+
+    window.__onGrecaptchaLoad?.();
+    expect(render_).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes its onload callback on unmount so it cannot fire against an unmounted instance', () => {
+    const { unmount } = render(
+      <RecaptchaComponent siteKey="test-site-key" onChange={vi.fn()} />
+    );
+
+    expect(window.__onGrecaptchaLoad).toBeTypeOf('function');
+
+    unmount();
+
+    expect(window.__onGrecaptchaLoad).toBeUndefined();
+  });
+
+  it('leaves a newer onload callback alone when an older instance unmounts after being superseded', () => {
+    // Both mount before grecaptcha loads: the second instance's effect
+    // overwrites window.__onGrecaptchaLoad with its own renderWidget. The
+    // first instance's cleanup must then see it no longer owns that
+    // callback and leave the second instance's callback in place.
+    const first = render(
+      <RecaptchaComponent siteKey="test-site-key" onChange={vi.fn()} />
+    );
+    render(<RecaptchaComponent siteKey="test-site-key" onChange={vi.fn()} />);
+    const secondCallback = window.__onGrecaptchaLoad;
+
+    first.unmount();
+
+    expect(window.__onGrecaptchaLoad).toBe(secondCallback);
   });
 });

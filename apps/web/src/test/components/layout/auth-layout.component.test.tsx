@@ -1,5 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import {
+  createMemoryRouter,
+  MemoryRouter,
+  RouterProvider,
+} from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { AuthLayoutComponent } from '../../../components/layout/auth-layout.component';
 import { clientConfig } from '../../../config/clients';
@@ -32,5 +36,26 @@ describe('AuthLayoutComponent', () => {
     );
 
     expect(screen.getByTestId('routed-content')).toBeInTheDocument();
+  });
+
+  it('renders a nested route via Outlet when no children are passed', async () => {
+    const router = createMemoryRouter(
+      [
+        {
+          element: <AuthLayoutComponent />,
+          children: [
+            {
+              index: true,
+              element: <p data-testid="outlet-content">from outlet</p>,
+            },
+          ],
+        },
+      ],
+      { initialEntries: ['/'] }
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByTestId('outlet-content')).toBeInTheDocument();
   });
 });

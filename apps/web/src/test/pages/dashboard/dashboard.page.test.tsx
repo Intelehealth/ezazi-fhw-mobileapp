@@ -56,6 +56,21 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Logged in as unknown user.')).toBeInTheDocument();
   });
 
+  it('falls back to the username when the signed-in user has no display name', () => {
+    // displayName is typed as required on AuthUser, but the fallback chain
+    // exists defensively for data the backend doesn't strictly guarantee —
+    // the cast below constructs exactly that "missing at runtime" case.
+    mockAuthState({
+      ...USER,
+      displayName: undefined as unknown as string,
+    });
+    vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
+
+    render(<DashboardPage />);
+
+    expect(screen.getByText('Logged in as doctor1.')).toBeInTheDocument();
+  });
+
   it('dispatches logout() on button click', async () => {
     mockAuthState(USER);
     const dispatch = vi.fn();

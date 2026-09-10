@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { RouteErrorBoundary } from '../../../components/common/route-error-boundary.component';
@@ -58,5 +59,37 @@ describe('RouteErrorBoundary', () => {
     expect(
       screen.getByRole('button', { name: 'Go to home' })
     ).toBeInTheDocument();
+  });
+
+  it('navigates to the root route when "Go to home" is clicked', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const router = createMemoryRouter(
+      [
+        { path: '/', element: <p>Home</p> },
+        {
+          path: '/broken',
+          element: <ThrowingPage />,
+          errorElement: <RouteErrorBoundary />,
+        },
+      ],
+      { initialEntries: ['/broken'] }
+    );
+    render(<RouterProvider router={router} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Go to home' }));
+
+    expect(await screen.findByText('Home')).toBeInTheDocument();
+  });
+
+  it('falls back to a generic message for a thrown value that is neither an Error nor a route Response', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    function ThrowNonError(): never {
+      throw 'just a string';
+    }
+
+    renderWithError(<ThrowNonError />);
+
+    expect(screen.getByText('Something went wrong.')).toBeInTheDocument();
   });
 });
