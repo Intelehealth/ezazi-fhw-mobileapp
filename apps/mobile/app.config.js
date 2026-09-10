@@ -41,11 +41,6 @@ module.exports = {
     orientation: 'portrait',
     userInterfaceStyle: 'light',
     icon: client.icon,
-    splash: {
-      image: client.splashImage,
-      resizeMode: 'contain',
-      backgroundColor: '#FFFFFF',
-    },
     ios: {
       supportsTablet: false,
       bundleIdentifier: 'org.intelehealth.ezazi',
@@ -77,6 +72,16 @@ module.exports = {
       ],
     },
     plugins: [
+      [
+        'expo-splash-screen',
+        {
+          image: client.splashImage,
+          resizeMode: 'contain',
+          backgroundColor: '#FFFFFF',
+        },
+      ],
+      'expo-asset',
+      'expo-sqlite',
       'expo-localization',
       'expo-secure-store',
       'expo-local-authentication',

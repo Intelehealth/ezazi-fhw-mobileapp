@@ -1,21 +1,15 @@
-import { Database } from '@nozbe/watermelondb';
-import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
+import { drizzle } from 'drizzle-orm/expo-sqlite';
+import { openDatabaseSync } from 'expo-sqlite';
 
 import { schema } from './schema';
-import { migrations } from './migrations';
-import { modelClasses } from './models';
 
-const adapter = new SQLiteAdapter({
-  schema,
-  migrations,
-  dbName: 'localrecords',
-  jsi: true,
-  onSetUpError: (error) => {
-    console.error('[WatermelonDB] setup error', error);
-  },
-});
+/**
+ * Local offline store (replaces the WatermelonDB `localrecords` database).
+ * `enableChangeListener: true` is REQUIRED — Drizzle's `useLiveQuery` reactivity
+ * depends on expo-sqlite's change listener. Reactive reads outside React (the
+ * sync engine, stores) should use `addDatabaseChangeListener`, not `useLiveQuery`.
+ */
+const expoDb = openDatabaseSync('localrecords.db', { enableChangeListener: true });
 
-export const database = new Database({
-  adapter,
-  modelClasses,
-});
+export const db = drizzle(expoDb, { schema });
+export { schema };

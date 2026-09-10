@@ -13,9 +13,14 @@ import { AppIcon, wavePaths } from '@/components/ui/icons';
 import { commonStyles } from '@/components/ui/commonStyles';
 import { colors, dimens } from '@/config/theme';
 import { useResponsive } from '@/hooks/useResponsive';
+/* eslint-disable boundaries/dependencies -- KNOWN DEBT: this screen talks to the
+   auth API directly. Per CLAUDE.md / ARCHITECTURE_RULES §4 it must move behind a
+   repository or store before the sync engine lands. Do NOT copy this pattern into
+   a new screen — the boundary rule will (correctly) reject it. */
 import { authApi } from '@/services/api/auth.api';
 import type { ApiError } from '@/services/api/errors/ApiError';
 import { logApiError } from '@/services/api/errors/logApiError';
+/* eslint-enable boundaries/dependencies */
 import { secureStorage } from '@/services/storage/secure-storage';
 import { useAuthStore } from '@/stores/auth.store';
 import { logger } from '@/utils/logger';

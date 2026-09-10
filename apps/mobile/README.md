@@ -1,12 +1,14 @@
 # ezazi-fhw-mobileapp
 
-eLCG mobile app for the FHW (Frontline Health Worker / Nurse). Built with **React Native + Expo SDK 51 + TypeScript strict**.
+eLCG mobile app for the FHW (Frontline Health Worker / Nurse). Built with **React Native + Expo SDK 57 + TypeScript strict**, on the **New Architecture**.
 
-## Tech stack (Phase 1 locked)
+## Tech stack
+
+> Authoritative versions & rules: [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) · folder structure & the "why": [`MOBILE_STACK.md`](MOBILE_STACK.md).
 
 | Concern | Choice |
 |---|---|
-| Framework | React Native 0.74 + Expo SDK 51 (managed) |
+| Framework | React Native 0.86 + Expo SDK 57 — **New Architecture**, custom dev client (not Expo Go) |
 | Language | TypeScript strict |
 | Navigation | React Navigation (native-stack + bottom-tabs) |
 | State | Zustand |
@@ -18,9 +20,8 @@ eLCG mobile app for the FHW (Frontline Health Worker / Nurse). Built with **Reac
 | i18n | i18next + react-i18next + expo-localization |
 | Calendar | nepali-date-converter (BS) + dayjs (AD) |
 | Testing | Jest + @testing-library/react-native (jest-expo preset) |
-| Build | EAS Build |
-
-Deferred to later sprints: WatermelonDB (offline DB) — added when patient module starts.
+| Offline DB | **expo-sqlite + Drizzle ORM** (`useLiveQuery` for reactivity) |
+| Build | EAS Build, or a local dev-client build via `npm run android` |
 
 ## Quick start
 
