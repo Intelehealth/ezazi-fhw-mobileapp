@@ -1,6 +1,6 @@
 # Restructure Plan — flat `src/` → feature-modular (`core/` + `features/`)
 
-> **Status:** not started · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
+> **Status:** Phase 0 done · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
 >
 > Executes the target layout in [`MOBILE_STACK.md`](MOBILE_STACK.md) §2, which is a **roadmap** until this
 > plan completes. Behaviour must not change: this is `git mv` + import rewrites, with `tsc`,
@@ -19,7 +19,7 @@
 - **One hard-coded path escapes the alias:** `drizzle.config.ts` → `schema: './src/db/schema.ts'` (Phase 1g).
 - **Stop Metro during Phase 1–3.** Large moves outrun Fast Refresh; restart with `-c` at Phase 5.
 
-## Phase 0 — Close the six gaps in MOBILE_STACK §2  ☐
+## Phase 0 — Close the six gaps in MOBILE_STACK §2  ☑ DONE
 
 §2's tree has no home for six things that exist in `src/` today. Settled (2026-09-10):
 
@@ -36,7 +36,9 @@ Also: `config/clients/*` moves to `core/config/clients/` **as-is**. Replacing it
 separate open item (ARCHITECTURE_RULES §10) — do not conflate the two.
 `types/process.d.ts` is ambient; leave it at `src/types/`.
 
-**Deliverable:** MOBILE_STACK §2 updated with these six. No code moves.
+**Deliverable:** MOBILE_STACK §2 updated with these six (new §2.1 records them; the tree now shows
+`core/services/storage`, `core/ui/hooks`, `core/ui/ThemeContext.tsx`, `core/config`, `features/home`, and
+`types/` as ambient-only). §8 gained a `HomeActivity → features/home` row. **No code moved.**
 
 ## Phase 1 — Build `core/`, most-depended-upon first  ☐
 

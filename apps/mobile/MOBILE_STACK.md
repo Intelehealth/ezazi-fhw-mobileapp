@@ -32,15 +32,42 @@ ezazi-monorepo/
 │           │   │   └── sync/         #   the SINGLE sync engine (owns EMR-Middleware pull/push)
 │           │   ├── services/         #   long-lived singletons via hooks:
 │           │   │   ├── livekit/ (useCall) · socket/ (useChat) · fcm/ · firebase/
+│           │   │   └── storage/      #   secure-store (JWT) + async-storage wrappers
 │           │   ├── ui/               #   RN design-system primitives (AppButton, …)
+│           │   │   ├── hooks/        #   UI/layout hooks (useResponsive)
+│           │   │   └── ThemeContext.tsx  # the design system's own provider
+│           │   ├── config/           #   env · theme · clients/ · app-wide remote config
 │           │   ├── i18n/ · utils/    #   locales, logger, calendar (BS/AD)
 │           │   └── api/              #   thin mobile adapter over @ezazi/api-client (auth token, storage)
 │           ├── features/             # one folder per feature; MIRRORS legacy modules (§8)
 │           │   ├── auth/
 │           │   │   ├── screens/ components/ stores/ data/ domain/
+│           │   ├── home/             #   post-login landing (legacy HomeActivity)
 │           │   ├── patient/ · visit/ · labour-care-guide/ · postpartum/ · prescription/ · teleconsult/
-│           └── navigation/           # auth-gated root + per-feature navigators
+│           ├── navigation/           # auth-gated root + per-feature navigators
+│           └── types/                # ambient declarations only (process.d.ts)
 ```
+
+### 2.1 Settled placements (Phase 0, 2026-09-10)
+
+Six things exist in the flat `src/` that the tree above previously had no home for. Decided once, here, so
+they do not become ad-hoc calls mid-move. Tracked in [`RESTRUCTURE_PLAN.md`](RESTRUCTURE_PLAN.md).
+
+| Today | Home | Why |
+|---|---|---|
+| `services/storage/` | `core/services/storage/` | Core infra — `core/api` depends on it for the JWT. Widens `core/services` beyond the native singletons. |
+| `context/ThemeContext.tsx` | `core/ui/` | It is the design system's own provider, not app-level plumbing. |
+| `hooks/useResponsive.ts` | `core/ui/hooks/` | Layout hook; every inbound edge comes from UI. |
+| `config/env.ts` · `config/theme.ts` | `core/config/` | Read by screens and components alike — must sit where any feature may import it. |
+| `screens/home/HomeScreen.tsx` | `features/home/` | Adds `home` to the feature list (§8). |
+| `stores/featureConfig.store.ts` · `services/api/config.api.ts` · `types/config.types.ts` | `core/config/` | App-wide published config — consumed by navigation and several features, so it belongs to no single feature. |
+
+Two related notes:
+
+- **`config/clients/*` moves to `core/config/clients/` as-is.** Replacing that local mirror with
+  `@ezazi/config` is a *separate* open item (ARCHITECTURE_RULES §10) — do not conflate the two moves.
+- **`src/types/` survives, but for ambient declarations only** (`process.d.ts`). Domain types belong in
+  `@ezazi/types`; feature-local types belong in that feature's `domain/`.
 
 **What moved to shared packages:** the pre-monorepo `core/api`, `core/config`, and shared types are now `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types`. `apps/mobile/src/core/api` is now just a **thin adapter** (inject the auth token from secure storage, wire the mobile error/Result handling) over `@ezazi/api-client`.
 
@@ -108,6 +135,7 @@ Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak
 | Legacy Android (`org.intelehealth.ezazi`) | New home |
 |---|---|
 | `loginActivity`, `setupActivity`, `splash_activity`, `ui/password` | `features/auth` |
+| `HomeActivity` (post-login landing, logout menu) | `features/home` |
 | `addNewPatient`, `patientDetailActivity`, `searchPatientActivity`, `ui/patient` | `features/patient` |
 | `visitSummaryActivity`, `ui/visit` | `features/visit` |
 | `ui/elcg` (WHO LCG), `partogram/`, `epartogramActivity` | `features/labour-care-guide` |
