@@ -15,9 +15,7 @@ export function ProtectedRoute() {
   const hasStoredToken = Boolean(storage.getAuthToken());
 
   if (!isAuthenticated && !hasStoredToken) {
-    return (
-      <Navigate to={`${ROUTES.AUTH.BASE}/${ROUTES.AUTH.LOGIN}`} replace />
-    );
+    return <Navigate to={`${ROUTES.AUTH.BASE}/${ROUTES.AUTH.LOGIN}`} replace />;
   }
 
   return <Outlet />;

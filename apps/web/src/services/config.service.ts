@@ -1,4 +1,9 @@
-import { failure, mapAxiosError, success, type ApiResult } from '@ezazi/api-client';
+import {
+  failure,
+  mapAxiosError,
+  success,
+  type ApiResult,
+} from '@ezazi/api-client';
 import type { AppConfig } from '@ezazi/types';
 import { publicHttpClient } from './http';
 

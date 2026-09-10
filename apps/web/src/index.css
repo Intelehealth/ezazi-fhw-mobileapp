@@ -3,7 +3,19 @@
 
 body {
   margin: 0;
+  /* Matches Intelehealth-WebApp's src/styles.scss `body { background-color:
+     #ffffff; font-family: DM Sans; }` — the white here is load-bearing, not
+     decorative: session.component.html's right column has no background
+     of its own, so the curved banner image (on the row behind it) bleeds
+     through into any part of that column nothing else paints over,
+     letting the curve extend past the 50% column split near the bottom
+     rather than getting clipped there — see auth-layout.component.tsx. */
+  background-color: #ffffff;
+  /* Matches Intelehealth-WebApp's src/styles.scss `body { font-family: DM Sans; }` —
+     loaded via index.html's Google Fonts link. system-ui/sans-serif stay as
+     the fallback stack for the (rare) case that link fails to load. */
   font-family:
+    'DM Sans',
     system-ui,
     -apple-system,
     sans-serif;

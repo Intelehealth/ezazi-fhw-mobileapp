@@ -1,19 +1,16 @@
 import { z } from 'zod';
 
 /**
- * zod, not yup — the migration guide (§2) left this open, and
- * intelehealth-hw-webapp-react's own convention is yup, but apps/mobile
- * (this monorepo's other app) already depends on zod (^3.23.8, see
- * apps/mobile/package.json) for its own form validation. Matching that
- * keeps one validation idiom across both apps in this monorepo rather than
- * introducing a second library that only the web app uses.
+ * Matches login.component.ts's actual FormGroup validators exactly:
+ * username/password are both `Validators.required` only (no min-length —
+ * the Angular form never enforced one, so this pass doesn't invent one
+ * either), and recaptcha is `Validators.required` too (this Angular version
+ * shows the captcha unconditionally, no showCaptcha feature flag).
  */
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z
-    .string()
-    .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters'),
+  username: z.string().min(1, 'Please enter username'),
+  password: z.string().min(1, 'Please enter valid password'),
+  recaptcha: z.string().min(1, 'Please confirm you are not a robot'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;

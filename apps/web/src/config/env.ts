@@ -21,4 +21,11 @@ export const env = {
     import.meta.env.VITE_AUTH_GATEWAY_URL || servers.authGatewayUrl,
   PORTAL_URL: import.meta.env.VITE_PORTAL_URL || servers.portalUrl,
   CONFIG_URL: import.meta.env.VITE_CONFIG_URL || servers.configUrl,
+  // No real per-client site key is checked into this repo (Angular's
+  // envConfig.ezaziCaptchaSiteKey/nepalCaptchaSiteKey are generated at build
+  // time from a secret, not source-controlled). Falls back to Google's
+  // published "always passes" test key so the widget renders in dev.
+  RECAPTCHA_SITE_KEY:
+    import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
+    '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
 } as const;

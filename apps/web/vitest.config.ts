@@ -25,7 +25,13 @@ export default defineConfig({
         // would `require('react')` and get the root's 18.x copy instead of
         // this app's 19.x — inlining forces them through Vite's resolver,
         // which respects `resolve.dedupe` below.
-        inline: [/@tanstack\/(react-)?query/, /react-redux/, /@reduxjs\/toolkit/],
+        inline: [
+          /@tanstack\/(react-)?query/,
+          /react-redux/,
+          /@reduxjs\/toolkit/,
+          /react-hook-form/,
+          /@hookform\/resolvers/,
+        ],
       },
     },
     coverage: {

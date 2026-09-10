@@ -1,74 +1,121 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { Button } from '../../components/common/button.component';
+import { Link } from 'react-router-dom';
+import rightArrow from '../../assets/svgs/right-arrow.svg';
+import rightArrowBlue from '../../assets/svgs/right-arrow-blue.svg';
+import { RecaptchaComponent } from '../../components/common/recaptcha.component';
+import { env } from '../../config/env';
 import { useLogin } from '../../hooks/mutations/useLogin';
+import { ROUTES } from '../../routes/paths';
 import { loginSchema, type LoginFormValues } from './login.validation';
+import { PasswordFieldComponent } from './password-field.component';
+
+const FORGOT_USERNAME_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.FORGOT_USERNAME}`;
+const FORGOT_PASSWORD_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.FORGOT_PASSWORD}`;
 
 /**
  * `modules/<feature>/*.component.tsx` per §3 — feature UI + its own
- * validation/hooks, reusable across pages.
- * pages/auth/login/login.page.tsx is the thin route wrapper around this.
+ * validation/hooks. pages/auth/login/login.page.tsx is the thin route
+ * wrapper; components/layout/auth-layout.component.tsx is the shared shell
+ * around it.
+ *
+ * mode: 'onChange' (not the scaffold's original 'onTouched') is required
+ * here specifically — the submit button's filled/outlined state must track
+ * `formState.isValid` live on every keystroke, matching
+ * login.component.ts's `[disabled]="loginForm.invalid"` binding. Inline
+ * error text still only shows after a submit attempt (`isSubmitted`), not
+ * live, matching the Angular form's `submitted && f.x.errors` pattern.
  */
 export function LoginComponent() {
-  const { t } = useTranslation();
   const { mutate: login, isPending, error } = useLogin();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    setValue,
+    formState: { errors, isValid, isSubmitted },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    mode: 'onTouched',
-    defaultValues: { username: '', password: '' },
+    mode: 'onChange',
+    defaultValues: { username: '', password: '', recaptcha: '' },
   });
 
+  const handleRecaptchaChange = useCallback(
+    (token: string | null) =>
+      setValue('recaptcha', token ?? '', { shouldValidate: true }),
+    [setValue]
+  );
+
+  const submitButtonClassName = isValid
+    ? 'flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#2E1E91] text-lg text-white disabled:cursor-not-allowed'
+    : 'flex h-14 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border-[3px] border-[#2E1E91] bg-white text-lg font-bold text-[#2E1E91]';
+
   return (
-    <form
-      className="w-full max-w-sm rounded-lg border border-[--color-border] bg-white p-6 shadow-sm"
-      onSubmit={handleSubmit(values => login(values))}
-    >
-      <h1 className="mb-4 text-lg font-semibold text-[--color-dark]">
-        {t('auth.loginTitle')}
+    <form className="w-full" onSubmit={handleSubmit(values => login(values))}>
+      <h1 className="mb-4 text-[32px] leading-[150%] font-bold text-[#2E1E91]">
+        Login
       </h1>
 
-      <label
-        className="mb-1 block text-sm text-[--color-muted]"
-        htmlFor="username"
-      >
-        {t('auth.username')}
-      </label>
-      <input
-        id="username"
-        className="mb-1 w-full rounded-md border border-[--color-border] px-3 py-2"
-        {...register('username')}
-      />
-      {errors.username && (
-        <p className="mb-3 text-xs text-red-600">{errors.username.message}</p>
-      )}
+      <div className="mb-4">
+        <label
+          className="mb-1 flex items-center justify-between text-sm font-bold text-[#2E1E91]"
+          htmlFor="username"
+        >
+          Username
+          <Link
+            className="text-sm font-normal text-[#7F7B92] underline"
+            to={FORGOT_USERNAME_PATH}
+          >
+            Forgot Username ?
+          </Link>
+        </label>
+        <input
+          id="username"
+          placeholder="Enter username"
+          className="h-12 w-full rounded-lg border border-[rgba(178,175,190,0.2)] bg-white px-4 text-base text-[#1B163A]"
+          {...register('username')}
+        />
+        {isSubmitted && errors.username && (
+          <p className="mt-1 text-xs text-red-600">{errors.username.message}</p>
+        )}
+      </div>
 
-      <label
-        className="mb-1 block text-sm text-[--color-muted]"
-        htmlFor="password"
-      >
-        {t('auth.password')}
-      </label>
-      <input
-        id="password"
-        type="password"
-        className="mb-1 w-full rounded-md border border-[--color-border] px-3 py-2"
-        {...register('password')}
+      <PasswordFieldComponent
+        registration={register('password')}
+        errorMessage={isSubmitted ? errors.password?.message : undefined}
+        forgotPasswordPath={FORGOT_PASSWORD_PATH}
       />
-      {errors.password && (
-        <p className="mb-3 text-xs text-red-600">{errors.password.message}</p>
-      )}
+
+      <div className="mb-4">
+        <label className="mb-2 block text-sm font-bold text-[#2E1E91]">
+          Before logging in, please confirm you are not a robot
+        </label>
+        <RecaptchaComponent
+          siteKey={env.RECAPTCHA_SITE_KEY}
+          onChange={handleRecaptchaChange}
+        />
+        {isSubmitted && errors.recaptcha && (
+          <p className="mt-1 text-xs text-red-600">
+            {errors.recaptcha.message}
+          </p>
+        )}
+      </div>
 
       {error && <p className="mb-3 text-xs text-red-600">{error.message}</p>}
 
-      <Button type="submit" isLoading={isPending} className="mt-2">
-        {t('auth.loginButton')}
-      </Button>
+      <button
+        type="submit"
+        disabled={!isValid || isPending}
+        className={submitButtonClassName}
+      >
+        Login
+        <img
+          className="h-5 w-5"
+          src={isValid ? rightArrow : rightArrowBlue}
+          alt=""
+        />
+      </button>
     </form>
   );
 }

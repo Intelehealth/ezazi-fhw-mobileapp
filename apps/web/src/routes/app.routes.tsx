@@ -1,21 +1,22 @@
 import { Suspense, lazy } from 'react';
 import {
+  Navigate,
   Route,
   RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
 } from 'react-router-dom';
+import { AuthLayoutComponent } from '../components/layout/auth-layout.component';
+import { RouteErrorBoundary } from '../components/common/route-error-boundary.component';
 import { ROUTES } from './paths';
 import { ProtectedRoute } from './protected.route';
 
 const RouteLoader = () => (
-  <div className="flex min-h-screen items-center justify-center">
-    Loading…
-  </div>
+  <div className="flex min-h-screen items-center justify-center">Loading…</div>
 );
 
 const LoginPage = lazy(() => import('../pages/auth/login/login.page'));
-const HomePage = lazy(() => import('../pages/home/home.page'));
+const DashboardPage = lazy(() => import('../pages/dashboard/dashboard.page'));
 const NotFoundPage = lazy(() => import('../pages/not-found/not-found.page'));
 
 /**
@@ -26,24 +27,44 @@ const NotFoundPage = lazy(() => import('../pages/not-found/not-found.page'));
  */
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <>
-      <Route path={ROUTES.AUTH.BASE}>
-        <Route
-          path={ROUTES.AUTH.LOGIN}
-          element={
-            <Suspense fallback={<RouteLoader />}>
-              <LoginPage />
-            </Suspense>
-          }
-        />
+    // One boundary wrapping every route (no path/element of its own, so it
+    // just renders an Outlet) — a render, loader, or action error anywhere
+    // below bubbles up here instead of blanking the page.
+    <Route errorElement={<RouteErrorBoundary />}>
+      <Route element={<AuthLayoutComponent />}>
+        <Route path={ROUTES.AUTH.BASE}>
+          <Route
+            path={ROUTES.AUTH.LOGIN}
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <LoginPage />
+              </Suspense>
+            }
+          />
+        </Route>
       </Route>
 
       <Route element={<ProtectedRoute />}>
+        {/* ProtectedRoute already bounces unauthenticated visitors to
+            /auth/login, so this only ever runs for a signed-in user — send
+            them on to the real dashboard rather than rendering anything at "/". */}
         <Route
           path={ROUTES.ROOT}
+          element={<Navigate to={ROUTES.DASHBOARD} replace />}
+        />
+        <Route
+          path={ROUTES.DASHBOARD}
           element={
             <Suspense fallback={<RouteLoader />}>
-              <HomePage />
+              <DashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.DASHBOARD_HW_PROFILE}
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <DashboardPage />
             </Suspense>
           }
         />
@@ -57,7 +78,7 @@ const router = createBrowserRouter(
           </Suspense>
         }
       />
-    </>
+    </Route>
   )
 );
 

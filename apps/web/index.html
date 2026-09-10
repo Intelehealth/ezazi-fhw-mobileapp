@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>eZAZI Doctor Webapp</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <title>eZazi</title>
+
+    <!-- DM Sans — same URL as Intelehealth-WebApp's src/index.html (its
+         global `body { font-family: DM Sans; }` in src/styles.scss relies
+         on this exact link, regular weight only — bold text there is
+         browser-synthesized, not a real bold cut; matching that as-is
+         rather than "fixing" it with a newer weighted Google Fonts URL). -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link href="https://fonts.googleapis.com/css?family=DM Sans" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
