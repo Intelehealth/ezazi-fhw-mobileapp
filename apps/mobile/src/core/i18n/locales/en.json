@@ -150,7 +150,13 @@
   "home": {
     "title": "Home",
     "note": "Logged in. Active cases will appear here.",
-    "logout": "Log out (EZ-943)"
+    "logout": "Log out (EZ-943)",
+    "db": {
+      "preparing": "Preparing your offline records…",
+      "failedTitle": "Couldn't prepare offline storage",
+      "failedBody": "Your records can't be saved on this device yet. Retry, or sign out and try again.",
+      "retry": "Retry"
+    }
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"
