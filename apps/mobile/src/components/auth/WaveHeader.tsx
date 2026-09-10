@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
-import { AppIcon, wavePaths } from '@/components/ui/icons';
-import { colors, dimens } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { AppIcon, wavePaths } from '@/core/ui/icons';
+import { colors, dimens } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /** Pink wave banner with back button — shared by the forgot-password screens. */
 

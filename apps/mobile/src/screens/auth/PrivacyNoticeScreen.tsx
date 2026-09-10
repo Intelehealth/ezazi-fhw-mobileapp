@@ -12,12 +12,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import { ScreenHeader } from '@/components/shared/ScreenHeader';
-import { commonStyles } from '@/components/ui/commonStyles';
-import { AppButton } from '@/components/ui/AppButton';
-import { AppIcon } from '@/components/ui/icons';
-import { colors } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { ScreenHeader } from '@/core/ui/ScreenHeader';
+import { commonStyles } from '@/core/ui/commonStyles';
+import { AppButton } from '@/core/ui/AppButton';
+import { AppIcon } from '@/core/ui/icons';
+import { colors } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/stores/auth.store';
 
 // config.json → privacyNoticeText

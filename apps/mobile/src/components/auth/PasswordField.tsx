@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { AppTextField } from '@/components/ui/AppTextField';
-import { AppIcon } from '@/components/ui/icons';
-import { colors } from '@/config/theme';
+import { AppTextField } from '@/core/ui/AppTextField';
+import { AppIcon } from '@/core/ui/icons';
+import { colors } from '@/core/config/theme';
 
 /**
  * AppTextField with an inline show/hide toggle.

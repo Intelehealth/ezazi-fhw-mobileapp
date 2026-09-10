@@ -1,6 +1,6 @@
 # Restructure Plan — flat `src/` → feature-modular (`core/` + `features/`)
 
-> **Status:** Phase 0 done · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
+> **Status:** Phases 0-1 done · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
 >
 > Executes the target layout in [`MOBILE_STACK.md`](MOBILE_STACK.md) §2, which is a **roadmap** until this
 > plan completes. Behaviour must not change: this is `git mv` + import rewrites, with `tsc`,
@@ -40,20 +40,36 @@ separate open item (ARCHITECTURE_RULES §10) — do not conflate the two.
 `core/services/storage`, `core/ui/hooks`, `core/ui/ThemeContext.tsx`, `core/config`, `features/home`, and
 `types/` as ambient-only). §8 gained a `HomeActivity → features/home` row. **No code moved.**
 
-## Phase 1 — Build `core/`, most-depended-upon first  ☐
+## Phase 1 — Build `core/`, most-depended-upon first  ☑ DONE
 
 Order is derived from the real import graph: these folders are the *targets* of most edges, so moving
 them first means each later phase rewrites its imports once instead of twice.
 
-- ☐ **1a** `utils/` → `core/utils/`
-- ☐ **1b** `config/` → `core/config/` (+ `types/config.types.ts`, `stores/featureConfig.store.ts`, `services/api/config.api.ts`)
-- ☐ **1c** `i18n/` → `core/i18n/`
-- ☐ **1d** `components/ui/`, `components/shared/`, `components/PermissionDeniedDialog.tsx`, `context/ThemeContext.tsx`, `hooks/useResponsive.ts` → `core/ui/`
-- ☐ **1e** `services/storage/` → `core/services/storage/`
-- ☐ **1f** `services/api/` → `core/api/`  *(already a thin adapter over `@ezazi/api-client`)*
-- ☐ **1g** `db/` → `core/db/` — **also update `drizzle.config.ts`**, and split `schema.ts` toward `core/db/schema/`
+- ☑ **1a** `utils/` → `core/utils/`
+- ☑ **1b** `config/` → `core/config/` (+ `types/config.types.ts`, `stores/featureConfig.store.ts`, `services/api/config.api.ts`)
+- ☑ **1c** `i18n/` → `core/i18n/`
+- ☑ **1d** `components/ui/`, `components/shared/`, `components/PermissionDeniedDialog.tsx`, `context/ThemeContext.tsx`, `hooks/useResponsive.ts` → `core/ui/`
+- ☑ **1e** `services/storage/` → `core/services/storage/`
+- ☑ **1f** `services/api/` → `core/api/`  *(already a thin adapter over `@ezazi/api-client`)*
+- ☑ **1g** `db/` → `core/db/` — **also update `drizzle.config.ts`**
+  - ☐ *Deferred:* splitting `schema.ts` into `core/db/schema/`. It is a refactor, not a move, and
+    reshaping the file drizzle-kit reads risks a spurious migration against the on-device DB. Do it as
+    its own change, alongside the FK/dirty-flag indexes and `relations()` already tracked in §7.
 
 Green check after each sub-step.
+
+**Two things Phase 1 taught — apply them in Phases 2–3:**
+
+1. **`tsc` does not catch relative `require()` of static assets.** Four asset paths in
+   `core/config/clients/*` broke silently (they escape `src/` with `../../../`) and only surfaced as a
+   *jest* failure. `src/screens/auth/SplashScreen.tsx:19` has the same pattern and **will break when it
+   moves in Phase 2** — it needs `../../../../` once it lands in `features/auth/screens/`.
+   Always `grep -rn '\.\./\.\./\.\./' src/` after a move.
+2. **Moving folders silently disables `boundaries`.** The `boundaries/elements` globs are literal paths;
+   once `src/db/**` no longer matches anything, the policy that guards it cannot fire and eslint still
+   exits 0. Phase 1 remapped the globs to `src/core/**` **in the same commit that moved the files**, and
+   verified with a probe (a screen importing `@/core/db` must error). Do the same in Phases 2–3 — never
+   leave a phase with enforcement silently off.
 
 ## Phase 2 — `features/auth`  ☐
 

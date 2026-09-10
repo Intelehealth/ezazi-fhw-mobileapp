@@ -7,8 +7,8 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { colors } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
  * Pure RN OTP input — a single hidden TextInput captures keystrokes and

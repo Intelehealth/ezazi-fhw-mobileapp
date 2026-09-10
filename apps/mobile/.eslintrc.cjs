@@ -32,18 +32,19 @@ module.exports = {
     // changes — the policies below stay meaningful.
     // NOTE: order matters — most specific first (first match wins).
     'boundaries/elements': [
-      { type: 'services-api', pattern: 'src/services/api/**' },
+      // Remapped for the core/ layout (restructure Phase 1). Feature isolation
+      // arrives in Phase 4, once features/ exists. Most specific first.
+      { type: 'services-api', pattern: 'src/core/api/**' },
+      { type: 'db', pattern: 'src/core/db/**' },
+      { type: 'services', pattern: 'src/core/services/**' },
+      { type: 'config', pattern: 'src/core/config/**' },
+      { type: 'ui', pattern: 'src/core/ui/**' },
+      { type: 'i18n', pattern: 'src/core/i18n/**' },
+      { type: 'utils', pattern: 'src/core/utils/**' },
       { type: 'screens', pattern: 'src/screens/**' },
       { type: 'components', pattern: 'src/components/**' },
       { type: 'navigation', pattern: 'src/navigation/**' },
       { type: 'stores', pattern: 'src/stores/**' },
-      { type: 'db', pattern: 'src/db/**' },
-      { type: 'services', pattern: 'src/services/**' },
-      { type: 'context', pattern: 'src/context/**' },
-      { type: 'hooks', pattern: 'src/hooks/**' },
-      { type: 'config', pattern: 'src/config/**' },
-      { type: 'i18n', pattern: 'src/i18n/**' },
-      { type: 'utils', pattern: 'src/utils/**' },
       { type: 'types', pattern: 'src/types/**' },
     ],
   },
@@ -104,7 +105,7 @@ module.exports = {
             from: [
               {
                 element: {
-                  type: ['components', 'stores', 'db', 'services', 'services-api', 'hooks', 'utils', 'context'],
+                  type: ['components', 'stores', 'db', 'services', 'services-api', 'ui', 'utils', 'config', 'i18n'],
                 },
               },
             ],
@@ -114,7 +115,7 @@ module.exports = {
           {
             // Data and service layers must not depend on UI.
             from: [{ element: { type: ['db', 'services', 'services-api'] } }],
-            disallow: [{ to: { element: { type: ['components', 'screens', 'navigation'] } } }],
+            disallow: [{ to: { element: { type: ['components', 'screens', 'navigation', 'ui'] } } }],
             message: 'The data/service layers must not depend on UI (components, screens, navigation).',
           },
         ],

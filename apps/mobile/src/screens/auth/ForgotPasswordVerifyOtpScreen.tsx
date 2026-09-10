@@ -5,11 +5,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { WaveHeader } from '@/components/auth/WaveHeader';
 import { OtpInput } from '@/components/auth/OtpInput';
-import { AppButton } from '@/components/ui/AppButton';
-import { FormScreenLayout } from '@/components/ui/FormScreenLayout';
-import { commonStyles } from '@/components/ui/commonStyles';
-import { colors } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { AppButton } from '@/core/ui/AppButton';
+import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
+import { commonStyles } from '@/core/ui/commonStyles';
+import { colors } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 // CountDownTimer(60000, 1000) from OTPVerificationFragment.java
 const RESEND_COUNTDOWN_SEC = 60;

@@ -6,25 +6,25 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { PasswordField } from '@/components/auth/PasswordField';
-import { AppButton } from '@/components/ui/AppButton';
-import { AppTextField } from '@/components/ui/AppTextField';
-import { FormScreenLayout } from '@/components/ui/FormScreenLayout';
-import { AppIcon, wavePaths } from '@/components/ui/icons';
-import { commonStyles } from '@/components/ui/commonStyles';
-import { colors, dimens } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { AppButton } from '@/core/ui/AppButton';
+import { AppTextField } from '@/core/ui/AppTextField';
+import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
+import { AppIcon, wavePaths } from '@/core/ui/icons';
+import { commonStyles } from '@/core/ui/commonStyles';
+import { colors, dimens } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 /* eslint-disable boundaries/dependencies -- KNOWN DEBT: this screen talks to the
    auth API directly. Per CLAUDE.md / ARCHITECTURE_RULES §4 it must move behind a
    repository or store before the sync engine lands. Do NOT copy this pattern into
    a new screen — the boundary rule will (correctly) reject it. */
-import { authApi } from '@/services/api/auth.api';
+import { authApi } from '@/core/api/auth.api';
 import type { ApiError } from '@ezazi/api-client';
-import { logApiError } from '@/services/api/errors/logApiError';
+import { logApiError } from '@/core/api/errors/logApiError';
 /* eslint-enable boundaries/dependencies */
-import { secureStorage } from '@/services/storage/secure-storage';
+import { secureStorage } from '@/core/services/storage/secure-storage';
 import { useAuthStore } from '@/stores/auth.store';
-import { logger } from '@/utils/logger';
-import { showToast } from '@/utils/toast';
+import { logger } from '@/core/utils/logger';
+import { showToast } from '@/core/utils/toast';
 
 // Parent container padding — setup screen uses 30dp
 const FORM_H_PAD = 30;

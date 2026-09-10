@@ -5,13 +5,13 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { WaveHeader } from '@/components/auth/WaveHeader';
-import { AppButton } from '@/components/ui/AppButton';
-import { FormScreenLayout } from '@/components/ui/FormScreenLayout';
-import { AppIcon } from '@/components/ui/icons';
-import { commonStyles } from '@/components/ui/commonStyles';
-import { clientConfig } from '@/config/clients';
-import { colors, dimens } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { AppButton } from '@/core/ui/AppButton';
+import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
+import { AppIcon } from '@/core/ui/icons';
+import { commonStyles } from '@/core/ui/commonStyles';
+import { clientConfig } from '@/core/config/clients';
+import { colors, dimens } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 const PHONE_REGEX = new RegExp(`^\\d{${clientConfig.phone.numberLength}}$`);
 

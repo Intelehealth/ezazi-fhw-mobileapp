@@ -2,18 +2,18 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
-import { PermissionDeniedDialog } from '@/components/PermissionDeniedDialog';
-import { wavePaths } from '@/components/ui/icons';
-import { clientConfig } from '@/config/clients';
-import { colors } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { PermissionDeniedDialog } from '@/core/ui/PermissionDeniedDialog';
+import { wavePaths } from '@/core/ui/icons';
+import { clientConfig } from '@/core/config/clients';
+import { colors } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   checkAppPermissions,
   onAppForeground,
   openAppSettings,
   requestAppPermissions,
-} from '@/utils/permissions';
+} from '@/core/utils/permissions';
 
 // Powered-by logo — shared across all clients, not part of client branding.
 const IH_LOGO = require('../../../assets/intelehealth_logo.png');

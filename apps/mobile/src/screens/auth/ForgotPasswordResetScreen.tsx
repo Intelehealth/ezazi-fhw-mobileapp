@@ -5,11 +5,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { WaveHeader } from '@/components/auth/WaveHeader';
 import { PasswordField } from '@/components/auth/PasswordField';
-import { AppButton } from '@/components/ui/AppButton';
-import { FormScreenLayout } from '@/components/ui/FormScreenLayout';
-import { commonStyles } from '@/components/ui/commonStyles';
-import { colors } from '@/config/theme';
-import { useResponsive } from '@/hooks/useResponsive';
+import { AppButton } from '@/core/ui/AppButton';
+import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
+import { commonStyles } from '@/core/ui/commonStyles';
+import { colors } from '@/core/config/theme';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 // Exact regex from ResetPasswordFragment.java — isValidPassword()
 // Requires: ≥1 digit, ≥1 lowercase, ≥1 uppercase, ≥1 symbol from @*#$%^&+=, no spaces, ≥8 chars
