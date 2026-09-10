@@ -1,6 +1,6 @@
 # Restructure Plan — flat `src/` → feature-modular (`core/` + `features/`)
 
-> **Status:** Phases 0-4 done · Phase 5 device smoke test OUTSTANDING · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
+> **Status:** ✅ COMPLETE — all phases done, device-validated 2026-09-10 · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
 >
 > Executes the target layout in [`MOBILE_STACK.md`](MOBILE_STACK.md) §2, which is a **roadmap** until this
 > plan completes. Behaviour must not change: this is `git mv` + import rewrites, with `tsc`,
@@ -100,10 +100,21 @@ The payoff. `boundaries/elements` in `.eslintrc.cjs` is declared against the fla
 - ☑ Keep the three existing policies (presentation ↛ data, screens are leaf, data/services ↛ UI)
 - ☑ This closes §6's "Not yet enforced: impossible until `src/` is restructured"
 
-## Phase 5 — Verify + reconcile docs  ☐
+## Phase 5 — Verify + reconcile docs  ☑ DONE
 
 - ☑ `npx tsc --noEmit` · `npx eslint "src/**/*.{ts,tsx}" App.tsx` · `npx jest` — all green, 116/116
-- ☐ Metro `npx expo start --dev-client -c` from the **real `D:` path**, then device smoke test (auth flow)
+- ☑ Metro `npx expo start --dev-client -c` from the **real `D:` path**, then device smoke test (auth flow)
+  - Splash → Setup → login **succeeded** against the nepal/preview gateway; session established, navigation
+    routed through. The restructure is behaviour-neutral on device, as intended.
+  - Prerequisite discovered during the smoke test: there was **no `apps/mobile/.env`** (it is gitignored),
+    so `APP_ENV` defaulted to `development` and every server URL resolved to `http://localhost:3001` —
+    unreachable from a physical device, surfacing as "No internet connection". Unrelated to the
+    restructure: that URL predates it. Fixed by creating `.env` with `CLIENT_ID=nepal`,
+    `APP_ENV=preview`. **`EXPO_PUBLIC_*` is inlined at bundle time — changing `.env` needs Metro `-c`.**
+  - Known-benign residue: `[FeatureConfig] Sync failed — using cached/default flags`. `configUrl` is still
+    a `*.example.org` placeholder for every client. The store swallows it and falls back to
+    `defaultFeatureFlags` (all `true`), so the app runs, but **remote flags are not live** — nothing is
+    actually being gated until a real `configUrl` exists.
 - ☐ Docs that currently assert a flat `src/` and must flip:
   - ☑ `CLAUDE.md` — "`src/` is currently flat … roadmap, not the current state"
   - ☑ `MOBILE_STACK.md` §2 — drop the 🗺️ ROADMAP banner and the ⚠️ warning
