@@ -4,6 +4,7 @@ import type { ApiError } from '@ezazi/api-client';
 import { loginSuccess } from '../../reducers/auth.reducer';
 import { resolvePostLoginPath } from '../../routes/paths';
 import { authService } from '../../services/auth.service';
+import { showToast } from '../../services/toast';
 import { useAppDispatch } from '../../store/hooks';
 import type {
   AuthGatewayLoginResponse,
@@ -78,9 +79,22 @@ export function useLogin() {
     onSuccess: ({ token, user }) => {
       storage.setAuthToken(token);
       dispatch(loginSuccess({ token, user }));
+      showToast(
+        'Login Successful',
+        'You have successfully logged in.',
+        'success'
+      );
 
       const isNurse = user.roles.includes(NURSE_ROLE);
       navigate(resolvePostLoginPath(isNurse));
+    },
+    // Copy matches login.component.ts's toastr.error(msg, "Login Failed!")
+    // (ezazi_dev_master) for the wrong-credentials case; a real 401 surfaces
+    // the backend's own message via error.message (see performLogin above)
+    // instead of that hardcoded copy, same as the inline error text already
+    // did before this toast was wired in.
+    onError: error => {
+      showToast('Login Failed!', error.message, 'error');
     },
   });
 }

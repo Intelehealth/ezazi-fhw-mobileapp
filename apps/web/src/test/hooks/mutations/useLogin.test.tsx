@@ -9,11 +9,14 @@ import { success } from '@ezazi/api-client';
 import { rootReducer } from '../../../reducers';
 import { useLogin } from '../../../hooks/mutations/useLogin';
 import { authService } from '../../../services/auth.service';
+import { showToast } from '../../../services/toast';
 import type { AuthGatewayLoginResponse } from '../../../types/auth.types';
 
 vi.mock('../../../services/auth.service', () => ({
   authService: { login: vi.fn() },
 }));
+
+vi.mock('../../../services/toast', () => ({ showToast: vi.fn() }));
 
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
@@ -72,6 +75,20 @@ describe('useLogin', () => {
     ]);
   });
 
+  it("shows a success toast matching login.component.ts's copy on successful login", async () => {
+    vi.mocked(authService.login).mockResolvedValue(success(gatewayResponse()));
+
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    act(() => result.current.mutate(CREDENTIALS));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Login Successful',
+      'You have successfully logged in.',
+      'success'
+    );
+  });
+
   it('redirects nurses to the hw-profile dashboard', async () => {
     vi.mocked(authService.login).mockResolvedValue(
       success(
@@ -110,5 +127,42 @@ describe('useLogin', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe('Invalid username or password');
+  });
+
+  it('shows an error toast titled "Login Failed!" with the backend message on wrong credentials', async () => {
+    const { ApiError } = await import('@ezazi/api-client');
+    vi.mocked(authService.login).mockResolvedValue({
+      ok: false,
+      error: new ApiError('unauthorized', 'Invalid username or password', {
+        status: 401,
+        code: 'INVALID_CREDENTIALS',
+      }),
+    });
+
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    act(() => result.current.mutate(CREDENTIALS));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Login Failed!',
+      'Invalid username or password',
+      'error'
+    );
+  });
+
+  it('shows the Angular-matching error toast copy when authenticated comes back false', async () => {
+    vi.mocked(authService.login).mockResolvedValue(
+      success(gatewayResponse({ authenticated: false }))
+    );
+
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    act(() => result.current.mutate(CREDENTIALS));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Login Failed!',
+      "Couldn't find you, credentials provided are wrong.",
+      'error'
+    );
   });
 });

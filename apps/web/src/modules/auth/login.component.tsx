@@ -28,7 +28,7 @@ const FORGOT_PASSWORD_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.FORGOT_PASSWORD}
  * live, matching the Angular form's `submitted && f.x.errors` pattern.
  */
 export function LoginComponent() {
-  const { mutate: login, isPending, error } = useLogin();
+  const { mutate: login, isPending } = useLogin();
 
   const {
     register,
@@ -95,14 +95,7 @@ export function LoginComponent() {
           siteKey={env.RECAPTCHA_SITE_KEY}
           onChange={handleRecaptchaChange}
         />
-        {isSubmitted && errors.recaptcha && (
-          <p className="mt-1 text-xs text-red-600">
-            {errors.recaptcha.message}
-          </p>
-        )}
       </div>
-
-      {error && <p className="mb-3 text-xs text-red-600">{error.message}</p>}
 
       <button
         type="submit"
