@@ -1,13 +1,13 @@
 import { secureStorage } from '@/core/services/storage/secure-storage';
-import { authApi } from '@/features/auth/data/auth.api';
+import { sessionApi } from '@/core/session/session.api';
 
 const mockSyncConfig = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/core/services/storage/secure-storage', () => ({
   secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
 }));
-jest.mock('@/features/auth/data/auth.api', () => ({
-  authApi: { logout: jest.fn() },
+jest.mock('@/core/session/session.api', () => ({
+  sessionApi: { logout: jest.fn() },
 }));
 jest.mock('@/core/config/featureConfig.store', () => ({
   useFeatureConfigStore: { getState: () => ({ syncConfig: mockSyncConfig }) },
@@ -94,7 +94,7 @@ describe('useAuthStore', () => {
 
   describe('logout', () => {
     it('clears local state even when the server logout call fails', async () => {
-      (authApi.logout as jest.Mock).mockResolvedValue({ ok: false, error: new Error('offline') });
+      (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: false, error: new Error('offline') });
       useAuthStore.setState({ status: 'authenticated', userUuid: 'user-1', role: 'fhw' });
 
       await useAuthStore.getState().logout();
@@ -108,7 +108,7 @@ describe('useAuthStore', () => {
     });
 
     it('clears local state when the server logout call succeeds', async () => {
-      (authApi.logout as jest.Mock).mockResolvedValue({ ok: true, data: undefined });
+      (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: true, data: undefined });
       useAuthStore.setState({ status: 'authenticated', userUuid: 'user-1', role: 'fhw' });
 
       await useAuthStore.getState().logout();

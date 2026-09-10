@@ -17,7 +17,7 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
    auth API directly. Per CLAUDE.md / ARCHITECTURE_RULES §4 it must move behind a
    repository or store before the sync engine lands. Do NOT copy this pattern into
    a new screen — the boundary rule will (correctly) reject it. */
-import { authApi } from '@/features/auth/data/auth.api';
+import { sessionApi } from '@/core/session/session.api';
 import type { ApiError } from '@ezazi/api-client';
 import { logApiError } from '@/core/api/errors/logApiError';
 /* eslint-enable boundaries/dependencies */
@@ -104,7 +104,7 @@ export const SetupScreen: React.FC = () => {
     if (!validate() || isSubmitting) return;
 
     setIsSubmitting(true);
-    const result = await authApi.login({ username, password });
+    const result = await sessionApi.login({ username, password });
     setIsSubmitting(false);
 
     if (result.ok) {

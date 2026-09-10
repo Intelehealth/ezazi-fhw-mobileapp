@@ -3,8 +3,19 @@ import { createRequestMethods } from '@/core/api/responseHandler';
 import { toBase64 } from '@/core/utils/base64';
 
 /**
- * Endpoint wrappers for the auth-gateway. Sprint 42 — EZ-920, 932, 933, 934, 939, 942, 943.
- * login() is live and verified against the real server; other endpoints may still be stubbed.
+ * Session-lifecycle endpoints on the auth-gateway — EZ-920, 932, 942, 943.
+ *
+ * These live in `core/`, not in `features/auth`, because they are not the auth
+ * FEATURE's concern: `core/api/client.ts` calls refresh from its 401 interceptor,
+ * the root navigator routes off the resulting session, and every future feature
+ * inherits it. The Android equivalent is SessionManager + OkHttp Authenticator
+ * sitting in `:core`, not in `:feature:login`.
+ *
+ * Password recovery (requestOtp / verifyOtp / resetPassword) is the opposite —
+ * only the Forgot Password screens use it, so it stays in
+ * `features/auth/data/password.api.ts`.
+ *
+ * login() is verified against the real gateway; the rest may still be stubbed.
  */
 
 const http = createRequestMethods(apiClient);
@@ -50,23 +61,7 @@ export interface LoginResponse {
   };
 }
 
-export interface OtpRequest {
-  phone: string;
-  countryCode: string;
-}
-
-export interface OtpVerifyRequest {
-  phone: string;
-  code: string;
-}
-
-export interface ResetPasswordRequest {
-  userUuid: string;
-  newPassword: string;
-  otpToken: string;
-}
-
-export const authApi = {
+export const sessionApi = {
   // EZ-920
   check: () => http.get('/auth/check'),
 
@@ -81,16 +76,6 @@ export const authApi = {
       { headers: { Authorization: authHeader } },
     );
   },
-
-  // EZ-933
-  requestOtp: (body: OtpRequest) => http.post('/auth/requestOtp', body),
-
-  // EZ-934
-  verifyOtp: (body: OtpVerifyRequest) => http.post('/auth/verifyOtp', body),
-
-  // EZ-939
-  resetPassword: (body: ResetPasswordRequest) =>
-    http.post(`/auth/resetPassword/${body.userUuid}`, body),
 
   // EZ-942
   refresh: (refreshToken: string) => http.post('/auth/refresh', { refreshToken }),
