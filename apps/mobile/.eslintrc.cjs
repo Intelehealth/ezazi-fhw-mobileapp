@@ -27,24 +27,27 @@ module.exports = {
       node: { extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'] },
     },
 
-    // Architecture layers, defined against the CURRENT FLAT src/ layout.
-    // If/when src/ is restructured into core/ + features/, only this list
-    // changes — the policies below stay meaningful.
-    // NOTE: order matters — most specific first (first match wins).
+    // Architecture layers for the feature-modular layout (restructure Phase 4).
+    // NOTE: order matters - first match wins, so specific before general.
     'boundaries/elements': [
-      // Remapped for the core/ layout (restructure Phase 1). Feature isolation
-      // arrives in Phase 4, once features/ exists. Most specific first.
-      { type: 'services-api', pattern: 'src/core/api/**' },
-      { type: 'db', pattern: 'src/core/db/**' },
-      { type: 'services', pattern: 'src/core/services/**' },
-      { type: 'config', pattern: 'src/core/config/**' },
-      { type: 'ui', pattern: 'src/core/ui/**' },
-      { type: 'i18n', pattern: 'src/core/i18n/**' },
-      { type: 'utils', pattern: 'src/core/utils/**' },
-      { type: 'screens', pattern: 'src/screens/**' },
-      { type: 'components', pattern: 'src/components/**' },
+      // Features. `capture: ['feature']` binds the * to a name, which the
+      // isolation policy below compares against - that is what makes
+      // "a feature may import itself but no sibling" expressible at all.
+      { type: 'feature-screens', pattern: 'src/features/*/screens/**', capture: ['feature'] },
+      { type: 'feature-components', pattern: 'src/features/*/components/**', capture: ['feature'] },
+      { type: 'feature-stores', pattern: 'src/features/*/stores/**', capture: ['feature'] },
+      { type: 'feature-data', pattern: 'src/features/*/data/**', capture: ['feature'] },
+      { type: 'feature-domain', pattern: 'src/features/*/domain/**', capture: ['feature'] },
+      // Core spine.
+      { type: 'core-session', pattern: 'src/core/session/**' },
+      { type: 'core-api', pattern: 'src/core/api/**' },
+      { type: 'core-db', pattern: 'src/core/db/**' },
+      { type: 'core-services', pattern: 'src/core/services/**' },
+      { type: 'core-config', pattern: 'src/core/config/**' },
+      { type: 'core-ui', pattern: 'src/core/ui/**' },
+      { type: 'core-i18n', pattern: 'src/core/i18n/**' },
+      { type: 'core-utils', pattern: 'src/core/utils/**' },
       { type: 'navigation', pattern: 'src/navigation/**' },
-      { type: 'stores', pattern: 'src/stores/**' },
       { type: 'types', pattern: 'src/types/**' },
     ],
   },
@@ -94,29 +97,53 @@ module.exports = {
         default: 'allow',
         policies: [
           {
-            // Presentation must never touch the data layer directly.
-            from: [{ element: { type: ['screens', 'components'] } }],
-            disallow: [{ to: { element: { type: ['db', 'services-api'] } } }],
+            // Feature isolation - the rule that was impossible on the flat layout.
+            // A feature may import its OWN folder; never a sibling's internals.
+            from: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
+            disallow: {
+              to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
+            },
             message:
-              'Presentation (screens/components) must not import the data layer (src/db or src/services/api) directly — go through a store or a repository. See CLAUDE.md.',
+              'Feature isolation: {{from.feature}} must not import {{target.feature}} internals. Share via core/* or @ezazi/*, never feature-to-feature. See MOBILE_STACK section 6.',
           },
           {
-            // src/screens is a leaf: only navigation may pull a screen in.
-            from: [
-              {
-                element: {
-                  type: ['components', 'stores', 'db', 'services', 'services-api', 'ui', 'utils', 'config', 'i18n'],
+            // ...but a feature may import its OWN folder. This rule follows the
+            // broad disallow above on purpose - the plugin is last-write-wins,
+            // so the narrower same-feature carve-out re-permits it.
+            from: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
+            allow: {
+              to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] }, feature: '{{from.feature}}' } },
+            },
+          },
+          {
+            // Presentation must never touch the data layer directly.
+            from: { element: { types: { anyOf: ['feature-screens', 'feature-components'] } } },
+            disallow: { to: { element: { types: { anyOf: ['core-db', 'core-api', 'feature-data'] } } } },
+            message:
+              'Presentation (screens/components) must not import the data layer (core/db, core/api, features/*/data) directly - go through a store or a repository. See CLAUDE.md.',
+          },
+          {
+            // Screens are leaves: only navigation may pull one in.
+            from: {
+              element: {
+                types: {
+                  anyOf: [
+                    'feature-components', 'feature-stores', 'feature-data', 'feature-domain',
+                    'core-api', 'core-db', 'core-services', 'core-config', 'core-session', 'core-ui', 'core-i18n', 'core-utils',
+                  ],
                 },
               },
-            ],
-            disallow: [{ to: { element: { type: ['screens'] } } }],
-            message: 'src/screens is a leaf layer — only src/navigation may import a screen.',
+            },
+            disallow: { to: { element: { type: 'feature-screens' } } },
+            message: 'Screens are a leaf layer - only src/navigation may import a screen.',
           },
           {
             // Data and service layers must not depend on UI.
-            from: [{ element: { type: ['db', 'services', 'services-api'] } }],
-            disallow: [{ to: { element: { type: ['components', 'screens', 'navigation', 'ui'] } } }],
-            message: 'The data/service layers must not depend on UI (components, screens, navigation).',
+            from: { element: { types: { anyOf: ['core-db', 'core-api', 'core-services', 'feature-data'] } } },
+            disallow: {
+              to: { element: { types: { anyOf: ['core-ui', 'feature-screens', 'feature-components', 'navigation'] } } },
+            },
+            message: 'The data/service layers must not depend on UI (core/ui, feature screens/components, navigation).',
           },
         ],
       },

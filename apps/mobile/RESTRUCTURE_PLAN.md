@@ -1,6 +1,6 @@
 # Restructure Plan — flat `src/` → feature-modular (`core/` + `features/`)
 
-> **Status:** Phases 0-1 done · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
+> **Status:** Phases 0-4 done · Phase 5 device smoke test OUTSTANDING · **Created:** 2026-09-10 · **Scope:** `apps/mobile/` only
 >
 > Executes the target layout in [`MOBILE_STACK.md`](MOBILE_STACK.md) §2, which is a **roadmap** until this
 > plan completes. Behaviour must not change: this is `git mv` + import rewrites, with `tsc`,
@@ -71,46 +71,46 @@ Green check after each sub-step.
    verified with a probe (a screen importing `@/core/db` must error). Do the same in Phases 2–3 — never
    leave a phase with enforcement silently off.
 
-## Phase 2 — `features/auth`  ☐
+## Phase 2 — `features/auth`  ☑ DONE
 
 The only feature complete enough to extract: 7 screens + 3 components + store + api.
 
-- ☐ `screens/auth/*` → `features/auth/screens/`
-- ☐ `components/auth/*` → `features/auth/components/`
-- ☐ `stores/auth.store.ts` → `features/auth/stores/`
-- ☐ `core/api/auth.api.ts` → `features/auth/data/auth.api.ts`
-- ☐ **Pay the known debt:** `SetupScreen.tsx` imports the data layer directly under a scoped
+- ☑ `screens/auth/*` → `features/auth/screens/`
+- ☑ `components/auth/*` → `features/auth/components/`
+- ☑ `stores/auth.store.ts` → **`core/session/`**, not `features/auth/stores/` — enforcing feature isolation exposed `HomeScreen` importing it, and navigation routes on its `status`. App-wide session state belongs in core (same reasoning as `featureConfig.store`).
+- ☑ `core/api/auth.api.ts` → `features/auth/data/auth.api.ts`
+- ☐ **NOT DONE — the known debt:** `SetupScreen.tsx` imports the data layer directly under a scoped
   `eslint-disable` + TODO (MOBILE_STACK §6). Moving `auth.api` into `features/auth/data/` behind a
   repository is exactly the prescribed fix — remove the disable in this phase. If it proves larger than
   expected, carry the disable forward and log it rather than stalling the phase.
 
-## Phase 3 — `features/home` + navigation  ☐
+## Phase 3 — `features/home` + navigation  ☑ DONE
 
-- ☐ `screens/home/HomeScreen.tsx` → `features/home/screens/`
-- ☐ `navigation/` stays put; only its imports change (it is the one layer allowed to import screens)
+- ☑ `screens/home/HomeScreen.tsx` → `features/home/screens/`
+- ☑ `navigation/` stays put; only its imports change (it is the one layer allowed to import screens)
 
-## Phase 4 — Rewrite the eslint boundaries  ☐
+## Phase 4 — Rewrite the eslint boundaries  ☑ DONE
 
 The payoff. `boundaries/elements` in `.eslintrc.cjs` is declared against the flat layout; it becomes
 `core/*` + `features/*`.
 
-- ☐ Redeclare `boundaries/elements` for the new layout
-- ☐ **Flip feature isolation to `default: 'disallow'`** — you cannot enumerate every forbidden pair
+- ☑ Redeclare `boundaries/elements` for the new layout
+- ☑ **Flip feature isolation to `default: 'disallow'`** — you cannot enumerate every forbidden pair
   between N features; only an allowlist scales (a feature may import `core/*`, `@ezazi/*`, itself)
-- ☐ Keep the three existing policies (presentation ↛ data, screens are leaf, data/services ↛ UI)
-- ☐ This closes §6's "Not yet enforced: impossible until `src/` is restructured"
+- ☑ Keep the three existing policies (presentation ↛ data, screens are leaf, data/services ↛ UI)
+- ☑ This closes §6's "Not yet enforced: impossible until `src/` is restructured"
 
 ## Phase 5 — Verify + reconcile docs  ☐
 
-- ☐ `npx tsc --noEmit` · `npx eslint "src/**/*.{ts,tsx}" App.tsx` · `npx jest`
+- ☑ `npx tsc --noEmit` · `npx eslint "src/**/*.{ts,tsx}" App.tsx` · `npx jest` — all green, 116/116
 - ☐ Metro `npx expo start --dev-client -c` from the **real `D:` path**, then device smoke test (auth flow)
 - ☐ Docs that currently assert a flat `src/` and must flip:
-  - ☐ `CLAUDE.md` — "`src/` is currently flat … roadmap, not the current state"
-  - ☐ `MOBILE_STACK.md` §2 — drop the 🗺️ ROADMAP banner and the ⚠️ warning
-  - ☐ `MOBILE_STACK.md` §6 — per-feature isolation is now enforced
-  - ☐ `MOBILE_STACK.md` §7 — restructure row done
-  - ☐ `ARCHITECTURE_RULES.md` §10 — remove the restructure from remaining build-out
-  - ☐ `README.md` — source-layout tree
+  - ☑ `CLAUDE.md` — "`src/` is currently flat … roadmap, not the current state"
+  - ☑ `MOBILE_STACK.md` §2 — drop the 🗺️ ROADMAP banner and the ⚠️ warning
+  - ☑ `MOBILE_STACK.md` §6 — per-feature isolation is now enforced
+  - ☑ `MOBILE_STACK.md` §7 — restructure row done
+  - ☑ `ARCHITECTURE_RULES.md` §10 — remove the restructure from remaining build-out
+  - ☑ `README.md` — source-layout tree
 
 ## Risk
 

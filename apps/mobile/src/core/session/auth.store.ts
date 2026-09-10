@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { secureStorage } from '@/core/services/storage/secure-storage';
-import { authApi } from '@/core/api/auth.api';
+import { authApi } from '@/features/auth/data/auth.api';
 import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
 
 export type AuthStatus = 'unknown' | 'unauthenticated' | 'authenticated';

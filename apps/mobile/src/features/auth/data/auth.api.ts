@@ -1,5 +1,5 @@
-import { apiClient } from './client';
-import { createRequestMethods } from './responseHandler';
+import { apiClient } from '@/core/api/client';
+import { createRequestMethods } from '@/core/api/responseHandler';
 import { toBase64 } from '@/core/utils/base64';
 
 /**

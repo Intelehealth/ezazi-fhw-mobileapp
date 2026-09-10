@@ -41,6 +41,15 @@ Offline-first Expo/React Native app for frontline health workers (clinical data)
 
 **Import & folder boundaries are enforced by eslint** (`.eslintrc.cjs`) — do **not** read `MOBILE_STACK.md` to answer "may X import Y". Run `npm run lint`; if it passes, you are compliant.
 
-`src/` is currently **flat** (`components/ config/ db/ screens/ services/ stores/ …`). The `core/` + `features/` layout in `MOBILE_STACK.md` is a **roadmap, not the current state** — do not assume those folders exist.
+`src/` is **feature-modular** as of 2026-09-10 (restructure Phases 0–4):
+
+- **`src/core/`** — the mobile-only shared spine: `api/` (thin adapter over `@ezazi/api-client`), `config/`,
+  `db/`, `i18n/`, `services/storage/`, `session/`, `ui/`, `utils/`.
+- **`src/features/`** — `auth/` (`screens/ components/ data/`) and `home/`. A feature may import `core/*`,
+  `@ezazi/*` and **its own folder only** — enforced, not just documented.
+- **`src/navigation/`** — the one layer allowed to import a screen. **`src/types/`** — ambient `.d.ts` only.
+
+**App-wide state lives in `core/`, not in a feature** — `core/session/auth.store.ts` and
+`core/config/featureConfig.store.ts` are both read by navigation and by more than one feature.
 
 Nothing else auto-loads. If a rule must outlive this session, put it in one of the docs above — not in chat.

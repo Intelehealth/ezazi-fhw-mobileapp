@@ -21,5 +21,3 @@ export { logApiError } from './errors/logApiError';
 export { createRequestMethods, request } from './responseHandler';
 
 export { apiClient } from './client';
-export { authApi } from './auth.api';
-export type { LoginRequest, LoginResponse, OtpRequest, OtpVerifyRequest, ResetPasswordRequest } from './auth.api';

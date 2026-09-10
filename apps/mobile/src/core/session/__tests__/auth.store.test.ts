@@ -1,12 +1,12 @@
 import { secureStorage } from '@/core/services/storage/secure-storage';
-import { authApi } from '@/core/api/auth.api';
+import { authApi } from '@/features/auth/data/auth.api';
 
 const mockSyncConfig = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/core/services/storage/secure-storage', () => ({
   secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
 }));
-jest.mock('@/core/api/auth.api', () => ({
+jest.mock('@/features/auth/data/auth.api', () => ({
   authApi: { logout: jest.fn() },
 }));
 jest.mock('@/core/config/featureConfig.store', () => ({

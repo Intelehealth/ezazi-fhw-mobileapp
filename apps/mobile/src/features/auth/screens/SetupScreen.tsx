@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 import type { RootStackParamList } from '@/navigation/types';
-import { PasswordField } from '@/components/auth/PasswordField';
+import { PasswordField } from '@/features/auth/components/PasswordField';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
@@ -17,12 +17,12 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
    auth API directly. Per CLAUDE.md / ARCHITECTURE_RULES §4 it must move behind a
    repository or store before the sync engine lands. Do NOT copy this pattern into
    a new screen — the boundary rule will (correctly) reject it. */
-import { authApi } from '@/core/api/auth.api';
+import { authApi } from '@/features/auth/data/auth.api';
 import type { ApiError } from '@ezazi/api-client';
 import { logApiError } from '@/core/api/errors/logApiError';
 /* eslint-enable boundaries/dependencies */
 import { secureStorage } from '@/core/services/storage/secure-storage';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/core/session/auth.store';
 import { logger } from '@/core/utils/logger';
 import { showToast } from '@/core/utils/toast';
 

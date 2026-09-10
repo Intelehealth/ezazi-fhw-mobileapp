@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/core/session/auth.store';
 import { colors, spacing, typography } from '@/core/config/theme';
 
 /**

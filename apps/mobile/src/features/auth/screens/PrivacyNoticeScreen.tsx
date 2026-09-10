@@ -18,7 +18,7 @@ import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon } from '@/core/ui/icons';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/core/session/auth.store';
 
 // config.json → privacyNoticeText
 const PRIVACY_URL = 'https://www.intelehealth.org/privacy-policy';

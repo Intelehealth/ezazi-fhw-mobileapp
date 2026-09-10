@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 import type { RootStackParamList } from '@/navigation/types';
-import { PasswordField } from '@/components/auth/PasswordField';
+import { PasswordField } from '@/features/auth/components/PasswordField';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { wavePaths } from '@/core/ui/icons';

@@ -7,7 +7,7 @@ import { wavePaths } from '@/core/ui/icons';
 import { clientConfig } from '@/core/config/clients';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/core/session/auth.store';
 import {
   checkAppPermissions,
   onAppForeground,
@@ -16,7 +16,7 @@ import {
 } from '@/core/utils/permissions';
 
 // Powered-by logo — shared across all clients, not part of client branding.
-const IH_LOGO = require('../../../assets/intelehealth_logo.png');
+const IH_LOGO = require('../../../../assets/intelehealth_logo.png');
 
 // ─── Permission state ─────────────────────────────────────────────────────────
 

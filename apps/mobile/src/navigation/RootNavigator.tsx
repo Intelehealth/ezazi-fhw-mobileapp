@@ -2,16 +2,16 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/core/session/auth.store';
 
-import { SplashScreen } from '@/screens/auth/SplashScreen';
-import { SetupScreen } from '@/screens/auth/SetupScreen';
-import { LoginScreen } from '@/screens/auth/LoginScreen';
-import { PrivacyNoticeScreen } from '@/screens/auth/PrivacyNoticeScreen';
-import { ForgotPasswordRequestOtpScreen } from '@/screens/auth/ForgotPasswordRequestOtpScreen';
-import { ForgotPasswordVerifyOtpScreen } from '@/screens/auth/ForgotPasswordVerifyOtpScreen';
-import { ForgotPasswordResetScreen } from '@/screens/auth/ForgotPasswordResetScreen';
-import { HomeScreen } from '@/screens/home/HomeScreen';
+import { SplashScreen } from '@/features/auth/screens/SplashScreen';
+import { SetupScreen } from '@/features/auth/screens/SetupScreen';
+import { LoginScreen } from '@/features/auth/screens/LoginScreen';
+import { PrivacyNoticeScreen } from '@/features/auth/screens/PrivacyNoticeScreen';
+import { ForgotPasswordRequestOtpScreen } from '@/features/auth/screens/ForgotPasswordRequestOtpScreen';
+import { ForgotPasswordVerifyOtpScreen } from '@/features/auth/screens/ForgotPasswordVerifyOtpScreen';
+import { ForgotPasswordResetScreen } from '@/features/auth/screens/ForgotPasswordResetScreen';
+import { HomeScreen } from '@/features/home/screens/HomeScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

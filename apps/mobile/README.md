@@ -46,31 +46,27 @@ npm run ios
 
 ## Source layout
 
-> `src/` is **flat** today. The feature-modular `core/` + `features/` layout in
-> [`MOBILE_STACK.md`](MOBILE_STACK.md) §2 is a **roadmap** — those folders do not exist yet.
+> **Feature-modular** since 2026-09-10 (see [`RESTRUCTURE_PLAN.md`](RESTRUCTURE_PLAN.md)). Import
+> boundaries are enforced by eslint — run `npm run lint`, don't reason from this tree.
 
 ```
 src/
-├── __mocks__/      # test fixtures (configResponse.json)
-├── components/     # shared UI primitives
-├── config/         # env, theme, feature-flags + clients/ (per-client registry)
-├── context/        # ThemeContext
-├── db/             # expo-sqlite + Drizzle — schema.ts, index.ts, seeds/
-├── hooks/
-├── i18n/           # locales + i18next setup
-├── navigation/     # RootNavigator (auth + app stacks)
-├── screens/
-│   ├── auth/       # Splash, Setup, Login, ForgotPwd×3, Privacy (Sprint 42)
-│   ├── home/       # later sprints
-│   ├── patient/
-│   ├── labour/
-│   └── …
-├── services/
-│   ├── api/        # axios client, per-module endpoints
-│   └── storage/    # secure-store + async-storage wrappers
-├── stores/         # Zustand stores (auth, app, sync)
-├── types/          # shared TS types
-└── utils/          # logger, calendar, base64, permissions, toast
+├── core/                # mobile-only shared spine
+│   ├── api/             #   thin adapter over @ezazi/api-client (+ client, responseHandler)
+│   ├── config/          #   env, theme, clients/, published-config store + api
+│   ├── db/              #   expo-sqlite + Drizzle: schema.ts, seeds/
+│   ├── i18n/            #   locales + i18next setup
+│   ├── services/
+│   │   └── storage/     #   secure-store (JWT) + async-storage wrappers
+│   ├── session/         #   auth.store — app-wide session state
+│   ├── ui/              #   design-system primitives, ThemeContext, hooks/
+│   └── utils/           #   logger, calendar, base64, permissions, toast
+├── features/            # one folder per feature; may import core/*, @ezazi/*, itself
+│   ├── auth/            #   screens/ components/ data/  (Sprint 42)
+│   └── home/            #   screens/
+├── navigation/          # RootNavigator — the only layer that may import a screen
+├── types/               # ambient declarations only (process.d.ts)
+└── __mocks__/           # test fixtures
 ```
 
 Generated migrations live in `apps/mobile/drizzle/` (committed, applied on-device) — not under `src/`.

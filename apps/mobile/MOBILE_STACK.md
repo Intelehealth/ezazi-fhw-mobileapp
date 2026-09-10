@@ -4,15 +4,15 @@
 >
 > Companion to [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) (stack + versions) and the monorepo overview [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md). Defines **how `apps/mobile` is organized** and **why**. Pattern is **LOCKED**. (The sync engine is **ours to hand-roll** — the single-seam rule is locked; only its implementation is outstanding.)
 >
-> **Current state:** `apps/mobile/src` is still **flat** (`components/ config/ db/ screens/ services/ stores/ …`) from the pre-monorepo app. The **feature-modular** target below is the goal; adopting it is part of the remaining build-out (§7). *(The SDK 51→57 migration is complete and deliberately did not restructure `src`.)*
+> **Current state:** `apps/mobile/src` **is** feature-modular — the layout below is live, not aspirational (restructure Phases 0–4, 2026-09-10; see [`RESTRUCTURE_PLAN.md`](RESTRUCTURE_PLAN.md)). Import boundaries are enforced by eslint (§6), so `npm run lint` is the source of truth for "may X import Y".
 
 ## 1. Architecture pattern
 
 **Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
 
-## 2. Folder structure (in the monorepo) — 🗺️ ROADMAP, not current
+## 2. Folder structure (in the monorepo)
 
-> ⚠️ **`src/` is flat today** (`components/ config/ context/ db/ hooks/ i18n/ navigation/ screens/ services/ stores/ types/ utils/`). The tree below is the **target**: `core/` and `features/` do **not** exist yet. Never write an import against these paths without checking the real folder first.
+> This is the **live** layout. Feature folders beyond `auth/` and `home/` (`patient/`, `visit/`, …) are still to be built — they follow the same shape (§9).
 
 ```
 ezazi-monorepo/
@@ -37,11 +37,12 @@ ezazi-monorepo/
 │           │   │   ├── hooks/        #   UI/layout hooks (useResponsive)
 │           │   │   └── ThemeContext.tsx  # the design system's own provider
 │           │   ├── config/           #   env · theme · clients/ · app-wide remote config
+│           │   ├── session/          #   auth.store — app-wide session (navigation routes on it)
 │           │   ├── i18n/ · utils/    #   locales, logger, calendar (BS/AD)
 │           │   └── api/              #   thin mobile adapter over @ezazi/api-client (auth token, storage)
 │           ├── features/             # one folder per feature; MIRRORS legacy modules (§8)
 │           │   ├── auth/
-│           │   │   ├── screens/ components/ stores/ data/ domain/
+│           │   │   ├── screens/ components/ data/   ( + stores/ domain/ as needed )
 │           │   ├── home/             #   post-login landing (legacy HomeActivity)
 │           │   ├── patient/ · visit/ · labour-care-guide/ · postpartum/ · prescription/ · teleconsult/
 │           ├── navigation/           # auth-gated root + per-feature navigators
@@ -61,6 +62,12 @@ they do not become ad-hoc calls mid-move. Tracked in [`RESTRUCTURE_PLAN.md`](RES
 | `config/env.ts` · `config/theme.ts` | `core/config/` | Read by screens and components alike — must sit where any feature may import it. |
 | `screens/home/HomeScreen.tsx` | `features/home/` | Adds `home` to the feature list (§8). |
 | `stores/featureConfig.store.ts` · `services/api/config.api.ts` · `types/config.types.ts` | `core/config/` | App-wide published config — consumed by navigation and several features, so it belongs to no single feature. |
+
+**Added in Phase 4** — a seventh, surfaced by the boundary checker rather than by inspection:
+
+| Today | Home | Why |
+|---|---|---|
+| `stores/auth.store.ts` | `core/session/` | Planned for `features/auth/stores/`, but enforcing feature isolation exposed `HomeScreen` importing it for logout, and the root navigator routes on its `status`. App-wide session state belongs to no single feature — the same reasoning already applied to `featureConfig.store`. |
 
 Two related notes:
 
@@ -109,24 +116,28 @@ Two related notes:
 
 **This is enforced by tooling, not by reading this doc.** `npm run lint` is the source of truth — if it passes, the import is legal.
 
-**Live now** — `eslint-plugin-boundaries` in [`.eslintrc.cjs`](.eslintrc.cjs) declares each `src/*` folder as a layer and enforces three policies against the **current flat layout**:
+**Live now** — `eslint-plugin-boundaries` in [`.eslintrc.cjs`](.eslintrc.cjs) declares each `core/*` and `features/*/*` folder as a layer and enforces four policies against the **feature-modular layout**:
 
 1. `screens`/`components` must **not** import `src/db` or `src/services/api` — presentation goes through a store or repository.
 2. `src/screens` is a **leaf** — only `src/navigation` may import a screen.
 3. `src/db` / `src/services` must **not** depend on UI (`components`, `screens`, `navigation`).
 
-Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak past. **Known debt:** `screens/auth/SetupScreen.tsx` violates (1) and carries a scoped `eslint-disable` with a TODO — it must move behind a repository.
+Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak past. **Known debt:** `features/auth/screens/SetupScreen.tsx` violates (1) — it calls `authApi.login()` directly — and carries a scoped `eslint-disable` with a TODO. The fix is a `login()` action on `core/session/auth.store.ts`; it was deliberately **not** done during the restructure because no screen has test coverage and the login path is the app's critical entry point.
+
+⚠️ **A boundary rule is only live while its `boundaries/elements` globs still match real folders.** They are literal paths: move a folder without updating them and the guarding policy silently stops firing while eslint still exits 0. This happened during Phase 1 and was caught only by an explicit probe. **After any folder move, probe a known-bad import and confirm it errors.**
 
 **Package boundaries** come from the workspace graph (apps → packages, never the reverse; Turborepo's `dependsOn: ["^build"]` orders builds). Keep `turbo run typecheck lint test` green in CI.
 
-**Not yet enforced:** per-feature isolation (a feature importing only `core/*`, `@ezazi/*`, and itself) — impossible until `src/` is restructured (§2). When that lands, only `boundaries/elements` in the config changes; the policies above still hold.
+**Per-feature isolation is now enforced** (Phase 4). The rule is written as a broad feature→feature `disallow` followed by a narrower same-feature `allow` — the plugin is **last-write-wins**, so the carve-out must come second. The `capture: ['feature']` on each element is what makes `{{from.feature}}` comparable at all. Use `{{...}}` templates, not the legacy `${...}`.
+
+Enforcing it immediately surfaced a real violation: `HomeScreen` imported `features/auth`'s session store. That store is app-wide (navigation routes on it), so it moved to `core/session/` rather than being exempted.
 
 ## 7. Reuse / port / build-new (current branch → target)
 
 | Action | What |
 |---|---|
 | ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
-| 🔧 **Port with structural rewrite** | **Auth screens** and existing screens — keep flows/logic, rebuild to **RHF+zod** + the `features/*/{screens,components,stores,data,domain}` layout. *"Reuse" ≠ copy verbatim.* Also: adopt the feature-modular structure (the current `src` is flat). |
+| 🔧 **Port with structural rewrite** | **Auth screens** and existing screens — keep flows/logic, rebuild to **RHF+zod**. *"Reuse" ≠ copy verbatim.* ✅ The feature-modular structure itself is **done** (restructure Phases 0–4, 2026-09-10). |
 | ✅ **Replaced (done)** | `apps/mobile/src/db` — WatermelonDB → **expo-sqlite + Drizzle** (15-table schema ported, migrations generated; landed with the SDK 57 migration) |
 | 🆕 **Build new** | `core/db/sync` — **the sync engine, hand-rolled by us; critical path** · `core/services` (LiveKit, RNFirebase, socket.io, background-task) · Drizzle **FK + dirty-flag (`sync`) indexes** and `relations()` for `with:` queries (`TODO` in `src/db/schema.ts`) · **`useMigrations`** boot wiring in `App.tsx` (once the DB gains its first consumer) · Drizzle schema/repository **tests** (the WMDB tests were removed at cutover) |
 

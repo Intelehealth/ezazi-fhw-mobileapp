@@ -1,7 +1,7 @@
-import { createRequestMethods } from '../responseHandler';
+import { createRequestMethods } from '@/core/api/responseHandler';
 
-jest.mock('../client', () => ({ apiClient: {} }));
-jest.mock('../responseHandler', () => ({
+jest.mock('@/core/api/client', () => ({ apiClient: {} }));
+jest.mock('@/core/api/responseHandler', () => ({
   createRequestMethods: jest.fn(() => ({ get: jest.fn(), post: jest.fn() })),
 }));
 
