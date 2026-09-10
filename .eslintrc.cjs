@@ -26,6 +26,30 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn',
   },
+  // ── Dependency direction (ARCHITECTURE.md — "apps → packages, never the reverse") ──
+  // Scoped to packages/* on purpose: this config is also the fallback for any
+  // workspace without its own, and the rule is meaningless for an app. Keeping
+  // it in `overrides` means it can never fire on apps/web.
+  overrides: [
+    {
+      files: ['packages/*/src/**/*.ts', 'packages/*/src/**/*.tsx'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: ['@ezazi/mobile', '@ezazi/mobile/*', '@ezazi/web', '@ezazi/web/*', '**/apps/**'],
+                message:
+                  'Dependencies flow apps → packages, never the reverse (ARCHITECTURE.md). A shared package must not import an app — move the shared code into the package instead.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+
   ignorePatterns: [
     'node_modules/',
     'dist/',

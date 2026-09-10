@@ -56,6 +56,33 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
 
+    // ── Rejected dependencies (ARCHITECTURE_RULES §9 — "DO NOT re-propose") ──
+    // These four were evaluated and rejected. WatermelonDB in particular was
+    // fully removed in the SDK 57 migration (no New-Architecture support) and
+    // must not come back. Prose in a doc stops nobody; this does.
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
+            message:
+              'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
+          },
+          {
+            group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
+            message:
+              "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
+          },
+          {
+            group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
+            message:
+              'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
+          },
+        ],
+      },
+    ],
+
     // ── Architecture boundaries (ARCHITECTURE_RULES §4 · MOBILE_STACK §3) ──
     // This rule is the enforcement that lets the docs stop describing which
     // layer may import which. `default: 'allow'` keeps it to the high-value
