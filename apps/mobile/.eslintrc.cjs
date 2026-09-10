@@ -116,6 +116,18 @@ module.exports = {
             },
           },
           {
+            // core/ must NOT import features/. This is the in-app twin of the
+            // monorepo's "apps -> packages, never the reverse" (ARCHITECTURE.md),
+            // and of Gradle refusing a circular :core <-> :feature:x dependency.
+            // JS has no module graph to stop it, so this rule is the only guard.
+            // Without it, core silently launders cross-feature coupling: anything
+            // importing core inherits every feature core touches.
+            from: { element: { types: { anyOf: ['core-api', 'core-db', 'core-services', 'core-config', 'core-session', 'core-ui', 'core-i18n', 'core-utils'] } } },
+            disallow: { to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } } },
+            message:
+              'core/ must not import features/ ({{from.type}} may not depend on a feature). Dependencies flow features -> core, never back. If core needs it, it belongs in core (move it); if it is genuinely feature-owned, invert - declare the contract in core and let the feature register its implementation at the composition root (App.tsx / navigation).',
+          },
+          {
             // Presentation must never touch the data layer directly.
             from: { element: { types: { anyOf: ['feature-screens', 'feature-components'] } } },
             disallow: { to: { element: { types: { anyOf: ['core-db', 'core-api', 'feature-data'] } } } },
