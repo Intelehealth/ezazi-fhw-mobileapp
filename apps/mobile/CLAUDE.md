@@ -1,6 +1,19 @@
 # `@ezazi/mobile` — eZAZI / eLCG FHW app
 
-Offline-first Expo/React Native app for frontline health workers (clinical data). Part of `ezazi-monorepo`: this workspace **consumes** `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` from `packages/*` — never re-implement them locally, and never make a package import an app.
+Offline-first Expo/React Native app for frontline health workers (clinical data). Part of `ezazi-monorepo`: this workspace **must consume** `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` from `packages/*` — never re-implement them locally, and never make a package import an app.
+
+**Adoption status:** `@ezazi/api-client` ✅ in use (`src/services/api` is a thin adapter over it — import the transport contract from the package, not from the local barrel). `@ezazi/config` / `@ezazi/types` ❌ **not yet imported** — `src/config/clients/*` is still a local mirror. Extend the shared package; don't grow the mirror. See ARCHITECTURE_RULES §10.
+
+## 🚫 NEVER touch `apps/web` — hard stop
+
+**Mobile work changes `apps/mobile/` only. `apps/web/` is off-limits, always, no exceptions.** Not its source, not its config, not its deps, not its lockfile — and **not to fix it**, even when it is obviously broken and the fix is obvious.
+
+- **`apps/web` failures are NOT mobile's to fix.** Report them and move on. Known and pre-existing: `@ezazi/web#typecheck` fails on duplicate `vite` installs (root vs `apps/web/node_modules`) in web's own `vite.config.ts`, and `@ezazi/config#test` exits 1 with "No test files found". **Both keep `turbo run typecheck lint test` red at the root. Do not "helpfully" repair either.** Verify mobile with the per-workspace commands instead:
+  ```
+  cd apps/mobile && npx tsc --noEmit && npx eslint "src/**/*.{ts,tsx}" App.tsx && npx jest
+  ```
+- **`packages/*` is shared with web — changing a package IS changing web.** Additive and non-breaking (adding a test, a new export) is fine. Changing or removing an existing export, a signature, or a dependency is **not** an incidental side effect of a mobile task — stop and ask first.
+- **If a mobile task appears to require editing `apps/web`, it doesn't.** Stop and ask. There is another way, or the task is mis-scoped.
 
 **Stack (LOCKED):** Expo SDK 57 · RN 0.86 · React 19.2 · **New Architecture** · expo-sqlite + Drizzle · React Navigation v7 · zod v4 · zustand v5 · RHF 7 · Node 20. Custom dev client, **not** Expo Go.
 

@@ -1,14 +1,17 @@
 import axios from 'axios';
 import { secureStorage } from '@/services/storage/secure-storage';
 import { logger } from '@/utils/logger';
-import { createApiClient } from '../client/createApiClient';
+import { createApiClient } from '@ezazi/api-client';
 
 jest.mock('@/config/env', () => ({ env: { AUTH_GATEWAY_URL: 'https://auth.example.test' } }));
 jest.mock('@/services/storage/secure-storage', () => ({
   secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
 }));
 jest.mock('@/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn() } }));
-jest.mock('../client/createApiClient', () => ({ createApiClient: jest.fn(() => ({})) }));
+jest.mock('@ezazi/api-client', () => ({
+  ...jest.requireActual('@ezazi/api-client'),
+  createApiClient: jest.fn(() => ({})),
+}));
 
 import '../client';
 

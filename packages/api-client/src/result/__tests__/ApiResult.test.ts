@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { failure, isFailure, isSuccess, success } from '../ApiResult';
 import { ApiError } from '../../errors/ApiError';
 

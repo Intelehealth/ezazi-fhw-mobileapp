@@ -2,13 +2,16 @@ import axios from 'axios';
 import { env } from '@/config/env';
 import { secureStorage } from '@/services/storage/secure-storage';
 import { logger } from '@/utils/logger';
-import { createApiClient } from './client/createApiClient';
+import { createApiClient } from '@ezazi/api-client';
 
 /**
  * Shared axios instance for auth-gateway calls. Per-module API files import this
  * and add their own endpoint methods.
  *
- * Adds: JWT bearer, refresh-on-401 (one retry) — via the common client/interceptors.
+ * Adds: JWT bearer, refresh-on-401 (one retry) — via @ezazi/api-client's
+ * shared interceptor stack. This file is the mobile ADAPTER: it supplies the
+ * secure-store token provider and the refresh handler; the transport contract
+ * itself is shared with apps/web.
  * EZ-942 — transparent refresh / expiry handling lives here.
  */
 

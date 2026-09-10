@@ -46,9 +46,18 @@ npm run ios
 
 ## Source layout
 
+> `src/` is **flat** today. The feature-modular `core/` + `features/` layout in
+> [`MOBILE_STACK.md`](MOBILE_STACK.md) §2 is a **roadmap** — those folders do not exist yet.
+
 ```
 src/
-├── config/         # env, theme, constants, feature-flags
+├── __mocks__/      # test fixtures (configResponse.json)
+├── components/     # shared UI primitives
+├── config/         # env, theme, feature-flags + clients/ (per-client registry)
+├── context/        # ThemeContext
+├── db/             # expo-sqlite + Drizzle — schema.ts, index.ts, seeds/
+├── hooks/
+├── i18n/           # locales + i18next setup
 ├── navigation/     # RootNavigator (auth + app stacks)
 ├── screens/
 │   ├── auth/       # Splash, Setup, Login, ForgotPwd×3, Privacy (Sprint 42)
@@ -60,12 +69,11 @@ src/
 │   ├── api/        # axios client, per-module endpoints
 │   └── storage/    # secure-store + async-storage wrappers
 ├── stores/         # Zustand stores (auth, app, sync)
-├── hooks/
-├── components/     # shared UI primitives
-├── i18n/           # locales + i18next setup
-├── utils/          # logger, calendar, validators
-└── types/          # shared TS types
+├── types/          # shared TS types
+└── utils/          # logger, calendar, base64, permissions, toast
 ```
+
+Generated migrations live in `apps/mobile/drizzle/` (committed, applied on-device) — not under `src/`.
 
 ## Sprint 42 — Auth (EZ-920, 928, 932-934, 939-943)
 

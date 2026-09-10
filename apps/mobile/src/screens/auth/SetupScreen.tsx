@@ -18,7 +18,7 @@ import { useResponsive } from '@/hooks/useResponsive';
    repository or store before the sync engine lands. Do NOT copy this pattern into
    a new screen — the boundary rule will (correctly) reject it. */
 import { authApi } from '@/services/api/auth.api';
-import type { ApiError } from '@/services/api/errors/ApiError';
+import type { ApiError } from '@ezazi/api-client';
 import { logApiError } from '@/services/api/errors/logApiError';
 /* eslint-enable boundaries/dependencies */
 import { secureStorage } from '@/services/storage/secure-storage';

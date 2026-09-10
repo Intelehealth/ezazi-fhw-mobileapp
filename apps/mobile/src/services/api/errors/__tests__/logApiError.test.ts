@@ -2,7 +2,7 @@ jest.mock('@/utils/logger', () => ({ logger: { info: jest.fn(), error: jest.fn()
 
 import { logger } from '@/utils/logger';
 import { logApiError } from '../logApiError';
-import { ApiError, UnauthorizedError } from '../ApiError';
+import { ApiError, UnauthorizedError } from '@ezazi/api-client';
 
 describe('logApiError', () => {
 

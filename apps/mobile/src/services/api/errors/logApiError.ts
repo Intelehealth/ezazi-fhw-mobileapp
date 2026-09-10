@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import type { ApiError } from './ApiError';
+import type { ApiError } from '@ezazi/api-client';
 
 /**
  * Console-only diagnostic log for a failed API call — never shown to the user.

@@ -1,7 +1,6 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { mapAxiosError } from './errors/mapAxiosError';
-import { failure, success } from './result/ApiResult';
-import type { ApiResult } from './result/ApiResult';
+import { mapAxiosError, failure, success } from '@ezazi/api-client';
+import type { ApiResult } from '@ezazi/api-client';
 
 /** Runs one request through `instance`, never throwing — always resolves to an ApiResult. */
 export async function request<T>(instance: AxiosInstance, config: AxiosRequestConfig): Promise<ApiResult<T>> {

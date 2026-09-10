@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { mapAxiosError } from '../mapAxiosError';
 import { ApiError, NetworkError, ServerError, TimeoutError, UnauthorizedError } from '../ApiError';
 

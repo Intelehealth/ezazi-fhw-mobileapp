@@ -1,15 +1,16 @@
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { createApiClient } from '../createApiClient';
 import * as interceptors from '../interceptors';
 
-jest.mock('../interceptors', () => ({
-  attachAuthInterceptor: jest.fn(),
-  attachUnauthorizedRetryInterceptor: jest.fn(),
+vi.mock('../interceptors', () => ({
+  attachAuthInterceptor: vi.fn(),
+  attachUnauthorizedRetryInterceptor: vi.fn(),
 }));
 
 describe('createApiClient', () => {
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('creates an axios instance with the given baseURL and a default timeout', () => {

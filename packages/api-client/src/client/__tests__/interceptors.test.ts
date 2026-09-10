@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { attachAuthInterceptor, attachUnauthorizedRetryInterceptor } from '../interceptors';
 
@@ -7,14 +8,14 @@ type RequestHandler = (
 type RejectedHandler = (error: unknown) => unknown;
 
 function createFakeConfig(): InternalAxiosRequestConfig {
-  return { headers: { set: jest.fn() } } as unknown as InternalAxiosRequestConfig;
+  return { headers: { set: vi.fn() } } as unknown as InternalAxiosRequestConfig;
 }
 
 /** Fakes just enough of an AxiosInstance to unit-test interceptor wiring, offline. */
 function createFakeInstance() {
   let requestHandler: RequestHandler | undefined;
   let responseRejectedHandler: RejectedHandler | undefined;
-  const callInstance = jest.fn();
+  const callInstance = vi.fn();
 
   const instance = Object.assign(callInstance, {
     interceptors: {
@@ -79,13 +80,13 @@ describe('attachUnauthorizedRetryInterceptor', () => {
     return {
       isAxiosError: true,
       response: { status: 401 },
-      config: { _retry: retried, headers: { set: jest.fn() } },
+      config: { _retry: retried, headers: { set: vi.fn() } },
     };
   }
 
   it('retries once with the new token when onUnauthorized resolves one', async () => {
     const { instance, callInstance, getResponseRejectedHandler } = createFakeInstance();
-    const onUnauthorized = jest.fn().mockResolvedValue('new-token');
+    const onUnauthorized = vi.fn().mockResolvedValue('new-token');
     attachUnauthorizedRetryInterceptor(instance, onUnauthorized);
 
     const error = create401Error();
@@ -98,7 +99,7 @@ describe('attachUnauthorizedRetryInterceptor', () => {
 
   it('does not retry a request that has already been retried', async () => {
     const { instance, callInstance, getResponseRejectedHandler } = createFakeInstance();
-    const onUnauthorized = jest.fn().mockResolvedValue('new-token');
+    const onUnauthorized = vi.fn().mockResolvedValue('new-token');
     attachUnauthorizedRetryInterceptor(instance, onUnauthorized);
 
     const error = create401Error(true);
@@ -110,7 +111,7 @@ describe('attachUnauthorizedRetryInterceptor', () => {
 
   it('rejects without retrying when onUnauthorized yields no token', async () => {
     const { instance, callInstance, getResponseRejectedHandler } = createFakeInstance();
-    const onUnauthorized = jest.fn().mockResolvedValue(null);
+    const onUnauthorized = vi.fn().mockResolvedValue(null);
     attachUnauthorizedRetryInterceptor(instance, onUnauthorized);
 
     const error = create401Error();
@@ -121,7 +122,7 @@ describe('attachUnauthorizedRetryInterceptor', () => {
 
   it('passes through non-401 errors untouched', async () => {
     const { instance, callInstance, getResponseRejectedHandler } = createFakeInstance();
-    const onUnauthorized = jest.fn();
+    const onUnauthorized = vi.fn();
     attachUnauthorizedRetryInterceptor(instance, onUnauthorized);
 
     const error = { isAxiosError: true, response: { status: 500 }, config: {} };

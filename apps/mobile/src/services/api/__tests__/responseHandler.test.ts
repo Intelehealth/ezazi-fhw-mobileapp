@@ -1,6 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import { createRequestMethods, request } from '../responseHandler';
-import { NetworkError } from '../errors/ApiError';
+import { NetworkError } from '@ezazi/api-client';
 
 function createFakeInstance(handler: (config: unknown) => Promise<{ data: unknown }>) {
   return { request: jest.fn(handler) } as unknown as AxiosInstance;

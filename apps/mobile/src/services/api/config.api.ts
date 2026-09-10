@@ -1,10 +1,8 @@
 import { env } from '@/config/env';
 import type { ConfigResponse } from '@/types/config.types';
-import { createApiClient } from './client/createApiClient';
+import { createApiClient, ApiError, failure } from '@ezazi/api-client';
 import { createRequestMethods } from './responseHandler';
-import { ApiError } from './errors/ApiError';
-import { failure } from './result/ApiResult';
-import type { ApiResult } from './result/ApiResult';
+import type { ApiResult } from '@ezazi/api-client';
 
 /**
  * Unauthenticated — the config endpoint has no auth interceptor.

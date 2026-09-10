@@ -56,7 +56,7 @@ Before dependency/architecture work in `apps/mobile`:
 
 ## 3. Version manifest
 
-Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.**
+Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.** Every runtime dependency in `package.json` belongs to exactly one of them: if you add a dep and it appears in neither list below, its bump policy (§8) is undefined — add the row in the same commit.
 
 ### (A) Independently pinned
 | Package | Pin | Role |
@@ -69,9 +69,12 @@ Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.*
 | `zustand` | `^5.0.0` | Session/UI state. |
 | `@tanstack/react-query` | `^5.0.0` | **Optional** — online-only reads not persisted to the DB. |
 | `react-hook-form` · `zod` · `@hookform/resolvers` | `^7.87` · `^4.5` · `^5.9` | Forms. **RHF not v8; zod v4 not v3; resolvers ≥ 5.2.1.** |
+| `i18next` · `react-i18next` · `intl-pluralrules` | `^23.15` · `^15.0` · `^2.0.1` | i18n. `intl-pluralrules` is a **required polyfill** — Hermes ships no `Intl.PluralRules`; dropping it breaks i18next at runtime. |
+| `dayjs` · `nepali-date-converter` | `^1.11` · `^3.4` | Calendar: AD + Nepali BS. Which one a client uses is a per-client config choice (§7); both ship in every build. |
+| `axios` | `^1.7` | Transport under `@ezazi/api-client`, which owns the client factory + interceptors. Direct use in mobile is deliberately limited to the raw refresh POST in `services/api/client.ts` (must bypass the interceptor to avoid recursing on 401) and type-only imports. **Build new API surface on `@ezazi/api-client`, not raw axios.** |
 
 ### (B) SDK-managed — install via `npx expo install`, NEVER hardcode
-`expo-sqlite`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`.
+`expo-sqlite`, `@react-native-async-storage/async-storage`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`.
 
 ### (C) Tooling — must be installed
 `typescript`, `eslint`, `@typescript-eslint/*`, `eslint-plugin-react(-hooks)`, **`eslint-plugin-boundaries`** (feature isolation), `prettier`, `jest`, `jest-expo`, `@testing-library/react-native`, `drizzle-kit`, `babel-plugin-inline-import`, `@react-native-community/cli`, `turbo` (root).
@@ -135,6 +138,10 @@ Ships as **eZAZI (India)** and **eLCG (Nepal)** from one codebase (`@ezazi/confi
 - **⏳ UNBUILT — the sync engine:** hand-rolled and owned by us (`apps/mobile/src/db/sync`). The single-seam design (§4) is **locked**; the implementation is the remaining critical-path work. Trigger backbone: foreground/on-write + FCM silent-push, with `expo-background-task` as a best-effort tier.
 - **⏳ REMAINING build-out** (Drizzle FK/dirty-flag indexes + `relations()`, `useMigrations` boot wiring, LiveKit / Firebase / background-task services, and the feature-modular restructure of the flat `src/`) — tracked in [`MOBILE_STACK.md`](MOBILE_STACK.md) §7.
 - **⏳ UNVALIDATED — Drizzle at runtime:** the app runs on-device, but the screens exercised so far use the API + secure storage. The DB opening/querying on a real device is confirmed the first time a DB-backed screen renders.
+- **🟠 PARTIAL — shared-package adoption: `@ezazi/api-client` ✅ done, `@ezazi/config` + `@ezazi/types` ❌ not yet.**
+  - **Done (2026-09-10):** `apps/mobile` now consumes `@ezazi/api-client`. The five files it had duplicated — `createApiClient`, `interceptors`, `ApiError`, `mapAxiosError`, `ApiResult` — were byte-identical copies and have been **deleted**; `src/services/api` is now the thin adapter the design always called for (`client.ts` supplies the secure-store token provider + refresh-on-401 dedupe; `logApiError` stays RN-only because LogBox hijacks `console.warn`; `responseHandler` + `*.api.ts` stay mobile-owned). The 35 unit tests covering the extracted code moved with it into `packages/api-client` as vitest specs — the package previously had **none**, so both apps were relying on untested shared transport code.
+  - **Deliberate:** `src/services/api/index.ts` does **not** re-export the shared symbols. Import them from `@ezazi/api-client` directly — a local alias is exactly how the two apps drifted apart the first time.
+  - **Still open:** nothing in `apps/mobile/src` imports `@ezazi/config` or `@ezazi/types` (verify: `grep -rn '@ezazi/' apps/mobile/src`). Mobile still runs its own `src/config/clients/{registry,types,default,nepal}`. `packages/config` is already generalized for this — `ClientBrandConfig<TAsset>` exists precisely so mobile can instantiate it as `ClientBrandConfig<ImageSourcePropType>` while web uses `ClientBrandConfig<string>`. Two live copies of the client registry put the §7 white-label boundary at risk of silent divergence, so this is the next one to close.
 - **🟠 PARTIAL — CI + testing:** `.github/workflows/mobile-ci.yml` runs `turbo run typecheck lint test` (Node 20) on PRs touching `apps/mobile`/`packages`. **Still missing:** coverage thresholds, `expo-doctor`, the `eslint-plugin-boundaries` rule in CI, and Drizzle schema/repository tests (the old WMDB tests were deleted at cutover).
 - **🟡 REVISIT — `react-native-notify-kit`:** adopt only if continuous background sync is needed **and** foreground+FCM proven insufficient. Android-only; single-maintainer risk.
 - **🟡 REVISIT — Drizzle 1.0 GA:** move off 0.45.x when GA.

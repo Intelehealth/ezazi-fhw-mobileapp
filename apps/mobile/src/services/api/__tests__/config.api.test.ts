@@ -1,10 +1,12 @@
-import { createApiClient } from '../client/createApiClient';
+import { createApiClient, ApiError } from '@ezazi/api-client';
 import { createRequestMethods } from '../responseHandler';
-import { ApiError } from '../errors/ApiError';
 import type { ConfigResponse } from '@/types/config.types';
 
 jest.mock('@/config/env', () => ({ env: { CONFIG_URL: 'https://config.example.test' } }));
-jest.mock('../client/createApiClient', () => ({ createApiClient: jest.fn(() => ({})) }));
+jest.mock('@ezazi/api-client', () => ({
+  ...jest.requireActual('@ezazi/api-client'),
+  createApiClient: jest.fn(() => ({})),
+}));
 jest.mock('../responseHandler', () => ({
   createRequestMethods: jest.fn(() => ({ get: jest.fn() })),
 }));
