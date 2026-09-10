@@ -115,6 +115,8 @@ describe('AppRoutes', () => {
 
     await renderAtPath('/this-route-does-not-exist');
 
-    expect(await screen.findByText('Page not found.')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: '404' })
+    ).toBeInTheDocument();
   });
 });

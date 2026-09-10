@@ -10,6 +10,9 @@ export const ROUTES = {
     LOGIN: 'login',
     FORGOT_USERNAME: 'forgot-username',
     FORGOT_PASSWORD: 'forgot-password',
+    VERIFICATION_METHOD: 'verification-method',
+    OTP_VERIFICATION: 'otp-verification',
+    SETUP_NEW_PASSWORD: 'setup-new-password',
   },
   // login.component.ts's real post-login targets (loginSuccess()). Both
   // routes currently render the same placeholder pages/dashboard/dashboard.page.tsx

@@ -8,8 +8,8 @@ import { RecaptchaComponent } from '../../components/common/recaptcha.component'
 import { env } from '../../config/env';
 import { useLogin } from '../../hooks/mutations/useLogin';
 import { ROUTES } from '../../routes/paths';
+import { PasswordFieldComponent } from '../../components/auth/password-field.component';
 import { loginSchema, type LoginFormValues } from './login.validation';
-import { PasswordFieldComponent } from './password-field.component';
 
 const FORGOT_USERNAME_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.FORGOT_USERNAME}`;
 const FORGOT_PASSWORD_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.FORGOT_PASSWORD}`;

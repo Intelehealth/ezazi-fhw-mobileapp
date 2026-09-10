@@ -16,6 +16,21 @@ const RouteLoader = () => (
 );
 
 const LoginPage = lazy(() => import('../pages/auth/login/login.page'));
+const ForgotUsernamePage = lazy(
+  () => import('../pages/auth/forgot-username/forgot-username.page')
+);
+const ForgotPasswordPage = lazy(
+  () => import('../pages/auth/forgot-password/forgot-password.page')
+);
+const VerificationMethodPage = lazy(
+  () => import('../pages/auth/verification-method/verification-method.page')
+);
+const OtpVerificationPage = lazy(
+  () => import('../pages/auth/otp-verification/otp-verification.page')
+);
+const SetupNewPasswordPage = lazy(
+  () => import('../pages/auth/setup-new-password/setup-new-password.page')
+);
 const DashboardPage = lazy(() => import('../pages/dashboard/dashboard.page'));
 const NotFoundPage = lazy(() => import('../pages/not-found/not-found.page'));
 
@@ -38,6 +53,46 @@ const router = createBrowserRouter(
             element={
               <Suspense fallback={<RouteLoader />}>
                 <LoginPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path={ROUTES.AUTH.FORGOT_USERNAME}
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <ForgotUsernamePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path={ROUTES.AUTH.FORGOT_PASSWORD}
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <ForgotPasswordPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path={ROUTES.AUTH.VERIFICATION_METHOD}
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <VerificationMethodPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path={ROUTES.AUTH.OTP_VERIFICATION}
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <OtpVerificationPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path={ROUTES.AUTH.SETUP_NEW_PASSWORD}
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <SetupNewPasswordPage />
               </Suspense>
             }
           />
