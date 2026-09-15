@@ -1,6 +1,19 @@
+import { configure } from '@testing-library/dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppSelector } from '../../store/hooks';
+
+// This suite's renderAtPath() forces a fresh module graph on every test via
+// vi.resetModules() (see below), which now also re-transforms
+// react-international-phone (a real third-party UI dep, inlined in
+// vitest.config.ts to dodge the dual-React hazard) from scratch each time —
+// occasionally pushing past find*/waitFor's 1000ms default when this file
+// runs alongside the rest of the suite under CPU contention, making an
+// otherwise-passing assertion flaky. Both this file's own test timeout and
+// find*/waitFor's async-utility timeout are raised to give that
+// re-transform enough headroom; scoped to this file only.
+vi.setConfig({ testTimeout: 20000 });
+configure({ asyncUtilTimeout: 10000 });
 
 /**
  * End-to-end walkthroughs of both recovery flows (forgot-username and
@@ -70,6 +83,22 @@ async function renderAtPath(path: string) {
   );
 }
 
+// react-international-phone's <PhoneInput> is a masked, keystroke-aware
+// control: a single fireEvent.input() full-value replace (e.g. straight to
+// '9876543210') loses the pre-filled "+91" India dial code entirely, which
+// makes the library re-guess a country from the bare digits — matching Iran's
+// "98" dial code instead of keeping India selected. Appending one digit at a
+// time, like typeOtp below, keeps every intermediate value prefixed with the
+// already-selected country's dial code, the same way real keystrokes would.
+function typePhone(nationalNumber: string) {
+  const input = screen.getByPlaceholderText(
+    'Enter Mobile Number'
+  ) as HTMLInputElement;
+  for (const digit of nationalNumber) {
+    fireEvent.change(input, { target: { value: input.value + digit } });
+  }
+}
+
 function typeOtp(digits: string) {
   const boxes = screen.getAllByLabelText(/OTP digit/);
   digits.split('').forEach((digit, i) => {
@@ -100,9 +129,7 @@ describe('forgot-username recovery flow (success)', () => {
       await screen.findByRole('heading', { name: 'Forgot Username' })
     ).toBeInTheDocument();
 
-    fireEvent.input(screen.getByPlaceholderText('Enter Mobile Number'), {
-      target: { value: '9876543210' },
-    });
+    typePhone('9876543210');
     await waitForEnabledAndClick(/next/i);
 
     expect(
@@ -159,9 +186,7 @@ describe('forgot-password recovery flow', () => {
       await screen.findByRole('heading', { name: 'Choose verification method' })
     ).toBeInTheDocument();
 
-    fireEvent.input(screen.getByPlaceholderText('Enter Mobile Number'), {
-      target: { value: '9876543210' },
-    });
+    typePhone('9876543210');
     await waitForEnabledAndClick(/next/i);
 
     expect(
@@ -200,9 +225,7 @@ describe('forgot-password recovery flow', () => {
     await waitForEnabledAndClick(/next/i);
     await screen.findByRole('heading', { name: 'Choose verification method' });
 
-    fireEvent.input(screen.getByPlaceholderText('Enter Mobile Number'), {
-      target: { value: '9876543210' },
-    });
+    typePhone('9876543210');
     await waitForEnabledAndClick(/next/i);
     await screen.findByRole('heading', { name: 'OTP verification' });
 

@@ -31,6 +31,7 @@ export default defineConfig({
           /@reduxjs\/toolkit/,
           /react-hook-form/,
           /@hookform\/resolvers/,
+          /react-international-phone/,
         ],
       },
     },

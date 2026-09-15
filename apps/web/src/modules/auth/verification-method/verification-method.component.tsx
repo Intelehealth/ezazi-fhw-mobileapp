@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ContactTabsComponent,
@@ -98,21 +98,29 @@ export function VerificationMethodComponent() {
         entry.
       </p>
 
-      <ContactTabsComponent
-        active={active}
-        onActiveChange={handleActiveChange}
-        phoneRegistration={phoneForm.register('phone')}
-        phoneError={
-          phoneForm.formState.isSubmitted
-            ? phoneForm.formState.errors.phone?.message
-            : undefined
-        }
-        emailRegistration={emailForm.register('email')}
-        emailError={
-          emailForm.formState.isSubmitted
-            ? emailForm.formState.errors.email?.message
-            : undefined
-        }
+      <Controller
+        name="phone"
+        control={phoneForm.control}
+        render={({ field: { value, onChange, onBlur } }) => (
+          <ContactTabsComponent
+            active={active}
+            onActiveChange={handleActiveChange}
+            phoneValue={value}
+            onPhoneChange={onChange}
+            onPhoneBlur={onBlur}
+            phoneError={
+              phoneForm.formState.isSubmitted
+                ? phoneForm.formState.errors.phone?.message
+                : undefined
+            }
+            emailRegistration={emailForm.register('email')}
+            emailError={
+              emailForm.formState.isSubmitted
+                ? emailForm.formState.errors.email?.message
+                : undefined
+            }
+          />
+        )}
       />
 
       <div className="mt-5">

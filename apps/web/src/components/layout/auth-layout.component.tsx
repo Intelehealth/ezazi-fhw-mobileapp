@@ -99,7 +99,7 @@ export function AuthLayoutComponent({ children }: AuthLayoutComponentProps) {
         </div>
       </div>
 
-      <div className="w-full px-6 py-5 md:w-1/2 md:px-[60px] md:py-5">
+      <div className="w-full px-6 py-5 md:w-1/2 md:px-[60px] md:py-15">
         <div className="mb-4 md:hidden">
           <img
             className="w-1/2 rounded"

@@ -17,8 +17,14 @@ describe('phoneContactSchema', () => {
     expect(result.error?.issues[0].message).toBe('Please enter valid mobile number');
   });
 
-  it('accepts a plausible digit-only phone number', () => {
-    expect(phoneContactSchema.safeParse({ phone: '9876543210' }).success).toBe(true);
+  it('rejects a bare dial code with no number dialed yet (PhoneInput default-country prefill)', () => {
+    const result = phoneContactSchema.safeParse({ phone: '+91' });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe('Please enter valid mobile number');
+  });
+
+  it('accepts a plausible E.164 phone number', () => {
+    expect(phoneContactSchema.safeParse({ phone: '+919876543210' }).success).toBe(true);
   });
 });
 

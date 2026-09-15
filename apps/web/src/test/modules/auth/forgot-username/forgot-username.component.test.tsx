@@ -12,6 +12,22 @@ beforeEach(() => {
   mutate.mockClear();
 });
 
+// react-international-phone's <PhoneInput> is a masked, keystroke-aware
+// control: a single fireEvent.input() full-value replace loses the
+// pre-filled "+91" India dial code entirely, which makes the library
+// re-guess a country from the bare digits (matching Iran's "98" dial code
+// instead of keeping India selected). Appending one digit at a time keeps
+// every intermediate value prefixed with the already-selected country's
+// dial code, the same way real keystrokes would.
+function typePhone(nationalNumber: string) {
+  const input = screen.getByPlaceholderText(
+    'Enter Mobile Number'
+  ) as HTMLInputElement;
+  for (const digit of nationalNumber) {
+    fireEvent.change(input, { target: { value: input.value + digit } });
+  }
+}
+
 describe('ForgotUsernameComponent', () => {
   it('renders the phone tab by default with the Next button outlined until valid', async () => {
     render(
@@ -24,9 +40,7 @@ describe('ForgotUsernameComponent', () => {
     const submitButton = screen.getByRole('button', { name: /next/i });
     expect(submitButton).toBeDisabled();
 
-    fireEvent.input(screen.getByPlaceholderText('Enter Mobile Number'), {
-      target: { value: '9876543210' },
-    });
+    typePhone('9876543210');
 
     await waitFor(() => expect(submitButton).not.toBeDisabled());
   });
@@ -38,16 +52,14 @@ describe('ForgotUsernameComponent', () => {
       </MemoryRouter>
     );
 
-    fireEvent.input(screen.getByPlaceholderText('Enter Mobile Number'), {
-      target: { value: '9876543210' },
-    });
+    typePhone('9876543210');
     const submitButton = screen.getByRole('button', { name: /next/i });
     await waitFor(() => expect(submitButton).not.toBeDisabled());
     fireEvent.click(submitButton);
 
     await waitFor(() =>
       expect(mutate).toHaveBeenCalledWith(
-        { otpFor: 'username', via: 'phone', value: '9876543210' },
+        { otpFor: 'username', via: 'phone', value: '+919876543210' },
         expect.objectContaining({ onSuccess: expect.any(Function) })
       )
     );
