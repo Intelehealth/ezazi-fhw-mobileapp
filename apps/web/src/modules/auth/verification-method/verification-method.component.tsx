@@ -9,6 +9,7 @@ import {
 import { NextButtonComponent } from '../../../components/auth/next-button.component';
 import { useRequestOtp } from '../../../hooks/mutations/useRequestOtp';
 import { ROUTES } from '../../../routes/paths';
+import { splitE164Phone } from '../../../utils/split-phone-number';
 import {
   emailContactSchema,
   phoneContactSchema,
@@ -18,6 +19,7 @@ import {
 
 const FORGOT_PASSWORD_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.FORGOT_PASSWORD}`;
 const OTP_VERIFICATION_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.OTP_VERIFICATION}`;
+const DEFAULT_DIAL_CODE = '91'; // matches ContactTabsComponent's PhoneInput defaultCountry="in"
 
 interface VerificationMethodLocationState {
   username?: string;
@@ -33,6 +35,16 @@ interface VerificationMethodLocationState {
  * pattern, but redirects to /auth/forgot-password instead — that's this
  * rebuild's actual entry point into this flow (screen 2 hands off `username`
  * via route state; see forgot-password.component.tsx).
+ *
+ * `username` is carried through to screen 4/5 for DISPLAY only (screen 5's
+ * profile row) — this screen's own requestOtp call identifies the account
+ * by the phone/email the user re-types here, matching auth-gateway's
+ * `otpFor: 'password'` fallback lookup (username-first, else phone/email);
+ * since this screen already has the user pick a specific channel to type
+ * into, `username` is deliberately not also sent here.
+ *
+ * Both tabs map to real backend actions now — auth-gateway's `otpFor:
+ * 'password'` accepts `phoneNumber` OR `email` (see useRequestOtp.ts).
  */
 export function VerificationMethodComponent() {
   const navigate = useNavigate();
@@ -40,6 +52,7 @@ export function VerificationMethodComponent() {
   const { username } = (location.state ?? {}) as VerificationMethodLocationState;
   const { mutate: requestOtp, isPending } = useRequestOtp();
   const [active, setActive] = useState<ContactMethod>('phone');
+  const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
 
   useEffect(() => {
     if (!username) navigate(FORGOT_PASSWORD_PATH, { replace: true });
@@ -66,25 +79,29 @@ export function VerificationMethodComponent() {
   }
 
   function onSubmit() {
-    const value =
-      active === 'phone'
-        ? phoneForm.getValues('phone')
-        : emailForm.getValues('email');
-
-    requestOtp(
-      { otpFor: 'password', username, via: active, value },
-      {
-        onSuccess: () =>
-          navigate(OTP_VERIFICATION_PATH, {
-            state: {
-              verificationFor: 'forgot-password',
-              via: active,
-              value,
-              username,
-            },
-          }),
-      }
-    );
+    if (active === 'phone') {
+      const phoneNumber = splitE164Phone(phoneForm.getValues('phone'), dialCode);
+      requestOtp(
+        { otpFor: 'password', phoneNumber, countryCode: dialCode },
+        {
+          onSuccess: () =>
+            navigate(OTP_VERIFICATION_PATH, {
+              state: { verifyFor: 'password', phoneNumber, countryCode: dialCode, username },
+            }),
+        }
+      );
+    } else {
+      const email = emailForm.getValues('email');
+      requestOtp(
+        { otpFor: 'password', email },
+        {
+          onSuccess: () =>
+            navigate(OTP_VERIFICATION_PATH, {
+              state: { verifyFor: 'password', email, username },
+            }),
+        }
+      );
+    }
   }
 
   return (
@@ -106,7 +123,10 @@ export function VerificationMethodComponent() {
             active={active}
             onActiveChange={handleActiveChange}
             phoneValue={value}
-            onPhoneChange={onChange}
+            onPhoneChange={(nextValue, nextDialCode) => {
+              onChange(nextValue);
+              setDialCode(nextDialCode);
+            }}
             onPhoneBlur={onBlur}
             phoneError={
               phoneForm.formState.isSubmitted

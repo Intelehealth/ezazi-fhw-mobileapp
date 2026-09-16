@@ -1,6 +1,9 @@
 import { configure } from '@testing-library/dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, failure, success } from '@ezazi/api-client';
+import { authService } from '../../services/auth.service';
+import { showToast } from '../../services/toast';
 import { useAppSelector } from '../../store/hooks';
 
 // This suite's renderAtPath() forces a fresh module graph on every test via
@@ -22,14 +25,18 @@ configure({ asyncUtilTimeout: 10000 });
  * browser/e2e tool (no Playwright/Cypress), so this RTL integration suite is
  * what stands in for a live browser walkthrough of the full flow end to end.
  *
+ * authService (not the individual hooks) is mocked at the network boundary,
+ * matching useLogin.test.tsx's own convention — the hooks themselves
+ * (useRequestOtp/useVerifyOtp/useResetPassword) run for real here, exercising
+ * their real payload-building/error-toast wiring against a stand-in for the
+ * actual auth-gateway responses (see auth-gateway/src/modules/auth/auth.dto.ts
+ * for the real shapes these mocks mirror — both `otpFor: 'username'` and
+ * `otpFor: 'password'` are real now, phone AND email).
+ *
  * Same window.history.pushState + fresh dynamic import per test as
  * routes/app.routes.test.tsx, for the same reason (the router reads
  * window.location once at module-eval time). store/hooks and useLogin are
- * mocked for the same dual-React-hoisting reason as that file; the OTP/reset
- * hooks are NOT mocked here — this suite exercises the real mock hooks
- * (useRequestOtp/useVerifyOtp/useResetPassword) end to end, including their
- * "fail"/000000 trigger convention. mock-utils' network delay is sped up so
- * this doesn't spend real seconds waiting on it.
+ * mocked for the same dual-React-hoisting reason as that file.
  */
 vi.mock('../../store/hooks', () => ({
   useAppSelector: vi.fn(() => false),
@@ -40,12 +47,15 @@ vi.mock('../../hooks/mutations/useLogin', () => ({
   useLogin: () => ({ mutate: vi.fn(), isPending: false, error: null }),
 }));
 
-vi.mock('../../hooks/mutations/mock-utils', async () => {
-  const actual = await vi.importActual<
-    typeof import('../../hooks/mutations/mock-utils')
-  >('../../hooks/mutations/mock-utils');
-  return { ...actual, simulateNetworkDelay: vi.fn().mockResolvedValue(undefined) };
-});
+vi.mock('../../services/auth.service', () => ({
+  authService: {
+    requestOtp: vi.fn(),
+    verifyOtp: vi.fn(),
+    resetPassword: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/toast', () => ({ showToast: vi.fn() }));
 
 function mockIsAuthenticated(isAuthenticated: boolean) {
   vi.mocked(useAppSelector).mockImplementation(selector =>
@@ -72,7 +82,7 @@ async function renderAtPath(path: string) {
   // main.tsx is the only place QueryClientProvider normally wraps AppRoutes
   // (App.tsx itself doesn't) — the new screens' real useRequestOtp/
   // useVerifyOtp/useResetPassword hooks need one here since this suite
-  // exercises them unmocked.
+  // exercises them (with authService mocked underneath).
   const queryClient = new QueryClient({
     defaultOptions: { mutations: { retry: false } },
   });
@@ -114,14 +124,37 @@ async function waitForEnabledAndClick(name: RegExp | string) {
 
 beforeEach(() => {
   mockIsAuthenticated(false);
+  vi.mocked(showToast).mockClear();
+  // A real, well-formed phone/email always succeeds (client-side validation
+  // already guarantees that shape reaches here) — the substring "fail" in
+  // either identifier is this suite's own deliberate failure trigger, not a
+  // real auth-gateway convention.
+  vi.mocked(authService.requestOtp).mockImplementation(async ({ phoneNumber, email }) => {
+    const identifier = phoneNumber ?? email ?? '';
+    return identifier.toLowerCase().includes('fail')
+      ? failure(new ApiError('api', 'Something went wrong, please try again.', { status: 500 }))
+      : success({ message: 'If the account exists, an OTP has been sent.' });
+  });
+  vi.mocked(authService.verifyOtp).mockImplementation(async ({ verifyFor, otp }) =>
+    otp === '000000'
+      ? failure(new ApiError('api', 'Invalid or expired code', { status: 401 }))
+      : success(
+          verifyFor === 'username'
+            ? { verified: true }
+            : { verified: true, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 }
+        )
+  );
+  vi.mocked(authService.resetPassword).mockResolvedValue(
+    success({ message: 'Password reset successful.' })
+  );
 });
 
 afterEach(() => {
   window.history.pushState(null, '', '/');
 });
 
-describe('forgot-username recovery flow (success)', () => {
-  it('walks login -> forgot-username -> otp-verification -> back to login', async () => {
+describe('forgot-username recovery flow', () => {
+  it('walks login -> forgot-username (phone tab) -> otp-verification -> back to login (success)', async () => {
     await renderAtPath('/auth/login');
 
     fireEvent.click(await screen.findByRole('link', { name: 'Forgot Username ?' }));
@@ -135,6 +168,46 @@ describe('forgot-username recovery flow (success)', () => {
     expect(
       await screen.findByRole('heading', { name: 'OTP verification' })
     ).toBeInTheDocument();
+    expect(authService.requestOtp).toHaveBeenCalledWith({
+      otpFor: 'username',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    });
+
+    typeOtp('123456');
+    await waitForEnabledAndClick('Verify');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Login' })
+    ).toBeInTheDocument();
+    expect(authService.verifyOtp).toHaveBeenCalledWith({
+      verifyFor: 'username',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+      email: undefined,
+      otp: '123456',
+    });
+  });
+
+  it('walks login -> forgot-username (email tab) -> otp-verification -> back to login (success)', async () => {
+    await renderAtPath('/auth/login');
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Username ?' }));
+    await screen.findByRole('heading', { name: 'Forgot Username' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
+    fireEvent.input(screen.getByPlaceholderText('Enter Email ID'), {
+      target: { value: 'nurse1@example.com' },
+    });
+    await waitForEnabledAndClick(/next/i);
+
+    expect(
+      await screen.findByRole('heading', { name: 'OTP verification' })
+    ).toBeInTheDocument();
+    expect(authService.requestOtp).toHaveBeenCalledWith({
+      otpFor: 'username',
+      email: 'nurse1@example.com',
+    });
 
     typeOtp('123456');
     await waitForEnabledAndClick('Verify');
@@ -156,12 +229,16 @@ describe('forgot-username recovery flow (success)', () => {
     });
     await waitForEnabledAndClick(/next/i);
 
-    // Give the rejected mutation a tick to settle, then confirm no navigation happened.
     await waitFor(() =>
-      expect(
-        screen.getByRole('heading', { name: 'Forgot Username' })
-      ).toBeInTheDocument()
+      expect(showToast).toHaveBeenCalledWith(
+        'Error',
+        'Something went wrong, please try again.',
+        'error'
+      )
     );
+    expect(
+      screen.getByRole('heading', { name: 'Forgot Username' })
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'OTP verification' })
     ).not.toBeInTheDocument();
@@ -169,7 +246,7 @@ describe('forgot-username recovery flow (success)', () => {
 });
 
 describe('forgot-password recovery flow', () => {
-  it('walks login -> forgot-password -> verification-method -> otp-verification -> setup-new-password -> login (success)', async () => {
+  it('walks login -> forgot-password -> verification-method (phone tab) -> otp-verification -> setup-new-password -> login (success)', async () => {
     await renderAtPath('/auth/login');
 
     fireEvent.click(await screen.findByRole('link', { name: 'Forgot Password ?' }));
@@ -192,6 +269,11 @@ describe('forgot-password recovery flow', () => {
     expect(
       await screen.findByRole('heading', { name: 'OTP verification' })
     ).toBeInTheDocument();
+    expect(authService.requestOtp).toHaveBeenCalledWith({
+      otpFor: 'password',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    });
 
     typeOtp('123456');
     await waitForEnabledAndClick('Verify');
@@ -199,6 +281,13 @@ describe('forgot-password recovery flow', () => {
     expect(
       await screen.findByRole('heading', { name: 'Set new password' })
     ).toBeInTheDocument();
+    expect(authService.verifyOtp).toHaveBeenCalledWith({
+      verifyFor: 'password',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+      email: undefined,
+      otp: '123456',
+    });
 
     fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
       target: { value: 'Abcdefg1$' },
@@ -211,6 +300,37 @@ describe('forgot-password recovery flow', () => {
     expect(
       await screen.findByRole('heading', { name: 'Login' })
     ).toBeInTheDocument();
+    expect(authService.resetPassword).toHaveBeenCalledWith('u-1', {
+      newPassword: 'Abcdefg1$',
+      resetToken: 'reset-tok',
+    });
+  });
+
+  it('walks the same flow via verification-method\'s email tab (success — auth-gateway now supports email for password reset too)', async () => {
+    await renderAtPath('/auth/login');
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Password ?' }));
+    await screen.findByRole('heading', { name: 'Forgot Password' });
+
+    fireEvent.input(screen.getByPlaceholderText('Enter username'), {
+      target: { value: 'nurse1' },
+    });
+    await waitForEnabledAndClick(/next/i);
+    await screen.findByRole('heading', { name: 'Choose verification method' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
+    fireEvent.input(screen.getByPlaceholderText('Enter Email ID'), {
+      target: { value: 'nurse1@example.com' },
+    });
+    await waitForEnabledAndClick(/next/i);
+
+    expect(
+      await screen.findByRole('heading', { name: 'OTP verification' })
+    ).toBeInTheDocument();
+    expect(authService.requestOtp).toHaveBeenCalledWith({
+      otpFor: 'password',
+      email: 'nurse1@example.com',
+    });
   });
 
   it('failure path: OTP 000000 keeps the user on otp-verification instead of reaching setup-new-password', async () => {

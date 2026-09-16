@@ -9,6 +9,7 @@ import {
 import { NextButtonComponent } from '../../../components/auth/next-button.component';
 import { useRequestOtp } from '../../../hooks/mutations/useRequestOtp';
 import { ROUTES } from '../../../routes/paths';
+import { splitE164Phone } from '../../../utils/split-phone-number';
 import {
   emailContactSchema,
   phoneContactSchema,
@@ -17,13 +18,16 @@ import {
 } from './forgot-username.validation';
 
 const OTP_VERIFICATION_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.OTP_VERIFICATION}`;
+const DEFAULT_DIAL_CODE = '91'; // matches ContactTabsComponent's PhoneInput defaultCountry="in"
 
 /**
- * Screen 1 (forgot-username.component.html/.ts) — matches the Angular
- * source's own direct-to-OTP behavior unchanged: submit calls requestOtp
- * itself, then navigates straight to otp-verification (unlike screen 2,
- * forgot-password, which was deliberately changed — see its component for
- * why).
+ * Screen 1 (forgot-username.component.html/.ts) — POST /auth/requestOtp with
+ * `otpFor: 'username'` (auth-gateway now supports this: phone-or-email
+ * lookup, OTP sent on whichever channel was submitted — see otp/README.md
+ * on the backend). Structurally identical to screen 3 (verification-method):
+ * same ContactTabsComponent, same phone/email schemas, same dial-code
+ * tracking for splitting the phone field's E.164 value into
+ * phoneNumber/countryCode.
  *
  * Two independent useForm instances (one per tab) rather than one shared
  * FormGroup with swapped validators (Angular's `reset()`) — switching tabs
@@ -33,6 +37,7 @@ export function ForgotUsernameComponent() {
   const navigate = useNavigate();
   const { mutate: requestOtp, isPending } = useRequestOtp();
   const [active, setActive] = useState<ContactMethod>('phone');
+  const [dialCode, setDialCode] = useState(DEFAULT_DIAL_CODE);
 
   const phoneForm = useForm<PhoneContactFormValues>({
     resolver: zodResolver(phoneContactSchema),
@@ -53,20 +58,27 @@ export function ForgotUsernameComponent() {
   }
 
   function onSubmit() {
-    const value =
-      active === 'phone'
-        ? phoneForm.getValues('phone')
-        : emailForm.getValues('email');
-
-    requestOtp(
-      { otpFor: 'username', via: active, value },
-      {
-        onSuccess: () =>
-          navigate(OTP_VERIFICATION_PATH, {
-            state: { verificationFor: 'forgot-username', via: active, value },
-          }),
-      }
-    );
+    if (active === 'phone') {
+      const phoneNumber = splitE164Phone(phoneForm.getValues('phone'), dialCode);
+      requestOtp(
+        { otpFor: 'username', phoneNumber, countryCode: dialCode },
+        {
+          onSuccess: () =>
+            navigate(OTP_VERIFICATION_PATH, {
+              state: { verifyFor: 'username', phoneNumber, countryCode: dialCode },
+            }),
+        }
+      );
+    } else {
+      const email = emailForm.getValues('email');
+      requestOtp(
+        { otpFor: 'username', email },
+        {
+          onSuccess: () =>
+            navigate(OTP_VERIFICATION_PATH, { state: { verifyFor: 'username', email } }),
+        }
+      );
+    }
   }
 
   return (
@@ -87,7 +99,10 @@ export function ForgotUsernameComponent() {
             active={active}
             onActiveChange={handleActiveChange}
             phoneValue={value}
-            onPhoneChange={onChange}
+            onPhoneChange={(nextValue, nextDialCode) => {
+              onChange(nextValue);
+              setDialCode(nextDialCode);
+            }}
             onPhoneBlur={onBlur}
             phoneError={
               phoneForm.formState.isSubmitted

@@ -91,4 +91,24 @@ describe('http', () => {
 
     expect(window.location.hash).toBe('#/auth/forgot-password');
   });
+
+  it('builds the pre-auth auth-gateway client against AUTH_GATEWAY_URL with no token provider or 401 handler', async () => {
+    const { env } = await import('../../config/env');
+    await import('../../services/http');
+
+    // Two clients now share AUTH_GATEWAY_URL (httpClient + authGatewayPublicClient)
+    // — the public one is identified by having neither option set, unlike httpClient's call.
+    const authGatewayCalls = createApiClient.mock.calls.filter(
+      ([opts]) => (opts as { baseURL: string }).baseURL === env.AUTH_GATEWAY_URL
+    );
+    expect(authGatewayCalls).toHaveLength(2);
+
+    const publicCall = authGatewayCalls.find(
+      ([opts]) => !(opts as Record<string, unknown>).getAuthToken
+    );
+    expect(publicCall).toBeDefined();
+    const options = publicCall![0] as Record<string, unknown>;
+    expect(options.getAuthToken).toBeUndefined();
+    expect(options.onUnauthorized).toBeUndefined();
+  });
 });

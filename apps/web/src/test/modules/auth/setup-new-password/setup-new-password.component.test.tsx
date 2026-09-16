@@ -40,8 +40,17 @@ describe('SetupNewPasswordComponent', () => {
     expect(await screen.findByText('login-screen')).toBeInTheDocument();
   });
 
+  it('redirects to login when resetToken is missing even if userUuid is present', async () => {
+    renderScreen({ username: 'nurse1', userUuid: 'u-1' });
+    expect(await screen.findByText('login-screen')).toBeInTheDocument();
+  });
+
   it('shows the username from route state and falls back to the user icon on avatar load error', () => {
-    const { container } = renderScreen({ username: 'nurse1', userUuid: 'u-1' });
+    const { container } = renderScreen({
+      username: 'nurse1',
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
+    });
     expect(screen.getByText('nurse1')).toBeInTheDocument();
 
     // alt="" images have no accessible "img" role, hence container.querySelector here.
@@ -54,7 +63,7 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('fills both password fields and shows the Excellent strength label when "Generate password" is clicked', () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1' });
+    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate password' }));
 
@@ -69,7 +78,7 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('shows a mismatch error when password and confirmPassword differ', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1' });
+    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
 
     fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
       target: { value: 'Abcdefg1' },
@@ -86,7 +95,7 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('warns via toast (not blocking) when the password lacks complexity, without calling resetPassword', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1' });
+    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
 
     fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
       target: { value: 'plainpass' },
@@ -106,8 +115,8 @@ describe('SetupNewPasswordComponent', () => {
     expect(mutate).not.toHaveBeenCalled();
   });
 
-  it('calls resetPassword with userUuid + password once complexity and match both pass', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1' });
+  it('calls resetPassword with userUuid + newPassword + resetToken once complexity and match both pass', async () => {
+    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
 
     fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
       target: { value: 'Abcdefg1$' },
@@ -119,7 +128,7 @@ describe('SetupNewPasswordComponent', () => {
 
     await waitFor(() =>
       expect(mutate).toHaveBeenCalledWith(
-        { userUuid: 'u-1', password: 'Abcdefg1$' },
+        { userUuid: 'u-1', newPassword: 'Abcdefg1$', resetToken: 'reset-tok' },
         expect.objectContaining({ onSuccess: expect.any(Function) })
       )
     );

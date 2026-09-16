@@ -63,3 +63,64 @@ export interface AuthGatewayLoginResponse {
   user: AuthGatewayUser;
   provider: AuthGatewayProvider;
 }
+
+/**
+ * POST {AUTH_GATEWAY_URL}/auth/requestOtp — mirrors auth-gateway's own
+ * `RequestOtpSchema`/`RequestOtpResponse` (auth-gateway/src/modules/auth/auth.dto.ts)
+ * field-for-field. `otpFor: 'username'` (forgot-username) identifies the
+ * account by `phoneNumber` OR `email` and sends the OTP on that same
+ * channel; `otpFor: 'password'` identifies it by `username` if given, else
+ * by `phoneNumber`/`email`, and sends to both phone and email when both are
+ * on file for the matched account. At least one of phoneNumber/email/username
+ * is required — enforced by the backend's own `.refine`, not re-validated
+ * here. The response is intentionally non-committal — same `message`
+ * regardless of whether anything actually matched — so no enumeration
+ * signal leaks either way.
+ */
+export interface RequestOtpPayload {
+  otpFor: 'username' | 'password';
+  phoneNumber?: string;
+  countryCode?: string;
+  email?: string;
+  /** Only meaningful for otpFor: 'password' — ignored for 'username'. */
+  username?: string;
+  source?: string;
+}
+
+export interface RequestOtpResponse {
+  message: string;
+}
+
+/** POST {AUTH_GATEWAY_URL}/auth/verifyOtp — mirrors `VerifyOtpSchema`/`VerifyOtpResponse`. */
+export interface VerifyOtpPayload {
+  verifyFor: 'username' | 'password';
+  phoneNumber?: string;
+  countryCode?: string;
+  email?: string;
+  username?: string;
+  otp: string;
+}
+
+/**
+ * `userUuid`/`resetToken`/`expiresIn` are only present for `verifyFor:
+ * 'password'` — the follow-up `POST /auth/resetPassword/:userUuid` call
+ * needs them. `verifyFor: 'username'` has no follow-up call (the recovered
+ * username is emailed directly by the backend, never returned here), so
+ * those fields are absent.
+ */
+export interface VerifyOtpResponse {
+  verified: true;
+  userUuid?: string;
+  resetToken?: string;
+  expiresIn?: number;
+}
+
+/** POST {AUTH_GATEWAY_URL}/auth/resetPassword/:userUuid — mirrors `ResetPasswordSchema`. Gated on verifyOtp's resetToken, not a session. */
+export interface ResetPasswordPayload {
+  newPassword: string;
+  resetToken: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}

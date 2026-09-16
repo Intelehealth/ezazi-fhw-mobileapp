@@ -7,6 +7,7 @@ import { OtpInputComponent } from '../../../components/auth/otp-input.component'
 import { useRequestOtp } from '../../../hooks/mutations/useRequestOtp';
 import { useVerifyOtp } from '../../../hooks/mutations/useVerifyOtp';
 import { ROUTES } from '../../../routes/paths';
+import { showToast } from '../../../services/toast';
 import { maskContact, type ContactMethod } from '../../../utils/mask-contact';
 import { otpSchema, type OtpFormValues } from './otp-verification.validation';
 
@@ -14,12 +15,13 @@ const LOGIN_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.LOGIN}`;
 const SETUP_NEW_PASSWORD_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.SETUP_NEW_PASSWORD}`;
 const RESEND_COUNTDOWN_SECONDS = 60;
 
-type VerificationFor = 'forgot-username' | 'forgot-password';
+type VerifyFor = 'username' | 'password';
 
 interface OtpVerificationLocationState {
-  verificationFor?: VerificationFor;
-  via?: ContactMethod;
-  value?: string;
+  verifyFor?: VerifyFor;
+  phoneNumber?: string;
+  countryCode?: string;
+  email?: string;
   username?: string;
 }
 
@@ -30,30 +32,31 @@ function formatCountdown(seconds: number): string {
 }
 
 /**
- * Screen 4 (otp-verification.component.html/.ts). Only the two
- * verificationFor cases this rebuild's flow produces are handled —
- * 'forgot-username' (from screen 1, verifies then returns to login with a
- * success toast, matching verifyForgetUsername) and 'forgot-password' (from
- * screen 3, verifies then moves on to screen 5, matching verifyForgetPassword)
- * — Angular's other cases ('login', 'presctiption-verification') aren't part
- * of the 6-screen scope given here.
+ * Screen 4 (otp-verification.component.html/.ts) — handles both purposes
+ * auth-gateway supports: `verifyFor: 'username'` (from screen 1,
+ * forgot-username — verifies then returns to login with a success toast,
+ * matching legacy's verifyForgetUsername/otp.service.ts's email-the-username
+ * delivery) and `verifyFor: 'password'` (from screen 3, verification-method
+ * — verifies then moves on to screen 5 with the resetToken, matching
+ * verifyForgetPassword). Either the phone or the email channel may be
+ * present, never both — `via` below picks whichever one is.
  *
  * Entry guard mirrors Angular's `if (!verificationFor && !via && !val)`
- * check exactly, redirecting to /auth/login per the task spec (rather than
- * screen 2/3's forgot-password redirect).
+ * check, redirecting to /auth/login, keyed on having neither a phone nor an
+ * email to verify against.
  */
 export function OtpVerificationComponent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verificationFor, via, value, username } = (location.state ??
+  const { verifyFor, phoneNumber, countryCode, email, username } = (location.state ??
     {}) as OtpVerificationLocationState;
   const { mutate: requestOtp } = useRequestOtp();
   const { mutate: verifyOtp, isPending } = useVerifyOtp();
   const [counter, setCounter] = useState(RESEND_COUNTDOWN_SECONDS);
 
   useEffect(() => {
-    if (!verificationFor && !via && !value) navigate(LOGIN_PATH, { replace: true });
-  }, [verificationFor, via, value, navigate]);
+    if (!verifyFor || (!phoneNumber && !email)) navigate(LOGIN_PATH, { replace: true });
+  }, [verifyFor, phoneNumber, email, navigate]);
 
   // Single real setInterval for the component's lifetime — resend just
   // resets the counter back to 60, matching Angular's timer(0, 1000) tick.
@@ -74,41 +77,36 @@ export function OtpVerificationComponent() {
     defaultValues: { otp: '' },
   });
 
-  if (!verificationFor || !via || !value) return null;
+  if (!verifyFor || (!phoneNumber && !email)) return null;
 
-  // Reassigned into their own consts so TS carries the non-undefined
-  // narrowing above into the nested closures below (control-flow narrowing
-  // doesn't otherwise cross into a `function` body for destructured values).
-  const safeVerificationFor: VerificationFor = verificationFor;
-  const safeVia: ContactMethod = via;
-  const safeValue: string = value;
+  // Reassigned so TS carries the non-undefined narrowing above into the
+  // nested closures below (control-flow narrowing doesn't otherwise cross
+  // into a `function` body for destructured values).
+  const safeVerifyFor: VerifyFor = verifyFor;
+  const via: ContactMethod = phoneNumber ? 'phone' : 'email';
+  const maskedValue = maskContact((phoneNumber ?? email) as string, via);
 
   function handleResend() {
     if (counter > 0) return;
-    const vars =
-      safeVerificationFor === 'forgot-username'
-        ? ({ otpFor: 'username', via: safeVia, value: safeValue } as const)
-        : ({ otpFor: 'password', via: safeVia, value: safeValue, username } as const);
-    requestOtp(vars);
+    requestOtp({ otpFor: safeVerifyFor, phoneNumber, countryCode, email });
     setCounter(RESEND_COUNTDOWN_SECONDS);
   }
 
   function onSubmit(values: OtpFormValues) {
     verifyOtp(
-      {
-        otp: values.otp,
-        verificationFor: safeVerificationFor,
-        via: safeVia,
-        value: safeValue,
-        username,
-      },
+      { verifyFor: safeVerifyFor, phoneNumber, countryCode, email, otp: values.otp },
       {
         onSuccess: data => {
-          if (verificationFor === 'forgot-username') {
+          if (safeVerifyFor === 'username') {
+            showToast(
+              'Username Sent',
+              'Your username has been sent — please check your email.',
+              'success'
+            );
             navigate(LOGIN_PATH);
           } else {
             navigate(SETUP_NEW_PASSWORD_PATH, {
-              state: { username, userUuid: data.userUuid },
+              state: { username, userUuid: data.userUuid, resetToken: data.resetToken },
             });
           }
         },
@@ -123,7 +121,7 @@ export function OtpVerificationComponent() {
       </h1>
       <p className="mb-4 text-base leading-[150%] text-[#7F7B92]">
         Please enter the verification code which is sent to your{' '}
-        {via === 'phone' ? 'mobile number' : 'email id'} {maskContact(value, via)}
+        {via === 'phone' ? 'mobile number' : 'email id'} {maskedValue}
       </p>
 
       <div className="mb-4">

@@ -32,18 +32,20 @@ const AVATAR_BASE_PATH = '/mock-api/personimage';
 interface SetupNewPasswordLocationState {
   username?: string;
   userUuid?: string;
+  /** Minted by a successful verifyOtp — required by the real resetPassword call. */
+  resetToken?: string;
 }
 
 export function SetupNewPasswordComponent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { username, userUuid } = (location.state ??
+  const { username, userUuid, resetToken } = (location.state ??
     {}) as SetupNewPasswordLocationState;
   const { mutate: resetPassword, isPending } = useResetPassword();
 
   useEffect(() => {
-    if (!username && !userUuid) navigate(LOGIN_PATH, { replace: true });
-  }, [username, userUuid, navigate]);
+    if (!userUuid || !resetToken) navigate(LOGIN_PATH, { replace: true });
+  }, [userUuid, resetToken, navigate]);
 
   const {
     register,
@@ -64,7 +66,13 @@ export function SetupNewPasswordComponent() {
     setStrengthLevel(checkPasswordStrength(password));
   }, [password]);
 
-  if (!username && !userUuid) return null;
+  if (!userUuid || !resetToken) return null;
+
+  // Reassigned so TS carries the non-undefined narrowing above into the
+  // nested closures below (control-flow narrowing doesn't otherwise cross
+  // into a `function` body for destructured values).
+  const safeUserUuid: string = userUuid;
+  const safeResetToken: string = resetToken;
 
   function handleGeneratePassword() {
     const generated = generatePassword();
@@ -90,7 +98,7 @@ export function SetupNewPasswordComponent() {
     }
 
     resetPassword(
-      { userUuid: userUuid ?? '', password: values.password },
+      { userUuid: safeUserUuid, newPassword: values.password, resetToken: safeResetToken },
       { onSuccess: () => navigate(LOGIN_PATH) }
     );
   }

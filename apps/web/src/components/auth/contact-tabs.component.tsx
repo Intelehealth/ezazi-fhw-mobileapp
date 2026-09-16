@@ -11,7 +11,11 @@ interface ContactTabsComponentProps {
   active: ContactMethod;
   onActiveChange: (method: ContactMethod) => void;
   phoneValue: string;
-  onPhoneChange: (value: string) => void;
+  /** `dialCode` (e.g. "91", no "+") is the selected country's — callers that
+   * need to build a real requestOtp/verifyOtp payload split `value` into
+   * `phoneNumber` + `countryCode` with it (see utils/split-phone-number.ts);
+   * callers that don't need the real payload (forgot-username) can ignore it. */
+  onPhoneChange: (value: string, dialCode: string) => void;
   onPhoneBlur?: () => void;
   phoneError?: string;
   emailRegistration: UseFormRegisterReturn;
@@ -169,7 +173,7 @@ export function ContactTabsComponent({
                 disableDialCodeAndPrefix
                 showDisabledDialCodeAndPrefix
                 value={phoneValue}
-                onChange={onPhoneChange}
+                onChange={(value, meta) => onPhoneChange(value, meta.country.dialCode)}
                 onBlur={onPhoneBlur}
                 inputProps={{ id: 'phone', placeholder: 'Enter Mobile Number' }}
                 style={PHONE_INPUT_CONTAINER_STYLE}

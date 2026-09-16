@@ -1,7 +1,17 @@
+import { configure } from '@testing-library/dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VerificationMethodComponent } from '../../../../modules/auth/verification-method/verification-method.component';
+
+// This component renders the real react-international-phone <PhoneInput> —
+// see auth-recovery-flows.test.tsx's own comment on the same issue: under
+// CPU contention from the rest of the suite running concurrently, that
+// dependency's transform/render cost can occasionally push a normally-fast
+// assertion past find*/waitFor's 1000ms default and the file's own 5000ms
+// test timeout. Both are raised here too, scoped to this file only.
+vi.setConfig({ testTimeout: 20000 });
+configure({ asyncUtilTimeout: 10000 });
 
 const mutate = vi.fn();
 vi.mock('../../../../hooks/mutations/useRequestOtp', () => ({
@@ -66,7 +76,7 @@ describe('VerificationMethodComponent', () => {
     ).toBeInTheDocument();
   });
 
-  it('calls requestOtp with otpFor: password and the username, then navigates to otp-verification', async () => {
+  it('splits the phone tab value into phoneNumber + countryCode (auth-gateway is phone-only) and navigates to otp-verification', async () => {
     renderScreen({ username: 'nurse1' });
 
     typePhone('9876543210');
@@ -76,7 +86,26 @@ describe('VerificationMethodComponent', () => {
 
     await waitFor(() =>
       expect(mutate).toHaveBeenCalledWith(
-        { otpFor: 'password', username: 'nurse1', via: 'phone', value: '+919876543210' },
+        { otpFor: 'password', phoneNumber: '9876543210', countryCode: '91' },
+        expect.objectContaining({ onSuccess: expect.any(Function) })
+      )
+    );
+  });
+
+  it('the email tab submits otpFor: "password" with the email field — auth-gateway supports email for password reset too', async () => {
+    renderScreen({ username: 'nurse1' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
+    fireEvent.input(screen.getByPlaceholderText('Enter Email ID'), {
+      target: { value: 'nurse1@example.com' },
+    });
+    const submitButton = screen.getByRole('button', { name: /next/i });
+    await waitFor(() => expect(submitButton).not.toBeDisabled());
+    fireEvent.click(submitButton);
+
+    await waitFor(() =>
+      expect(mutate).toHaveBeenCalledWith(
+        { otpFor: 'password', email: 'nurse1@example.com' },
         expect.objectContaining({ onSuccess: expect.any(Function) })
       )
     );

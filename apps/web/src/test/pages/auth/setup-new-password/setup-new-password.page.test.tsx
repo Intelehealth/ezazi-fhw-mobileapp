@@ -15,7 +15,7 @@ describe('SetupNewPasswordPage', () => {
           initialEntries={[
             {
               pathname: '/auth/setup-new-password',
-              state: { username: 'nurse1', userUuid: 'u-1' },
+              state: { username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' },
             },
           ]}
         >

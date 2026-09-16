@@ -1,48 +1,35 @@
 import { useMutation } from '@tanstack/react-query';
+import { authService } from '../../services/auth.service';
 import { showToast } from '../../services/toast';
-import { maskContact, type ContactMethod } from '../../utils/mask-contact';
-import { shouldSimulateFailure, simulateNetworkDelay } from './mock-utils';
+import type { RequestOtpPayload } from '../../types/auth.types';
 
-export interface RequestOtpVars {
-  otpFor: 'username' | 'password';
-  via: ContactMethod;
-  value: string;
-  /** Present for otpFor: 'password' — the username entered on forgot-password. */
-  username?: string;
-}
-
-export interface RequestOtpResult {
-  success: true;
-}
+export type RequestOtpVars = Omit<RequestOtpPayload, 'source'>;
 
 /**
- * Mocked network call — see mock-utils.ts's module comment for the
- * fail-substring convention this branches on.
+ * Used by screen 1 (forgot-username, `otpFor: 'username'`), screen 3
+ * (verification-method, `otpFor: 'password'`), and screen 4's
+ * (otp-verification) resend action — see auth-gateway's RequestOtpSchema.
+ * `otpFor` is caller-supplied now (not hardcoded): the two screens map to
+ * genuinely different backend purposes with different account-lookup rules.
  */
-async function requestOtp(vars: RequestOtpVars): Promise<RequestOtpResult> {
-  await simulateNetworkDelay();
-  if (shouldSimulateFailure(vars.value)) {
-    throw new Error("Couldn't send OTP, please try again.");
-  }
-  return { success: true };
+async function requestOtp(vars: RequestOtpVars) {
+  const result = await authService.requestOtp(vars);
+  if (!result.ok) throw result.error;
+  return result.data;
 }
 
-/**
- * Used by screen 1 (forgot-username), screen 3 (verification-method), and
- * screen 4's (otp-verification) resend action — see hooks/mutations shape
- * convention (useLogin.ts). This hook only owns the fixed toast copy
- * (matching forgot-username.component.ts / verification-method.component.ts's
- * toastr calls); navigation is each call site's own mutate(vars, { onSuccess })
- * callback since the three callers each go somewhere different next.
- */
 export function useRequestOtp() {
-  return useMutation<RequestOtpResult, Error, RequestOtpVars>({
+  return useMutation({
     mutationFn: requestOtp,
-    onSuccess: (_data, vars) => {
-      const masked = maskContact(vars.value, vars.via);
-      showToast('OTP Sent', `OTP sent on ${masked} successfully!`, 'success');
+    // The backend's own message is intentionally non-committal ("If the
+    // account exists, an OTP has been sent.") — it never confirms whether the
+    // phone/email actually matched an account, so this shows that text
+    // verbatim rather than a more confident "OTP sent on ‹masked›" copy that
+    // would misrepresent what the backend is actually promising.
+    onSuccess: data => {
+      showToast('OTP Sent', data.message, 'success');
     },
-    onError: error => {
+    onError: (error: Error) => {
       showToast('Error', error.message, 'error');
     },
   });

@@ -15,7 +15,7 @@ describe('OtpVerificationPage', () => {
           initialEntries={[
             {
               pathname: '/auth/otp-verification',
-              state: { verificationFor: 'forgot-username', via: 'phone', value: '9876543210' },
+              state: { verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' },
             },
           ]}
         >

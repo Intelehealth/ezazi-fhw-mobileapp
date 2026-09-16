@@ -1,25 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
+import { authService } from '../../services/auth.service';
 import { showToast } from '../../services/toast';
-import { shouldSimulateFailure, simulateNetworkDelay } from './mock-utils';
 
 export interface ResetPasswordVars {
   userUuid: string;
-  password: string;
-}
-
-export interface ResetPasswordResult {
-  success: true;
-}
-
-/** Mocked network call — see mock-utils.ts's module comment for the fail-substring convention. */
-async function resetPassword(
-  vars: ResetPasswordVars
-): Promise<ResetPasswordResult> {
-  await simulateNetworkDelay();
-  if (shouldSimulateFailure(vars.password)) {
-    throw new Error('Something went wrong, please try again.');
-  }
-  return { success: true };
+  newPassword: string;
+  /** Minted by a successful verifyOtp — see auth-gateway's ResetPasswordSchema. */
+  resetToken: string;
 }
 
 /**
@@ -29,8 +16,17 @@ async function resetPassword(
  * stands in here. Navigation back to login is still setup-new-password.component.tsx's
  * own job via mutate(vars, { onSuccess }).
  */
+async function resetPassword(vars: ResetPasswordVars) {
+  const result = await authService.resetPassword(vars.userUuid, {
+    newPassword: vars.newPassword,
+    resetToken: vars.resetToken,
+  });
+  if (!result.ok) throw result.error;
+  return result.data;
+}
+
 export function useResetPassword() {
-  return useMutation<ResetPasswordResult, Error, ResetPasswordVars>({
+  return useMutation({
     mutationFn: resetPassword,
     onSuccess: () => {
       showToast(
@@ -39,7 +35,7 @@ export function useResetPassword() {
         'success'
       );
     },
-    onError: error => {
+    onError: (error: Error) => {
       showToast('Error', error.message, 'error');
     },
   });

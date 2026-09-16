@@ -1,55 +1,30 @@
 import { useMutation } from '@tanstack/react-query';
+import { authService } from '../../services/auth.service';
 import { showToast } from '../../services/toast';
-import type { ContactMethod } from '../../utils/mask-contact';
-import { simulateNetworkDelay } from './mock-utils';
+import type { VerifyOtpPayload } from '../../types/auth.types';
 
-export interface VerifyOtpVars {
-  otp: string;
-  verificationFor: 'forgot-username' | 'forgot-password';
-  via: ContactMethod;
-  value: string;
-  username?: string;
-}
-
-export interface VerifyOtpResult {
-  success: true;
-  /** Mocked — carried into setup-new-password's route state for the forgot-password case. */
-  userUuid: string;
-}
-
-const MOCK_USER_UUID = 'mock-user-uuid-1234';
-/** OTP has no letters to type "fail" into, so 000000 is its dedicated failure code (see mock-utils.ts). */
-const OTP_FAILURE_CODE = '000000';
-
-async function verifyOtp(vars: VerifyOtpVars): Promise<VerifyOtpResult> {
-  await simulateNetworkDelay();
-  if (vars.otp === OTP_FAILURE_CODE) {
-    throw new Error('Please enter valid otp');
-  }
-  return { success: true, userUuid: MOCK_USER_UUID };
-}
+export type VerifyOtpVars = VerifyOtpPayload;
 
 /**
- * Used by screen 4 (otp-verification) for both cases it supports.
- * verifyForgetUsername's success toast is ported here (matching
- * otp-verification.component.ts's toastr.success call); verifyForgetPassword
- * has no success toast in the Angular source either, so none is added here —
- * navigation for both cases is otp-verification.component.tsx's own job via
- * mutate(vars, { onSuccess }).
+ * Used by screen 4 (otp-verification) for both purposes it supports — see
+ * auth-gateway's VerifyOtpSchema/VerifyOtpResponse. `verifyFor: 'password'`
+ * resolves with `resetToken`, which setup-new-password's resetPassword call
+ * needs; `verifyFor: 'username'` resolves with neither (the backend emails
+ * the recovered username directly). Navigation/success-toast copy for
+ * either case is otp-verification.component.tsx's own job via
+ * mutate(vars, { onSuccess }), not this hook's — the two purposes go
+ * different places on success.
  */
+async function verifyOtp(vars: VerifyOtpVars) {
+  const result = await authService.verifyOtp(vars);
+  if (!result.ok) throw result.error;
+  return result.data;
+}
+
 export function useVerifyOtp() {
-  return useMutation<VerifyOtpResult, Error, VerifyOtpVars>({
+  return useMutation({
     mutationFn: verifyOtp,
-    onSuccess: (_data, vars) => {
-      if (vars.verificationFor === 'forgot-username') {
-        showToast(
-          'Username Sent',
-          'Username has been successfully sent on your email and mobile number',
-          'success'
-        );
-      }
-    },
-    onError: error => {
+    onError: (error: Error) => {
       showToast('Error', error.message, 'error');
     },
   });
