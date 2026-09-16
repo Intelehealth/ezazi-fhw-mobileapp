@@ -1,5 +1,6 @@
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { sessionApi } from '@/core/session/session.api';
+import { logApiError } from '@/core/api/errors/logApiError';
 
 const mockSyncConfig = jest.fn().mockResolvedValue(undefined);
 
@@ -7,13 +8,16 @@ jest.mock('@/core/services/storage/secure-storage', () => ({
   secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
 }));
 jest.mock('@/core/session/session.api', () => ({
-  sessionApi: { logout: jest.fn() },
+  sessionApi: { login: jest.fn(), logout: jest.fn() },
+}));
+jest.mock('@/core/api/errors/logApiError', () => ({
+  logApiError: jest.fn(),
 }));
 jest.mock('@/core/config/featureConfig.store', () => ({
   useFeatureConfigStore: { getState: () => ({ syncConfig: mockSyncConfig }) },
 }));
 
-import { useAuthStore } from '../auth.store';
+import { SPLASH_MIN_MS, useAuthStore } from '../auth.store';
 
 describe('useAuthStore', () => {
 
@@ -32,7 +36,7 @@ describe('useAuthStore', () => {
       );
 
       const bootstrapping = useAuthStore.getState().bootstrap();
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
       await bootstrapping;
 
       expect(useAuthStore.getState().status).toBe('authenticated');
@@ -47,7 +51,7 @@ describe('useAuthStore', () => {
       );
 
       const bootstrapping = useAuthStore.getState().bootstrap();
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
       await bootstrapping;
 
       expect(useAuthStore.getState().status).toBe('unauthenticated');
@@ -59,7 +63,7 @@ describe('useAuthStore', () => {
       (secureStorage.get as jest.Mock).mockRejectedValue(new Error('keystore locked'));
 
       const bootstrapping = useAuthStore.getState().bootstrap();
-      await jest.advanceTimersByTimeAsync(3000);
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
       await bootstrapping;
 
       expect(useAuthStore.getState().status).toBe('unauthenticated');
@@ -72,6 +76,50 @@ describe('useAuthStore', () => {
       void useAuthStore.getState().bootstrap();
 
       expect(mockSyncConfig).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── login ────────────────────────────────────────────────────────────────
+
+  describe('login', () => {
+    it('persists tokens and marks the store authenticated on success', async () => {
+      (sessionApi.login as jest.Mock).mockResolvedValue({
+        ok: true,
+        data: {
+          accessToken: 'access-1',
+          refreshToken: 'refresh-1',
+          sessionId: 'session-1',
+          user: { uuid: 'user-1', username: 'nurse1', roles: ['fhw'] },
+          provider: { uuid: 'provider-1' },
+        },
+      });
+
+      const result = await useAuthStore.getState().login('nurse1', 'password123');
+
+      expect(result.ok).toBe(true);
+      expect(secureStorage.set).toHaveBeenCalledWith('accessToken', 'access-1');
+      expect(secureStorage.set).toHaveBeenCalledWith('refreshToken', 'refresh-1');
+      expect(secureStorage.set).toHaveBeenCalledWith('userUuid', 'provider-1');
+      expect(useAuthStore.getState()).toMatchObject({
+        status: 'authenticated',
+        userUuid: 'provider-1',
+      });
+    });
+
+    it('returns the failed result and logs it without changing auth state', async () => {
+      const apiError = {
+        kind: 'unauthorized',
+        status: 401,
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid username or password',
+      };
+      (sessionApi.login as jest.Mock).mockResolvedValue({ ok: false, error: apiError });
+
+      const result = await useAuthStore.getState().login('nurse1', 'wrong-password');
+
+      expect(result).toEqual({ ok: false, error: apiError });
+      expect(logApiError).toHaveBeenCalledWith('Login', apiError);
+      expect(useAuthStore.getState().status).toBe('unknown');
     });
   });
 

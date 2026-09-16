@@ -9,6 +9,7 @@
     "continue": "Continue",
     "loading": "Loading...",
     "error": "Something went wrong",
+    "errorIconGlyph": "!",
     "a11y": {
       "goBack": "Go back",
       "showPassword": "Show password",
