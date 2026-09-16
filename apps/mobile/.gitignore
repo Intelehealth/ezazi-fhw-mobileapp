@@ -148,6 +148,9 @@ vite.config.ts.timestamp-*
 dist/
 web-build/
 
+# Manual QA screen recordings — never committed, ticket attachments only
+qa-videos/
+
 # Native iOS / Android build output (Expo prebuild)
 ios/
 android/

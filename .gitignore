@@ -5,6 +5,10 @@ node_modules/
 # Turborepo cache
 .turbo/
 
+# Expo cache (created at the root when a workspace command runs from here)
+.expo/
+.expo-shared/
+
 # Package build output
 dist/
 *.tsbuildinfo
