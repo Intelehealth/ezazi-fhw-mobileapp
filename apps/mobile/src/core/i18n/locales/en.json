@@ -89,16 +89,43 @@
     }
   },
   "login": {
+    "title": "Welcome Back!",
+    "subtitle": "Sign in to continue caring for your patients.",
     "username": "Username",
-    "usernamePlaceholder": "Enter your username",
+    "usernamePlaceholder": "Username",
     "password": "Password",
-    "passwordPlaceholder": "Enter your password",
+    "passwordPlaceholder": "Password",
+    "forgotPassword": "Forgot password?",
     "submit": "Login",
-    "forgotPassword": "Forgot Password?",
+    "toastSuccess": "Login successful",
     "errors": {
-      "usernameRequired": "Username is required",
-      "passwordRequired": "Password is required",
-      "passwordTooShort": "8+ characters required for password"
+      "usernameRequired": "Please enter your username",
+      "passwordRequired": "Please enter your password",
+      "passwordTooShort": "8+ characters required for password",
+      "invalidCredentials": {
+        "title": "Username or password is incorrect",
+        "message": "Please check your credentials and try again."
+      },
+      "accountLocked": {
+        "title": "Too many failed attempts",
+        "message": "Try again in {{minutes}} minutes."
+      },
+      "accountLockedGeneric": {
+        "title": "Too many failed attempts",
+        "message": "Please try again later."
+      },
+      "rateLimited": {
+        "title": "Too many attempts",
+        "message": "Please try again later."
+      },
+      "networkError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      },
+      "genericError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      }
     }
   },
   "forgotPassword": {
