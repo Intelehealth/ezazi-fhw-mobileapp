@@ -12,12 +12,12 @@ import { colors, dimens } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
- * THE app text field — label + 56dp input row + right-aligned error text
- * (RightAlignErrorTextInputLayout). Do not re-declare label/inputRow/errorText
- * styles in screens; compose this component instead.
+ * THE app text field — label + 56dp input row + left-aligned error text
+ * (Figma). Do not re-declare label/inputRow/errorText styles in screens;
+ * compose this component instead.
  *
- * rightSlot renders inside the input row (eye toggle, chevron, …) so variants
- * like PasswordField stay decoupled from this base.
+ * leftSlot/rightSlot render inside the input row (field icon, eye toggle,
+ * chevron, …) so variants like PasswordField stay decoupled from this base.
  *
  * forwardRef → parents can call .focus() for "next" field navigation.
  */
@@ -25,13 +25,14 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
 interface AppTextFieldProps extends TextInputProps {
   label?: string;
   error?: string;
+  leftSlot?: React.ReactNode;
   rightSlot?: React.ReactNode;
   /** Placement only (margins) — never colors or sizing. */
   containerStyle?: StyleProp<ViewStyle>;
 }
 
 export const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
-  ({ label, error, rightSlot, containerStyle, ...inputProps }, ref) => {
+  ({ label, error, leftSlot, rightSlot, containerStyle, ...inputProps }, ref) => {
     const { fs, cornerRadius } = useResponsive();
 
     return (
@@ -47,6 +48,7 @@ export const AppTextField = forwardRef<TextInput, AppTextFieldProps>(
             !!error && styles.inputRowError,
           ]}
         >
+          {leftSlot != null && <View style={styles.leftSlot}>{leftSlot}</View>}
           <TextInput
             ref={ref}
             style={[styles.input, { fontSize: fs('input') }]}
@@ -91,16 +93,19 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
 
+  leftSlot: {
+    marginRight: 10,
+  },
+
   input: {
     flex: 1,
     color: colors.textPrimary,
     padding: 0,
   },
 
-  // RightAlignErrorTextInputLayout — error sits at the right edge
+  // Figma — error sits left-aligned under the field
   errorText: {
     color: colors.error,
     marginTop: 4,
-    textAlign: 'right',
   },
 });

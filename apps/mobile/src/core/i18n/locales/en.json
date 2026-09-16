@@ -44,30 +44,48 @@
     }
   },
   "setup": {
-    "title": "Setup",
-    "subtitle": "Please complete your one-time set-up activity",
+    "title": "Welcome Back!",
+    "subtitle": "Sign in to continue caring for your patients.",
     "location": "Location",
-    "locationPlaceholder": "Select location",
+    "locationPlaceholder": "Select Location",
     "username": "Username",
-    "usernamePlaceholder": "Enter your username",
+    "usernamePlaceholder": "Username",
     "password": "Password",
-    "passwordPlaceholder": "Enter your password",
-    "forgotPassword": "Forgot Password?",
-    "submit": "Setup",
-    "tempNavLogin": "Login",
-    "tempNavPrivacy": "Privacy Notice",
-    "toastSuccess": "Setup successful",
+    "passwordPlaceholder": "Password",
+    "forgotPassword": "Forgot password?",
+    "tempNavLogin": "Go to Login screen (temp)",
+    "submit": "Login",
+    "toastSuccess": "Login successful",
     "errors": {
-      "locationRequired": "Please select the location.",
-      "usernameRequired": "Username is required",
-      "passwordRequired": "Password is required",
+      "locationRequired": "Please select a location",
+      "locationsNotFetched": "Unable to fetch locations. Please try again.",
+      "usernameRequired": "Please enter your username",
+      "passwordRequired": "Please enter your password",
       "passwordTooShort": "8+ characters required for password",
-      "invalidCredentials": "Invalid username or password",
-      "accountLocked": "Too many failed attempts. Try again in {{minutes}} minutes.",
-      "accountLockedGeneric": "Too many failed attempts. Please try again later.",
-      "rateLimited": "Too many attempts, please try again later",
-      "networkError": "No internet connection. Please try again.",
-      "genericError": "Something went wrong. Please try again."
+      "invalidCredentials": {
+        "title": "Username or password is incorrect",
+        "message": "Please check your credentials and try again."
+      },
+      "accountLocked": {
+        "title": "Too many failed attempts",
+        "message": "Try again in {{minutes}} minutes."
+      },
+      "accountLockedGeneric": {
+        "title": "Too many failed attempts",
+        "message": "Please try again later."
+      },
+      "rateLimited": {
+        "title": "Too many attempts",
+        "message": "Please try again later."
+      },
+      "networkError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      },
+      "genericError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      }
     }
   },
   "login": {

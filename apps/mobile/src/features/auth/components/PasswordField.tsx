@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -16,12 +16,13 @@ import { colors } from '@/core/config/theme';
  */
 
 interface PasswordFieldProps extends Omit<TextInputProps, 'secureTextEntry'> {
-  label: string;
+  label?: string;
   error?: string;
+  leftSlot?: ReactNode;
 }
 
 export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
-  ({ label, error, ...inputProps }, ref) => {
+  ({ label, error, leftSlot, ...inputProps }, ref) => {
     const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
 
@@ -30,6 +31,7 @@ export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
         ref={ref}
         label={label}
         error={error}
+        leftSlot={leftSlot}
         secureTextEntry={!showPassword}
         autoCapitalize="none"
         autoCorrect={false}

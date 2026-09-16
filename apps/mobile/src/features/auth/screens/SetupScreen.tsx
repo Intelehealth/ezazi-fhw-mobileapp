@@ -1,231 +1,268 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Path } from 'react-native-svg';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
 import { PasswordField } from '@/features/auth/components/PasswordField';
+import { LocationPickerModal, type FieldAnchor } from '@/features/auth/components/LocationPickerModal';
+import { useLocationStore } from '@/features/auth/stores/location.store';
+import { createSetupFormSchema, type SetupFormValues } from '@/features/auth/domain/setupForm.schema';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
-import { AppIcon, wavePaths } from '@/core/ui/icons';
-import { commonStyles } from '@/core/ui/commonStyles';
+import { AppIcon } from '@/core/ui/icons';
+import { setupIllustration } from '@/core/ui/illustrations/setupIllustration';
+import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
-/* eslint-disable boundaries/dependencies -- KNOWN DEBT: this screen talks to the
-   auth API directly. Per CLAUDE.md / ARCHITECTURE_RULES §4 it must move behind a
-   repository or store before the sync engine lands. Do NOT copy this pattern into
-   a new screen — the boundary rule will (correctly) reject it. */
-import { sessionApi } from '@/core/session/session.api';
-import type { ApiError } from '@ezazi/api-client';
-import { logApiError } from '@/core/api/errors/logApiError';
-/* eslint-enable boundaries/dependencies */
-import { secureStorage } from '@/core/services/storage/secure-storage';
 import { useAuthStore } from '@/core/session/auth.store';
-import { logger } from '@/core/utils/logger';
 import { showToast } from '@/core/utils/toast';
+import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 
 // Parent container padding — setup screen uses 30dp
 const FORM_H_PAD = 30;
 
+// assets/clients/default/setup_logo.png natural aspect ratio (width / height)
+// — a tight crop of logo.png's opaque content (logo.png itself carries ~24%/34%
+// top/bottom transparent padding, which reads as extra dead space above a heading).
+const LOGO_ASPECT = 364 / 144;
+
+// setupIllustration.viewBox aspect ratio (width / height)
+const ILLUSTRATION_ASPECT = 267 / 177;
+
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
-type FormErrors = { location?: string; username?: string; password?: string };
 
 export const SetupScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
-  const { width, isTablet, fs, cornerRadius } = useResponsive();
-  const setAuthenticated = useAuthStore(s => s.setAuthenticated);
+  const { isTablet, fs, cornerRadius } = useResponsive();
+  const login = useAuthStore(s => s.login);
+  const locations = useLocationStore(s => s.locations);
+  const isLocationsLoading = useLocationStore(s => s.isLoading);
+  const fetchLocations = useLocationStore(s => s.fetchLocations);
 
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [username, setUsername]                 = useState('');
-  const [password, setPassword]                 = useState('');
-  const [errors, setErrors]                     = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting]         = useState(false);
+  // Rules mirror SetupActivity.java attemptLogin() exactly — see
+  // features/auth/domain/setupForm.schema.ts. Recreated only when the
+  // translator changes (locale switch), not on every render.
+  const schema = useMemo(() => createSetupFormSchema(t), [t]);
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<SetupFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { location: '', username: '', password: '' },
+    // Validate only on submit — RHF's default reValidateMode ('onChange')
+    // would re-run the resolver on every keystroke of an already-errored
+    // field, live-updating its message. The original useState version only
+    // ever cleared an error on type, never re-validated until the next
+    // submit; pinning this keeps that exact behavior.
+    reValidateMode: 'onSubmit',
+  });
 
-  // Header layout is intentionally separate from WaveHeader: no back button,
-  // bottom-aligned text, larger tablet title (setup_top_vector.xml).
-  const headerH   = width * (368 / 800);
-  const titleSize = isTablet ? 36 : 18;
+  const [banner, setBanner]                                 = useState<ErrorBanner | null>(null);
+  const [isLocationPickerVisible, setLocationPickerVisible] = useState(false);
+  const [locationAnchor, setLocationAnchor]                 = useState<FieldAnchor | null>(null);
+  const [locationFieldY, setLocationFieldY]                 = useState<number | null>(null);
+  const locationFieldRef = useRef<View>(null);
 
-  // ── Validation — mirrors SetupActivity.java attemptLogin() ───────────────────
-  const validate = (): boolean => {
-    const next: FormErrors = {};
-
-    // 1. Location — error_location_not_selected
-    if (!selectedLocation) {
-      next.location = t('setup.errors.locationRequired');
-    }
-    // 2. Username — error_require_email (format check always passes in Android)
-    if (!username.trim()) {
-      next.username = t('setup.errors.usernameRequired');
-    }
-    // 3. Password — empty then length (isPasswordValid: length > 7)
-    if (!password) {
-      next.password = t('setup.errors.passwordRequired');
-    } else if (password.length <= 7) {
-      next.password = t('setup.errors.passwordTooShort');
-    }
-
-    setErrors(next);
-    return Object.keys(next).length === 0;
+  // Anchors the dropdown to the field's actual on-screen position instead of
+  // opening as a centered dialog.
+  const openLocationPicker = () => {
+    locationFieldRef.current?.measureInWindow((x, y, width, height) => {
+      setLocationAnchor({ x, y, width, height });
+      setLocationPickerVisible(true);
+    });
   };
 
-  const clearError = (field: keyof FormErrors) => {
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
-  };
+  // ── Location list — mirrors SetupActivity.getLocationFromServer(): fetched
+  // once on mount and used to fill the LOCATION dropdown. ────────────────────
+  useEffect(() => {
+    let cancelled = false;
 
-  // ── API error → user-facing message — see api error.tsv for the status/code table ──
-  const getErrorMessage = (error: ApiError): string => {
-    switch (error.code) {
-      case 'INVALID_CREDENTIALS':
-        return t('setup.errors.invalidCredentials');
-      case 'ACCOUNT_LOCKED': {
-        const retryAfterSeconds = (error.details as { retryAfterSeconds?: number } | undefined)?.retryAfterSeconds;
-        return retryAfterSeconds
-          ? t('setup.errors.accountLocked', { minutes: Math.ceil(retryAfterSeconds / 60) })
-          : t('setup.errors.accountLockedGeneric');
+    void (async () => {
+      const result = await fetchLocations();
+      // Every user sees this — the only user-facing feedback on failure.
+      if (!cancelled && !result.ok) {
+        showToast(t('setup.errors.locationsNotFetched'));
       }
-      case 'RATE_LIMITED':
-        return t('setup.errors.rateLimited');
-      case 'VALIDATION_ERROR':
-        return error.message || t('setup.errors.genericError');
-      default:
-        break;
-    }
-    if (error.kind === 'network' || error.kind === 'timeout') {
-      return t('setup.errors.networkError');
-    }
-    return t('setup.errors.genericError');
-  };
+    })();
 
-  const handleSetup = async () => {
-    if (!validate() || isSubmitting) return;
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot fetch on mount
+  }, []);
 
-    setIsSubmitting(true);
-    const result = await sessionApi.login({ username, password });
-    setIsSubmitting(false);
+  // ── Brand header — client wordmark (left) + illustration (absolute, top-right) ──
+  // logoH is the visible glyph height now that setup_logo.png is pre-cropped
+  // (no baked-in padding), so this can stay compact without looking tiny.
+  const logoH = isTablet ? 46 : 32;
+  const logoW = logoH * LOGO_ASPECT;
+  const illustrationH = isTablet ? 130 : 104;
+  const illustrationW = illustrationH * ILLUSTRATION_ASPECT;
+  // Measured (not guessed) from the LOCATION field's actual onLayout position
+  // — see locationFieldY below — so the illustration's bottom edge lands
+  // exactly on the field's top border regardless of font metrics/locale.
+  // null (not yet measured) falls back to 0 for one frame on first mount.
+  // +1: onLayout's y and the field's rendered border round to the pixel
+  // grid independently, which can leave a hairline gap — nudge the
+  // illustration down 1dp so it overlaps the border instead of falling short.
+  const illustrationTop = locationFieldY !== null ? locationFieldY - illustrationH + 1 : 0;
+  // Inset from the right content edge, so the illustration doesn't sit flush
+  // against it (per Figma).
+  const illustrationRight = isTablet ? 20 : 14;
+
+  // login() lives in the auth store, not this screen — it owns talking to
+  // sessionApi, persisting tokens, and marking the store authenticated.
+  // This screen only reacts to the result: a toast, or an error banner.
+  const onValidSubmit = async (data: SetupFormValues) => {
+    const result = await login(data.username, data.password);
 
     if (result.ok) {
-      const { accessToken, refreshToken, sessionId, user, provider } = result.data;
-      await secureStorage.set('accessToken', accessToken);
-      await secureStorage.set('refreshToken', refreshToken);
-      // provider.uuid (not the auth-gateway's own user.uuid) — matches Android's ProviderDAO
-      // identity and the offline DB schema's creatoruuid/provideruuid record-attribution fields.
-      // No role is stored: Android doesn't persist one from login either.
-      await setAuthenticated(provider.uuid, '');
       // Every user sees this — the only user-facing feedback on success.
       showToast(t('setup.toastSuccess'));
-
-      // Console-only — never shown on screen. Tokens intentionally omitted.
-      logger.debug('[Setup] Login succeeded', {
-        sessionId,
-        userUuid: user.uuid,
-        username: user.username,
-        roles: user.roles,
-        providerUuid: provider.uuid,
-      });
     } else {
       // Every user sees this — the only user-facing feedback on failure.
-      // getErrorMessage() maps to a friendly, translated string; never show
-      // result.error's kind/status/code/message directly to a real user.
-      showToast(getErrorMessage(result.error));
-
-      // Console-only — never shown on screen, in dev or production builds.
-      logApiError('Setup login', result.error);
+      // getApiErrorBanner() maps to a friendly, translated title/message;
+      // never show result.error's kind/status/code/message directly to a
+      // real user. Shared with LoginScreen — same auth-store login(), same
+      // mapping, only the i18n namespace differs.
+      setBanner(getApiErrorBanner(result.error, t, 'setup.errors'));
     }
   };
 
-  const isFormValid =
-    !!selectedLocation && !!username.trim() && password.length > 7;
+  // isSubmitting guard: PasswordField's onSubmitEditing (keyboard "done")
+  // bypasses AppButton's disabled state, so re-entrance is blocked here too.
+  const handleSetup = () => {
+    if (isSubmitting) return;
+    setBanner(null);
+    void handleSubmit(onValidSubmit)();
+  };
 
   return (
+    <>
     <FormScreenLayout
-      header={
-        <View style={[styles.header, { height: headerH }]}>
-          <Svg
-            viewBox={wavePaths.headerTop.viewBox}
-            preserveAspectRatio="none"
-            width={width}
-            height={headerH}
-            style={StyleSheet.absoluteFill}
-          >
-            <Path d={wavePaths.headerTop.d} fill={colors.wavePink} fillOpacity={0.39} />
-          </Svg>
-
-          <View style={styles.headerTextBox}>
-            <Text style={[styles.headerTitle, { fontSize: titleSize }]}>
-              {t('setup.title')}
-            </Text>
-            <Text style={styles.headerSubtitle}>{t('setup.subtitle')}</Text>
-          </View>
-        </View>
-      }
-      contentStyle={styles.content}
+      contentStyle={[styles.content, { paddingTop: isTablet ? 190 : 130 }]}
     >
-      {/* ── Location dropdown — custom trigger row, styled like AppTextField ── */}
-      <Text style={[styles.label, { fontSize: fs('label') }]}>
-        {t('setup.location')}
-      </Text>
-      <TouchableOpacity
-        style={[
-          styles.dropdownRow,
-          { borderRadius: cornerRadius },
-          !!errors.location && styles.dropdownRowError,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={t('setup.locationPlaceholder')}
-        activeOpacity={0.7}
-        onPress={() => {
-          // TODO: open real location picker
-          // Simulating a selection to unblock validation during development
-          setSelectedLocation('Demo Location');
-          clearError('location');
-        }}
-      >
-        <Text
-          style={[
-            styles.dropdownText,
-            { fontSize: fs('input') },
-            !selectedLocation && styles.dropdownPlaceholder,
-          ]}
+      {/*
+        ── Top section — logo, heading and the LOCATION field all sit in normal
+        flow first; the illustration is the LAST child here (absolutely
+        positioned, top-right) so it paints on top of them, matching Figma
+        where it overlaps down onto the LOCATION field's top-right corner. ──
+      */}
+      <View style={styles.topSection}>
+        <Image
+          source={clientConfig.assets.setupLogo ?? clientConfig.assets.logo}
+          style={{ width: logoW, height: logoH }}
+          resizeMode="contain"
+        />
+
+        <Text style={[styles.title, { fontSize: fs('headerTitle') }]}>
+          {t('setup.title')}
+        </Text>
+        <Text style={[styles.subtitle, { fontSize: fs('instruction') }]}>
+          {t('setup.subtitle')}
+        </Text>
+
+        {/* ── Location dropdown — reuses AppTextField in a read-only, tappable mode ── */}
+        <Text style={[styles.fieldLabel, styles.firstFieldLabel, { fontSize: fs('label') - 1 }]}>
+          {t('setup.location')}
+        </Text>
+        <Controller
+          control={control}
+          name="location"
+          render={({ field: { value } }) => (
+            <TouchableOpacity
+              ref={locationFieldRef}
+              accessibilityRole="button"
+              accessibilityLabel={t('setup.locationPlaceholder')}
+              activeOpacity={0.7}
+              onPress={openLocationPicker}
+              onLayout={(e) => setLocationFieldY(e.nativeEvent.layout.y)}
+            >
+              <AppTextField
+                value={value}
+                placeholder={t('setup.locationPlaceholder')}
+                editable={false}
+                pointerEvents="none"
+                error={errors.location?.message}
+                leftSlot={<AppIcon name="locationPin" size={20} color={colors.icon} />}
+                rightSlot={
+                  isLocationsLoading
+                    ? <ActivityIndicator size="small" color={colors.icon} />
+                    : <AppIcon name="chevronDown" size={20} color={colors.icon} />
+                }
+              />
+            </TouchableOpacity>
+          )}
+        />
+
+        {/* pointerEvents="none" — this sits on top of the LOCATION field visually
+            (per Figma) but must never swallow taps meant for it. */}
+        <Svg
+          viewBox={setupIllustration.viewBox}
+          width={illustrationW}
+          height={illustrationH}
+          style={[styles.illustration, { top: illustrationTop, right: illustrationRight }]}
+          pointerEvents="none"
         >
-          {selectedLocation || t('setup.locationPlaceholder')}
-        </Text>
-        <AppIcon name="chevronDown" size={20} color={colors.icon} />
-      </TouchableOpacity>
-      {!!errors.location && (
-        <Text style={[commonStyles.errorText, styles.errorText, { fontSize: fs('error') }]}>
-          {errors.location}
-        </Text>
-      )}
+          {setupIllustration.paths.map((path, index) => (
+            <Path key={index} d={path.d} fill={path.fill} />
+          ))}
+        </Svg>
+      </View>
 
       {/* ── Username ── */}
-      <AppTextField
-        label={t('setup.username')}
-        placeholder={t('setup.usernamePlaceholder')}
-        value={username}
-        onChangeText={(text) => { setUsername(text); clearError('username'); }}
-        error={errors.username}
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="next"
-        containerStyle={commonStyles.fieldGap}
+      <Text style={[styles.fieldLabel, { fontSize: fs('label') - 1 }]}>
+        {t('setup.username')}
+      </Text>
+      <Controller
+        control={control}
+        name="username"
+        render={({ field: { value, onChange } }) => (
+          <AppTextField
+            placeholder={t('setup.usernamePlaceholder')}
+            value={value}
+            onChangeText={(text) => {
+              onChange(text);
+              if (errors.username) clearErrors('username');
+            }}
+            error={errors.username?.message}
+            leftSlot={<AppIcon name="person" size={20} color={colors.icon} />}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="next"
+          />
+        )}
       />
 
       {/* ── Password ── */}
-      <View style={commonStyles.fieldGap}>
-        <PasswordField
-          label={t('setup.password')}
-          placeholder={t('setup.passwordPlaceholder')}
-          value={password}
-          onChangeText={(text) => { setPassword(text); clearError('password'); }}
-          error={errors.password}
-          returnKeyType="done"
-          onSubmitEditing={handleSetup}
-        />
-      </View>
+      <Text style={[styles.fieldLabel, { fontSize: fs('label') - 1 }]}>
+        {t('setup.password')}
+      </Text>
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { value, onChange } }) => (
+          <PasswordField
+            placeholder={t('setup.passwordPlaceholder')}
+            value={value}
+            onChangeText={(text) => {
+              onChange(text);
+              if (errors.password) clearErrors('password');
+            }}
+            error={errors.password?.message}
+            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            returnKeyType="done"
+            onSubmitEditing={handleSetup}
+          />
+        )}
+      />
 
       {/* ── Forgot Password ── */}
       <TouchableOpacity
@@ -239,130 +276,173 @@ export const SetupScreen: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* ── Login (temp nav shortcut) ── */}
+      {/* TEMPORARY — dev/QA nav shortcut to LoginScreen, since there's no
+          in-app path to it otherwise (Setup vs Login is chosen by app logic,
+          not user navigation). Remove once no longer needed for testing. */}
       <TouchableOpacity
-        style={styles.loginRow}
+        style={styles.tempLoginRow}
         accessibilityRole="link"
         accessibilityLabel={t('setup.tempNavLogin')}
         onPress={() => navigation.navigate('Login')}
       >
-        <Text style={[commonStyles.link, { fontSize: fs('link') }]}>
+        <Text style={[styles.tempLoginText, { fontSize: fs('link') }]}>
           {t('setup.tempNavLogin')}
         </Text>
       </TouchableOpacity>
 
-      {/* ── Privacy Notice (temp nav shortcut) ── */}
-      <TouchableOpacity
-        style={styles.privacyRow}
-        accessibilityRole="link"
-        accessibilityLabel={t('setup.tempNavPrivacy')}
-        onPress={() => navigation.navigate('PrivacyNotice')}
-      >
-        <Text style={[commonStyles.link, { fontSize: fs('link') }]}>
-          {t('setup.tempNavPrivacy')}
-        </Text>
-      </TouchableOpacity>
+      {/* ── API error banner — credentials/network/server failures from handleSetup ── */}
+      {!!banner && (
+        <View style={[styles.errorBanner, { borderRadius: cornerRadius }]}>
+          <View style={styles.errorBannerIcon}>
+            <Text style={styles.errorBannerIconGlyph}>{t('common.errorIconGlyph')}</Text>
+          </View>
+          <View style={styles.errorBannerTextWrap}>
+            <Text style={[styles.errorBannerTitle, { fontSize: fs('label') }]}>
+              {banner.title}
+            </Text>
+            <Text style={[styles.errorBannerMessage, { fontSize: fs('error') }]}>
+              {banner.message}
+            </Text>
+          </View>
+        </View>
+      )}
 
-      {/* ── Setup button ── */}
+      {/* ── Login button — always enabled; the zod resolver surfaces per-field
+          errors when tapped with empty/invalid fields. ── */}
       <AppButton
         label={t('setup.submit')}
         onPress={handleSetup}
-        disabled={!isFormValid || isSubmitting}
-        showArrow
+        disabled={isSubmitting}
+        style={styles.loginButton}
       />
     </FormScreenLayout>
+
+    <LocationPickerModal
+      visible={isLocationPickerVisible}
+      locations={locations}
+      isLoading={isLocationsLoading}
+      anchor={locationAnchor}
+      onSelect={(location) => {
+        setValue('location', location.display, { shouldValidate: false });
+        clearErrors('location');
+        setLocationPickerVisible(false);
+      }}
+      onClose={() => setLocationPickerVisible(false)}
+    />
+    </>
   );
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-
-  // ── Header (separate from WaveHeader by design) ───────────────────────────
-  header: {
-    width:           '100%',
-    backgroundColor: colors.white,
-    overflow:        'hidden',
-    justifyContent:  'flex-end',
-    paddingBottom:   50,
-  },
-
-  headerTextBox: {
+  content: {
     paddingHorizontal: FORM_H_PAD,
-    paddingBottom:     22,
+    paddingBottom:     48,
   },
 
-  headerTitle: {
+  // Wraps logo + heading + LOCATION field in normal flow — the illustration
+  // is the last child here, positioned absolutely (see `illustration` below),
+  // so it paints on top of the LOCATION field without affecting where any of
+  // this content sits.
+  topSection: {
+    position: 'relative',
+  },
+
+  illustration: {
+    position: 'absolute',
+  },
+
+  title: {
     color:      colors.textPrimary,
     fontWeight: '700',
+    marginTop:  10,
   },
 
-  headerSubtitle: {
-    color:      colors.textPrimary,
-    fontSize:   14,
+  subtitle: {
+    color:      colors.textSecondary,
     marginTop:  6,
     lineHeight: 20,
   },
 
-  // ── Form ──────────────────────────────────────────────────────────────────
-  content: {
-    paddingTop:        72,
-    paddingHorizontal: FORM_H_PAD,
+  // Small gray caps label above each field — LOCATION / USERNAME / PASSWORD
+  fieldLabel: {
+    color:            colors.fieldLabel,
+    fontWeight:       '600',
+    textTransform:    'uppercase',
+    letterSpacing:    0.5,
+    marginTop:        dimens.fieldGap,
+    marginBottom:     dimens.labelGap,
   },
 
-  label: {
-    color:        colors.textPrimary,
-    fontWeight:   '500',
-    marginBottom: dimens.labelGap,
+  firstFieldLabel: {
+    marginTop: 28,
   },
 
-  // Dropdown trigger — styled like the shared input row
-  dropdownRow: {
-    height:            dimens.inputHeight,
-    backgroundColor:   colors.inputBg,
-    borderWidth:       1,
-    borderColor:       colors.inputBorder,
-    flexDirection:     'row',
-    alignItems:        'center',
-    paddingHorizontal: 14,
-  },
-
-  dropdownRowError: {
-    borderColor: colors.error,
-  },
-
-  dropdownText: {
-    flex:  1,
-    color: colors.textPrimary,
-  },
-
-  dropdownPlaceholder: {
-    color: colors.placeholder,
-  },
-
-  errorText: {
-    marginTop: 4,  // RightAlignErrorTextInputLayout — error sits at the right edge
-  },
-
-  // ── Links ─────────────────────────────────────────────────────────────────
   forgotRow: {
     alignSelf: 'flex-end',
     marginTop: 10,
   },
 
+  // Figma: color: var(--Primary-Color, #2E1E91); bold, no underline
   forgotText: {
-    color:              colors.colorForgotPassword,
-    textDecorationLine: 'underline',
+    color:      colors.primary,
+    fontWeight: '700',
   },
 
-  // Temp nav shortcuts (Login / Privacy Notice)
-  loginRow: {
+  // TEMPORARY — see the dev/QA nav shortcut comment above.
+  tempLoginRow: {
     alignSelf: 'flex-start',
     marginTop: 8,
   },
 
-  privacyRow: {
-    alignSelf:    'flex-start',
-    marginTop:    8,
-    marginBottom: 32,
+  tempLoginText: {
+    color:              colors.textSecondary,
+    textDecorationLine: 'underline',
+  },
+
+  // API error banner — pale-red card with a filled circular "!" badge,
+  // shown above the Login button (Figma: credentials/network error states).
+  errorBanner: {
+    flexDirection:     'row',
+    alignItems:        'flex-start',
+    backgroundColor:   colors.colorEmergencyBg,
+    padding:           12,
+    marginTop:         20,
+  },
+
+  errorBannerIcon: {
+    width:            20,
+    height:           20,
+    borderRadius:     10,
+    backgroundColor:  colors.error,
+    alignItems:       'center',
+    justifyContent:   'center',
+    marginRight:      10,
+    marginTop:        1,
+  },
+
+  errorBannerIconGlyph: {
+    color:      colors.white,
+    fontSize:   13,
+    lineHeight: 15,
+    fontWeight: '700',
+  },
+
+  errorBannerTextWrap: {
+    flex: 1,
+  },
+
+  errorBannerTitle: {
+    color:      colors.error,
+    fontWeight: '700',
+  },
+
+  errorBannerMessage: {
+    color:     colors.textSecondary,
+    marginTop: 2,
+  },
+
+  loginButton: {
+    marginTop: 32,
   },
 });

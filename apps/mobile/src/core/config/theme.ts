@@ -126,6 +126,8 @@ const palette = {
   dialogTextStrong: '#222222', // PermissionDeniedDialog permission label
   dialogTextMuted: '#666666', // PermissionDeniedDialog reason / outline button
   dialogOverlay: 'rgba(0,0,0,0.55)',
+  hintGray: '#9B97AA', // Figma-verified — input hint text + field icons (Setup screen, 2026-09-15)
+  secondaryTextFigma: '#4A4665', // Figma "--Secondary-text" — LOCATION/USERNAME/PASSWORD field labels
 } as const;
 
 export const colors = {
@@ -143,11 +145,12 @@ export const colors = {
   warning: palette.colorMediumAlert,
   textPrimary: palette.font_black_0,
   textSecondary: palette.font_black_3,
+  fieldLabel: palette.secondaryTextFigma, // Figma "--Secondary-text" — field-label captions only
   textDisabled: palette.font_black_5,
   disabledBg: palette.font_black_6, // disabled button fill
   disabledText: palette.font_black_4, // disabled button label
-  placeholder: palette.font_black_4,
-  icon: palette.colorForgotPassword, // eye toggle, chevrons
+  placeholder: palette.hintGray,
+  icon: palette.hintGray, // eye toggle, chevrons, field icons
   inputBg: palette.colorLoginInputBg,
   inputBorder: palette.divider,
   border: palette.font_black_6,
@@ -191,7 +194,7 @@ export const radii = {
 // Read via useResponsive().fs('label') etc.
 export const fontSizes = {
   label: { phone: 12, tablet: 14 }, // input_label_size
-  input: { phone: 14, tablet: 16 }, // input_inner_size
+  input: { phone: 12, tablet: 14 }, // input_inner_size
   button: { phone: 14, tablet: 20 }, // button_text_size
   link: { phone: 12, tablet: 14 }, // forgot_pwd_size
   error: { phone: 12, tablet: 13 }, // validation caption
