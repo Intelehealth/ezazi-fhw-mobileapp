@@ -23,9 +23,10 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
   },
   assets: {
     logo: require('../../../../assets/clients/default/logo.png'),
-    // Square E-emblem (432×432) used for both splash and login — avoids the text
-    // logo appearing scattered at large sizes
-    splashLogo: require('../../../../assets/clients/default/icon_foreground.png'),
+    // Wordmark recolored for the dark splash background: #2E1E91 ink -> white,
+    // #ED1A56 accent curl kept pink. Pixel-remapped from logo.png (two flat
+    // colors, no gradients) — regenerate the same way if logo.png changes.
+    splashLogo: require('../../../../assets/clients/default/logo_on_dark.png'),
     loginIcon:  require('../../../../assets/clients/default/login_icon.png'),
     logoSize: {
       splash: { phone: { width: 150, height: 150 }, tablet: { width: 280, height: 280 } },

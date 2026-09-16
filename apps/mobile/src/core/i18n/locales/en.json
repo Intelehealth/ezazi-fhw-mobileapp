@@ -19,7 +19,7 @@
   },
   "splash": {
     "tagline": "Empowering labor management through\ndigital precision",
-    "from": "from"
+    "loading": "Loading {{client}}..."
   },
   "permissions": {
     "title": "Permissions Required",

@@ -30,6 +30,11 @@ export const iconPaths = {
 
   // Checkbox tick (✓)
   check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+
+  // Filled heart — splash-screen divider accent
+  heart:
+    'M12,21.35l-1.45-1.32C5.4,15.36,2,12.28,2,8.5C2,5.42,4.42,3,7.5,3c1.74,0,3.41,0.81,4.5,2.09' +
+    'C13.09,3.81,14.76,3,16.5,3C19.58,3,22,5.42,22,8.5c0,3.78-3.4,6.86-8.55,11.54L12,21.35z',
 } as const;
 
 export type IconName = keyof typeof iconPaths;
@@ -79,5 +84,27 @@ export const wavePaths = {
   splashDark: {
     d: 'M193,29C-1,5.8 -208.5,157.67 -288,236.5L18,762.5L1009.5,587L977.5,0.5C896.83,51.5 699.1,145.9 553.5,115.5C371.5,77.5 435.5,58 193,29Z',
     viewBox: '0 0 800 448',
+  },
+} as const;
+
+// ─── New-splash bottom hills (Figma "Vector 6"/"Vector 7") ────────────────────
+// Two-layer rounded hill silhouette behind the splash illustration, each with
+// its own left-to-right gradient. Rendered with preserveAspectRatio="none",
+// stretched to the screen width like the wavePaths above.
+
+export const splashHills = {
+  // Vector 7.svg — shorter, more transparent back layer
+  back: {
+    d: 'M-97.3514 45.0254L-283.518 134.344C-328.429 155.891 -357 201.288 -357 251.1C-357 322.62 -299.022 380.598 -227.501 380.598H850.079C935.087 380.598 1004 311.686 1004 226.678C1004 115.618 889.966 41.1108 788.258 85.7175L686.102 130.521C629.208 155.473 564.569 155.995 507.279 131.965L277.578 35.617C156.998 -14.9604 20.5403 -11.5361 -97.3514 45.0254Z',
+    viewBox: '0 0 800 281',
+    gradient: ['#3E2BB1', '#3922CF'] as const,
+    fillOpacity: 0.8,
+  },
+  // Vector 6.svg — taller, fully opaque front layer
+  front: {
+    d: 'M191.649 45.0254L5.48184 134.344C-39.4289 155.891 -68 201.288 -68 251.1C-68 322.62 -10.0215 380.598 61.4986 380.598H1139.08C1224.09 380.598 1293 311.686 1293 226.678C1293 115.618 1178.97 41.1108 1077.26 85.7175L975.102 130.521C918.208 155.473 853.569 155.995 796.279 131.965L566.578 35.617C445.998 -14.9604 309.54 -11.5361 191.649 45.0254Z',
+    viewBox: '0 0 800 317',
+    gradient: ['#2E1E91', '#3922CF'] as const,
+    fillOpacity: 1,
   },
 } as const;
