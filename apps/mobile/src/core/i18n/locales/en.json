@@ -1,0 +1,216 @@
+{
+  "app": {
+    "name": "eZAZI FHW"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "continue": "Continue",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "errorIconGlyph": "!",
+    "a11y": {
+      "goBack": "Go back",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "otpInput": "OTP input",
+      "close": "Close"
+    }
+  },
+  "splash": {
+    "tagline": "Empowering labour management\nthrough digital precision",
+    "loading": "Loading {{client}}..."
+  },
+  "permissions": {
+    "title": "Permissions Required",
+    "descriptionDenied": "This app needs the following permissions to function correctly. Please grant them to continue.",
+    "descriptionPermanent": "Some permissions were permanently denied. Please enable them in App Settings to continue.",
+    "settingsHint": "Settings → Apps → eZAZI FHW → Permissions",
+    "closeNow": "Close Now",
+    "retry": "Retry",
+    "openSettings": "Open Settings",
+    "camera": "Camera",
+    "cameraReason": "Capture patient photos for ward verification",
+    "storage": "Storage (Read & Write)",
+    "storageReason": "Store clinical data and sync files offline",
+    "contacts": "Contacts",
+    "contactsReason": "Auto-complete patient and account details",
+    "notifications": "Notifications",
+    "notificationsReason": "Receive prolonged-labour alerts and teleconsult calls",
+    "a11y": {
+      "closeApp": "Close app",
+      "openSettings": "Open app settings",
+      "retry": "Retry permission request"
+    }
+  },
+  "setup": {
+    "title": "Welcome Back!",
+    "subtitle": "Sign in to continue caring for your patients.",
+    "location": "Location",
+    "locationPlaceholder": "Select Location",
+    "username": "Username",
+    "usernamePlaceholder": "Username",
+    "password": "Password",
+    "passwordPlaceholder": "Password",
+    "forgotPassword": "Forgot password?",
+    "tempNavLogin": "Go to Login screen (temp)",
+    "submit": "Login",
+    "toastSuccess": "Login successful",
+    "errors": {
+      "locationRequired": "Please select a location",
+      "locationsNotFetched": "Unable to fetch locations. Please try again.",
+      "usernameRequired": "Please enter your username",
+      "passwordRequired": "Please enter your password",
+      "passwordTooShort": "8+ characters required for password",
+      "invalidCredentials": {
+        "title": "Username or password is incorrect",
+        "message": "Please check your credentials and try again."
+      },
+      "accountLocked": {
+        "title": "Too many failed attempts",
+        "message": "Try again in {{minutes}} minutes."
+      },
+      "accountLockedGeneric": {
+        "title": "Too many failed attempts",
+        "message": "Please try again later."
+      },
+      "rateLimited": {
+        "title": "Too many attempts",
+        "message": "Please try again later."
+      },
+      "networkError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      },
+      "genericError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      }
+    }
+  },
+  "login": {
+    "title": "Welcome Back!",
+    "subtitle": "Sign in to continue caring for your patients.",
+    "username": "Username",
+    "usernamePlaceholder": "Username",
+    "password": "Password",
+    "passwordPlaceholder": "Password",
+    "forgotPassword": "Forgot password?",
+    "submit": "Login",
+    "toastSuccess": "Login successful",
+    "errors": {
+      "usernameRequired": "Please enter your username",
+      "passwordRequired": "Please enter your password",
+      "passwordTooShort": "8+ characters required for password",
+      "invalidCredentials": {
+        "title": "Username or password is incorrect",
+        "message": "Please check your credentials and try again."
+      },
+      "accountLocked": {
+        "title": "Too many failed attempts",
+        "message": "Try again in {{minutes}} minutes."
+      },
+      "accountLockedGeneric": {
+        "title": "Too many failed attempts",
+        "message": "Please try again later."
+      },
+      "rateLimited": {
+        "title": "Too many attempts",
+        "message": "Please try again later."
+      },
+      "networkError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      },
+      "genericError": {
+        "title": "Something went wrong",
+        "message": "Please check your connection and try again."
+      }
+    }
+  },
+  "forgotPassword": {
+    "request": {
+      "heading": "Forgot Password?",
+      "instruction": "Please enter your mobile number to get OTP.",
+      "phoneLabel": "MOBILE NUMBER",
+      "phonePlaceholder": "Enter Mobile Number",
+      "submit": "Send OTP",
+      "errors": {
+        "phoneRequired": "Phone number can't be empty",
+        "phoneInvalid": "Please enter a valid mobile number."
+      }
+    },
+    "verify": {
+      "heading": "Verification",
+      "instruction": "We've sent OTP to your mobile number at {{maskedPhone}}. Please enter 4 digit code you receive",
+      "notReceived": "Didn't receive code?",
+      "resend": "Resend Code",
+      "resendCountdown": "Resend in {{seconds}}s",
+      "submit": "Verify OTP",
+      "verifiedText": "OTP Verified",
+      "a11y": {
+        "resendOtp": "Resend OTP"
+      },
+      "errors": {
+        "otpRequired": "Please enter received OTP",
+        "otpIncorrect": "Incorrect OTP. Please try again."
+      }
+    },
+    "reset": {
+      "heading": "Create new password",
+      "subtitle": "Create new password for your account.",
+      "newPassword": "NEW PASSWORD",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPassword": "CONFIRM NEW PASSWORD",
+      "confirmPasswordPlaceholder": "Re-enter new password",
+      "passwordRequirementsLabel": "PASSWORD MUST CONTAIN",
+      "requirements": {
+        "minLength": "At least 8 characters",
+        "uppercase": "At least one uppercase letter",
+        "specialChar": "At least one special character",
+        "number": "At least one number"
+      },
+      "submit": "Reset Password",
+      "errors": {
+        "newPasswordRequired": "Please enter new password",
+        "passwordInvalid": "8+ characters required for password",
+        "confirmRequired": "Please reenter password",
+        "noMatch": "Passwords doesn't match"
+      },
+      "success": {
+        "title": "Successful",
+        "message": "Congratulations! Your password has been updated successfully.",
+        "button": "Back to Login"
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Notice",
+    "consent": "*I (Health Worker) confirm that I have read out the privacy notice and consent to the patient.",
+    "toastReadFirst": "Please read out the Privacy Consent first.",
+    "toastReject": "You cannot register a patient without consent",
+    "accept": "Accept",
+    "reject": "Reject",
+    "sections": {
+      "personalInfoHeading": "Personal Information",
+      "personalInfoBody": "Health Worker will collect personal information and health information from you for your medical records.",
+      "useHeading": "Use",
+      "useBody": "Your information is\n-  used for diagnosing and treating you.\n-  used to send you reminders, prescription information, and other related communication.",
+      "disclosureBody": "Your personal information will be anonymized for use in research, disease monitoring, and analysis to help us improve our products and services. We may disclose your personal information in certain specific circumstances given here ",
+      "disclosureLinkSuffix": ".",
+      "protectionHeading": "Protection Measures",
+      "protectionBody": "We provide physical, electronic, and procedural safeguards to protect information we process and maintain.",
+      "accessHeading": "Access and Correction",
+      "accessBody": "You have the right to ask for a copy of any personal information we hold about you, as well as to ask for it to be corrected if you think it is wrong. If you'd like us to delete or modify your personal data that you have provided to us, please contact the Data Privacy Officer at support@intelehealth.io and we will respond in a reasonable time.\n\nOn clicking \"Accept\", I consent to the collection and use of my personal data, including health information, and to give access to the above-mentioned entities."
+    }
+  },
+  "home": {
+    "title": "Home",
+    "note": "Logged in. Active cases will appear here.",
+    "logout": "Log out (EZ-943)"
+  },
+  "biometric": {
+    "prompt": "Authenticate to unlock eZAZI"
+  }
+}
