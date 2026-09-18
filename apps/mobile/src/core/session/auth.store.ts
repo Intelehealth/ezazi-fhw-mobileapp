@@ -7,7 +7,7 @@ import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
 import { isJwtExpired } from '@/core/utils/jwt';
 import { logger } from '@/core/utils/logger';
 
-export type AuthStatus = 'unknown' | 'unauthenticated' | 'authenticated';
+export type AuthStatus = 'unknown' | 'needsSetup' | 'needsLogin' | 'authenticated';
 
 export const SPLASH_MIN_MS = 3_000;
 
@@ -29,33 +29,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userUuid: null,
   role: null,
 
-  /** Called from SplashScreen — decides where to route based on token presence.
-   *  Holds for at least SPLASH_MIN_MS so the splash is visible long enough. */
+  /** Called from SplashScreen — decides where to route based on token state.
+   *  Holds for at least SPLASH_MIN_MS so the splash is visible long enough.
+   *
+   *  No network call happens here (e.g. no silent refresh) — an expired
+   *  access token routes straight to Login. That keeps this bounded and
+   *  deterministic on poor connectivity; EZ-942's 401 interceptor in
+   *  core/api/client.ts still transparently refreshes tokens once the user
+   *  is back inside the app. */
   bootstrap: async () => {
     // Fire config sync in parallel — auth routing does not depend on its result.
     // Errors inside syncConfig are swallowed by the store; we never let them surface here.
     void useFeatureConfigStore.getState().syncConfig();
     try {
-      const [token, userUuid] = await Promise.all([
+      const [accessToken, refreshToken, userUuid] = await Promise.all([
         secureStorage.get('accessToken'),
+        secureStorage.get('refreshToken'),
         secureStorage.get('userUuid'),
         new Promise<void>((resolve) => setTimeout(resolve, SPLASH_MIN_MS)),
       ]);
-      if (token && userUuid) {
-        // JWT expiry isn't enforced yet — no real access token is persisted
-        // today (see EZ-1156), so treating one as expired would strand every
-        // session. Logged only, so routing can start gating on it later.
-        if (isJwtExpired(token)) {
-          logger.debug('bootstrap: stored token looks expired, not enforcing yet');
-        }
+
+      const isValid = !!accessToken && !!userUuid && !isJwtExpired(accessToken);
+      if (isValid) {
         set({ status: 'authenticated', userUuid });
-      } else {
-        set({ status: 'unauthenticated' });
+        return;
       }
+
+      // Leftover userUuid/refreshToken from a prior login (even with a
+      // missing/expired access token) means this device has been through
+      // Setup before — send it to Login, not Setup. Nothing is cleared here:
+      // only logout() and a failed background refresh ever wipe storage.
+      const hasPriorSession = !!refreshToken || !!userUuid;
+      set({ status: hasPriorSession ? 'needsLogin' : 'needsSetup' });
     } catch {
       // SecureStore can throw on certain Android keystores (e.g. first-boot,
-      // locked device, or manufacturer keystore errors). Always unblock navigation.
-      set({ status: 'unauthenticated' });
+      // locked device, or manufacturer keystore errors). Nothing was read, so
+      // there's no way to tell a prior session apart from a fresh device —
+      // fall back to the safest option that always unblocks navigation.
+      set({ status: 'needsSetup' });
     }
   },
 
@@ -100,6 +111,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Result intentionally unused — server may be offline, we still clear local state.
     await sessionApi.logout();
     await secureStorage.clear();
-    set({ status: 'unauthenticated', userUuid: null, role: null });
+    // 'needsLogin', not 'needsSetup' — this device has already been through
+    // Setup once, so logging out should return to Login.
+    set({ status: 'needsLogin', userUuid: null, role: null });
   },
 }));

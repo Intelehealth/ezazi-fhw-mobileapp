@@ -18,12 +18,20 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export const RootNavigator: React.FC = () => {
   const status = useAuthStore((s) => s.status);
 
+  const needsAuthStack = status === 'needsSetup' || status === 'needsLogin';
+
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        // Setup vs Login is app logic (first-run vs returning-with-expired-
+        // session), not screen order — both are always registered below so
+        // in-stack navigation between them still works either way.
+        initialRouteName={needsAuthStack ? (status === 'needsSetup' ? 'Setup' : 'Login') : undefined}
+      >
         {status === 'unknown' && <Stack.Screen name="Splash" component={SplashScreen} />}
 
-        {status === 'unauthenticated' && (
+        {needsAuthStack && (
           <>
             <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />

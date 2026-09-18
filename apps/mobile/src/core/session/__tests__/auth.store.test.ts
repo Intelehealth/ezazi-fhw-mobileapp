@@ -18,6 +18,17 @@ jest.mock('@/core/config/featureConfig.store', () => ({
 }));
 
 import { SPLASH_MIN_MS, useAuthStore } from '../auth.store';
+import { toBase64 } from '@/core/utils/base64';
+
+// Builds a fake JWT with a given `exp` claim. decodeJwtPayload/isJwtExpired
+// only read the payload — no real signature is needed for these tests.
+// base64url, not base64: fromBase64() (used by decodeJwtPayload) accepts
+// both, but a real JWT segment is always base64url.
+function fakeJwt(exp: number): string {
+  const base64url = (obj: unknown) =>
+    toBase64(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${base64url({ alg: 'none' })}.${base64url({ exp })}.signature`;
+}
 
 describe('useAuthStore', () => {
 
@@ -29,10 +40,11 @@ describe('useAuthStore', () => {
   // ── bootstrap ────────────────────────────────────────────────────────────
 
   describe('bootstrap', () => {
-    it('sets status to authenticated when both a token and userUuid are stored', async () => {
+    it('sets status to authenticated when a non-expired token and userUuid are stored', async () => {
       jest.useFakeTimers();
+      const token = fakeJwt(Math.floor(Date.now() / 1000) + 3600);
       (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
-        Promise.resolve(key === 'accessToken' ? 'token-1' : key === 'userUuid' ? 'user-1' : null),
+        Promise.resolve(key === 'accessToken' ? token : key === 'userUuid' ? 'user-1' : null),
       );
 
       const bootstrapping = useAuthStore.getState().bootstrap();
@@ -44,7 +56,22 @@ describe('useAuthStore', () => {
       jest.useRealTimers();
     });
 
-    it('sets status to unauthenticated when the token is missing', async () => {
+    it('sets status to needsLogin when the stored token is expired', async () => {
+      jest.useFakeTimers();
+      const token = fakeJwt(Math.floor(Date.now() / 1000) - 3600);
+      (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
+        Promise.resolve(key === 'accessToken' ? token : key === 'userUuid' ? 'user-1' : null),
+      );
+
+      const bootstrapping = useAuthStore.getState().bootstrap();
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
+      await bootstrapping;
+
+      expect(useAuthStore.getState().status).toBe('needsLogin');
+      jest.useRealTimers();
+    });
+
+    it('sets status to needsLogin when the token is missing but a prior session left userUuid/refreshToken', async () => {
       jest.useFakeTimers();
       (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
         Promise.resolve(key === 'userUuid' ? 'user-1' : null),
@@ -54,11 +81,23 @@ describe('useAuthStore', () => {
       await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
       await bootstrapping;
 
-      expect(useAuthStore.getState().status).toBe('unauthenticated');
+      expect(useAuthStore.getState().status).toBe('needsLogin');
       jest.useRealTimers();
     });
 
-    it('sets status to unauthenticated when secure storage throws', async () => {
+    it('sets status to needsSetup when nothing is stored', async () => {
+      jest.useFakeTimers();
+      (secureStorage.get as jest.Mock).mockResolvedValue(null);
+
+      const bootstrapping = useAuthStore.getState().bootstrap();
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
+      await bootstrapping;
+
+      expect(useAuthStore.getState().status).toBe('needsSetup');
+      jest.useRealTimers();
+    });
+
+    it('sets status to needsSetup when secure storage throws', async () => {
       jest.useFakeTimers();
       (secureStorage.get as jest.Mock).mockRejectedValue(new Error('keystore locked'));
 
@@ -66,7 +105,7 @@ describe('useAuthStore', () => {
       await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
       await bootstrapping;
 
-      expect(useAuthStore.getState().status).toBe('unauthenticated');
+      expect(useAuthStore.getState().status).toBe('needsSetup');
       jest.useRealTimers();
     });
 
@@ -149,7 +188,7 @@ describe('useAuthStore', () => {
 
       expect(secureStorage.clear).toHaveBeenCalledTimes(1);
       expect(useAuthStore.getState()).toMatchObject({
-        status: 'unauthenticated',
+        status: 'needsLogin',
         userUuid: null,
         role: null,
       });
@@ -162,7 +201,7 @@ describe('useAuthStore', () => {
       await useAuthStore.getState().logout();
 
       expect(secureStorage.clear).toHaveBeenCalledTimes(1);
-      expect(useAuthStore.getState().status).toBe('unauthenticated');
+      expect(useAuthStore.getState().status).toBe('needsLogin');
     });
   });
 
