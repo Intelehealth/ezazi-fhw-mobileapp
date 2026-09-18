@@ -4,14 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import { WaveHeader } from '@/features/auth/components/WaveHeader';
+import { ForgotPasswordHeader } from '@/features/auth/components/ForgotPasswordHeader';
+import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
+import { env } from '@/core/config/env';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { logger } from '@/core/utils/logger';
 
 const PHONE_REGEX = new RegExp(`^\\d{${clientConfig.phone.numberLength}}$`);
 
@@ -21,9 +24,11 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const { isTablet, fs, cornerRadius } = useResponsive();
+  const requestOtp = usePasswordResetStore(s => s.requestOtp);
 
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = (): boolean => {
     const trimmed = phone.trim();
@@ -39,11 +44,45 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
     return true;
   };
 
-  const handleContinue = () => {
-    if (!validate()) return;
-    navigation.navigate('ForgotPasswordVerify', {
-      phone: `${clientConfig.phone.dialCode}${phone.trim()}`,
+  const handleContinue = async () => {
+    if (isSubmitting || !validate()) return;
+
+    const phoneNumber = phone.trim();
+    // Bare digits, no "+" — matches the legacy CountryCodePicker.getSelectedCountryCode()
+    // value the real auth-gateway expects (confirmed via its VALIDATION_ERROR field names).
+    const countryCode = clientConfig.phone.dialCode.replace('+', '');
+
+    // Console-only — the exact URL + body being sent, since the request
+    // body itself is assembled inside passwordApi.requestOtp (otpFor/source
+    // are baked in there, not visible from this call site otherwise).
+    logger.debug('[ForgotPassword] requestOtp request', {
+      url: `${env.AUTH_GATEWAY_URL}/auth/requestOtp`,
+      body: { otpFor: 'password', phoneNumber, countryCode, source: 'mobile' },
     });
+
+    setIsSubmitting(true);
+    const result = await requestOtp({ phoneNumber, countryCode });
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      // Console-only — never shown on screen. Visible via `adb logcat` /
+      // the Metro terminal even when you can't see this session's console.
+      logger.debug('[ForgotPassword] requestOtp failed', result.error);
+      setError(t('forgotPassword.request.errors.phoneInvalid'));
+      return;
+    }
+
+    // Console-only. The legacy Android app also gated on `role === "Nurse"`
+    // here, but this backend's actual response is just
+    // `{ message: "If the account exists, an OTP has been sent." }` —
+    // no userUuid/role at all (confirmed live 2026-09-17, deliberately
+    // account-existence-preserving). There's nothing to gate on any more;
+    // any successful response proceeds to OTP verification.
+    logger.debug('[ForgotPassword] requestOtp response', result.data);
+
+    // replace, not navigate — Request is a spent step once OTP is sent, so
+    // Verify's back button should land on Setup/Login, not back on Request.
+    navigation.replace('ForgotPasswordVerify', { phoneNumber, countryCode });
   };
 
   const isFormValid = PHONE_REGEX.test(phone.trim());
@@ -51,28 +90,17 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   return (
     <FormScreenLayout
       header={
-        <WaveHeader
-          title={t('forgotPassword.title')}
-          subtitle={t('forgotPassword.subtitle')}
+        <ForgotPasswordHeader
+          title={t('forgotPassword.request.heading')}
+          subtitle={t('forgotPassword.request.instruction')}
           onBack={() => navigation.goBack()}
-        />
-      }
-      footer={
-        <AppButton
-          label={t('forgotPassword.request.submit')}
-          onPress={handleContinue}
-          disabled={!isFormValid}
-          showArrow
         />
       }
       contentStyle={styles.content}
     >
-      <Text style={[commonStyles.fieldHeading, styles.heading, { fontSize: fs('heading') }]}>
-        {t('forgotPassword.request.heading')}
-      </Text>
-
-      <Text style={[commonStyles.instruction, styles.instruction, { fontSize: fs('instruction') }]}>
-        {t('forgotPassword.request.instruction')}
+      {/* MOBILE NUMBER — uppercase field label (Figma) */}
+      <Text style={[styles.fieldLabel, { fontSize: fs('label') }]}>
+        {t('forgotPassword.request.phoneLabel')}
       </Text>
 
       {/* ── Country picker + phone input row ── */}
@@ -124,6 +152,13 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
           )}
         </View>
       </View>
+
+      <AppButton
+        label={t('forgotPassword.request.submit')}
+        onPress={handleContinue}
+        disabled={!isFormValid || isSubmitting}
+        style={styles.button}
+      />
     </FormScreenLayout>
   );
 };
@@ -133,22 +168,25 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
 
   content: {
-    paddingTop: 70,
+    paddingTop: 40,
   },
 
-  heading: {
-    marginBottom: 8,
-  },
-
-  instruction: {
-    marginBottom: 8,
+  fieldLabel: {
+    color: colors.fieldLabel,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: dimens.labelGap,
   },
 
   phoneRow: {
     flexDirection: 'row',
     alignItems:    'stretch',
     gap:           16,
-    marginTop:     4,
+  },
+
+  button: {
+    marginTop: 48,
   },
 
   countryCard: {

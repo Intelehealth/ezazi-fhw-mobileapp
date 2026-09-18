@@ -33,7 +33,7 @@ export const commonStyles = StyleSheet.create({
 
   errorText: {
     color: colors.error,
-    textAlign: 'right',
+    textAlign: 'left',
   },
 
   link: {

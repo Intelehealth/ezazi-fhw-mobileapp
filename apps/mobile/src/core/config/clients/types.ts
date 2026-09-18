@@ -52,6 +52,9 @@ export interface ClientConfig {
      *  logo if absent. `logo` carries deliberate padding for other contexts
      *  (home header, etc.) that reads as extra dead space above a heading. */
     setupLogo?: ImageSourcePropType;
+    /** Shield/padlock badge in the Forgot Password flow's header — falls back
+     *  to a hand-authored placeholder icon (core/ui/icons.tsx#shieldLock) if absent. */
+    forgotPasswordShield?: ImageSourcePropType;
     /** Per-client logo container dimensions (dp). Screens fall back to Nepal values if absent. */
     logoSize?: {
       splash: { phone: { width: number; height: number }; tablet: { width: number; height: number } };

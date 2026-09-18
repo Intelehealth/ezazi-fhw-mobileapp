@@ -11,16 +11,13 @@ import {
 import { colors, dimens } from '@/core/config/theme';
 
 /**
- * Shared form-screen skeleton:
- *   root → header → KeyboardAvoidingView → ScrollView(children) → sticky footer
+ * Shared form-screen skeleton: root → header → KeyboardAvoidingView → ScrollView(children).
  * Slots keep it decoupled — this component knows nothing about specific screens.
  */
 
 interface FormScreenLayoutProps {
-  /** e.g. <WaveHeader …/> — rendered above the keyboard-avoiding area. */
+  /** e.g. <ForgotPasswordHeader …/> — rendered above the keyboard-avoiding area. */
   header?: React.ReactNode;
-  /** Sticky above the keyboard, outside the ScrollView — e.g. <AppButton …/>. */
-  footer?: React.ReactNode;
   children: React.ReactNode;
   /** Merged into the ScrollView content style — screens pass their paddingTop here. */
   contentStyle?: StyleProp<ViewStyle>;
@@ -28,7 +25,6 @@ interface FormScreenLayoutProps {
 
 export const FormScreenLayout: React.FC<FormScreenLayoutProps> = ({
   header,
-  footer,
   children,
   contentStyle,
 }) => (
@@ -47,8 +43,6 @@ export const FormScreenLayout: React.FC<FormScreenLayoutProps> = ({
       >
         {children}
       </ScrollView>
-
-      {footer != null && <View style={styles.footer}>{footer}</View>}
     </KeyboardAvoidingView>
   </View>
 );
@@ -64,13 +58,5 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: dimens.screenHPad,
     paddingBottom: 48,
-  },
-
-  // Sticky bottom button container
-  footer: {
-    paddingTop: 16,
-    paddingBottom: 40,
-    paddingHorizontal: dimens.screenHPad,
-    backgroundColor: colors.white,
   },
 });

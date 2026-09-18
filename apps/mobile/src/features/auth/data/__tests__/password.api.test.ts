@@ -15,22 +15,32 @@ describe('passwordApi', () => {
     (http.post as jest.Mock).mockClear();
   });
 
-  it('requestOtp() POSTs to /auth/requestOtp', () => {
-    const body = { phone: '9999999999', countryCode: '+977' };
-    passwordApi.requestOtp(body);
-    expect(http.post).toHaveBeenCalledWith('/auth/requestOtp', body);
+  // Field names/shape verified against the legacy Android app
+  // (ui/password/model/*.java) — see password.api.ts's doc comment.
+
+  it('requestOtp() POSTs to /auth/requestOtp with otpFor/source baked in', () => {
+    passwordApi.requestOtp({ phoneNumber: '9999999999', countryCode: '977' });
+    expect(http.post).toHaveBeenCalledWith('/auth/requestOtp', {
+      otpFor: 'password',
+      phoneNumber: '9999999999',
+      countryCode: '977',
+      source: 'mobile',
+    });
   });
 
-  it('verifyOtp() POSTs to /auth/verifyOtp', () => {
-    const body = { phone: '9999999999', code: '123456' };
-    passwordApi.verifyOtp(body);
-    expect(http.post).toHaveBeenCalledWith('/auth/verifyOtp', body);
+  it('verifyOtp() POSTs to /auth/verifyOtp with verifyFor baked in', () => {
+    passwordApi.verifyOtp({ phoneNumber: '9999999999', countryCode: '977', otp: '123456' });
+    expect(http.post).toHaveBeenCalledWith('/auth/verifyOtp', {
+      verifyFor: 'password',
+      phoneNumber: '9999999999',
+      countryCode: '977',
+      otp: '123456',
+    });
   });
 
-  it('resetPassword() POSTs to /auth/resetPassword/:userUuid with the full body', () => {
-    const body = { userUuid: 'u-1', newPassword: 'new-pass', otpToken: 'otp-1' };
-    passwordApi.resetPassword(body);
-    expect(http.post).toHaveBeenCalledWith('/auth/resetPassword/u-1', body);
+  it('resetPassword() POSTs to /auth/resetPassword/:userUuid with only newPassword', () => {
+    passwordApi.resetPassword({ userUuid: 'u-1', newPassword: 'new-pass' });
+    expect(http.post).toHaveBeenCalledWith('/auth/resetPassword/u-1', { newPassword: 'new-pass' });
   });
 
 });

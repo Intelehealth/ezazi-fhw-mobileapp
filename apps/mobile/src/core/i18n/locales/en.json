@@ -14,11 +14,12 @@
       "goBack": "Go back",
       "showPassword": "Show password",
       "hidePassword": "Hide password",
-      "otpInput": "OTP input"
+      "otpInput": "OTP input",
+      "close": "Close"
     }
   },
   "splash": {
-    "tagline": "Empowering labor management through\ndigital precision",
+    "tagline": "Empowering labour management\nthrough digital precision",
     "loading": "Loading {{client}}..."
   },
   "permissions": {
@@ -129,47 +130,58 @@
     }
   },
   "forgotPassword": {
-    "title": "Forgot Password?",
-    "subtitle": "Follow the instructions below to use\nyou account again.",
     "request": {
-      "heading": "Enter Mobile Number",
-      "instruction": "Please enter the mobile number registered with Intelehealth",
+      "heading": "Forgot Password?",
+      "instruction": "Please enter your mobile number to get OTP.",
+      "phoneLabel": "MOBILE NUMBER",
       "phonePlaceholder": "Enter Mobile Number",
-      "submit": "Continue",
+      "submit": "Send OTP",
       "errors": {
         "phoneRequired": "Phone number can't be empty",
-        "phoneInvalid": "Enter 10 digits"
+        "phoneInvalid": "Please enter a valid mobile number."
       }
     },
     "verify": {
-      "heading": "Enter Verification code",
-      "instruction": "6-digit OTP sent on your registered number and email. Please check and enter the OTP.",
-      "notReceived": "Didn't receive OTP?",
-      "resend": "Resend",
-      "resendCountdown": "Resend in {{seconds}} seconds",
-      "submit": "Continue",
+      "heading": "Verification",
+      "instruction": "We've sent OTP to your mobile number at {{maskedPhone}}. Please enter 4 digit code you receive",
+      "notReceived": "Didn't receive code?",
+      "resend": "Resend Code",
+      "resendCountdown": "Resend in {{seconds}}s",
+      "submit": "Verify OTP",
+      "verifiedText": "OTP Verified",
       "a11y": {
         "resendOtp": "Resend OTP"
       },
       "errors": {
-        "otpRequired": "Please enter received OTP"
+        "otpRequired": "Please enter received OTP",
+        "otpIncorrect": "Incorrect OTP. Please try again."
       }
     },
     "reset": {
-      "title": "Reset password",
-      "subtitle": "Please reset new password for your account.",
-      "heading": "Enter your new password",
-      "newPassword": "New password",
+      "heading": "Create new password",
+      "subtitle": "Create new password for your account.",
+      "newPassword": "NEW PASSWORD",
       "newPasswordPlaceholder": "Enter new password",
-      "confirmPassword": "Confirm new password",
-      "confirmPasswordPlaceholder": "Confirm password",
-      "passwordHint": "Password must be of atleast 8 characters & a mix of upper & lower case letters, numbers & symbols.",
-      "submit": "Save",
+      "confirmPassword": "CONFIRM NEW PASSWORD",
+      "confirmPasswordPlaceholder": "Re-enter new password",
+      "passwordRequirementsLabel": "PASSWORD MUST CONTAIN",
+      "requirements": {
+        "minLength": "At least 8 characters",
+        "uppercase": "At least one uppercase letter",
+        "specialChar": "At least one special character",
+        "number": "At least one number"
+      },
+      "submit": "Reset Password",
       "errors": {
         "newPasswordRequired": "Please enter new password",
         "passwordInvalid": "8+ characters required for password",
         "confirmRequired": "Please reenter password",
         "noMatch": "Passwords doesn't match"
+      },
+      "success": {
+        "title": "Successful",
+        "message": "Congratulations! Your password has been updated successfully.",
+        "button": "Back to Login"
       }
     }
   },

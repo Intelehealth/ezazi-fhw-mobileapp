@@ -7,7 +7,9 @@ import type { ClientConfig } from './types';
  */
 export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
   id: 'default',
-  displayName: 'eZAZI',
+  // Casing matches the Splash "Loading Ezazi..." copy (Figma splash design) —
+  // this is displayName's only consumer today (SplashScreen.tsx).
+  displayName: 'Ezazi',
   countryCode: 'IN',
   calendar: 'AD',
   locale: 'en',
@@ -29,6 +31,8 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
     splashLogo: require('../../../../assets/clients/default/logo_on_dark.png'),
     loginIcon:  require('../../../../assets/clients/default/login_icon.png'),
     setupLogo:  require('../../../../assets/clients/default/setup_logo.png'),
+    // Figma export: Ezazi Developer File / Group.png (shield + padlock badge)
+    forgotPasswordShield: require('../../../../assets/clients/default/forgot_password_shield.png'),
     logoSize: {
       splash: { phone: { width: 150, height: 150 }, tablet: { width: 280, height: 280 } },
       login:  { phone: { width: 56, height: 78, marginTop: 60, gapBelowIcon: 32 }, tablet: { width: 100, height: 140, marginTop: 80, gapBelowIcon: 40 } },

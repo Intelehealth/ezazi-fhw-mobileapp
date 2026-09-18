@@ -9,8 +9,8 @@ export type RootStackParamList = {
   Login: undefined;
   PrivacyNotice: undefined;
   ForgotPasswordRequest: undefined;
-  ForgotPasswordVerify: { phone: string };
-  ForgotPasswordReset: { userUuid: string; otpToken: string };
+  ForgotPasswordVerify: { phoneNumber: string; countryCode: string };
+  ForgotPasswordReset: { userUuid: string };
 
   // App stack
   Home: undefined;
