@@ -111,8 +111,8 @@ export const SplashScreen: React.FC = () => {
 
   // ── Bottom hills — stretched to screen width, same convention as the old
   // wavePaths (preserveAspectRatio="none"); front layer taller, drawn on top ──
-  const HILL_BACK_H  = width * (281 / 800);
-  const HILL_FRONT_H = width * (317 / 800);
+  const HILL_BACK_H  = width * (323 / 800);
+  const HILL_FRONT_H = width * (365 / 800);
 
   // ── Wordmark — clients with a dedicated dark-background asset
   // (assets.splashLogo) use it as-is; others fall back to their normal logo
@@ -132,8 +132,14 @@ export const SplashScreen: React.FC = () => {
   return (
     <View style={styles.root}>
 
+      {/* ── Figma has the wordmark starting roughly a third of the way down
+          the screen, not tucked under the status bar — most of the empty
+          space belongs above the wordmark, only a sliver between the
+          divider and the illustration (flex 11:1, measured off the design). ── */}
+      <View style={styles.topSpacer} />
+
       {/* ── Top — client wordmark, tagline, divider ── */}
-      <View style={[styles.topSection, { marginTop: isTablet ? 96 : 64 }]}>
+      <View style={styles.topSection}>
         <Image
           source={clientConfig.assets.splashLogo ?? clientConfig.assets.logo}
           style={{ width: WORDMARK_W, height: WORDMARK_H }}
@@ -146,14 +152,40 @@ export const SplashScreen: React.FC = () => {
 
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
-          <Svg width={12} height={12} viewBox="0 0 24 24" style={styles.dividerHeart}>
+          <Svg
+            width={12}
+            height={12}
+            viewBox="0 0 24 24"
+            style={[styles.dividerHeart, { transform: [{ rotate: '-18deg' }] }]}
+          >
             <Path d={iconPaths.heart} fill={colors.colorAccent} />
           </Svg>
           <View style={styles.dividerLine} />
         </View>
       </View>
 
-      {/* ── Bottom hills — behind the illustration, declared first ── */}
+      <View style={styles.midSpacer} />
+
+      {/* ── Bottom cluster — illustration, hills and the loading indicator are
+          all positioned directly off HILL_FRONT_H (not the flex chain above)
+          so their overlap is exact and independent of screen height:
+            1. Illustration — painted FIRST (bottom of the stack) and pulled
+               down so its base sits inside the hill's silhouette.
+            2. Hills — painted AFTER, on top — wherever the hill silhouette is
+               already opaque, it visually covers the illustration's base
+               (the ground line included), same as Figma's lady-into-mountain
+               overlap. Swapping paint order (not the flex layout) is what
+               makes this work; hillContainer is `position: absolute` so its
+               place in the JSX never affects anyone's layout, only z-order.
+            3. Loading indicator — painted last, centered in the hill band. ── */}
+      <View style={[styles.illustrationSection, { bottom: HILL_FRONT_H * 0.74 }]}>
+        <Svg viewBox={splashIllustration.viewBox} width={ILLUSTRATION_W} height={ILLUSTRATION_H}>
+          {splashIllustration.paths.map((path, index) => (
+            <Path key={index} d={path.d} fill={path.fill} />
+          ))}
+        </Svg>
+      </View>
+
       <View style={[styles.hillContainer, { height: HILL_FRONT_H }]}>
         <Svg
           viewBox={splashHills.back.viewBox}
@@ -188,17 +220,8 @@ export const SplashScreen: React.FC = () => {
         </Svg>
       </View>
 
-      {/* ── Illustration — shared across clients ── */}
-      <View style={[styles.illustrationSection, { paddingBottom: HILL_FRONT_H * 0.15 }]}>
-        <Svg viewBox={splashIllustration.viewBox} width={ILLUSTRATION_W} height={ILLUSTRATION_H}>
-          {splashIllustration.paths.map((path, index) => (
-            <Path key={index} d={path.d} fill={path.fill} />
-          ))}
-        </Svg>
-      </View>
-
-      {/* ── Bottom — loading indicator ── */}
-      <View style={[styles.bottomSection, { marginBottom: isTablet ? 48 : 32 }]}>
+      {/* ── Loading indicator — centered in the hill band, on top of everything. ── */}
+      <View style={[styles.bottomSection, { bottom: HILL_FRONT_H * 0.4 }]}>
         <ActivityIndicator size="small" color={colors.onPrimary} />
         <Text style={styles.loadingText}>
           {t('splash.loading', { client: clientConfig.displayName })}
@@ -226,9 +249,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  // Ratio measured off the Figma splash frame (node-id 2-109): most of the
+  // screen's empty space sits above the wordmark, the rest below it — the
+  // illustration/hills/loading indicator are positioned independently
+  // (off HILL_FRONT_H, not this flex chain — see the bottom cluster below).
+  topSpacer: {
+    flex: 1,
+  },
+
   topSection: {
     alignItems: 'center',
     paddingHorizontal: 24,
+  },
+
+  midSpacer: {
+    flex: 2,
   },
 
   tagline: {
@@ -265,13 +300,19 @@ const styles = StyleSheet.create({
     right:   0,
   },
 
+  // Both positioned via an inline `bottom` (a fraction of HILL_FRONT_H) so
+  // they land precisely inside the hill band regardless of screen height.
   illustrationSection: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    justifyContent: 'flex-end',
   },
 
   bottomSection: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
   },
 
