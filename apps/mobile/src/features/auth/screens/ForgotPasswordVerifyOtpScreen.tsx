@@ -71,14 +71,26 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
     return () => clearTimeout(timer);
   }, [secondsLeft]);
 
-  const handleResend = useCallback(() => {
-    if (secondsLeft > 0) return;
-    void requestOtp({ phoneNumber, countryCode });
-    setSecondsLeft(RESEND_COUNTDOWN_SEC);
-    resetField('otp');
-    clearErrors('otp');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- resetField/clearErrors are stable
-  }, [secondsLeft, phoneNumber, countryCode, requestOtp]);
+  const [isResending, setIsResending] = useState(false);
+
+  const handleResend = useCallback(async () => {
+    if (secondsLeft > 0 || isResending) return;
+
+    setIsResending(true);
+    const result = await requestOtp({ phoneNumber, countryCode });
+    setIsResending(false);
+
+    if (result.ok) {
+      setSecondsLeft(RESEND_COUNTDOWN_SEC);
+      resetField('otp');
+      clearErrors('otp');
+    } else {
+      // Leave secondsLeft at 0 (not a fresh 60s wait) so the link stays
+      // tappable for an immediate retry — requestOtp() already logs the
+      // failure (usePasswordResetStore), this just surfaces it on screen.
+      setError('otp', { message: t('forgotPassword.verify.errors.resendFailed') });
+    }
+  }, [secondsLeft, isResending, phoneNumber, countryCode, requestOtp, resetField, clearErrors, setError, t]);
 
   const onValidSubmit = async (data: ForgotPasswordVerifyFormValues) => {
     const result = await verifyOtp({ phoneNumber, countryCode, otp: data.otp });
@@ -169,6 +181,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
         ) : (
           <TouchableOpacity
             onPress={handleResend}
+            disabled={isResending}
             accessibilityRole="button"
             accessibilityLabel={t('forgotPassword.verify.a11y.resendOtp')}
           >

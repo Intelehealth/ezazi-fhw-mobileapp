@@ -154,7 +154,8 @@
       },
       "errors": {
         "otpRequired": "Please enter received OTP",
-        "otpIncorrect": "Incorrect OTP. Please try again."
+        "otpIncorrect": "Incorrect OTP. Please try again.",
+        "resendFailed": "Couldn't resend the code. Please try again."
       }
     },
     "reset": {
