@@ -52,13 +52,22 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   const logoW = logoH * LOGO_ASPECT;
   const shieldH = isTablet ? scale(106) : 78;
   const shieldW = shieldH * SHIELD_ASPECT;
-  // Pushes the (unchanged-size) shield down past the heading/subtitle so its
-  // bottom edge lands on the first field's top border below — the header
-  // doesn't know the field's exact position, so this is a tuned offset, not
-  // a measured one (RN doesn't clip overflow, so it's safe to reach past the
-  // header's own box into the screen content; the field's opaque background
+  // Pushes the shield down past the heading/subtitle so its bottom edge
+  // lands on the first field's top border below — the header doesn't know
+  // the field's exact position, so this is a tuned offset, not a measured
+  // one (RN doesn't clip overflow, so it's safe to reach past the header's
+  // own box into the screen content; the field's opaque background
   // naturally clips it right at the border).
-  const shieldTop = isTablet ? scale(72) : 74;
+  //
+  // The field below doesn't move when the tablet scale grows (its position
+  // comes from the screen's own flat content padding, unrelated to this
+  // header), so the shield's BOTTOM edge — top + height — has to stay
+  // pinned at that same tuned target regardless of scale. Scaling shieldTop
+  // the same way shieldH scales made the bottom edge drift further down as
+  // the icon grew, overshooting into the field below. Keep the target
+  // constant and let shieldTop shrink as shieldH grows instead.
+  const SHIELD_BOTTOM_TABLET = 72 + 106;
+  const shieldTop = isTablet ? SHIELD_BOTTOM_TABLET - shieldH : 74;
 
   return (
     <View style={[styles.container, { paddingTop: statusBarH + (isTablet ? scale(24) : 16) }]}>
