@@ -1,11 +1,18 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
 import { ForgotPasswordHeader } from '@/features/auth/components/ForgotPasswordHeader';
 import { OtpInput } from '@/features/auth/components/OtpInput';
 import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
+import {
+  createForgotPasswordVerifyFormSchema,
+  OTP_LENGTH,
+  type ForgotPasswordVerifyFormValues,
+} from '@/features/auth/domain/forgotPasswordVerifyForm.schema';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { Text } from '@/core/ui/Text';
@@ -15,9 +22,6 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 // CountDownTimer(60000, 1000) from OTPVerificationFragment.java
 const RESEND_COUNTDOWN_SEC = 60;
-
-// Figma — 4-digit OTP (confirmed 2026-09-16; supersedes the legacy 6-digit flow)
-const OTP_LENGTH = 4;
 
 // How long the green "OTP Verified" success text shows before navigating on (Figma).
 const VERIFIED_FLASH_MS = 600;
@@ -38,11 +42,23 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
   const requestOtp = usePasswordResetStore(s => s.requestOtp);
   const verifyOtp  = usePasswordResetStore(s => s.verifyOtp);
 
-  const [otp, setOtp]                 = useState('');
-  const [error, setError]             = useState('');
   const [verified, setVerified]       = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COUNTDOWN_SEC);
+
+  const schema = useMemo(() => createForgotPasswordVerifyFormSchema(t), [t]);
+  const {
+    control,
+    handleSubmit,
+    clearErrors,
+    setError,
+    resetField,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordVerifyFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { otp: '' },
+    reValidateMode: 'onSubmit',
+  });
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -54,24 +70,15 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
     if (secondsLeft > 0) return;
     void requestOtp({ phoneNumber, countryCode });
     setSecondsLeft(RESEND_COUNTDOWN_SEC);
-    setOtp('');
-    setError('');
+    resetField('otp');
+    clearErrors('otp');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resetField/clearErrors are stable
   }, [secondsLeft, phoneNumber, countryCode, requestOtp]);
 
-  const handleContinue = async () => {
-    if (isSubmitting) return;
-
-    if (otp.length < OTP_LENGTH) {
-      setError(t('forgotPassword.verify.errors.otpRequired'));
-      return;
-    }
-
-    setIsSubmitting(true);
-    const result = await verifyOtp({ phoneNumber, countryCode, otp });
-    setIsSubmitting(false);
+  const onValidSubmit = async (data: ForgotPasswordVerifyFormValues) => {
+    const result = await verifyOtp({ phoneNumber, countryCode, otp: data.otp });
 
     if (result.ok) {
-      setError('');
       setVerified(true);
       setTimeout(() => {
         // replace, not navigate — Verify is a spent, single-use OTP step, so
@@ -79,16 +86,17 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
         navigation.replace('ForgotPasswordReset', { userUuid: result.data.userUuid });
       }, VERIFIED_FLASH_MS);
     } else {
-      setError(t('forgotPassword.verify.errors.otpIncorrect'));
+      setError('otp', { message: t('forgotPassword.verify.errors.otpIncorrect') });
     }
   };
 
-  const handleOtpChange = (val: string) => {
-    setOtp(val);
-    if (error) setError('');
+  // isSubmitting guard: re-entrance while a verify call is already in flight.
+  const handleContinue = () => {
+    if (isSubmitting) return;
+    void handleSubmit(onValidSubmit)();
   };
 
-  const isFormValid = otp.length === OTP_LENGTH;
+  const isFormValid = watch('otp').length === OTP_LENGTH;
 
   return (
     <FormScreenLayout
@@ -101,16 +109,25 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
       }
       contentStyle={styles.content}
     >
-      <OtpInput
-        length={OTP_LENGTH}
-        value={otp}
-        onChange={handleOtpChange}
-        hasError={!!error}
+      <Controller
+        control={control}
+        name="otp"
+        render={({ field: { value, onChange } }) => (
+          <OtpInput
+            length={OTP_LENGTH}
+            value={value}
+            onChange={(val) => {
+              onChange(val);
+              if (errors.otp) clearErrors('otp');
+            }}
+            hasError={!!errors.otp}
+          />
+        )}
       />
 
-      {!!error && (
+      {!!errors.otp && (
         <Text style={[commonStyles.errorText, styles.errorText, { fontSize: fs('error') }]}>
-          {error}
+          {errors.otp.message}
         </Text>
       )}
 

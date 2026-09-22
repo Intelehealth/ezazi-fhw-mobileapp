@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
 import { ForgotPasswordHeader } from '@/features/auth/components/ForgotPasswordHeader';
 import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
+import {
+  createForgotPasswordRequestFormSchema,
+  PHONE_REGEX,
+  type ForgotPasswordRequestFormValues,
+} from '@/features/auth/domain/forgotPasswordRequestForm.schema';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
@@ -17,8 +24,6 @@ import { env } from '@/core/config/env';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { logger } from '@/core/utils/logger';
 
-const PHONE_REGEX = new RegExp(`^\\d{${clientConfig.phone.numberLength}}$`);
-
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPasswordRequest'>;
 
 export const ForgotPasswordRequestOtpScreen: React.FC = () => {
@@ -27,28 +32,24 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   const { isTablet, fs, cornerRadius, scale } = useResponsive();
   const requestOtp = usePasswordResetStore(s => s.requestOtp);
 
-  const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const schema = useMemo(() => createForgotPasswordRequestFormSchema(t), [t]);
+  const {
+    control,
+    handleSubmit,
+    clearErrors,
+    setError,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordRequestFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { phoneNumber: '' },
+    // Validate only on submit — re-run only clears/replaces the error for a
+    // field once it's already errored, never live-validates as you type.
+    reValidateMode: 'onSubmit',
+  });
 
-  const validate = (): boolean => {
-    const trimmed = phone.trim();
-    if (!trimmed) {
-      setError(t('forgotPassword.request.errors.phoneRequired'));
-      return false;
-    }
-    if (!PHONE_REGEX.test(trimmed)) {
-      setError(t('forgotPassword.request.errors.phoneInvalid'));
-      return false;
-    }
-    setError('');
-    return true;
-  };
-
-  const handleContinue = async () => {
-    if (isSubmitting || !validate()) return;
-
-    const phoneNumber = phone.trim();
+  const onValidSubmit = async (data: ForgotPasswordRequestFormValues) => {
+    const phoneNumber = data.phoneNumber.trim();
     // Bare digits, no "+" — matches the legacy CountryCodePicker.getSelectedCountryCode()
     // value the real auth-gateway expects (confirmed via its VALIDATION_ERROR field names).
     const countryCode = clientConfig.phone.dialCode.replace('+', '');
@@ -61,15 +62,13 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
       body: { otpFor: 'password', phoneNumber, countryCode, source: 'mobile' },
     });
 
-    setIsSubmitting(true);
     const result = await requestOtp({ phoneNumber, countryCode });
-    setIsSubmitting(false);
 
     if (!result.ok) {
       // Console-only — never shown on screen. Visible via `adb logcat` /
       // the Metro terminal even when you can't see this session's console.
       logger.debug('[ForgotPassword] requestOtp failed', result.error);
-      setError(t('forgotPassword.request.errors.phoneInvalid'));
+      setError('phoneNumber', { message: t('forgotPassword.request.errors.phoneInvalid') });
       return;
     }
 
@@ -86,7 +85,14 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
     navigation.replace('ForgotPasswordVerify', { phoneNumber, countryCode });
   };
 
-  const isFormValid = PHONE_REGEX.test(phone.trim());
+  // isSubmitting guard: onSubmitEditing (keyboard "done") bypasses AppButton's
+  // disabled state, so re-entrance is blocked here too.
+  const handleContinue = () => {
+    if (isSubmitting) return;
+    void handleSubmit(onValidSubmit)();
+  };
+
+  const isFormValid = PHONE_REGEX.test(watch('phoneNumber').trim());
 
   return (
     <FormScreenLayout
@@ -127,28 +133,34 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
             style={[
               styles.phoneInputWrapper,
               { borderRadius: cornerRadius },
-              !!error && styles.phoneInputError,
+              !!errors.phoneNumber && styles.phoneInputError,
             ]}
           >
-            <TextInput
-              style={[styles.phoneInput, { fontSize: fs('input') }]}
-              placeholder={t('forgotPassword.request.phonePlaceholder')}
-              placeholderTextColor={colors.placeholder}
-              value={phone}
-              onChangeText={(text) => {
-                setPhone(text.replace(/[^0-9]/g, ''));
-                if (error) setError('');
-              }}
-              keyboardType="number-pad"
-              maxLength={clientConfig.phone.numberLength}
-              returnKeyType="done"
-              onSubmitEditing={handleContinue}
+            <Controller
+              control={control}
+              name="phoneNumber"
+              render={({ field: { value, onChange } }) => (
+                <TextInput
+                  style={[styles.phoneInput, { fontSize: fs('input') }]}
+                  placeholder={t('forgotPassword.request.phonePlaceholder')}
+                  placeholderTextColor={colors.placeholder}
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text.replace(/[^0-9]/g, ''));
+                    if (errors.phoneNumber) clearErrors('phoneNumber');
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={clientConfig.phone.numberLength}
+                  returnKeyType="done"
+                  onSubmitEditing={handleContinue}
+                />
+              )}
             />
           </View>
 
-          {!!error && (
+          {!!errors.phoneNumber && (
             <Text style={[commonStyles.errorText, styles.errorText, { fontSize: fs('error') }]}>
-              {error}
+              {errors.phoneNumber.message}
             </Text>
           )}
         </View>

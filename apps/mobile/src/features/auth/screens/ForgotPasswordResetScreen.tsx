@@ -1,23 +1,25 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
 import { ForgotPasswordHeader } from '@/features/auth/components/ForgotPasswordHeader';
 import { PasswordField } from '@/features/auth/components/PasswordField';
 import { PasswordResetSuccessDialog } from '@/features/auth/components/PasswordResetSuccessDialog';
 import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
+import {
+  createForgotPasswordResetFormSchema,
+  PASSWORD_REGEX,
+  type ForgotPasswordResetFormValues,
+} from '@/features/auth/domain/forgotPasswordResetForm.schema';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
-
-// Exact regex from ResetPasswordFragment.java — isValidPassword()
-// Requires: ≥1 digit, ≥1 lowercase, ≥1 uppercase, ≥1 symbol from @*#$%^&+=, no spaces, ≥8 chars
-const PASSWORD_REGEX =
-  /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@*#$%^&+=])(?=\S+$).{8,}$/;
 
 // Figma — static requirements list, not a live-validated checklist (no
 // screenshot shows an item turning "checked" even with a password typed).
@@ -28,8 +30,6 @@ const REQUIREMENT_KEYS = [
   'forgotPassword.reset.requirements.number',
 ] as const;
 
-type FormErrors = { newPassword?: string; confirmPassword?: string };
-
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordReset'>;
 
 export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }) => {
@@ -38,50 +38,38 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   const { userUuid } = route.params;
   const resetPassword = usePasswordResetStore(s => s.resetPassword);
 
-  const [newPassword, setNewPassword]         = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors]                   = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting]       = useState(false);
-  const [showSuccess, setShowSuccess]         = useState(false);
-
+  const [showSuccess, setShowSuccess] = useState(false);
   const confirmRef = useRef<TextInput>(null);
 
-  // ── Validation ───────────────────────────────────────────────────────────────
-  const validate = (): boolean => {
-    const next: FormErrors = {};
+  const schema = useMemo(() => createForgotPasswordResetFormSchema(t), [t]);
+  const {
+    control,
+    handleSubmit,
+    clearErrors,
+    setError,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordResetFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { newPassword: '', confirmPassword: '' },
+    reValidateMode: 'onSubmit',
+  });
 
-    if (!newPassword) {
-      next.newPassword = t('forgotPassword.reset.errors.newPasswordRequired');
-    } else if (!PASSWORD_REGEX.test(newPassword)) {
-      next.newPassword = t('forgotPassword.reset.errors.passwordInvalid');
-    }
-
-    if (!confirmPassword) {
-      next.confirmPassword = t('forgotPassword.reset.errors.confirmRequired');
-    } else if (newPassword && confirmPassword !== newPassword) {
-      next.confirmPassword = t('forgotPassword.reset.errors.noMatch');
-    }
-
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
-  const clearError = (field: keyof FormErrors) => {
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
-  };
-
-  const handleSave = async () => {
-    if (isSubmitting || !validate()) return;
-
-    setIsSubmitting(true);
-    const result = await resetPassword({ userUuid, newPassword });
-    setIsSubmitting(false);
+  const onValidSubmit = async (data: ForgotPasswordResetFormValues) => {
+    const result = await resetPassword({ userUuid, newPassword: data.newPassword });
 
     if (result.ok) {
       setShowSuccess(true);
     } else {
-      setErrors({ confirmPassword: t('common.error') });
+      setError('confirmPassword', { message: t('common.error') });
     }
+  };
+
+  // isSubmitting guard: PasswordField's onSubmitEditing (keyboard "done")
+  // bypasses AppButton's disabled state, so re-entrance is blocked here too.
+  const handleSave = () => {
+    if (isSubmitting) return;
+    void handleSubmit(onValidSubmit)();
   };
 
   const handleBackToLogin = () => {
@@ -89,8 +77,9 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
+  const [newPasswordValue, confirmPasswordValue] = watch(['newPassword', 'confirmPassword']);
   const isFormValid =
-    PASSWORD_REGEX.test(newPassword) && confirmPassword === newPassword;
+    PASSWORD_REGEX.test(newPasswordValue) && confirmPasswordValue === newPasswordValue;
 
   return (
     <FormScreenLayout
@@ -104,15 +93,24 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
       contentStyle={styles.content}
     >
       {/* New password field */}
-      <PasswordField
-        label={t('forgotPassword.reset.newPassword')}
-        placeholder={t('forgotPassword.reset.newPasswordPlaceholder')}
-        value={newPassword}
-        onChangeText={(text) => { setNewPassword(text); clearError('newPassword'); }}
-        error={errors.newPassword}
-        leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
-        returnKeyType="next"
-        onSubmitEditing={() => confirmRef.current?.focus()}
+      <Controller
+        control={control}
+        name="newPassword"
+        render={({ field: { value, onChange } }) => (
+          <PasswordField
+            label={t('forgotPassword.reset.newPassword')}
+            placeholder={t('forgotPassword.reset.newPasswordPlaceholder')}
+            value={value}
+            onChangeText={(text) => {
+              onChange(text);
+              if (errors.newPassword) clearErrors('newPassword');
+            }}
+            error={errors.newPassword?.message}
+            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            returnKeyType="next"
+            onSubmitEditing={() => confirmRef.current?.focus()}
+          />
+        )}
       />
 
       {/* Password requirements — static 2x2 grid on a light card (Figma) */}
@@ -141,16 +139,25 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
       </View>
 
       {/* Confirm password field */}
-      <PasswordField
-        ref={confirmRef}
-        label={t('forgotPassword.reset.confirmPassword')}
-        placeholder={t('forgotPassword.reset.confirmPasswordPlaceholder')}
-        value={confirmPassword}
-        onChangeText={(text) => { setConfirmPassword(text); clearError('confirmPassword'); }}
-        error={errors.confirmPassword}
-        leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
-        returnKeyType="done"
-        onSubmitEditing={handleSave}
+      <Controller
+        control={control}
+        name="confirmPassword"
+        render={({ field: { value, onChange } }) => (
+          <PasswordField
+            ref={confirmRef}
+            label={t('forgotPassword.reset.confirmPassword')}
+            placeholder={t('forgotPassword.reset.confirmPasswordPlaceholder')}
+            value={value}
+            onChangeText={(text) => {
+              onChange(text);
+              if (errors.confirmPassword) clearErrors('confirmPassword');
+            }}
+            error={errors.confirmPassword?.message}
+            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            returnKeyType="done"
+            onSubmitEditing={handleSave}
+          />
+        )}
       />
 
       <AppButton
