@@ -138,7 +138,15 @@
       "submit": "Send OTP",
       "errors": {
         "phoneRequired": "Phone number can't be empty",
-        "phoneInvalid": "Please enter a valid mobile number."
+        "phoneInvalid": "Please enter a valid mobile number.",
+        "networkError": {
+          "title": "Something went wrong",
+          "message": "Please check your connection and try again."
+        },
+        "genericError": {
+          "title": "Something went wrong",
+          "message": "Please check your connection and try again."
+        }
       }
     },
     "verify": {
@@ -154,8 +162,18 @@
       },
       "errors": {
         "otpRequired": "Please enter received OTP",
-        "otpIncorrect": "Incorrect OTP. Please try again.",
-        "resendFailed": "Couldn't resend the code. Please try again."
+        "otpIncorrect": {
+          "title": "Incorrect OTP",
+          "message": "Please check the code and try again."
+        },
+        "networkError": {
+          "title": "Something went wrong",
+          "message": "Please check your connection and try again."
+        },
+        "genericError": {
+          "title": "Something went wrong",
+          "message": "Please check your connection and try again."
+        }
       }
     },
     "reset": {
@@ -177,7 +195,15 @@
         "newPasswordRequired": "Please enter new password",
         "passwordInvalid": "8+ characters required for password",
         "confirmRequired": "Please reenter password",
-        "noMatch": "Passwords doesn't match"
+        "noMatch": "Passwords doesn't match",
+        "networkError": {
+          "title": "Something went wrong",
+          "message": "Please check your connection and try again."
+        },
+        "genericError": {
+          "title": "Something went wrong",
+          "message": "Please check your connection and try again."
+        }
       },
       "success": {
         "title": "Successful",

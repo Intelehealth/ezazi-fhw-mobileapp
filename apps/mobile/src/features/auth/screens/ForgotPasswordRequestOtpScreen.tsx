@@ -13,6 +13,7 @@ import {
   PHONE_REGEX,
   type ForgotPasswordRequestFormValues,
 } from '@/features/auth/domain/forgotPasswordRequestForm.schema';
+import { ApiErrorBanner } from '@/core/ui/ApiErrorBanner';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
@@ -23,6 +24,7 @@ import { colors, dimens } from '@/core/config/theme';
 import { env } from '@/core/config/env';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { logger } from '@/core/utils/logger';
+import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPasswordRequest'>;
 
@@ -39,12 +41,13 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   const phoneRowRef = useRef<View>(null);
   const [phoneRowY, setPhoneRowY] = useState<number | null>(null);
 
+  const [banner, setBanner] = useState<ErrorBanner | null>(null);
+
   const schema = useMemo(() => createForgotPasswordRequestFormSchema(t), [t]);
   const {
     control,
     handleSubmit,
     clearErrors,
-    setError,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordRequestFormValues>({
@@ -75,7 +78,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
       // Console-only — never shown on screen. Visible via `adb logcat` /
       // the Metro terminal even when you can't see this session's console.
       logger.debug('[ForgotPassword] requestOtp failed', result.error);
-      setError('phoneNumber', { message: t('forgotPassword.request.errors.phoneInvalid') });
+      setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.request.errors'));
       return;
     }
 
@@ -96,6 +99,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   // disabled state, so re-entrance is blocked here too.
   const handleContinue = () => {
     if (isSubmitting) return;
+    setBanner(null);
     void handleSubmit(onValidSubmit)();
   };
 
@@ -179,6 +183,9 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
           )}
         </View>
       </View>
+
+      {/* ── API error banner — network/server failures from requestOtp ── */}
+      {!!banner && <ApiErrorBanner banner={banner} />}
 
       <AppButton
         label={t('forgotPassword.request.submit')}

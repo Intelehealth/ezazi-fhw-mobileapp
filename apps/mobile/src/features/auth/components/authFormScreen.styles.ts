@@ -4,9 +4,11 @@ import { colors, dimens } from '@/core/config/theme';
 /**
  * Shared layout constants + StyleSheet for LoginScreen and SetupScreen —
  * Figma calls for an identical screen (logo + illustration + heading +
- * subtitle + first field + PASSWORD + forgot-password row + error banner +
- * submit button), Setup just adds a LOCATION field before USERNAME. Single
- * source of truth instead of two copies kept in sync by hand.
+ * subtitle + first field + PASSWORD + forgot-password row + submit button),
+ * Setup just adds a LOCATION field before USERNAME. Single source of truth
+ * instead of two copies kept in sync by hand. The API error banner itself
+ * is core/ui/ApiErrorBanner, shared with every other screen that calls an
+ * API, not just these two.
  */
 
 // Parent container padding.
@@ -72,47 +74,7 @@ export const authFormStyles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // API error banner — pale-red card with a filled circular "!" badge,
-  // shown above the submit button (Figma: credentials/network error states).
-  errorBanner: {
-    flexDirection:     'row',
-    alignItems:        'flex-start',
-    backgroundColor:   colors.colorEmergencyBg,
-    padding:           12,
-    marginTop:         20,
-  },
-
-  errorBannerIcon: {
-    width:            20,
-    height:           20,
-    borderRadius:     10,
-    backgroundColor:  colors.error,
-    alignItems:       'center',
-    justifyContent:   'center',
-    marginRight:      10,
-    marginTop:        1,
-  },
-
-  errorBannerIconGlyph: {
-    color:      colors.white,
-    fontSize:   13,
-    lineHeight: 15,
-    fontWeight: '700',
-  },
-
-  errorBannerTextWrap: {
-    flex: 1,
-  },
-
-  errorBannerTitle: {
-    color:      colors.error,
-    fontWeight: '700',
-  },
-
-  errorBannerMessage: {
-    color:     colors.textSecondary,
-    marginTop: 2,
-  },
+  // API error banner is core/ui/ApiErrorBanner — not local styles.
 
   loginButton: {
     marginTop: 32,

@@ -14,12 +14,14 @@ import {
   PASSWORD_REGEX,
   type ForgotPasswordResetFormValues,
 } from '@/features/auth/domain/forgotPasswordResetForm.schema';
+import { ApiErrorBanner } from '@/core/ui/ApiErrorBanner';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 
 // Figma — static requirements list, not a live-validated checklist (no
 // screenshot shows an item turning "checked" even with a password typed).
@@ -39,6 +41,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   const resetPassword = usePasswordResetStore(s => s.resetPassword);
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [banner, setBanner] = useState<ErrorBanner | null>(null);
   const confirmRef = useRef<TextInput>(null);
 
   // Window Y of the NEW PASSWORD input box — see the shieldTop comment in
@@ -51,7 +54,6 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
     control,
     handleSubmit,
     clearErrors,
-    setError,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordResetFormValues>({
@@ -66,7 +68,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
     if (result.ok) {
       setShowSuccess(true);
     } else {
-      setError('confirmPassword', { message: t('common.error') });
+      setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.reset.errors'));
     }
   };
 
@@ -74,6 +76,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   // bypasses AppButton's disabled state, so re-entrance is blocked here too.
   const handleSave = () => {
     if (isSubmitting) return;
+    setBanner(null);
     void handleSubmit(onValidSubmit)();
   };
 
@@ -169,6 +172,9 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
           />
         )}
       />
+
+      {/* ── API error banner — network/server failures from resetPassword ── */}
+      {!!banner && <ApiErrorBanner banner={banner} />}
 
       <AppButton
         label={t('forgotPassword.reset.submit')}

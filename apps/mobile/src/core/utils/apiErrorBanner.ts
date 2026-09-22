@@ -1,13 +1,12 @@
 import type { ApiError } from '@ezazi/api-client';
 
 /**
- * Shared login-failure → banner mapping for SetupScreen and LoginScreen.
- * Both screens call the same auth-store `login()` action (EZ-1097) and want
- * the same title/message pairs back — only the i18n namespace differs
- * ('setup.errors' vs 'login.errors'), because each screen owns its own copy
- * of the strings. No behavior change versus the two screens' previous
- * identical, hand-duplicated getErrorBanner() functions — see api error.tsv
- * for the status/code table.
+ * Shared API-failure → banner mapping, paired with core/ui/ApiErrorBanner.
+ * Started as SetupScreen/LoginScreen's login()-failure mapping (EZ-1097,
+ * same auth-store action, only the i18n namespace differs — 'setup.errors'
+ * vs 'login.errors'); now used by every screen that calls an API and wants
+ * a banner back for the failure, keyed off its own `<namespace>.errors.*`
+ * title/message pairs so each screen still owns its own copy strings.
  */
 
 export interface ErrorBanner {
@@ -34,6 +33,8 @@ export function getApiErrorBanner(error: ApiError, t: Translate, namespace: stri
     }
     case 'RATE_LIMITED':
       return bannerFor('rateLimited');
+    case 'INVALID_OTP':
+      return bannerFor('otpIncorrect');
     case 'VALIDATION_ERROR':
       return {
         title: t(`${namespace}.genericError.title`),

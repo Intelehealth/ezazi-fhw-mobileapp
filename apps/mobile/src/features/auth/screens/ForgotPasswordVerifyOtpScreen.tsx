@@ -13,12 +13,14 @@ import {
   OTP_LENGTH,
   type ForgotPasswordVerifyFormValues,
 } from '@/features/auth/domain/forgotPasswordVerifyForm.schema';
+import { ApiErrorBanner } from '@/core/ui/ApiErrorBanner';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { Text } from '@/core/ui/Text';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 
 // CountDownTimer(60000, 1000) from OTPVerificationFragment.java
 const RESEND_COUNTDOWN_SEC = 60;
@@ -44,6 +46,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
 
   const [verified, setVerified]       = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COUNTDOWN_SEC);
+  const [banner, setBanner]           = useState<ErrorBanner | null>(null);
 
   // Window Y of the OTP box row — see the shieldTop comment in
   // ForgotPasswordHeader for why this is measured rather than a tuned constant.
@@ -55,7 +58,6 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
     control,
     handleSubmit,
     clearErrors,
-    setError,
     resetField,
     watch,
     formState: { errors, isSubmitting },
@@ -76,6 +78,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
   const handleResend = useCallback(async () => {
     if (secondsLeft > 0 || isResending) return;
 
+    setBanner(null);
     setIsResending(true);
     const result = await requestOtp({ phoneNumber, countryCode });
     setIsResending(false);
@@ -88,9 +91,10 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
       // Leave secondsLeft at 0 (not a fresh 60s wait) so the link stays
       // tappable for an immediate retry — requestOtp() already logs the
       // failure (usePasswordResetStore), this just surfaces it on screen.
-      setError('otp', { message: t('forgotPassword.verify.errors.resendFailed') });
+      setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.verify.errors'));
     }
-  }, [secondsLeft, isResending, phoneNumber, countryCode, requestOtp, resetField, clearErrors, setError, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resetField/clearErrors are stable
+  }, [secondsLeft, isResending, phoneNumber, countryCode, requestOtp, t]);
 
   const onValidSubmit = async (data: ForgotPasswordVerifyFormValues) => {
     const result = await verifyOtp({ phoneNumber, countryCode, otp: data.otp });
@@ -103,13 +107,14 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
         navigation.replace('ForgotPasswordReset', { userUuid: result.data.userUuid });
       }, VERIFIED_FLASH_MS);
     } else {
-      setError('otp', { message: t('forgotPassword.verify.errors.otpIncorrect') });
+      setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.verify.errors'));
     }
   };
 
   // isSubmitting guard: re-entrance while a verify call is already in flight.
   const handleContinue = () => {
     if (isSubmitting) return;
+    setBanner(null);
     void handleSubmit(onValidSubmit)();
   };
 
@@ -155,6 +160,9 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
           {errors.otp.message}
         </Text>
       )}
+
+      {/* ── API error banner — wrong-code/network/server failures from verifyOtp or resend ── */}
+      {!!banner && <ApiErrorBanner banner={banner} />}
 
       {verified && (
         <Text style={[styles.verifiedText, { fontSize: fs('error') }]}>

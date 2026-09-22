@@ -16,6 +16,7 @@ import {
   ILLUSTRATION_ASPECT,
 } from '@/features/auth/components/authFormScreen.styles';
 import { createSetupFormSchema, type SetupFormValues } from '@/features/auth/domain/setupForm.schema';
+import { ApiErrorBanner } from '@/core/ui/ApiErrorBanner';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
@@ -34,7 +35,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 export const SetupScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
-  const { isTablet, fs, cornerRadius, scale } = useResponsive();
+  const { isTablet, fs, scale } = useResponsive();
   const login = useAuthStore(s => s.login);
   const locations = useLocationStore(s => s.locations);
   const isLocationsLoading = useLocationStore(s => s.isLoading);
@@ -292,21 +293,7 @@ export const SetupScreen: React.FC = () => {
       </TouchableOpacity>
 
       {/* ── API error banner — credentials/network/server failures from handleSetup ── */}
-      {!!banner && (
-        <View style={[styles.errorBanner, { borderRadius: cornerRadius }]}>
-          <View style={styles.errorBannerIcon}>
-            <Text style={styles.errorBannerIconGlyph}>{t('common.errorIconGlyph')}</Text>
-          </View>
-          <View style={styles.errorBannerTextWrap}>
-            <Text style={[styles.errorBannerTitle, { fontSize: fs('label') }]}>
-              {banner.title}
-            </Text>
-            <Text style={[styles.errorBannerMessage, { fontSize: fs('error') }]}>
-              {banner.message}
-            </Text>
-          </View>
-        </View>
-      )}
+      {!!banner && <ApiErrorBanner banner={banner} />}
 
       {/* ── Login button — always enabled; the zod resolver surfaces per-field
           errors when tapped with empty/invalid fields. ── */}
