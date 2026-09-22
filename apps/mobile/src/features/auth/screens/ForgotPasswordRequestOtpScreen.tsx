@@ -1,8 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
@@ -26,11 +25,11 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { logger } from '@/core/utils/logger';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPasswordRequest'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordRequest'>;
 
-export const ForgotPasswordRequestOtpScreen: React.FC = () => {
+export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const { t } = useTranslation();
-  const navigation = useNavigation<Nav>();
+  const { origin } = route.params;
   const { isTablet, fs, cornerRadius, scale } = useResponsive();
   const requestOtp = usePasswordResetStore(s => s.requestOtp);
 
@@ -92,7 +91,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
 
     // replace, not navigate — Request is a spent step once OTP is sent, so
     // Verify's back button should land on Setup/Login, not back on Request.
-    navigation.replace('ForgotPasswordVerify', { phoneNumber, countryCode });
+    navigation.replace('ForgotPasswordVerify', { phoneNumber, countryCode, origin });
   };
 
   // isSubmitting guard: onSubmitEditing (keyboard "done") bypasses AppButton's

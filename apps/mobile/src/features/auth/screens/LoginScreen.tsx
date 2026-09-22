@@ -217,7 +217,7 @@ export const LoginScreen: React.FC = () => {
         style={styles.forgotRow}
         accessibilityRole="link"
         accessibilityLabel={t('login.forgotPassword')}
-        onPress={() => navigation.navigate('ForgotPasswordRequest')}
+        onPress={() => navigation.navigate('ForgotPasswordRequest', { origin: 'Login' })}
       >
         <Text style={[styles.forgotText, { fontSize: fs('link') }]}>
           {t('login.forgotPassword')}

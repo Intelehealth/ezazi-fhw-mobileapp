@@ -278,7 +278,7 @@ export const SetupScreen: React.FC = () => {
         style={styles.forgotRow}
         accessibilityRole="link"
         accessibilityLabel={t('setup.forgotPassword')}
-        onPress={() => navigation.navigate('ForgotPasswordRequest')}
+        onPress={() => navigation.navigate('ForgotPasswordRequest', { origin: 'Setup' })}
       >
         <Text style={[styles.forgotText, { fontSize: fs('link') }]}>
           {t('setup.forgotPassword')}

@@ -40,7 +40,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordVerify'>;
 export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { fs } = useResponsive();
-  const { phoneNumber, countryCode } = route.params;
+  const { phoneNumber, countryCode, origin } = route.params;
   const requestOtp = usePasswordResetStore(s => s.requestOtp);
   const verifyOtp  = usePasswordResetStore(s => s.verifyOtp);
 
@@ -104,7 +104,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
       setTimeout(() => {
         // replace, not navigate — Verify is a spent, single-use OTP step, so
         // Reset's back button should land on Setup/Login, not back on Verify.
-        navigation.replace('ForgotPasswordReset', { userUuid: result.data.userUuid });
+        navigation.replace('ForgotPasswordReset', { userUuid: result.data.userUuid, origin });
       }, VERIFIED_FLASH_MS);
     } else {
       setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.verify.errors'));

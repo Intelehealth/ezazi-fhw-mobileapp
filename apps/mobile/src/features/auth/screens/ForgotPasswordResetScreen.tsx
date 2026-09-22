@@ -37,7 +37,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordReset'>;
 export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { fs, cornerRadius } = useResponsive();
-  const { userUuid } = route.params;
+  const { userUuid, origin } = route.params;
   const resetPassword = usePasswordResetStore(s => s.resetPassword);
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -80,9 +80,11 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
     void handleSubmit(onValidSubmit)();
   };
 
+  // Back to whichever screen "Forgot password?" was tapped from — Setup on
+  // first device setup, Login on every login after that — not always Login.
   const handleBackToLogin = () => {
     setShowSuccess(false);
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    navigation.reset({ index: 0, routes: [{ name: origin }] });
   };
 
   const [newPasswordValue, confirmPasswordValue] = watch(['newPassword', 'confirmPassword']);

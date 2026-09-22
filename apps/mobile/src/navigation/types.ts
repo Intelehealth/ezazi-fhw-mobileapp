@@ -8,9 +8,12 @@ export type RootStackParamList = {
   Setup: undefined;
   Login: undefined;
   PrivacyNotice: undefined;
-  ForgotPasswordRequest: undefined;
-  ForgotPasswordVerify: { phoneNumber: string; countryCode: string };
-  ForgotPasswordReset: { userUuid: string };
+  // `origin` — which screen "Forgot password?" was tapped from (Setup or
+  // Login), threaded through all 3 steps so the success dialog's "Back to
+  // Login" can return there instead of always landing on Login.
+  ForgotPasswordRequest: { origin: 'Setup' | 'Login' };
+  ForgotPasswordVerify: { phoneNumber: string; countryCode: string; origin: 'Setup' | 'Login' };
+  ForgotPasswordReset: { userUuid: string; origin: 'Setup' | 'Login' };
 
   // App stack
   Home: undefined;
