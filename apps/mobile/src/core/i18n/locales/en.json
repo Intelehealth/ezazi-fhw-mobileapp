@@ -85,7 +85,7 @@
       },
       "genericError": {
         "title": "Something went wrong",
-        "message": "Please check your connection and try again."
+        "message": "Please try again in a moment."
       }
     }
   },
@@ -125,7 +125,7 @@
       },
       "genericError": {
         "title": "Something went wrong",
-        "message": "Please check your connection and try again."
+        "message": "Please try again in a moment."
       }
     }
   },
@@ -145,7 +145,7 @@
         },
         "genericError": {
           "title": "Something went wrong",
-          "message": "Please check your connection and try again."
+          "message": "Please try again in a moment."
         }
       }
     },
@@ -172,7 +172,7 @@
         },
         "genericError": {
           "title": "Something went wrong",
-          "message": "Please check your connection and try again."
+          "message": "Please try again in a moment."
         }
       }
     },
@@ -202,7 +202,7 @@
         },
         "genericError": {
           "title": "Something went wrong",
-          "message": "Please check your connection and try again."
+          "message": "Please try again in a moment."
         }
       },
       "success": {
