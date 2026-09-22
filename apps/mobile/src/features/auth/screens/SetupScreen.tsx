@@ -63,10 +63,10 @@ export const SetupScreen: React.FC = () => {
   });
 
   const [banner, setBanner]                                 = useState<ErrorBanner | null>(null);
-  // Separate from `banner` — handleSetup() clears `banner` on every submit
-  // tap (a fresh submit result), which would silently wipe this one before
-  // the user ever saw why LOCATION came up empty. Independent lifecycle:
-  // only cleared by a successful fetch (never re-attempted right now).
+  // State only — not its own banner. handleSetup() clears `banner` on every
+  // submit tap, which would silently wipe this one before the user saw why
+  // LOCATION came up empty; kept separate so it survives that, but always
+  // rendered through the single slot above the button (see banner ?? below).
   const [locationBanner, setLocationBanner]                 = useState<ErrorBanner | null>(null);
   const [isLocationPickerVisible, setLocationPickerVisible] = useState(false);
   const [locationAnchor, setLocationAnchor]                 = useState<FieldAnchor | null>(null);
@@ -90,8 +90,8 @@ export const SetupScreen: React.FC = () => {
     void (async () => {
       const result = await fetchLocations();
       // Distinguishes a network failure from a server error instead of one
-      // flat "try again" toast — see locationBanner above for why this
-      // can't just reuse the submit banner.
+      // flat "try again" toast. Shows through the same slot as a submit
+      // failure (see the banner ?? locationBanner render below).
       if (!cancelled && !result.ok) {
         setLocationBanner(getApiErrorBanner(result.error, t, 'setup.errors'));
       }
@@ -211,9 +211,6 @@ export const SetupScreen: React.FC = () => {
           )}
         />
 
-        {/* ── Location-fetch failure — independent of the submit banner below ── */}
-        {!!locationBanner && <ApiErrorBanner banner={locationBanner} />}
-
         {/* pointerEvents="none" — this sits on top of the LOCATION field visually
             (per Figma) but must never swallow taps meant for it. */}
         <Svg
@@ -302,9 +299,12 @@ export const SetupScreen: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* ── API error banner — credentials/network/server failures from handleSetup
-          only; the LOCATION fetch has its own banner above (see locationBanner) ── */}
-      {!!banner && <ApiErrorBanner banner={banner} />}
+      {/* ── API error banner — one slot, above the button, for both a failed
+          submit and a failed LOCATION fetch (never both at once: submit
+          can't run until a location is picked, which can't happen while the
+          fetch is still failing). `banner` wins when both happen to be set,
+          since it reflects the user's latest action. ── */}
+      {!!(banner ?? locationBanner) && <ApiErrorBanner banner={(banner ?? locationBanner)!} />}
 
       {/* ── Login button — always enabled; the zod resolver surfaces per-field
           errors when tapped with empty/invalid fields. ── */}
