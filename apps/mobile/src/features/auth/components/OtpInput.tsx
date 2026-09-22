@@ -1,13 +1,13 @@
 import React, { useRef } from 'react';
 import {
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/core/config/theme';
+import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
@@ -29,11 +29,11 @@ export const OtpInput: React.FC<OtpInputProps> = ({
   hasError = false,
 }) => {
   const { t } = useTranslation();
-  const { isTablet, cornerRadius } = useResponsive();
+  const { isTablet, cornerRadius, scale } = useResponsive();
   const inputRef = useRef<TextInput>(null);
 
-  const cellH    = isTablet ? 64 : 52;
-  const fontSize = isTablet ? 24 : 20;
+  const cellH    = isTablet ? scale(64) : 52;
+  const fontSize = isTablet ? scale(24) : 20;
 
   const digits = Array.from({ length }, (_, i) => value[i] ?? '');
 
@@ -63,7 +63,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
         accessibilityLabel={t('common.a11y.otpInput')}
       />
 
-      <View style={[styles.row, { gap: isTablet ? 12 : 8 }]}>
+      <View style={[styles.row, { gap: isTablet ? scale(12) : 8 }]}>
         {digits.map((digit, i) => (
           <View
             key={i}

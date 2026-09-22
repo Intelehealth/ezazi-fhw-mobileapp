@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { PermissionDeniedDialog } from '@/core/ui/PermissionDeniedDialog';
+import { Text } from '@/core/ui/Text';
 import { iconPaths, splashHills } from '@/core/ui/icons';
 import { splashIllustration } from '@/core/ui/illustrations/splashIllustration';
 import { clientConfig } from '@/core/config/clients';
@@ -107,7 +108,7 @@ export const SplashScreen: React.FC = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
 
-  const { width, isTablet } = useResponsive();
+  const { width, isTablet, scale } = useResponsive();
 
   // ── Bottom hills — stretched to screen width, same convention as the old
   // wavePaths (preserveAspectRatio="none"); front layer taller, drawn on top ──
@@ -118,13 +119,13 @@ export const SplashScreen: React.FC = () => {
   // (assets.splashLogo) use it as-is; others fall back to their normal logo
   // untinted, since not every client's mark is a flat-color image tinting
   // could recolor cleanly (e.g. Nepal's is a multi-color crest) ──
-  const WORDMARK_W = isTablet ? 200 : 140;
-  const WORDMARK_H = isTablet ? 84  : 60;
+  const WORDMARK_W = isTablet ? scale(200) : 140;
+  const WORDMARK_H = isTablet ? scale(84)  : 60;
 
   // ── Illustration — sized by height only so its (taller-than-square) aspect
   // ratio isn't distorted; shared by both clients (see splashIllustration.ts) ──
   const ILLUSTRATION_ASPECT = 299 / 419; // splashIllustration.viewBox
-  const ILLUSTRATION_H = isTablet ? 340 : 230;
+  const ILLUSTRATION_H = isTablet ? scale(340) : 230;
   const ILLUSTRATION_W = ILLUSTRATION_H * ILLUSTRATION_ASPECT;
 
   const dialogVisible = permState === 'denied' || permState === 'never_ask_again';
@@ -146,7 +147,15 @@ export const SplashScreen: React.FC = () => {
           resizeMode="contain"
         />
 
-        <Text style={[styles.tagline, { fontSize: isTablet ? 13 : 11 }]}>
+        <Text
+          style={[
+            styles.tagline,
+            {
+              fontSize: isTablet ? scale(13) : 11,
+              lineHeight: isTablet ? scale(18) : 15,
+            },
+          ]}
+        >
           {t('splash.tagline')}
         </Text>
 
@@ -271,7 +280,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
-    lineHeight: 18,
     marginTop: 12,
     opacity: 0.85,
   },

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +13,7 @@ import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { setupIllustration } from '@/core/ui/illustrations/setupIllustration';
 import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
@@ -45,7 +46,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 export const LoginScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
-  const { isTablet, fs, cornerRadius } = useResponsive();
+  const { isTablet, fs, cornerRadius, scale } = useResponsive();
   const login = useAuthStore(s => s.login);
 
   // Rules mirror LoginActivity's username/password checks — see
@@ -74,9 +75,9 @@ export const LoginScreen: React.FC = () => {
   // ── Brand header — client wordmark (left) + illustration (absolute, top-right) ──
   // logoH is the visible glyph height now that setup_logo.png is pre-cropped
   // (no baked-in padding), so this can stay compact without looking tiny.
-  const logoH = isTablet ? 46 : 32;
+  const logoH = isTablet ? scale(46) : 32;
   const logoW = logoH * LOGO_ASPECT;
-  const illustrationH = isTablet ? 130 : 104;
+  const illustrationH = isTablet ? scale(130) : 104;
   const illustrationW = illustrationH * ILLUSTRATION_ASPECT;
   // Measured (not guessed) from the USERNAME field's actual onLayout position
   // — see usernameFieldY below — so the illustration's bottom edge lands
@@ -88,7 +89,7 @@ export const LoginScreen: React.FC = () => {
   const illustrationTop = usernameFieldY !== null ? usernameFieldY - illustrationH + 1 : 0;
   // Inset from the right content edge, so the illustration doesn't sit flush
   // against it (per Figma).
-  const illustrationRight = isTablet ? 20 : 14;
+  const illustrationRight = isTablet ? scale(20) : 14;
 
   // login() lives in the auth store, not this screen — it owns talking to
   // sessionApi, persisting tokens, and marking the store authenticated.
@@ -121,7 +122,7 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <FormScreenLayout
-      contentStyle={[styles.content, { paddingTop: isTablet ? 190 : 130 }]}
+      contentStyle={[styles.content, { paddingTop: isTablet ? scale(190) : 130 }]}
     >
       {/*
         ── Top section — logo, heading and the USERNAME field all sit in
@@ -139,12 +140,18 @@ export const LoginScreen: React.FC = () => {
         <Text style={[styles.title, { fontSize: fs('headerTitle') }]}>
           {t('login.title')}
         </Text>
-        <Text style={[styles.subtitle, { fontSize: fs('instruction') }]}>
+        <Text style={[styles.subtitle, { fontSize: fs('instruction'), lineHeight: Math.round(fs('instruction') * 1.3) }]}>
           {t('login.subtitle')}
         </Text>
 
         {/* ── Username ── */}
-        <Text style={[styles.fieldLabel, styles.firstFieldLabel, { fontSize: fs('label') - 1 }]}>
+        <Text
+          style={[
+            styles.fieldLabel,
+            styles.firstFieldLabel,
+            { fontSize: fs('label') - 1, marginTop: isTablet ? scale(36) : 28 },
+          ]}
+        >
           {t('login.username')}
         </Text>
         <View onLayout={(e) => setUsernameFieldY(e.nativeEvent.layout.y)}>
@@ -276,7 +283,6 @@ const styles = StyleSheet.create({
   subtitle: {
     color:      colors.textSecondary,
     marginTop:  6,
-    lineHeight: 20,
   },
 
   // Small gray caps label above each field — USERNAME / PASSWORD

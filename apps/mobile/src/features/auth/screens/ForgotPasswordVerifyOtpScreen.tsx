@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
@@ -8,6 +8,7 @@ import { OtpInput } from '@/features/auth/components/OtpInput';
 import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
+import { Text } from '@/core/ui/Text';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';

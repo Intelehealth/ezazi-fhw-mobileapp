@@ -4,12 +4,12 @@ import {
   Platform,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
@@ -41,16 +41,16 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   onBack,
 }) => {
   const { t } = useTranslation();
-  const { isTablet, fs } = useResponsive();
+  const { isTablet, fs, scale } = useResponsive();
 
   // Phone only: push below the status bar to avoid overlap (mirrors the old WaveHeader).
   const statusBarH = !isTablet && Platform.OS === 'android'
     ? (StatusBar.currentHeight ?? 24)
     : 0;
 
-  const logoH = isTablet ? 44 : 32;
+  const logoH = isTablet ? scale(44) : 32;
   const logoW = logoH * LOGO_ASPECT;
-  const shieldH = isTablet ? 106 : 78;
+  const shieldH = isTablet ? scale(106) : 78;
   const shieldW = shieldH * SHIELD_ASPECT;
   // Pushes the (unchanged-size) shield down past the heading/subtitle so its
   // bottom edge lands on the first field's top border below — the header
@@ -58,18 +58,25 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   // a measured one (RN doesn't clip overflow, so it's safe to reach past the
   // header's own box into the screen content; the field's opaque background
   // naturally clips it right at the border).
-  const shieldTop = isTablet ? 72 : 74;
+  const shieldTop = isTablet ? scale(72) : 74;
 
   return (
-    <View style={[styles.container, { paddingTop: statusBarH + (isTablet ? 24 : 16) }]}>
+    <View style={[styles.container, { paddingTop: statusBarH + (isTablet ? scale(24) : 16) }]}>
       <TouchableOpacity
-        style={[styles.backBtn, isTablet && styles.backBtnTablet]}
+        style={[
+          styles.backBtn,
+          isTablet && {
+            width: scale(44),
+            height: scale(44),
+            borderRadius: scale(12),
+          },
+        ]}
         onPress={onBack}
         accessibilityRole="button"
         accessibilityLabel={t('common.a11y.goBack')}
         activeOpacity={0.8}
       >
-        <AppIcon name="chevronLeft" size={isTablet ? 24 : 20} color={colors.primary} />
+        <AppIcon name="chevronLeft" size={isTablet ? scale(24) : 20} color={colors.primary} />
       </TouchableOpacity>
 
       {/* Logo + heading + subtitle stack in normal flow; the shield badge is
@@ -85,7 +92,14 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
 
           <Text style={[styles.heading, { fontSize: fs('headerTitle') }]}>{title}</Text>
           {!!subtitle && (
-            <Text style={[styles.subtitle, { fontSize: fs('instruction') }]}>{subtitle}</Text>
+            <Text
+              style={[
+                styles.subtitle,
+                { fontSize: fs('instruction'), lineHeight: Math.round(fs('instruction') * 1.3) },
+              ]}
+            >
+              {subtitle}
+            </Text>
           )}
         </View>
 
@@ -126,12 +140,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  backBtnTablet: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-  },
-
   titleRow: {
     marginTop: 90,
   },
@@ -155,7 +163,6 @@ const styles = StyleSheet.create({
 
   subtitle: {
     color: colors.darkGray,
-    lineHeight: 20,
     marginTop: 4,
   },
 });

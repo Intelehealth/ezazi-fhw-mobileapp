@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +9,7 @@ import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.stor
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
@@ -23,7 +24,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPasswordRequest'
 export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
-  const { isTablet, fs, cornerRadius } = useResponsive();
+  const { isTablet, fs, cornerRadius, scale } = useResponsive();
   const requestOtp = usePasswordResetStore(s => s.requestOtp);
 
   const [phone, setPhone] = useState('');
@@ -109,7 +110,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
           style={[
             styles.countryCard,
             { borderRadius: cornerRadius },
-            isTablet && { paddingHorizontal: 14 },
+            isTablet && { paddingHorizontal: scale(14) },
           ]}
         >
           <Text style={styles.flag}>{clientConfig.phone.flag}</Text>
@@ -227,8 +228,9 @@ const styles = StyleSheet.create({
   },
 
   phoneInput: {
-    color:   colors.textPrimary,
-    padding: 0,
+    color:      colors.textPrimary,
+    padding:    0,
+    fontFamily: 'Lato_400Regular',
   },
 
   errorText: {

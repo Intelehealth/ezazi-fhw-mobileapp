@@ -2,13 +2,13 @@ import React, { forwardRef } from 'react';
 import {
   StyleProp,
   StyleSheet,
-  Text,
   TextInput,
   TextInputProps,
   View,
   ViewStyle,
 } from 'react-native';
 import { colors, dimens } from '@/core/config/theme';
+import { Text } from './Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
@@ -98,9 +98,10 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    flex: 1,
-    color: colors.textPrimary,
-    padding: 0,
+    flex:       1,
+    color:      colors.textPrimary,
+    padding:    0,
+    fontFamily: 'Lato_400Regular',
   },
 
   // Figma — error sits left-aligned under the field

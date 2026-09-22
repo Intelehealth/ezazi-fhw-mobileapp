@@ -3,11 +3,11 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Text } from './Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 

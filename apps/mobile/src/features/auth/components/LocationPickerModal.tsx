@@ -4,7 +4,6 @@ import {
   FlatList,
   Modal,
   Platform,
-  Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/core/config/theme';
+import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { LoginLocation } from '@/features/auth/stores/location.store';
 

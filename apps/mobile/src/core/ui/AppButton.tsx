@@ -2,7 +2,6 @@ import React from 'react';
 import {
   StyleProp,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -10,6 +9,7 @@ import {
 import { colors, dimens } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { AppIcon } from './icons';
+import { Text } from './Text';
 
 /**
  * THE app button — the RN equivalent of Android's Theme.EZazi.Button styles.
@@ -40,13 +40,14 @@ export const AppButton: React.FC<AppButtonProps> = ({
   disabled = false,
   style,
 }) => {
-  const { isTablet, fs, cornerRadius } = useResponsive();
+  const { isTablet, fs, cornerRadius, scale } = useResponsive();
+  const height = isTablet ? scale(dimens.buttonHeight.tablet) : dimens.buttonHeight.phone;
 
   return (
     <TouchableOpacity
       style={[
         styles.base,
-        { borderRadius: cornerRadius },
+        { height, borderRadius: cornerRadius },
         styles[variant],
         disabled && styles.disabled,
         style,
@@ -72,7 +73,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
         <View style={styles.arrowWrap}>
           <AppIcon
             name="arrowNext"
-            size={isTablet ? 28 : 24}
+            size={isTablet ? scale(28) : 24}
             color={disabled ? colors.disabledText : colors.onPrimary}
           />
         </View>
@@ -83,7 +84,6 @@ export const AppButton: React.FC<AppButtonProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    height: dimens.inputHeight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +15,7 @@ import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { setupIllustration } from '@/core/ui/illustrations/setupIllustration';
 import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
@@ -39,7 +40,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 export const SetupScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
-  const { isTablet, fs, cornerRadius } = useResponsive();
+  const { isTablet, fs, cornerRadius, scale } = useResponsive();
   const login = useAuthStore(s => s.login);
   const locations = useLocationStore(s => s.locations);
   const isLocationsLoading = useLocationStore(s => s.isLoading);
@@ -101,9 +102,9 @@ export const SetupScreen: React.FC = () => {
   // ── Brand header — client wordmark (left) + illustration (absolute, top-right) ──
   // logoH is the visible glyph height now that setup_logo.png is pre-cropped
   // (no baked-in padding), so this can stay compact without looking tiny.
-  const logoH = isTablet ? 46 : 32;
+  const logoH = isTablet ? scale(46) : 32;
   const logoW = logoH * LOGO_ASPECT;
-  const illustrationH = isTablet ? 130 : 104;
+  const illustrationH = isTablet ? scale(130) : 104;
   const illustrationW = illustrationH * ILLUSTRATION_ASPECT;
   // Measured (not guessed) from the LOCATION field's actual onLayout position
   // — see locationFieldY below — so the illustration's bottom edge lands
@@ -115,7 +116,7 @@ export const SetupScreen: React.FC = () => {
   const illustrationTop = locationFieldY !== null ? locationFieldY - illustrationH + 1 : 0;
   // Inset from the right content edge, so the illustration doesn't sit flush
   // against it (per Figma).
-  const illustrationRight = isTablet ? 20 : 14;
+  const illustrationRight = isTablet ? scale(20) : 14;
 
   // login() lives in the auth store, not this screen — it owns talking to
   // sessionApi, persisting tokens, and marking the store authenticated.
@@ -147,7 +148,7 @@ export const SetupScreen: React.FC = () => {
   return (
     <>
     <FormScreenLayout
-      contentStyle={[styles.content, { paddingTop: isTablet ? 190 : 130 }]}
+      contentStyle={[styles.content, { paddingTop: isTablet ? scale(190) : 130 }]}
     >
       {/*
         ── Top section — logo, heading and the LOCATION field all sit in normal
@@ -165,12 +166,18 @@ export const SetupScreen: React.FC = () => {
         <Text style={[styles.title, { fontSize: fs('headerTitle') }]}>
           {t('setup.title')}
         </Text>
-        <Text style={[styles.subtitle, { fontSize: fs('instruction') }]}>
+        <Text style={[styles.subtitle, { fontSize: fs('instruction'), lineHeight: Math.round(fs('instruction') * 1.3) }]}>
           {t('setup.subtitle')}
         </Text>
 
         {/* ── Location dropdown — reuses AppTextField in a read-only, tappable mode ── */}
-        <Text style={[styles.fieldLabel, styles.firstFieldLabel, { fontSize: fs('label') - 1 }]}>
+        <Text
+          style={[
+            styles.fieldLabel,
+            styles.firstFieldLabel,
+            { fontSize: fs('label') - 1, marginTop: isTablet ? scale(36) : 28 },
+          ]}
+        >
           {t('setup.location')}
         </Text>
         <Controller
@@ -361,7 +368,6 @@ const styles = StyleSheet.create({
   subtitle: {
     color:      colors.textSecondary,
     marginTop:  6,
-    lineHeight: 20,
   },
 
   // Small gray caps label above each field — LOCATION / USERNAME / PASSWORD

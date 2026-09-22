@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
@@ -10,6 +10,7 @@ import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.stor
 import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
@@ -121,18 +122,18 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
         </Text>
         <View style={styles.requirementsGrid}>
           <View style={styles.requirementsRow}>
-            <Text style={[styles.requirementText, { fontSize: fs('error') }]}>
+            <Text style={[styles.requirementText, { fontSize: fs('error'), lineHeight: Math.round(fs('error') * 1.4) }]}>
               {t(REQUIREMENT_KEYS[0])}
             </Text>
-            <Text style={[styles.requirementText, { fontSize: fs('error') }]}>
+            <Text style={[styles.requirementText, { fontSize: fs('error'), lineHeight: Math.round(fs('error') * 1.4) }]}>
               {t(REQUIREMENT_KEYS[1])}
             </Text>
           </View>
           <View style={styles.requirementsRow}>
-            <Text style={[styles.requirementText, { fontSize: fs('error') }]}>
+            <Text style={[styles.requirementText, { fontSize: fs('error'), lineHeight: Math.round(fs('error') * 1.4) }]}>
               {t(REQUIREMENT_KEYS[2])}
             </Text>
-            <Text style={[styles.requirementText, { fontSize: fs('error') }]}>
+            <Text style={[styles.requirementText, { fontSize: fs('error'), lineHeight: Math.round(fs('error') * 1.4) }]}>
               {t(REQUIREMENT_KEYS[3])}
             </Text>
           </View>
@@ -198,7 +199,6 @@ const styles = StyleSheet.create({
   requirementText: {
     flex: 1,
     color: colors.darkGray,
-    lineHeight: 18,
   },
 
   button: {

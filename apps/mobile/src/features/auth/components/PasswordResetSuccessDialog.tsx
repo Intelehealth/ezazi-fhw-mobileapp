@@ -1,8 +1,9 @@
 import React from 'react';
-import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
