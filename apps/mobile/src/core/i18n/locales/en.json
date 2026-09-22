@@ -55,7 +55,7 @@
     "passwordPlaceholder": "Password",
     "forgotPassword": "Forgot password?",
     "tempNavLogin": "Go to Login screen (temp)",
-    "submit": "Login",
+    "submit": "Setup",
     "toastSuccess": "Login successful",
     "errors": {
       "locationRequired": "Please select a location",
