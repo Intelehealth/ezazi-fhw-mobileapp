@@ -128,6 +128,8 @@ const palette = {
   dialogOverlay: 'rgba(0,0,0,0.55)',
   hintGray: '#9B97AA', // Figma-verified — input hint text + field icons (Setup screen, 2026-09-15)
   secondaryTextFigma: '#4A4665', // Figma "--Secondary-text" — LOCATION/USERNAME/PASSWORD field labels
+  alertFigma: '#D4154A', // Figma "--Alert" — network-error banner circle + title (Ezazi Developer File, 2026-09-22)
+  networkBannerBg: '#FEEAEF', // Figma network-error banner background (Ezazi Developer File, 2026-09-22)
 } as const;
 
 export const colors = {
@@ -141,6 +143,12 @@ export const colors = {
   onPrimary: palette.white,
   black: palette.colorBlack,
   error: palette.error_red,
+  // Network-error banner only (core/ui/ApiErrorBanner) — a separate, exact
+  // Figma spec from the generic `error`/`colorEmergencyBg` pair every other
+  // banner state still uses.
+  networkBannerBg: palette.networkBannerBg,
+  networkBannerAlert: palette.alertFigma,
+  networkBannerMessage: palette.secondaryTextFigma,
   success: palette.colorNormalAlert,
   warning: palette.colorMediumAlert,
   textPrimary: palette.font_black_0,

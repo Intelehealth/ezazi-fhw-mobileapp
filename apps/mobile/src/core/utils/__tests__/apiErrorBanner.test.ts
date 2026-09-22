@@ -65,19 +65,21 @@ describe('getApiErrorBanner', () => {
     });
   });
 
-  it('maps a network-kind error with no code to networkError', () => {
+  it('maps a network-kind error with no code to networkError, flagged for the network banner variant', () => {
     const error: ApiError = { name: 'ApiError', kind: 'network', status: 0, code: undefined, message: 'Network Error' };
     expect(getApiErrorBanner(error, t, 'login.errors')).toEqual({
       title: 'login.errors.networkError.title',
       message: 'login.errors.networkError.message',
+      variant: 'network',
     });
   });
 
-  it('maps a timeout-kind error with no code to networkError', () => {
+  it('maps a timeout-kind error with no code to networkError, flagged for the network banner variant', () => {
     const error: ApiError = { name: 'ApiError', kind: 'timeout', status: 0, code: undefined, message: 'timed out' };
     expect(getApiErrorBanner(error, t, 'setup.errors')).toEqual({
       title: 'setup.errors.networkError.title',
       message: 'setup.errors.networkError.message',
+      variant: 'network',
     });
   });
 

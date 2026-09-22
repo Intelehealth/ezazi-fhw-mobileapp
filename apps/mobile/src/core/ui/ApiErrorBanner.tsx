@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from './Text';
+import { NetworkErrorIcon } from './icons';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { ErrorBanner } from '@/core/utils/apiErrorBanner';
@@ -14,6 +15,10 @@ import type { ErrorBanner } from '@/core/utils/apiErrorBanner';
  * Was hand-duplicated in LoginScreen and SetupScreen; every screen that
  * calls an API and wants to surface a failure uses this instead of
  * re-declaring the same View/Text tree.
+ *
+ * `banner.variant === 'network'` renders Figma's exact network-error state
+ * (Ezazi Developer File, "Frame 427", 2026-09-22) instead — its own icon,
+ * colors and fixed sizing, not the generic "!" badge below.
  */
 
 interface ApiErrorBannerProps {
@@ -23,6 +28,20 @@ interface ApiErrorBannerProps {
 export const ApiErrorBanner: React.FC<ApiErrorBannerProps> = ({ banner }) => {
   const { t } = useTranslation();
   const { fs, cornerRadius } = useResponsive();
+
+  if (banner.variant === 'network') {
+    return (
+      <View style={styles.networkBanner}>
+        <View style={styles.networkIconCircle}>
+          <NetworkErrorIcon />
+        </View>
+        <View style={styles.textWrap}>
+          <Text style={[styles.networkTitle, { fontSize: fs('label') }]}>{banner.title}</Text>
+          <Text style={[styles.networkMessage, { fontSize: fs('error') }]}>{banner.message}</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.banner, { borderRadius: cornerRadius }]}>
@@ -75,6 +94,37 @@ const styles = StyleSheet.create({
 
   message: {
     color:     colors.textSecondary,
+    marginTop: 2,
+  },
+
+  // ── Network-error variant — exact Figma sizing, not the fs()/cornerRadius
+  // scale the rest of this screen uses (see the class comment above). ──
+  networkBanner: {
+    flexDirection:   'row',
+    alignItems:      'flex-start',
+    backgroundColor: colors.networkBannerBg,
+    padding:         16,
+    borderRadius:    16,
+    gap:             16,
+    marginTop:       20,
+  },
+
+  networkIconCircle: {
+    width:            48,
+    height:           48,
+    borderRadius:     24,
+    backgroundColor:  colors.networkBannerAlert,
+    alignItems:       'center',
+    justifyContent:   'center',
+  },
+
+  networkTitle: {
+    color:      colors.networkBannerAlert,
+    fontWeight: '700',
+  },
+
+  networkMessage: {
+    color:     colors.networkBannerMessage,
     marginTop: 2,
   },
 });

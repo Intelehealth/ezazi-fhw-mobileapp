@@ -12,6 +12,10 @@ import type { ApiError } from '@ezazi/api-client';
 export interface ErrorBanner {
   title: string;
   message: string;
+  // Set only for a network/timeout failure — core/ui/ApiErrorBanner renders
+  // this with its own exact Figma spec (icon, colors, sizing), distinct from
+  // every other error state's banner.
+  variant?: 'network';
 }
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -44,7 +48,7 @@ export function getApiErrorBanner(error: ApiError, t: Translate, namespace: stri
       break;
   }
   if (error.kind === 'network' || error.kind === 'timeout') {
-    return bannerFor('networkError');
+    return { ...bannerFor('networkError'), variant: 'network' };
   }
   return bannerFor('genericError');
 }
