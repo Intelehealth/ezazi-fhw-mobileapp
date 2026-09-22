@@ -25,6 +25,7 @@
     "build": "echo \"no local build — use eas build\""
   },
   "dependencies": {
+    "@expo-google-fonts/lato": "0.4.1",
     "@ezazi/api-client": "*",
     "@ezazi/config": "*",
     "@ezazi/types": "*",
@@ -39,6 +40,7 @@
     "expo": "57",
     "expo-asset": "~57.0.16",
     "expo-constants": "~57.0.17",
+    "expo-font": "57.0.3",
     "expo-linking": "~57.0.9",
     "expo-local-authentication": "~57.0.2",
     "expo-localization": "~57.0.1",
