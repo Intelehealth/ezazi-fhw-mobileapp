@@ -15,12 +15,13 @@ import { Text } from './Text';
  * THE app button — the RN equivalent of Android's Theme.EZazi.Button styles.
  * Do not re-declare button styles in screens; extend this component instead.
  *
- * variant 'primary' → Theme.EZazi.Button        (purple fill, white text)
- * variant 'outline' → Theme.EZazi.Button.White  (white fill, gray stroke, purple text)
- * showArrow         → legacy iconGravity=end arrow pinned to the right edge
+ * variant 'primary'     → Theme.EZazi.Button        (purple fill, white text)
+ * variant 'outline'     → Theme.EZazi.Button.White  (white fill, gray stroke, purple text)
+ * variant 'destructive' → red fill, white text — logout/delete/reject actions
+ * showArrow             → legacy iconGravity=end arrow pinned to the right edge
  */
 
-type AppButtonVariant = 'primary' | 'outline';
+type AppButtonVariant = 'primary' | 'outline' | 'destructive';
 
 interface AppButtonProps {
   label: string;
@@ -41,7 +42,10 @@ export const AppButton: React.FC<AppButtonProps> = ({
   style,
 }) => {
   const { isTablet, fs, cornerRadius, scale } = useResponsive();
-  const height = isTablet ? scale(dimens.buttonHeight.tablet) : dimens.buttonHeight.phone;
+  // Flat per phone/tablet, NOT run through scale() — a touch target doesn't
+  // need to grow with screen width the way text/icons do, and doing so blew
+  // the button up to ~85dp on the 11" A11+ (64 * ~1.33), visibly oversized.
+  const height = isTablet ? dimens.buttonHeight.tablet : dimens.buttonHeight.phone;
 
   return (
     <TouchableOpacity
@@ -98,6 +102,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.gray_2,
+  },
+
+  destructive: {
+    backgroundColor: colors.error,
   },
 
   // Android-style disabled button: gray fill, gray label

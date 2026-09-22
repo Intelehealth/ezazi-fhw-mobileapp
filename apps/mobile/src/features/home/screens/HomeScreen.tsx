@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Button, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/core/session/auth.store';
+import { AppButton } from '@/core/ui/AppButton';
 import { Text } from '@/core/ui/Text';
 import { colors, spacing, typography } from '@/core/config/theme';
 
@@ -18,7 +19,7 @@ export const HomeScreen: React.FC = () => {
       <Text style={styles.title}>{t('home.title')}</Text>
       <Text style={styles.note}>{t('home.note')}</Text>
       <View style={styles.btn}>
-        <Button title={t('home.logout')} onPress={() => void logout()} color={colors.error} />
+        <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />
       </View>
     </View>
   );
