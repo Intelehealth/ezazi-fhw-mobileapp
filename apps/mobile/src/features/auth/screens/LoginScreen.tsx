@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +8,11 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
 import { PasswordField } from '@/features/auth/components/PasswordField';
+import {
+  authFormStyles as styles,
+  LOGO_ASPECT,
+  ILLUSTRATION_ASPECT,
+} from '@/features/auth/components/authFormScreen.styles';
 import { createLoginFormSchema, type LoginFormValues } from '@/features/auth/domain/loginForm.schema';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppTextField } from '@/core/ui/AppTextField';
@@ -16,7 +21,7 @@ import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { setupIllustration } from '@/core/ui/illustrations/setupIllustration';
 import { clientConfig } from '@/core/config/clients';
-import { colors, dimens } from '@/core/config/theme';
+import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
 import { showToast } from '@/core/utils/toast';
@@ -25,21 +30,13 @@ import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner
 /**
  * Same layout/tokens as SetupScreen — Figma calls for an identical screen,
  * minus the LOCATION field (this is the subsequent-login screen, not the
- * one-time device setup). Keep both in sync if the design changes.
+ * one-time device setup). Shared layout constants + styles live in
+ * authFormScreen.styles.ts — one source of truth, not two copies.
  *
  * login() and the API-error → banner mapping (getApiErrorBanner) are shared
  * with SetupScreen — same auth-store action, same error copy, only the
  * i18n namespace ('login.errors' vs 'setup.errors') differs.
  */
-
-// Parent container padding — matches SetupScreen's 30dp
-const FORM_H_PAD = 30;
-
-// assets/clients/default/setup_logo.png natural aspect ratio (width / height)
-const LOGO_ASPECT = 364 / 144;
-
-// setupIllustration.viewBox aspect ratio (width / height)
-const ILLUSTRATION_ASPECT = 267 / 177;
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -254,105 +251,3 @@ export const LoginScreen: React.FC = () => {
     </FormScreenLayout>
   );
 };
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: FORM_H_PAD,
-    paddingBottom:     48,
-  },
-
-  // Wraps logo + heading + USERNAME field in normal flow — the illustration
-  // is the last child here, positioned absolutely (see `illustration` below),
-  // so it paints on top of the USERNAME field without affecting where any of
-  // this content sits.
-  topSection: {
-    position: 'relative',
-  },
-
-  illustration: {
-    position: 'absolute',
-  },
-
-  title: {
-    color:      colors.textPrimary,
-    fontWeight: '700',
-    marginTop:  10,
-  },
-
-  subtitle: {
-    color:      colors.textSecondary,
-    marginTop:  6,
-  },
-
-  // Small gray caps label above each field — USERNAME / PASSWORD
-  fieldLabel: {
-    color:            colors.fieldLabel,
-    fontWeight:       '600',
-    textTransform:    'uppercase',
-    letterSpacing:    0.5,
-    marginTop:        dimens.fieldGap,
-    marginBottom:     dimens.labelGap,
-  },
-
-  firstFieldLabel: {
-    marginTop: 28,
-  },
-
-  forgotRow: {
-    alignSelf: 'flex-end',
-    marginTop: 10,
-  },
-
-  // Figma: color: var(--Primary-Color, #2E1E91); bold, no underline
-  forgotText: {
-    color:      colors.primary,
-    fontWeight: '700',
-  },
-
-  // API error banner — pale-red card with a filled circular "!" badge,
-  // shown above the Login button (Figma: credentials/network error states).
-  errorBanner: {
-    flexDirection:     'row',
-    alignItems:        'flex-start',
-    backgroundColor:   colors.colorEmergencyBg,
-    padding:           12,
-    marginTop:         20,
-  },
-
-  errorBannerIcon: {
-    width:            20,
-    height:           20,
-    borderRadius:     10,
-    backgroundColor:  colors.error,
-    alignItems:       'center',
-    justifyContent:   'center',
-    marginRight:      10,
-    marginTop:        1,
-  },
-
-  errorBannerIconGlyph: {
-    color:      colors.white,
-    fontSize:   13,
-    lineHeight: 15,
-    fontWeight: '700',
-  },
-
-  errorBannerTextWrap: {
-    flex: 1,
-  },
-
-  errorBannerTitle: {
-    color:      colors.error,
-    fontWeight: '700',
-  },
-
-  errorBannerMessage: {
-    color:     colors.textSecondary,
-    marginTop: 2,
-  },
-
-  loginButton: {
-    marginTop: 32,
-  },
-});
