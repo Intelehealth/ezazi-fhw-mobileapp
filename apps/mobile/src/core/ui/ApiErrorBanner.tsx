@@ -33,7 +33,7 @@ export const ApiErrorBanner: React.FC<ApiErrorBannerProps> = ({ banner }) => {
     return (
       <View style={styles.networkBanner}>
         <View style={styles.networkIconCircle}>
-          <NetworkErrorIcon />
+          <NetworkErrorIcon size={20} />
         </View>
         <View style={styles.textWrap}>
           <Text style={[styles.networkTitle, { fontSize: fs('label') }]}>{banner.title}</Text>
@@ -97,22 +97,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ── Network-error variant — exact Figma sizing, not the fs()/cornerRadius
-  // scale the rest of this screen uses (see the class comment above). ──
+  // ── Network-error variant — Figma sizing (Ezazi Developer File "Frame
+  // 427": 48px circle, 16px padding/gap/radius), trimmed down ~10% after
+  // the user saw it live on the ~8.7" physical device and it read as too
+  // tall for the screen — not the fs()/cornerRadius scale the rest of this
+  // screen uses (see the class comment above). ──
   networkBanner: {
     flexDirection:   'row',
     alignItems:      'flex-start',
     backgroundColor: colors.networkBannerBg,
-    padding:         16,
-    borderRadius:    16,
-    gap:             16,
+    padding:         14,
+    borderRadius:    14,
+    gap:             14,
     marginTop:       20,
   },
 
   networkIconCircle: {
-    width:            48,
-    height:           48,
-    borderRadius:     24,
+    width:            44,
+    height:           44,
+    borderRadius:     22,
     backgroundColor:  colors.networkBannerAlert,
     alignItems:       'center',
     justifyContent:   'center',
