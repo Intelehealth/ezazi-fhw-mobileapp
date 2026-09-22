@@ -41,6 +41,11 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   const [showSuccess, setShowSuccess] = useState(false);
   const confirmRef = useRef<TextInput>(null);
 
+  // Window Y of the NEW PASSWORD input box — see the shieldTop comment in
+  // ForgotPasswordHeader for why this is measured rather than a tuned constant.
+  const newPasswordRef = useRef<TextInput>(null);
+  const [newPasswordFieldY, setNewPasswordFieldY] = useState<number | null>(null);
+
   const schema = useMemo(() => createForgotPasswordResetFormSchema(t), [t]);
   const {
     control,
@@ -88,6 +93,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
           title={t('forgotPassword.reset.heading')}
           subtitle={t('forgotPassword.reset.subtitle')}
           onBack={() => navigation.goBack()}
+          firstFieldY={newPasswordFieldY}
         />
       }
       contentStyle={styles.content}
@@ -98,6 +104,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
         name="newPassword"
         render={({ field: { value, onChange } }) => (
           <PasswordField
+            ref={newPasswordRef}
             label={t('forgotPassword.reset.newPassword')}
             placeholder={t('forgotPassword.reset.newPasswordPlaceholder')}
             value={value}
@@ -109,6 +116,9 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
             leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
             returnKeyType="next"
             onSubmitEditing={() => confirmRef.current?.focus()}
+            onLayout={() => {
+              newPasswordRef.current?.measureInWindow((_x, y) => setNewPasswordFieldY(y));
+            }}
           />
         )}
       />

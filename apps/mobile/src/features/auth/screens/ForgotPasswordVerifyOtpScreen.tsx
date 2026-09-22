@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -44,6 +44,11 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
 
   const [verified, setVerified]       = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COUNTDOWN_SEC);
+
+  // Window Y of the OTP box row — see the shieldTop comment in
+  // ForgotPasswordHeader for why this is measured rather than a tuned constant.
+  const otpRowRef = useRef<View>(null);
+  const [otpRowY, setOtpRowY] = useState<number | null>(null);
 
   const schema = useMemo(() => createForgotPasswordVerifyFormSchema(t), [t]);
   const {
@@ -105,25 +110,33 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
           title={t('forgotPassword.verify.heading')}
           subtitle={t('forgotPassword.verify.instruction', { maskedPhone: maskPhone(phoneNumber) })}
           onBack={() => navigation.goBack()}
+          firstFieldY={otpRowY}
         />
       }
       contentStyle={styles.content}
     >
-      <Controller
-        control={control}
-        name="otp"
-        render={({ field: { value, onChange } }) => (
-          <OtpInput
-            length={OTP_LENGTH}
-            value={value}
-            onChange={(val) => {
-              onChange(val);
-              if (errors.otp) clearErrors('otp');
-            }}
-            hasError={!!errors.otp}
-          />
-        )}
-      />
+      <View
+        ref={otpRowRef}
+        onLayout={() => {
+          otpRowRef.current?.measureInWindow((_x, y) => setOtpRowY(y));
+        }}
+      >
+        <Controller
+          control={control}
+          name="otp"
+          render={({ field: { value, onChange } }) => (
+            <OtpInput
+              length={OTP_LENGTH}
+              value={value}
+              onChange={(val) => {
+                onChange(val);
+                if (errors.otp) clearErrors('otp');
+              }}
+              hasError={!!errors.otp}
+            />
+          )}
+        />
+      </View>
 
       {!!errors.otp && (
         <Text style={[commonStyles.errorText, styles.errorText, { fontSize: fs('error') }]}>

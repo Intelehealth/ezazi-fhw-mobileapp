@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -31,6 +31,13 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { isTablet, fs, cornerRadius, scale } = useResponsive();
   const requestOtp = usePasswordResetStore(s => s.requestOtp);
+
+  // Window Y of the phone-number row, so ForgotPasswordHeader's shield can
+  // land its bottom edge exactly on this row's top border — see the
+  // shieldTop comment in ForgotPasswordHeader for why this is measured
+  // rather than a tuned constant.
+  const phoneRowRef = useRef<View>(null);
+  const [phoneRowY, setPhoneRowY] = useState<number | null>(null);
 
   const schema = useMemo(() => createForgotPasswordRequestFormSchema(t), [t]);
   const {
@@ -101,6 +108,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
           title={t('forgotPassword.request.heading')}
           subtitle={t('forgotPassword.request.instruction')}
           onBack={() => navigation.goBack()}
+          firstFieldY={phoneRowY}
         />
       }
       contentStyle={styles.content}
@@ -111,7 +119,13 @@ export const ForgotPasswordRequestOtpScreen: React.FC = () => {
       </Text>
 
       {/* ── Country picker + phone input row ── */}
-      <View style={styles.phoneRow}>
+      <View
+        ref={phoneRowRef}
+        style={styles.phoneRow}
+        onLayout={() => {
+          phoneRowRef.current?.measureInWindow((_x, y) => setPhoneRowY(y));
+        }}
+      >
         <View
           style={[
             styles.countryCard,

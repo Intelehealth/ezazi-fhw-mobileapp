@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Image,
   Platform,
@@ -33,15 +33,23 @@ interface ForgotPasswordHeaderProps {
   title: string;
   subtitle: string;
   onBack: () => void;
+  /** Absolute window Y of the first field below this header (measured by the
+   *  screen via measureInWindow) — the shield's bottom edge is positioned to
+   *  land exactly there. See shieldTop below for why this replaced a tuned
+   *  constant. */
+  firstFieldY?: number | null;
 }
 
 export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   title,
   subtitle,
   onBack,
+  firstFieldY,
 }) => {
   const { t } = useTranslation();
   const { isTablet, fs, scale } = useResponsive();
+  const titleRowRef = useRef<View>(null);
+  const [titleRowWindowY, setTitleRowWindowY] = useState<number | null>(null);
 
   // Phone only: push below the status bar to avoid overlap (mirrors the old WaveHeader).
   const statusBarH = !isTablet && Platform.OS === 'android'
@@ -53,25 +61,28 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   const shieldH = isTablet ? scale(106) : 78;
   const shieldW = shieldH * SHIELD_ASPECT;
   // Pushes the shield down past the heading/subtitle so its bottom edge
-  // lands on the first field's top border below — the header doesn't know
-  // the field's exact position, so this is a tuned offset, not a measured
-  // one (RN doesn't clip overflow, so it's safe to reach past the header's
-  // own box into the screen content; the field's opaque background
-  // naturally clips it right at the border).
+  // lands on the first field's top border below (RN doesn't clip overflow,
+  // so it's safe to reach past the header's own box into the screen
+  // content; the field's opaque background naturally clips it right at the
+  // border).
   //
-  // The field below doesn't move when the tablet scale grows (its position
-  // comes from the screen's own flat content padding, unrelated to this
-  // header), so the shield's BOTTOM edge — top + height — has to stay
-  // pinned at that same tuned target regardless of scale. Scaling shieldTop
-  // the same way shieldH scales made the bottom edge drift further down as
-  // the icon grew, overshooting into the field below. Keep the target
-  // constant and let shieldTop shrink as shieldH grows instead.
+  // This used to be a tuned pixel constant, twice — first it overlapped the
+  // field, then (after tuning it against one device) it either overlapped
+  // or left a gap on OTHER devices. The header's own height isn't a fixed
+  // multiple of scale: heading/subtitle font size and line-height grow with
+  // it too, so no single formula (flat or scaled) tracks the field's real
+  // position across every screen width. Measuring it is the only thing
+  // that's actually correct everywhere — same approach LoginScreen/
+  // SetupScreen already use for their illustration over the USERNAME/
+  // LOCATION field.
   //
-  // 223, not the original 72 + 106 (178) — that undershot, leaving a visible
-  // gap above the field instead of touching it (measured via on-device
-  // element bounds: field top sat 45dp below the shield's bottom edge).
-  const SHIELD_BOTTOM_TABLET = 223;
-  const shieldTop = isTablet ? SHIELD_BOTTOM_TABLET - shieldH : 74;
+  // Falls back to the old flat-tablet/phone tuned values for the one frame
+  // before both measurements land (same "one frame at a guessed position"
+  // trade-off Login/Setup already accept).
+  const measuredShieldTop = firstFieldY != null && titleRowWindowY != null
+    ? firstFieldY - titleRowWindowY - shieldH
+    : null;
+  const shieldTop = measuredShieldTop ?? (isTablet ? 223 - shieldH : 74);
 
   return (
     <View style={[styles.container, { paddingTop: statusBarH + (isTablet ? scale(24) : 16) }]}>
@@ -97,7 +108,13 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
           top of them, overlapping down past the heading (per Figma). */}
       {/* Phone only: 20% more gap above the logo/heading block than tablet
           gets — requested specifically for phone, tablet's 90dp is unchanged. */}
-      <View style={[styles.titleRow, { marginTop: isTablet ? 90 : 108 }]}>
+      <View
+        ref={titleRowRef}
+        style={[styles.titleRow, { marginTop: isTablet ? 90 : 108 }]}
+        onLayout={() => {
+          titleRowRef.current?.measureInWindow((_x, y) => setTitleRowWindowY(y));
+        }}
+      >
         <View style={[styles.titleBlock, { paddingRight: shieldW + 12 }]}>
           <Image
             source={clientConfig.assets.setupLogo ?? clientConfig.assets.logo}
