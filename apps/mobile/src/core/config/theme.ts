@@ -166,8 +166,8 @@ export const colors = {
 // ── dimens.xml equivalent — structural sizes shared across screens ───────────
 export const dimens = {
   screenHPad: 28, // forgot_password_screen_padding
-  inputHeight: 56, // input_height (text fields only — see buttonHeight for AppButton)
-  buttonHeight: { phone: 60, tablet: 64 }, // AppButton — larger than inputHeight, still scaled up further on wide tablets via useResponsive().scale()
+  inputHeight: 60, // input_height (text fields only — see buttonHeight for AppButton)
+  buttonHeight: { phone: 60, tablet: 64 }, // AppButton — flat per phone/tablet, not run through useResponsive().scale()
   // input_box_corner_radius — inputs and buttons, via useResponsive().cornerRadius
   cornerRadius: { phone: 8, tablet: 12 },
   btnArrowInset: 8, // screen_container_padding — arrow inset from button right edge
