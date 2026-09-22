@@ -168,6 +168,7 @@ export const dimens = {
   screenHPad: 28, // forgot_password_screen_padding
   inputHeight: 60, // input_height (text fields only — see buttonHeight for AppButton)
   buttonHeight: { phone: 60, tablet: 64 }, // AppButton — flat per phone/tablet, not run through useResponsive().scale()
+  otpCellHeight: { phone: 52, tablet: 64 }, // OtpInput — single-digit boxes, scaled via useResponsive().scale() on tablet
   // input_box_corner_radius — inputs and buttons, via useResponsive().cornerRadius
   cornerRadius: { phone: 8, tablet: 12 },
   btnArrowInset: 8, // screen_container_padding — arrow inset from button right edge

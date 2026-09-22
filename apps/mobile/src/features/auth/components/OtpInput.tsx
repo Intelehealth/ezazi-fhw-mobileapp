@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '@/core/config/theme';
+import { colors, dimens } from '@/core/config/theme';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
@@ -32,7 +32,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
   const { isTablet, cornerRadius, scale } = useResponsive();
   const inputRef = useRef<TextInput>(null);
 
-  const cellH    = isTablet ? scale(64) : 52;
+  const cellH    = isTablet ? scale(dimens.otpCellHeight.tablet) : dimens.otpCellHeight.phone;
   const fontSize = isTablet ? scale(24) : 20;
 
   const digits = Array.from({ length }, (_, i) => value[i] ?? '');
