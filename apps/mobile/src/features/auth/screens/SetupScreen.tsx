@@ -84,9 +84,10 @@ export const SetupScreen: React.FC = () => {
 
     void (async () => {
       const result = await fetchLocations();
-      // Every user sees this — the only user-facing feedback on failure.
+      // Same banner as a failed login submit — distinguishes a network
+      // failure from a server error instead of one flat "try again" toast.
       if (!cancelled && !result.ok) {
-        showToast(t('setup.errors.locationsNotFetched'));
+        setBanner(getApiErrorBanner(result.error, t, 'setup.errors'));
       }
     })();
 
