@@ -19,7 +19,7 @@ import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
-import { colors } from '@/core/config/theme';
+import { colors, dimens } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 
@@ -44,8 +44,9 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   const [banner, setBanner] = useState<ErrorBanner | null>(null);
   const confirmRef = useRef<TextInput>(null);
 
-  // Window Y of the NEW PASSWORD input box — see the shieldTop comment in
-  // ForgotPasswordHeader for why this is measured rather than a tuned constant.
+  // Window Y of the NEW PASSWORD input BOX's top border — see the shieldTop
+  // comment in ForgotPasswordHeader for why this is measured rather than a
+  // tuned constant.
   const newPasswordRef = useRef<TextInput>(null);
   const [newPasswordFieldY, setNewPasswordFieldY] = useState<number | null>(null);
 
@@ -122,7 +123,18 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
             returnKeyType="next"
             onSubmitEditing={() => confirmRef.current?.focus()}
             onLayout={() => {
-              newPasswordRef.current?.measureInWindow((_x, y) => setNewPasswordFieldY(y));
+              // AppTextField centers the TextInput inside a fixed-height
+              // (dimens.inputHeight) row via alignItems: 'center', so the
+              // ref's own top sits below the row's real top border by half
+              // the leftover space. Request/Verify OTP's screens avoid this
+              // by measuring a plain wrapping View around their row instead
+              // of a centered TextInput — this field can't do that without
+              // duplicating AppTextField's label, so correct for the offset
+              // using the height measureInWindow already hands back, rather
+              // than a guessed constant.
+              newPasswordRef.current?.measureInWindow((_x, y, _width, height) => {
+                setNewPasswordFieldY(y - (dimens.inputHeight - height) / 2);
+              });
             }}
           />
         )}
