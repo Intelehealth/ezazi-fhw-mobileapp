@@ -63,6 +63,11 @@ export const SetupScreen: React.FC = () => {
   });
 
   const [banner, setBanner]                                 = useState<ErrorBanner | null>(null);
+  // Separate from `banner` — handleSetup() clears `banner` on every submit
+  // tap (a fresh submit result), which would silently wipe this one before
+  // the user ever saw why LOCATION came up empty. Independent lifecycle:
+  // only cleared by a successful fetch (never re-attempted right now).
+  const [locationBanner, setLocationBanner]                 = useState<ErrorBanner | null>(null);
   const [isLocationPickerVisible, setLocationPickerVisible] = useState(false);
   const [locationAnchor, setLocationAnchor]                 = useState<FieldAnchor | null>(null);
   const [locationFieldY, setLocationFieldY]                 = useState<number | null>(null);
@@ -84,10 +89,11 @@ export const SetupScreen: React.FC = () => {
 
     void (async () => {
       const result = await fetchLocations();
-      // Same banner as a failed login submit — distinguishes a network
-      // failure from a server error instead of one flat "try again" toast.
+      // Distinguishes a network failure from a server error instead of one
+      // flat "try again" toast — see locationBanner above for why this
+      // can't just reuse the submit banner.
       if (!cancelled && !result.ok) {
-        setBanner(getApiErrorBanner(result.error, t, 'setup.errors'));
+        setLocationBanner(getApiErrorBanner(result.error, t, 'setup.errors'));
       }
     })();
 
@@ -205,6 +211,9 @@ export const SetupScreen: React.FC = () => {
           )}
         />
 
+        {/* ── Location-fetch failure — independent of the submit banner below ── */}
+        {!!locationBanner && <ApiErrorBanner banner={locationBanner} />}
+
         {/* pointerEvents="none" — this sits on top of the LOCATION field visually
             (per Figma) but must never swallow taps meant for it. */}
         <Svg
@@ -293,7 +302,8 @@ export const SetupScreen: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* ── API error banner — credentials/network/server failures from handleSetup ── */}
+      {/* ── API error banner — credentials/network/server failures from handleSetup
+          only; the LOCATION fetch has its own banner above (see locationBanner) ── */}
       {!!banner && <ApiErrorBanner banner={banner} />}
 
       {/* ── Login button — always enabled; the zod resolver surfaces per-field
