@@ -83,7 +83,7 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
           the LAST child (absolutely positioned, top-right) so it paints on
           top of them, overlapping down past the heading (per Figma). */}
       <View style={styles.titleRow}>
-        <View style={styles.titleBlock}>
+        <View style={[styles.titleBlock, { paddingRight: shieldW + 12 }]}>
           <Image
             source={clientConfig.assets.setupLogo ?? clientConfig.assets.logo}
             style={{ width: logoW, height: logoH }}
@@ -144,11 +144,11 @@ const styles = StyleSheet.create({
     marginTop: 90,
   },
 
-  // Reserve room on the right so the heading/subtitle text never runs under
-  // the shield even on narrow phones or long locale strings.
-  titleBlock: {
-    paddingRight: 96,
-  },
+  // Right padding is computed inline (shieldW + gap) so the reserved room
+  // scales with the shield's actual rendered size — see the paddingRight
+  // override above. A static value here would fall out of sync once the
+  // shield grows via scale() on wide tablets and text would run under it.
+  titleBlock: {},
 
   shield: {
     position: 'absolute',
