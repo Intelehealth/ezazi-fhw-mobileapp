@@ -18,20 +18,18 @@ jobs:
         run: |
           # Create the .ssh directory and add the private key
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
           # Add the server to known_hosts to prevent interactive prompts
           ssh-keyscan -H ${{ secrets.EREVAMP_HOST }} >> ~/.ssh/known_hosts
           
           # Execute the download
-          scp -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.EREVAMP_HOST }}:/home/ubuntu/deploy/webapp/.env .env
+          scp -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.EREVAMP_HOST }}:/home/ubuntu/deploy/webapp/.env ./web/.env
+
       # STEP 2: Build the Docker image (Dockerfile will now find the .env)
       - name: Build and Save Docker Image
         run: |
-          # Move the downloaded .env to the root if scp nested it
-          mv .env ./ || true 
-          # docker build -t intelehealth-webapp:latest .
           docker build -t intelehealth-webapp:latest ./web
           docker save intelehealth-webapp:latest | gzip > webapp_image.tar.gz
 
@@ -66,4 +64,3 @@ jobs:
               -p 81:80 \
               --env-file /home/ubuntu/deploy/webapp/.env \
               intelehealth-webapp:latest
-            
