@@ -95,7 +95,9 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
       {/* Logo + heading + subtitle stack in normal flow; the shield badge is
           the LAST child (absolutely positioned, top-right) so it paints on
           top of them, overlapping down past the heading (per Figma). */}
-      <View style={styles.titleRow}>
+      {/* Phone only: 20% more gap above the logo/heading block than tablet
+          gets — requested specifically for phone, tablet's 90dp is unchanged. */}
+      <View style={[styles.titleRow, { marginTop: isTablet ? 90 : 108 }]}>
         <View style={[styles.titleBlock, { paddingRight: shieldW + 12 }]}>
           <Image
             source={clientConfig.assets.setupLogo ?? clientConfig.assets.logo}
@@ -153,9 +155,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  titleRow: {
-    marginTop: 90,
-  },
+  titleRow: {},
 
   // Right padding is computed inline (shieldW + gap) so the reserved room
   // scales with the shield's actual rendered size — see the paddingRight
