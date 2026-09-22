@@ -66,7 +66,11 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   // the same way shieldH scales made the bottom edge drift further down as
   // the icon grew, overshooting into the field below. Keep the target
   // constant and let shieldTop shrink as shieldH grows instead.
-  const SHIELD_BOTTOM_TABLET = 72 + 106;
+  //
+  // 223, not the original 72 + 106 (178) — that undershot, leaving a visible
+  // gap above the field instead of touching it (measured via on-device
+  // element bounds: field top sat 45dp below the shield's bottom edge).
+  const SHIELD_BOTTOM_TABLET = 223;
   const shieldTop = isTablet ? SHIELD_BOTTOM_TABLET - shieldH : 74;
 
   return (
