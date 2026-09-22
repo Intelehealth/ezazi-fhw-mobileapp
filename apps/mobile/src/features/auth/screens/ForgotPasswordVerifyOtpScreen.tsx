@@ -21,6 +21,7 @@ import { commonStyles } from '@/core/ui/commonStyles';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
+import { logger } from '@/core/utils/logger';
 
 // CountDownTimer(60000, 1000) from OTPVerificationFragment.java
 const RESEND_COUNTDOWN_SEC = 60;
@@ -100,6 +101,11 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
     const result = await verifyOtp({ phoneNumber, countryCode, otp: data.otp });
 
     if (result.ok) {
+      // Console-only — never shown on screen. password.api.ts's doc comment
+      // flags this response shape as UNVERIFIED against the real backend
+      // (no real OTP was available to test with at the time); log the raw
+      // response so it can be confirmed the first time a real OTP is used.
+      logger.debug('[ForgotPassword] verifyOtp response', result.data);
       setVerified(true);
       setTimeout(() => {
         // replace, not navigate — Verify is a spent, single-use OTP step, so
