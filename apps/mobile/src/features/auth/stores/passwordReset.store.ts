@@ -5,6 +5,7 @@ import {
   type RequestOtpParams,
   type RequestOtpResponse,
   type VerifyOtpParams,
+  type VerifyOtpResponse,
   type ResetPasswordParams,
   type PasswordFlowResponse,
 } from '@/features/auth/data/password.api';
@@ -19,7 +20,7 @@ import { logApiError } from '@/core/api/errors/logApiError';
 
 interface PasswordResetState {
   requestOtp: (params: RequestOtpParams) => Promise<ApiResult<RequestOtpResponse>>;
-  verifyOtp: (params: VerifyOtpParams) => Promise<ApiResult<PasswordFlowResponse>>;
+  verifyOtp: (params: VerifyOtpParams) => Promise<ApiResult<VerifyOtpResponse>>;
   resetPassword: (params: ResetPasswordParams) => Promise<ApiResult<PasswordFlowResponse>>;
 }
 

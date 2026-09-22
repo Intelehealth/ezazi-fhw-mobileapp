@@ -18,11 +18,17 @@ import { createRequestMethods } from '@/core/api/responseHandler';
  * `{ message: "If the account exists, an OTP has been sent." }`, no
  * userUuid/providerUuid/role. There is no way to gate on "must be a Nurse
  * account" at this step any more — that check (and its legacy copy) has
- * been removed from the Request OTP screen. verifyOtp/resetPassword's
- * response shape is UNVERIFIED (no real OTP available to test with) — still
- * assumed to return `{ userUuid, providerUuid, role }` per the legacy model,
- * since resetPassword's URL needs a userUuid from somewhere. Re-check this
- * the same way (log the raw response) the first time a real OTP is tested.
+ * been removed from the Request OTP screen.
+ *
+ * verifyOtp's response CONFIRMED live (2026-09-22, via the logged response —
+ * see ForgotPasswordVerifyOtpScreen.tsx): `{ verified, userUuid, resetToken,
+ * expiresIn }` — no providerUuid/role. `resetToken` is a short-lived
+ * (expiresIn: 600s) JWT that authenticates the resetPassword call; it
+ * supersedes the legacy assumption that userUuid alone was enough. It must
+ * come fresh off this response every time — never cached/reused across a
+ * resend, since a new verify issues a new token. resetPassword's own
+ * response shape is still unverified, but unused by the caller (only `.ok`
+ * matters there), so it isn't worth chasing.
  *
  * Feature-owned on purpose: only the Forgot Password screens call these, so
  * nothing in `core/` depends on them. Session lifecycle (login/logout/refresh/
@@ -51,6 +57,8 @@ export interface VerifyOtpParams {
 export interface ResetPasswordParams {
   userUuid: string;
   newPassword: string;
+  /** From verifyOtp's response — see the doc comment above. */
+  resetToken: string;
 }
 
 /** Confirmed live — deliberately reveals nothing about the account. */
@@ -58,7 +66,16 @@ export interface RequestOtpResponse {
   message: string;
 }
 
-/** UNVERIFIED against the real backend — see the doc comment above. */
+/** Confirmed live (2026-09-22) — see the doc comment above. */
+export interface VerifyOtpResponse {
+  verified: boolean;
+  userUuid: string;
+  resetToken: string;
+  /** Seconds until resetToken expires (600 = 10 minutes). */
+  expiresIn: number;
+}
+
+/** UNVERIFIED against the real backend, and unused — see the doc comment above. */
 export interface PasswordFlowResponse {
   userUuid: string;
   providerUuid: string;
@@ -77,15 +94,15 @@ export const passwordApi = {
 
   // EZ-934
   verifyOtp: ({ phoneNumber, countryCode, otp }: VerifyOtpParams) =>
-    http.post<PasswordFlowResponse>('/auth/verifyOtp', {
+    http.post<VerifyOtpResponse>('/auth/verifyOtp', {
       verifyFor: OTP_FOR,
       phoneNumber,
       countryCode,
       otp,
     }),
 
-  // EZ-939 — no otpToken: the legacy flow trusts the userUuid handed back by
-  // verifyOtp, nothing else is threaded through.
-  resetPassword: ({ userUuid, newPassword }: ResetPasswordParams) =>
-    http.post<PasswordFlowResponse>(`/auth/resetPassword/${userUuid}`, { newPassword }),
+  // EZ-939 — resetToken (from verifyOtp) authenticates the request, not just
+  // the userUuid in the URL.
+  resetPassword: ({ userUuid, newPassword, resetToken }: ResetPasswordParams) =>
+    http.post<PasswordFlowResponse>(`/auth/resetPassword/${userUuid}`, { newPassword, resetToken }),
 };

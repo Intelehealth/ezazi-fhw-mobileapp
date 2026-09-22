@@ -37,7 +37,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordReset'>;
 export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { fs, cornerRadius } = useResponsive();
-  const { userUuid, origin } = route.params;
+  const { userUuid, resetToken, origin } = route.params;
   const resetPassword = usePasswordResetStore(s => s.resetPassword);
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -63,7 +63,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   });
 
   const onValidSubmit = async (data: ForgotPasswordResetFormValues) => {
-    const result = await resetPassword({ userUuid, newPassword: data.newPassword });
+    const result = await resetPassword({ userUuid, newPassword: data.newPassword, resetToken });
 
     if (result.ok) {
       setShowSuccess(true);

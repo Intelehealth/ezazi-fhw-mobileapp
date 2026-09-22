@@ -13,7 +13,9 @@ export type RootStackParamList = {
   // Login" can return there instead of always landing on Login.
   ForgotPasswordRequest: { origin: 'Setup' | 'Login' };
   ForgotPasswordVerify: { phoneNumber: string; countryCode: string; origin: 'Setup' | 'Login' };
-  ForgotPasswordReset: { userUuid: string; origin: 'Setup' | 'Login' };
+  // resetToken — verifyOtp's short-lived JWT (expiresIn: 600s), required by
+  // resetPassword; always the one from the latest verify response, never cached.
+  ForgotPasswordReset: { userUuid: string; origin: 'Setup' | 'Login'; resetToken: string };
 
   // App stack
   Home: undefined;

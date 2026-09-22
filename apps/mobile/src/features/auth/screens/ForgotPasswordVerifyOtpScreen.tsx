@@ -101,16 +101,25 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
     const result = await verifyOtp({ phoneNumber, countryCode, otp: data.otp });
 
     if (result.ok) {
-      // Console-only — never shown on screen. password.api.ts's doc comment
-      // flags this response shape as UNVERIFIED against the real backend
-      // (no real OTP was available to test with at the time); log the raw
-      // response so it can be confirmed the first time a real OTP is used.
-      logger.debug('[ForgotPassword] verifyOtp response', result.data);
+      // Console-only — never shown on screen. resetToken intentionally
+      // omitted (it's a live password-reset credential), same discipline as
+      // auth.store.ts's login() log leaving out access/refresh tokens.
+      logger.debug('[ForgotPassword] verifyOtp response', {
+        verified: result.data.verified,
+        userUuid: result.data.userUuid,
+        expiresIn: result.data.expiresIn,
+      });
       setVerified(true);
       setTimeout(() => {
         // replace, not navigate — Verify is a spent, single-use OTP step, so
         // Reset's back button should land on Setup/Login, not back on Verify.
-        navigation.replace('ForgotPasswordReset', { userUuid: result.data.userUuid, origin });
+        // resetToken always comes from this response, never reused across a
+        // resend — a fresh verify issues a fresh token.
+        navigation.replace('ForgotPasswordReset', {
+          userUuid: result.data.userUuid,
+          resetToken: result.data.resetToken,
+          origin,
+        });
       }, VERIFIED_FLASH_MS);
     } else {
       setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.verify.errors'));
