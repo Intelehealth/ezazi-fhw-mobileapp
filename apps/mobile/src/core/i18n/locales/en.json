@@ -151,7 +151,7 @@
     },
     "verify": {
       "heading": "Verification",
-      "instruction": "We've sent OTP to your mobile number at {{maskedPhone}}. Please enter 4 digit code you receive",
+      "instruction": "We've sent OTP to your mobile number at {{maskedPhone}}. Please enter 6 digit code you receive",
       "notReceived": "Didn't receive code?",
       "resend": "Resend Code",
       "resendCountdown": "Resend in {{seconds}}s",

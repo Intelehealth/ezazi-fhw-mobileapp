@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 type Translate = (key: string) => string;
 
-// Figma — 4-digit OTP (confirmed 2026-09-16; supersedes the legacy 6-digit flow)
-export const OTP_LENGTH = 4;
+// 6-digit OTP (confirmed 2026-09-22; supersedes the earlier 4-digit Figma spec)
+export const OTP_LENGTH = 6;
 
 export function createForgotPasswordVerifyFormSchema(t: Translate) {
   return z.object({
