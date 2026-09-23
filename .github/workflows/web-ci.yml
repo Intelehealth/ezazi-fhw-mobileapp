@@ -30,6 +30,16 @@ jobs:
           # Execute the download
           scp -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.EREVAMP_HOST }}:/home/ubuntu/deploy/webapp/.env ./web/.env
 
+      # DEBUG: confirm what's actually in ./web before building
+      - name: Debug - inspect web folder
+        run: |
+          echo "--- Current directory ---"
+          pwd
+          echo "--- Listing repo root ---"
+          ls -la
+          echo "--- Listing ./web ---"
+          ls -la ./web
+
       # STEP 2: Build the Docker image (Dockerfile will now find the .env)
       - name: Build and Save Docker Image
         run: |
