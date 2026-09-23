@@ -43,7 +43,7 @@ jobs:
       # STEP 2: Build the Docker image (Dockerfile will now find the .env)
       - name: Build and Save Docker Image
         run: |
-          docker build -t intelehealth-webapp:latest ./web
+          docker build -t intelehealth-webapp:latest ./app/web
           docker save intelehealth-webapp:latest | gzip > webapp_image.tar.gz
 
       # STEP 3: Transfer the built image back to the server
