@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 import { AuthLayoutComponent } from '../components/layout/auth-layout.component';
 import { RouteErrorBoundary } from '../components/common/route-error-boundary.component';
+import { env } from '../config/env';
 import { ROUTES } from './paths';
 import { ProtectedRoute } from './protected.route';
 
@@ -134,7 +135,8 @@ const router = createBrowserRouter(
         }
       />
     </Route>
-  )
+  ),
+  { basename: env.BASE_PATH || undefined }
 );
 
 export function AppRoutes() {

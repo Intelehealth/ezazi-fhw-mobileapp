@@ -17,6 +17,11 @@ const servers = DEFAULT_SERVERS[appEnv];
  */
 export const env = {
   APP_ENV: appEnv,
+  // Reverse-proxy path prefix this build is served under (e.g. erevamp's
+  // `/intelehealth/`, whose proxy_pass strips the prefix before it reaches
+  // this container — but the browser URL bar keeps it, so react-router's
+  // basename must match it). Empty string = served at domain root.
+  BASE_PATH: import.meta.env.VITE_BASE_PATH || '',
   AUTH_GATEWAY_URL:
     import.meta.env.VITE_AUTH_GATEWAY_URL || servers.authGatewayUrl,
   PORTAL_URL: import.meta.env.VITE_PORTAL_URL || servers.portalUrl,

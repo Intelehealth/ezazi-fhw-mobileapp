@@ -10,6 +10,7 @@
 #     --build-arg VITE_CONFIG_URL=https://... \
 #     --build-arg VITE_RECAPTCHA_SITE_KEY=... \
 #     --build-arg VITE_CLIENT_ID=default \
+#     --build-arg VITE_BASE_PATH=/intelehealth \
 #     -t ezazi-web .
 #
 # All VITE_* build args get compiled into the JS bundle (Vite env vars are
@@ -49,10 +50,11 @@ ARG VITE_PORTAL_URL
 ARG VITE_CONFIG_URL
 ARG VITE_RECAPTCHA_SITE_KEY
 ARG VITE_CLIENT_ID=default
+ARG VITE_BASE_PATH
 
-RUN printf 'VITE_APP_ENV=%s\nVITE_AUTH_GATEWAY_URL=%s\nVITE_PORTAL_URL=%s\nVITE_CONFIG_URL=%s\nVITE_RECAPTCHA_SITE_KEY=%s\nVITE_CLIENT_ID=%s\n' \
+RUN printf 'VITE_APP_ENV=%s\nVITE_AUTH_GATEWAY_URL=%s\nVITE_PORTAL_URL=%s\nVITE_CONFIG_URL=%s\nVITE_RECAPTCHA_SITE_KEY=%s\nVITE_CLIENT_ID=%s\nVITE_BASE_PATH=%s\n' \
       "$VITE_APP_ENV" "$VITE_AUTH_GATEWAY_URL" "$VITE_PORTAL_URL" \
-      "$VITE_CONFIG_URL" "$VITE_RECAPTCHA_SITE_KEY" "$VITE_CLIENT_ID" \
+      "$VITE_CONFIG_URL" "$VITE_RECAPTCHA_SITE_KEY" "$VITE_CLIENT_ID" "$VITE_BASE_PATH" \
       > apps/web/.env.production
 
 RUN npx turbo run typecheck build --filter=./apps/web...
