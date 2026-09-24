@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import DashboardPage from '../../../pages/dashboard/dashboard.page';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
@@ -35,25 +36,35 @@ function mockAuthState(user: AuthUser | null) {
   );
 }
 
+function renderDashboardPage() {
+  // DashboardLayoutComponent's sidebar uses react-router's Link/useLocation
+  // (see components/layout/sidebar-nav.component.tsx), so this page needs a
+  // router in scope even though it isn't itself route-parameterized —
+  // matching the MemoryRouter convention other page tests already use.
+  return render(
+    <MemoryRouter initialEntries={['/dashboard']}>
+      <DashboardPage />
+    </MemoryRouter>
+  );
+}
+
 describe('DashboardPage', () => {
   it('greets the signed-in user by display name', () => {
     mockAuthState(USER);
     vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
 
-    render(<DashboardPage />);
+    renderDashboardPage();
 
-    expect(
-      screen.getByText('Logged in as Demo Male Doctor.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Hello, Demo Male Doctor 👋')).toBeInTheDocument();
   });
 
   it('falls back to "unknown user" when there is no signed-in user', () => {
     mockAuthState(null);
     vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
 
-    render(<DashboardPage />);
+    renderDashboardPage();
 
-    expect(screen.getByText('Logged in as unknown user.')).toBeInTheDocument();
+    expect(screen.getByText('Hello, unknown user 👋')).toBeInTheDocument();
   });
 
   it('falls back to the username when the signed-in user has no display name', () => {
@@ -66,19 +77,28 @@ describe('DashboardPage', () => {
     });
     vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
 
-    render(<DashboardPage />);
+    renderDashboardPage();
 
-    expect(screen.getByText('Logged in as doctor1.')).toBeInTheDocument();
+    expect(screen.getByText('Hello, doctor1 👋')).toBeInTheDocument();
   });
 
-  it('dispatches logout() on button click', async () => {
+  it('dispatches logout() when the sidebar Log-out row is clicked', async () => {
     mockAuthState(USER);
     const dispatch = vi.fn();
     vi.mocked(useAppDispatch).mockReturnValue(dispatch);
 
-    render(<DashboardPage />);
-    await userEvent.click(screen.getByRole('button', { name: 'Log out' }));
+    renderDashboardPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Log-out' }));
 
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the dashboard case sections inside the shell', () => {
+    mockAuthState(USER);
+    vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
+
+    renderDashboardPage();
+
+    expect(screen.getByText('Priority cases (3)')).toBeInTheDocument();
   });
 });
