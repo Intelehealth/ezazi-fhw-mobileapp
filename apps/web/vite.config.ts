@@ -17,7 +17,15 @@ const FALLBACK_DEV_PORTAL_URL = 'https://dev.example.org/portal-api';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
+  // Reverse-proxy path prefix this build is served under (e.g. erevamp's
+  // `/intelehealth`). Must match src/config/env.ts's BASE_PATH / the
+  // router's basename — otherwise built asset URLs are emitted absolute
+  // from domain root ('/assets/...') and never reach the proxy rule that
+  // forwards to this app's container.
+  const basePath = env.VITE_BASE_PATH ? `${env.VITE_BASE_PATH.replace(/\/$/, '')}/` : '/';
+
   return {
+    base: basePath,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
