@@ -1,26 +1,71 @@
-name: web-ci
-
+name: Erevemp
 on:
-  pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'turbo.json'
   push:
-    branches: [main, dev_kaveri_sprint45_revamp]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
+    branches:
+      - monorepo-architecture-changes
+  workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download .env via Native SCP
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EREVAMP_HOST }} >> ~/.ssh/known_hosts
+          scp -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.EREVAMP_HOST }}:/home/ubuntu/deploy/webapp/.env .env
+
+      - name: Debug - inspect files
+        run: |
+          echo "--- Current directory ---"
+          pwd
+          echo "--- Listing repo root ---"
+          ls -la
+          echo "--- Listing apps/web ---"
+          ls -la apps/web
+          echo "--- .env variable names ---"
+          cut -d '=' -f1 .env
+
+      - name: Build and Save Docker Image
+        run: |
+          set -a
+          source .env
+          set +a
+
+          docker build -f apps/web/Dockerfile --build-arg VITE_AUTH_GATEWAY_URL="$VITE_AUTH_GATEWAY_URL" --build-arg VITE_PORTAL_URL="$VITE_PORTAL_URL" --build-arg VITE_CONFIG_URL="$VITE_CONFIG_URL" --build-arg VITE_RECAPTCHA_SITE_KEY="$VITE_RECAPTCHA_SITE_KEY" --build-arg VITE_CLIENT_ID="${VITE_CLIENT_ID:-default}" -t intelehealth-webapp:latest .
+
+          docker save intelehealth-webapp:latest | gzip > webapp_image.tar.gz
+
+      - name: Upload Image to Server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx turbo run typecheck lint test build --filter=./apps/web...
+          host: ${{ secrets.EREVAMP_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "webapp_image.tar.gz"
+          target: "/tmp"
+
+      - name: Deploy Container
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EREVAMP_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /tmp
+            gunzip -c webapp_image.tar.gz | docker load
+
+            docker stop webapp-container || true
+            docker rm webapp-container || true
+
+            docker run -d \
+              --name webapp-container \
+              -p 81:80 \
+              --env-file /home/ubuntu/deploy/webapp/.env \
+              intelehealth-webapp:latest
