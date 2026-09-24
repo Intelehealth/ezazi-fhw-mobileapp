@@ -3,8 +3,8 @@ on:
   push:
     branches:
       - monorepo-architecture-changes
-  workflow_dispatch:  # Allows manual trigger
-  
+  workflow_dispatch:
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -13,41 +13,35 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # STEP 1: Fetch the .env from the server to use during the build
       - name: Download .env via Native SCP
         run: |
-          # Create the .ssh directory and add the private key
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
-          # Add the server to known_hosts to prevent interactive prompts
           ssh-keyscan -H ${{ secrets.EREVAMP_HOST }} >> ~/.ssh/known_hosts
-          
-          # Ensure the local destination directory exists
-          mkdir -p ./web
-          
-          # Execute the download
-          scp -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.EREVAMP_HOST }}:/home/ubuntu/deploy/webapp/.env ./web/.env
+          scp -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.EREVAMP_HOST }}:/home/ubuntu/deploy/webapp/.env .env
 
-      # DEBUG: confirm what's actually in ./web before building
-      - name: Debug - inspect web folder
+      - name: Debug - inspect files
         run: |
           echo "--- Current directory ---"
           pwd
           echo "--- Listing repo root ---"
           ls -la
-          echo "--- Listing ./web ---"
-          ls -la ./web
+          echo "--- Listing apps/web ---"
+          ls -la apps/web
+          echo "--- .env variable names ---"
+          cut -d '=' -f1 .env
 
-      # STEP 2: Build the Docker image (Dockerfile will now find the .env)
       - name: Build and Save Docker Image
         run: |
-          
-          docker build -f apps/web/Dockerfile
+          set -a
+          source .env
+          set +a
+
+          docker build -f apps/web/Dockerfile --build-arg VITE_AUTH_GATEWAY_URL="$VITE_AUTH_GATEWAY_URL" --build-arg VITE_PORTAL_URL="$VITE_PORTAL_URL" --build-arg VITE_CONFIG_URL="$VITE_CONFIG_URL" --build-arg VITE_RECAPTCHA_SITE_KEY="$VITE_RECAPTCHA_SITE_KEY" --build-arg VITE_CLIENT_ID="${VITE_CLIENT_ID:-default}" -t intelehealth-webapp:latest .
+
           docker save intelehealth-webapp:latest | gzip > webapp_image.tar.gz
 
-      # STEP 3: Transfer the built image back to the server
       - name: Upload Image to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -57,7 +51,6 @@ jobs:
           source: "webapp_image.tar.gz"
           target: "/tmp"
 
-      # STEP 4: Restart the container
       - name: Deploy Container
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -67,12 +60,10 @@ jobs:
           script: |
             cd /tmp
             gunzip -c webapp_image.tar.gz | docker load
-            
+
             docker stop webapp-container || true
             docker rm webapp-container || true
-            
-            # Note: We still mount the .env at runtime just in case 
-            # your Node server (SSR) or Docker entrypoint needs it.
+
             docker run -d \
               --name webapp-container \
               -p 81:80 \
