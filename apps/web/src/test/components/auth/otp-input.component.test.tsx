@@ -38,4 +38,40 @@ describe('OtpInputComponent', () => {
     render(<OtpInputComponent value="" onChange={vi.fn()} hasError />);
     expect(screen.getAllByLabelText(/OTP digit/)[0].className).toContain('border-red-600');
   });
+
+  it('fills all boxes and focuses the last one when the full 6 digits are pasted', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="" onChange={onChange} />);
+    const boxes = screen.getAllByLabelText(/OTP digit/);
+
+    fireEvent.paste(boxes[0], {
+      clipboardData: { getData: () => '123456' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith('123456');
+  });
+
+  it('strips non-digit characters and truncates a paste longer than 6 digits', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="" onChange={onChange} />);
+    const boxes = screen.getAllByLabelText(/OTP digit/);
+
+    fireEvent.paste(boxes[0], {
+      clipboardData: { getData: () => '1a2b3c4d5e6f7g8h' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith('123456');
+  });
+
+  it('ignores a paste with no digits at all', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="" onChange={onChange} />);
+    const boxes = screen.getAllByLabelText(/OTP digit/);
+
+    fireEvent.paste(boxes[0], {
+      clipboardData: { getData: () => 'abcdef' },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

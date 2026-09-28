@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { DashboardComponent } from '../../../modules/dashboard/dashboard.component';
 import {
   COMPLETED_CASES,
@@ -41,13 +41,52 @@ describe('DashboardComponent', () => {
     const user = userEvent.setup();
     render(<DashboardComponent />);
 
-    await user.click(screen.getByRole('button', { name: 'Show all ▼' }));
+    await user.click(screen.getByRole('button', { name: 'Show all' }));
 
     expect(
       screen.getByText(COMPLETED_CASES[0].patient.identifier)
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide all' })).toBeInTheDocument();
+  });
+
+  it('collapses just the Priority section on its own header click, leaving In-progress expanded', () => {
+    render(<DashboardComponent />);
+
+    fireEvent.click(screen.getByText(`Priority cases (${PRIORITY_CASES.length})`));
+
     expect(
-      screen.getByRole('button', { name: 'Hide all ▲' })
+      screen.queryByText(PRIORITY_CASES[0].patient.identifier)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(IN_PROGRESS_CASES[0].patient.identifier)
     ).toBeInTheDocument();
+  });
+
+  it('toggles the In-progress and Completed sections independently on their own header clicks', () => {
+    render(<DashboardComponent />);
+
+    fireEvent.click(
+      screen.getByText(`In-progress cases (${IN_PROGRESS_CASES.length})`)
+    );
+    expect(
+      screen.queryByText(IN_PROGRESS_CASES[0].patient.identifier)
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByText(`Completed cases (${COMPLETED_CASES.length})`)
+    );
+    expect(
+      screen.getByText(COMPLETED_CASES[0].patient.identifier)
+    ).toBeInTheDocument();
+  });
+
+  it('logs the visit uuid when a row is clicked (partogram detail route not built yet)', () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    render(<DashboardComponent />);
+
+    fireEvent.click(screen.getByText(PRIORITY_CASES[0].patient.identifier));
+
+    expect(infoSpy).toHaveBeenCalledWith('Open visit', PRIORITY_CASES[0].uuid);
+    infoSpy.mockRestore();
   });
 });

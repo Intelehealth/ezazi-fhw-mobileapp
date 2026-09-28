@@ -1,36 +1,60 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { AppHeaderComponent } from '../../../components/layout/app-header.component';
 
 describe('AppHeaderComponent', () => {
   it('greets the user by name', () => {
-    render(
-      <AppHeaderComponent userName="Demo Doctor" onToggleSidebar={vi.fn()} />
-    );
+    render(<AppHeaderComponent userName="Demo Doctor" />);
 
     expect(screen.getByText('Hello, Demo Doctor 👋')).toBeInTheDocument();
   });
 
-  it('calls onToggleSidebar when the hamburger button is clicked', () => {
-    const onToggleSidebar = vi.fn();
-    render(
-      <AppHeaderComponent
-        userName="Demo Doctor"
-        onToggleSidebar={onToggleSidebar}
-      />
-    );
+  it('does not render a sidebar toggle button (the sidebar has its own)', () => {
+    render(<AppHeaderComponent userName="Demo Doctor" />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle sidebar' }));
-    expect(onToggleSidebar).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole('button', { name: 'Toggle sidebar' })
+    ).not.toBeInTheDocument();
   });
 
   it('renders the patient search box', () => {
-    render(
-      <AppHeaderComponent userName="Demo Doctor" onToggleSidebar={vi.fn()} />
-    );
+    render(<AppHeaderComponent userName="Demo Doctor" />);
 
     expect(
       screen.getByPlaceholderText('Search by patient name or ID')
     ).toBeInTheDocument();
+  });
+
+  it('updates the search box value as the user types (visual only — no wiring yet)', () => {
+    render(<AppHeaderComponent userName="Demo Doctor" />);
+
+    const input = screen.getByPlaceholderText(
+      'Search by patient name or ID'
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Asha' } });
+
+    expect(input.value).toBe('Asha');
+  });
+
+  it('falls back to the placeholder avatar when the provided image fails to load', () => {
+    // alt="" gives the avatar an empty accessible name, which strips it out
+    // of the "img" role entirely (treated as decorative) — queried by its
+    // (distinctive) src instead of role for that reason. There are two
+    // <img>s in this header (the search icon is the other), so a bare tag
+    // selector would grab whichever renders first instead of the avatar.
+    const { container } = render(
+      <AppHeaderComponent userName="Demo Doctor" avatarUrl="broken.jpg" />
+    );
+
+    const avatar = container.querySelector(
+      'img[src="broken.jpg"]'
+    ) as HTMLImageElement;
+    expect(avatar.src).toContain('broken.jpg');
+
+    // user.svg is small enough that Vite inlines it as a data URI rather
+    // than a "user.svg" path — asserting the src actually changed off the
+    // broken one is what this test can portably check.
+    fireEvent.error(avatar);
+    expect(avatar.src).not.toContain('broken.jpg');
   });
 });

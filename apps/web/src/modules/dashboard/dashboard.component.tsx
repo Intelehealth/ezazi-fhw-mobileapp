@@ -10,6 +10,7 @@ import {
 import prioritySquare from '../../assets/svgs/priority-square.svg';
 import prescriptionSquare from '../../assets/svgs/prescription-square.svg';
 import prescriptionCompletedSquare from '../../assets/svgs/prescription-completed-square.svg';
+import chevronIcon from '../../assets/svgs/chevron-down.svg';
 
 /**
  * Ports dashboard.component.html's stat chips + accordion of case tables
@@ -78,9 +79,18 @@ export function DashboardComponent() {
         <button
           type="button"
           onClick={toggleAll}
-          className="cursor-pointer text-sm text-[#7F7B92]"
+          className="flex cursor-pointer items-center gap-1 text-sm text-[#7F7B92]"
         >
-          {allExpanded ? 'Hide all ▲' : 'Show all ▼'}
+          {allExpanded ? 'Hide all' : 'Show all'}
+          {/* Same chevron-down.svg as case-section.component.tsx's per-panel
+              indicator (dashboard.component.html uses mat-icon
+              expand_more/expand_less here — the same up/down chevron shape,
+              not a generic unicode triangle). */}
+          <img
+            src={chevronIcon}
+            alt=""
+            className={`h-4 w-4 transition-transform ${allExpanded ? '-rotate-90' : 'rotate-90'}`}
+          />
         </button>
       </div>
 

@@ -6,6 +6,7 @@ import {
 } from './visit-table.component';
 import { VisitPaginationComponent } from './visit-pagination.component';
 import searchIcon from '../../assets/svgs/search-icon.svg';
+import chevronIcon from '../../assets/svgs/chevron-down.svg';
 
 interface CaseSectionComponentProps {
   icon: ReactNode;
@@ -86,17 +87,36 @@ export function CaseSectionComponent({
         <h6 className="mb-0 ml-2 font-bold">
           {title} ({count})
         </h6>
-        <span
-          className="text-[#7F7B92]"
-          title={helpText}
-          aria-label="help icon"
-        >
-          ⓘ
+        {/* matTooltip's styled bubble, not just the browser's native `title`
+            attribute (which is slow to appear and unstyled) — shown on
+            hover/focus, positioned to the right like the Angular
+            `matTooltipPosition="right"` original. */}
+        <span className="group/tooltip relative">
+          <span
+            tabIndex={0}
+            aria-label={helpText}
+            className="font-bold text-[#2E1E91] focus:outline-none"
+          >
+            ⓘ
+          </span>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute top-1/2 left-full z-30 ml-2 -translate-y-1/2 rounded-md bg-[#7F7B92] px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 transition-opacity group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100"
+          >
+            {helpText}
+          </span>
         </span>
 
         {isExpanded && (
           <div
             onClick={e => e.stopPropagation()}
+            // ml-auto here does the actual right-alignment (this is the
+            // last thing before the chevron once expanded) — the chevron
+            // below no longer also claims ml-auto in that case, since two
+            // siblings both set to auto-margin split the free space
+            // *between* them instead of flush against the container edge,
+            // which is what was leaving this search box stranded
+            // mid-header instead of pinned to the right.
             className="ml-auto flex h-[46px] w-[300px] max-w-[60vw] items-center rounded-md border border-[rgba(127,123,146,0.5)] bg-white"
           >
             <span className="pl-2">
@@ -125,9 +145,21 @@ export function CaseSectionComponent({
           </div>
         )}
 
-        <span className="ml-auto shrink-0 text-[#7F7B92]">
-          {isExpanded ? '▲' : '▼'}
-        </span>
+        {/* mat-expansion-panel's default indicator (chevron-down.svg, the
+            same asset used elsewhere for dropdown carets): down when
+            collapsed, rotated to point up when expanded — not a generic
+            unicode triangle. */}
+        <img
+          src={chevronIcon}
+          alt=""
+          // chevron-down.svg's own stroke is a light gray (#7F7B92) —
+          // brightness-0 forces it fully black instead. ml-auto only when
+          // collapsed (no search box in the row to already claim it) — see
+          // the search box's own comment above.
+          className={`h-4 w-4 shrink-0 brightness-0 transition-transform ${
+            isExpanded ? 'ml-2 -rotate-90' : 'ml-auto rotate-90'
+          }`}
+        />
       </div>
 
       {isExpanded && (

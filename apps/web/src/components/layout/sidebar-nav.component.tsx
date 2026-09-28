@@ -2,6 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { clientConfig } from '../../config/clients';
 import { SIDEBAR_NAV_ITEMS } from '../../routes/nav-items';
 import ezaziSmallLogo from '../../assets/ezazi/ezazi-sm-logo.svg';
+import toggleExpandedIcon from '../../assets/icons/dashboard-icons/Vector.png';
+import toggleCollapsedIcon from '../../assets/icons/dashboard-icons/Vector2.png';
 import powerBlue from '../../assets/svgs/power-blue.svg';
 import powerWhite from '../../assets/svgs/power-white.svg';
 
@@ -41,7 +43,20 @@ export function SidebarNavComponent({
           // it — invisible even though it was rendering and clickable.
           className="absolute top-1/2 -right-[17px] z-20 flex h-[34px] w-[34px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white shadow-[0_0_16px_rgba(46,30,145,0.32)]"
         >
-          {collapsed ? '›' : '‹'}
+          {/* main-container.component.ts's getUrl(): Vector.png (a left
+              chevron) expanded, Vector2.png (right) collapsed — not a
+              generic unicode arrow, so it was reading as a different glyph
+              than the reference app's. */}
+          <img
+            src={collapsed ? toggleCollapsedIcon : toggleExpandedIcon}
+            alt=""
+            // Vector.png/Vector2.png are tiny 8x14 rasters — stretching them
+            // into a forced square box (the earlier h-3 w-3) blurred the
+            // thin chevron stroke into a bold-looking blob. Sized at their
+            // native aspect ratio instead.
+            width={8}
+            height={14}
+          />
         </button>
         {collapsed ? (
           <img src={ezaziSmallLogo} alt="" className="w-4/5" />

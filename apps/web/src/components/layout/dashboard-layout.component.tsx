@@ -32,11 +32,7 @@ export function DashboardLayoutComponent({
         onLogout={onLogout}
       />
       <div className="flex-1 overflow-y-auto">
-        <AppHeaderComponent
-          userName={userName}
-          avatarUrl={avatarUrl}
-          onToggleSidebar={() => setCollapsed(prev => !prev)}
-        />
+        <AppHeaderComponent userName={userName} avatarUrl={avatarUrl} />
         <div className="p-5 pb-24">{children}</div>
       </div>
     </div>

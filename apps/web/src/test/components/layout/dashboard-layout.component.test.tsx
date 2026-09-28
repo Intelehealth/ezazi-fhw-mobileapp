@@ -31,4 +31,21 @@ describe('DashboardLayoutComponent', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
+
+  it('collapses the sidebar when its own toggle button is clicked', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <DashboardLayoutComponent userName="Demo Doctor" onLogout={vi.fn()}>
+          <p>dashboard content</p>
+        </DashboardLayoutComponent>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Expand sidebar' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('My Profile')).not.toBeInTheDocument();
+  });
 });

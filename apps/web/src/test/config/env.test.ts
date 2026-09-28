@@ -50,4 +50,10 @@ describe('env', () => {
       '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
     );
   });
+
+  it('prefers an explicit VITE_AUTH_GATEWAY_URL over @ezazi/config\'s default', async () => {
+    vi.stubEnv('VITE_AUTH_GATEWAY_URL', 'https://auth.example.test');
+    const { env } = await import('../../config/env');
+    expect(env.AUTH_GATEWAY_URL).toBe('https://auth.example.test');
+  });
 });

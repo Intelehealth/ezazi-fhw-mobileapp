@@ -3,13 +3,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { SidebarNavComponent } from '../../../components/layout/sidebar-nav.component';
 
-function renderSidebar(pathname = '/dashboard') {
+function renderSidebar(pathname = '/dashboard', collapsed = false) {
   const onToggleCollapsed = vi.fn();
   const onLogout = vi.fn();
   const utils = render(
     <MemoryRouter initialEntries={[pathname]}>
       <SidebarNavComponent
-        collapsed={false}
+        collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
         onLogout={onLogout}
       />
@@ -53,5 +53,14 @@ describe('SidebarNavComponent', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
     expect(onLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('swaps to the small logo and an "Expand sidebar" label when collapsed', () => {
+    renderSidebar('/dashboard', true);
+
+    expect(
+      screen.getByRole('button', { name: 'Expand sidebar' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('My Profile')).not.toBeInTheDocument();
   });
 });

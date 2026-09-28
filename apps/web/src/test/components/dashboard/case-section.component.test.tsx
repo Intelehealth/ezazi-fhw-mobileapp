@@ -111,4 +111,29 @@ describe('CaseSectionComponent', () => {
     expect(screen.getByText('ELCG-1042')).toBeInTheDocument();
     expect(screen.getByText('ELCG-1038')).toBeInTheDocument();
   });
+
+  it('calls onToggle on Enter or Space, but not on other keys', () => {
+    const { onToggle } = renderSection();
+    const header = screen.getByText('Priority cases (2)').closest('[role="button"]')!;
+
+    fireEvent.keyDown(header, { key: 'a' });
+    expect(onToggle).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(header, { key: 'Enter' });
+    fireEvent.keyDown(header, { key: ' ' });
+    expect(onToggle).toHaveBeenCalledTimes(2);
+  });
+
+  it('exposes the help text as a tooltip on the info icon', () => {
+    renderSection();
+
+    expect(
+      screen.getByText('In-progress high priority cases', {
+        selector: '[role="tooltip"]',
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('In-progress high priority cases')
+    ).toBeInTheDocument();
+  });
 });

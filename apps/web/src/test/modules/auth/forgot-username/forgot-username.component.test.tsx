@@ -75,6 +75,29 @@ describe('ForgotUsernameComponent', () => {
     );
   });
 
+  it('shows a phone validation error on an invalid submit attempt', async () => {
+    render(
+      <MemoryRouter>
+        <ForgotUsernameComponent />
+      </MemoryRouter>
+    );
+
+    // The submit button stays disabled while the phone is invalid (see the
+    // first test above) — fireEvent.submit bypasses that disabled state the
+    // same way a real form submit key (Enter) would, exercising react-hook-form's
+    // own validation instead of relying on the button's disabled attribute.
+    // The field defaults to a bare "+91" (dial code only, no digits) — per
+    // forgot-username.validation.ts's PHONE_REGEX comment, that fails the
+    // regex check (not the min-length one), so the message is "valid", not
+    // "enter mobile number".
+    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+
+    expect(
+      await screen.findByText('Please enter valid mobile number')
+    ).toBeInTheDocument();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
   it('switches to the email tab, clearing the phone value, and validates the email field', async () => {
     render(
       <MemoryRouter>

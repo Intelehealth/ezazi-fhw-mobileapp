@@ -76,4 +76,82 @@ describe('VisitTableComponent', () => {
     fireEvent.click(screen.getByText('ELCG-1042'));
     expect(onRowClick).toHaveBeenCalledWith(ROW);
   });
+
+  it('falls back to the placeholder avatar when the patient image fails to load', () => {
+    // alt="" gives the avatar an empty accessible name, which strips it out
+    // of the "img" role entirely (treated as decorative) — queried by tag
+    // instead of role for that reason.
+    const { container } = render(
+      <VisitTableComponent
+        rows={[{ ...ROW, patient: { ...ROW.patient, avatarUrl: 'broken.jpg' } }]}
+        variant="active"
+        emptyMessage="empty"
+      />
+    );
+
+    const avatar = container.querySelector('img') as HTMLImageElement;
+    expect(avatar.src).toContain('broken.jpg');
+
+    // user.svg is small enough that Vite inlines it as a data URI rather
+    // than a "user.svg" path — asserting the src actually changed off the
+    // broken one is what this test can portably check.
+    fireEvent.error(avatar);
+    expect(avatar.src).not.toContain('broken.jpg');
+  });
+
+  it('shows the reason tooltip when the completed row has an out-of-time reason', () => {
+    render(
+      <VisitTableComponent
+        rows={[
+          {
+            ...ROW,
+            completeReason: 'Out Of Time',
+            outOfTimeReason: 'Labour exceeded protocol window',
+          },
+        ]}
+        variant="completed"
+        emptyMessage="empty"
+      />
+    );
+
+    expect(screen.getByText('Out Of Time')).toBeInTheDocument();
+    expect(screen.getByTitle('Labour exceeded protocol window')).toBeInTheDocument();
+  });
+
+  it('shows the reason tooltip from referTypeOtherReason when there is no out-of-time reason', () => {
+    render(
+      <VisitTableComponent
+        rows={[
+          {
+            ...ROW,
+            completeReason: undefined,
+            referTypeOtherReason: 'Referred for specialist care',
+          },
+        ]}
+        variant="completed"
+        emptyMessage="empty"
+      />
+    );
+
+    expect(screen.getByTitle('Referred for specialist care')).toBeInTheDocument();
+  });
+
+  it('falls back to "-" for in-labour duration, cervix and descent plots when unset', () => {
+    render(
+      <VisitTableComponent
+        rows={[
+          {
+            ...ROW,
+            inLabourDuration: undefined,
+            cervixPlotX: null,
+            descentPlotO: null,
+          },
+        ]}
+        variant="active"
+        emptyMessage="empty"
+      />
+    );
+
+    expect(screen.getAllByText('-')).toHaveLength(3);
+  });
 });
