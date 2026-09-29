@@ -92,6 +92,32 @@ describe('VerificationMethodComponent', () => {
     );
   });
 
+  it('shows a phone validation error on an invalid submit attempt', async () => {
+    renderScreen({ username: 'nurse1' });
+
+    // Submit button stays disabled while the phone is invalid — fireEvent.submit
+    // bypasses that the same way a real form submit key (Enter) would. The
+    // field defaults to a bare "+91" (dial code only), which fails the
+    // regex check per forgot-username.validation.ts's PHONE_REGEX comment
+    // (this schema is reused verbatim here).
+    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+
+    expect(
+      await screen.findByText('Please enter valid mobile number')
+    ).toBeInTheDocument();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('shows an email validation error on an invalid submit attempt', async () => {
+    renderScreen({ username: 'nurse1' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
+    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+
+    expect(await screen.findByText('Please enter email')).toBeInTheDocument();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
   it('the email tab submits otpFor: "password" with the email field — auth-gateway supports email for password reset too', async () => {
     renderScreen({ username: 'nurse1' });
 

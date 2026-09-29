@@ -77,6 +77,18 @@ describe('SetupNewPasswordComponent', () => {
     expect(newPassword.value).toBe(confirmPassword.value);
   });
 
+  it('shows a required-field error when submitted with both password fields empty', async () => {
+    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Password' }));
+
+    // Both password and confirmPassword share the same "required" message,
+    // so this renders twice — one per field.
+    const errors = await screen.findAllByText('Please enter password');
+    expect(errors).toHaveLength(2);
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
   it('shows a mismatch error when password and confirmPassword differ', async () => {
     renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
 

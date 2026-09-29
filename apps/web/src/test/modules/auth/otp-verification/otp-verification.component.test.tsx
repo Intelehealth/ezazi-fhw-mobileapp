@@ -88,6 +88,20 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
     });
   });
 
+  it('stays at 0 (does not go negative) once the countdown has already elapsed', () => {
+    vi.useFakeTimers();
+    renderScreen({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' });
+
+    act(() => {
+      // Past the 60s the countdown needs to reach 0 — the extra 5s exercises
+      // the interval's "stay at 0" tick instead of just the tick that first
+      // reaches it.
+      vi.advanceTimersByTime(65_000);
+    });
+
+    expect(screen.getByRole('button', { name: 'Resend' })).toBeInTheDocument();
+  });
+
   it('verifies with phoneNumber/countryCode/otp and navigates to setup-new-password with the returned userUuid + resetToken', async () => {
     verifyOtpMutate.mockImplementation((_vars, { onSuccess }) =>
       onSuccess({ verified: true, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 })
@@ -120,6 +134,21 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
       await screen.findByText('setup-new-password-screen')
     ).toBeInTheDocument();
     expect(showToast).not.toHaveBeenCalled();
+  });
+});
+
+describe('OtpVerificationComponent — validation', () => {
+  it('shows an OTP validation error on an invalid submit attempt', async () => {
+    renderScreen({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' });
+
+    // The Verify button stays disabled until all 6 digits are filled (see
+    // the "verifies with phoneNumber/countryCode/otp" test) — fireEvent.submit
+    // bypasses that disabled state, exercising react-hook-form's own
+    // validation on an empty otp field.
+    fireEvent.submit(screen.getByRole('button', { name: 'Verify' }).closest('form')!);
+
+    expect(await screen.findByText('Please enter otp')).toBeInTheDocument();
+    expect(verifyOtpMutate).not.toHaveBeenCalled();
   });
 });
 
