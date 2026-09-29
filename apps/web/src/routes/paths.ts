@@ -20,6 +20,7 @@ export const ROUTES = {
   // aren't migrated to apps/web yet.
   DASHBOARD: '/dashboard',
   DASHBOARD_HW_PROFILE: '/dashboard/hw-profile',
+  DASHBOARD_PROFILE: '/dashboard/profile',
   NOT_FOUND: '*',
 } as const;
 
