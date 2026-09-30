@@ -45,4 +45,11 @@ export const env = {
   RECAPTCHA_SITE_KEY:
     import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
     '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+  // Sub-path this app is served under when deployed behind a reverse proxy
+  // (e.g. '/doctor-portal') — routes/app.routes.tsx's router `basename` and
+  // vite.config.ts's own `base` both key off this. Empty string (the
+  // default) means "served from the domain root", not "unconfigured" —
+  // unlike the URL fields above, there's no meaningful "broken" state for
+  // an unset base path.
+  BASE_PATH: import.meta.env.VITE_BASE_PATH || '',
 } as const;

@@ -87,4 +87,16 @@ describe('env', () => {
       expect(env[envKey]).toBe('');
     }
   );
+
+  it('prefers an explicit VITE_BASE_PATH over the root-path default', async () => {
+    vi.stubEnv('VITE_BASE_PATH', '/doctor-portal');
+    const { env } = await import('../../config/env');
+    expect(env.BASE_PATH).toBe('/doctor-portal');
+  });
+
+  it('falls back to an empty string (served from the domain root) when VITE_BASE_PATH is unset', async () => {
+    vi.stubEnv('VITE_BASE_PATH', undefined);
+    const { env } = await import('../../config/env');
+    expect(env.BASE_PATH).toBe('');
+  });
 });

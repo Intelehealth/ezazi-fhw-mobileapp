@@ -45,6 +45,13 @@ export default defineConfig(({ mode }) => {
     };
   }
 
+  // Matches src/config/env.ts's BASE_PATH: the sub-path this app is served
+  // under behind a reverse proxy (e.g. VITE_BASE_PATH=/doctor-portal ->
+  // base '/doctor-portal/'), defaulting to root when unset.
+  const basePath = env.VITE_BASE_PATH
+    ? `${env.VITE_BASE_PATH.replace(/\/$/, '')}/`
+    : '/';
+
   return {
     base: basePath,
     plugins: [react(), tailwindcss()],
