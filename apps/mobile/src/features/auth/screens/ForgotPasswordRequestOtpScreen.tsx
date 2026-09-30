@@ -1,0 +1,271 @@
+import React, { useMemo, useRef, useState } from 'react';
+import { StyleSheet, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { RootStackParamList } from '@/navigation/types';
+import { ForgotPasswordHeader } from '@/features/auth/components/ForgotPasswordHeader';
+import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
+import {
+  createForgotPasswordRequestFormSchema,
+  PHONE_REGEX,
+  type ForgotPasswordRequestFormValues,
+} from '@/features/auth/domain/forgotPasswordRequestForm.schema';
+import { ApiErrorBanner } from '@/core/ui/ApiErrorBanner';
+import { AppButton } from '@/core/ui/AppButton';
+import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
+import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
+import { commonStyles } from '@/core/ui/commonStyles';
+import { clientConfig } from '@/core/config/clients';
+import { colors, dimens } from '@/core/config/theme';
+import { env } from '@/core/config/env';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { logger } from '@/core/utils/logger';
+import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordRequest'>;
+
+export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { t } = useTranslation();
+  const { origin } = route.params;
+  const { isTablet, fs, cornerRadius, scale } = useResponsive();
+  const requestOtp = usePasswordResetStore(s => s.requestOtp);
+
+  // Window Y of the phone-number row, so ForgotPasswordHeader's shield can
+  // land its bottom edge exactly on this row's top border — see the
+  // shieldTop comment in ForgotPasswordHeader for why this is measured
+  // rather than a tuned constant.
+  const phoneRowRef = useRef<View>(null);
+  const [phoneRowY, setPhoneRowY] = useState<number | null>(null);
+
+  const [banner, setBanner] = useState<ErrorBanner | null>(null);
+
+  const schema = useMemo(() => createForgotPasswordRequestFormSchema(t), [t]);
+  const {
+    control,
+    handleSubmit,
+    clearErrors,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordRequestFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { phoneNumber: '' },
+    // Validate only on submit — re-run only clears/replaces the error for a
+    // field once it's already errored, never live-validates as you type.
+    reValidateMode: 'onSubmit',
+  });
+
+  const onValidSubmit = async (data: ForgotPasswordRequestFormValues) => {
+    const phoneNumber = data.phoneNumber.trim();
+    // Bare digits, no "+" — matches the legacy CountryCodePicker.getSelectedCountryCode()
+    // value the real auth-gateway expects (confirmed via its VALIDATION_ERROR field names).
+    const countryCode = clientConfig.phone.dialCode.replace('+', '');
+
+    // Console-only — the exact URL + body being sent, since the request
+    // body itself is assembled inside passwordApi.requestOtp (otpFor/source
+    // are baked in there, not visible from this call site otherwise).
+    logger.debug('[ForgotPassword] requestOtp request', {
+      url: `${env.AUTH_GATEWAY_URL}/auth/requestOtp`,
+      body: { otpFor: 'password', phoneNumber, countryCode, source: 'mobile' },
+    });
+
+    const result = await requestOtp({ phoneNumber, countryCode });
+
+    if (!result.ok) {
+      // Console-only — never shown on screen. Visible via `adb logcat` /
+      // the Metro terminal even when you can't see this session's console.
+      logger.debug('[ForgotPassword] requestOtp failed', result.error);
+      setBanner(getApiErrorBanner(result.error, t, 'forgotPassword.request.errors'));
+      return;
+    }
+
+    // Console-only. The legacy Android app also gated on `role === "Nurse"`
+    // here, but this backend's actual response is just
+    // `{ message: "If the account exists, an OTP has been sent." }` —
+    // no userUuid/role at all (confirmed live 2026-09-17, deliberately
+    // account-existence-preserving). There's nothing to gate on any more;
+    // any successful response proceeds to OTP verification.
+    logger.debug('[ForgotPassword] requestOtp response', result.data);
+
+    // replace, not navigate — Request is a spent step once OTP is sent, so
+    // Verify's back button should land on Setup/Login, not back on Request.
+    navigation.replace('ForgotPasswordVerify', { phoneNumber, countryCode, origin });
+  };
+
+  // isSubmitting guard: onSubmitEditing (keyboard "done") bypasses AppButton's
+  // disabled state, so re-entrance is blocked here too.
+  const handleContinue = () => {
+    if (isSubmitting) return;
+    setBanner(null);
+    void handleSubmit(onValidSubmit)();
+  };
+
+  const isFormValid = PHONE_REGEX.test(watch('phoneNumber').trim());
+
+  return (
+    <FormScreenLayout
+      header={
+        <ForgotPasswordHeader
+          title={t('forgotPassword.request.heading')}
+          subtitle={t('forgotPassword.request.instruction')}
+          onBack={() => navigation.goBack()}
+          firstFieldY={phoneRowY}
+        />
+      }
+      contentStyle={styles.content}
+    >
+      {/* MOBILE NUMBER — uppercase field label (Figma) */}
+      <Text style={[styles.fieldLabel, { fontSize: fs('label') }]}>
+        {t('forgotPassword.request.phoneLabel')}
+      </Text>
+
+      {/* ── Country picker + phone input row ── */}
+      <View
+        ref={phoneRowRef}
+        style={styles.phoneRow}
+        onLayout={() => {
+          phoneRowRef.current?.measureInWindow((_x, y) => setPhoneRowY(y));
+        }}
+      >
+        <View
+          style={[
+            styles.countryCard,
+            { borderRadius: cornerRadius },
+            isTablet && { paddingHorizontal: scale(14) },
+          ]}
+        >
+          <Text style={styles.flag}>{clientConfig.phone.flag}</Text>
+          <Text style={[styles.countryCode, { fontSize: fs('input') }]}>
+            {clientConfig.phone.dialCode}
+          </Text>
+          <View style={styles.countryChevron}>
+            <AppIcon name="chevronDown" size={16} color={colors.darkGray} />
+          </View>
+        </View>
+
+        <View style={styles.flex1}>
+          <View
+            style={[
+              styles.phoneInputWrapper,
+              { borderRadius: cornerRadius },
+              !!errors.phoneNumber && styles.phoneInputError,
+            ]}
+          >
+            <Controller
+              control={control}
+              name="phoneNumber"
+              render={({ field: { value, onChange } }) => (
+                <TextInput
+                  style={[styles.phoneInput, { fontSize: fs('input') }]}
+                  placeholder={t('forgotPassword.request.phonePlaceholder')}
+                  placeholderTextColor={colors.placeholder}
+                  value={value}
+                  onChangeText={(text) => {
+                    onChange(text.replace(/[^0-9]/g, ''));
+                    if (errors.phoneNumber) clearErrors('phoneNumber');
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={clientConfig.phone.numberLength}
+                  returnKeyType="done"
+                  onSubmitEditing={handleContinue}
+                />
+              )}
+            />
+          </View>
+
+          {!!errors.phoneNumber && (
+            <Text style={[commonStyles.errorText, styles.errorText, { fontSize: fs('error') }]}>
+              {errors.phoneNumber.message}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* ── API error banner — network/server failures from requestOtp ── */}
+      {!!banner && <ApiErrorBanner banner={banner} />}
+
+      <AppButton
+        label={t('forgotPassword.request.submit')}
+        onPress={handleContinue}
+        disabled={!isFormValid || isSubmitting}
+        style={styles.button}
+      />
+    </FormScreenLayout>
+  );
+};
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  flex1: { flex: 1 },
+
+  content: {
+    paddingTop: 40,
+  },
+
+  fieldLabel: {
+    color: colors.fieldLabel,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: dimens.labelGap,
+  },
+
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems:    'stretch',
+    gap:           16,
+  },
+
+  button: {
+    marginTop: 48,
+  },
+
+  countryCard: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    backgroundColor:   colors.inputBg,
+    paddingHorizontal: 10,
+    height:            dimens.inputHeight,
+  },
+
+  flag: {
+    fontSize:    20,
+    marginRight: 4,
+  },
+
+  countryCode: {
+    color:      colors.textPrimary,
+    fontWeight: '500',
+  },
+
+  countryChevron: {
+    marginLeft: 2,
+  },
+
+  phoneInputWrapper: {
+    flex:              1,
+    borderWidth:       1,
+    borderColor:       colors.inputBorder,
+    backgroundColor:   colors.white,
+    minHeight:         dimens.inputHeight,
+    justifyContent:    'center',
+    paddingHorizontal: 14,
+  },
+
+  phoneInputError: {
+    borderColor: colors.error,
+  },
+
+  phoneInput: {
+    color:      colors.textPrimary,
+    padding:    0,
+    fontFamily: 'Lato_400Regular',
+  },
+
+  errorText: {
+    marginTop: 4,
+  },
+});

@@ -1,0 +1,8 @@
+{
+  "auth": {
+    "loginTitle": "Log in",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Log in"
+  }
+}
