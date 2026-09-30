@@ -1,0 +1,107 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ApiError } from '@ezazi/api-client';
+import { profileService } from '../../services/profile.service';
+import { showToast } from '../../services/toast';
+import { ATTRIBUTE_FIELD_MAP } from '../../modules/dashboard/profile/profile.attribute-map';
+import type { ProfileFormValues } from '../../modules/dashboard/profile/profile.validation';
+
+export interface UpdateProviderProfileInput {
+  values: ProfileFormValues;
+  providerUuid: string;
+  personUuid: string;
+  preferredNameUuid: string | null;
+  attributeTypeUuidByField: Partial<Record<string, string>>;
+  existingAttributeUuidByField: Partial<Record<string, string>>;
+}
+
+/** Whole years between `birthdate` (YYYY-MM-DD) and today — same computation profile.component.tsx's readonly Age field displays. */
+function computeAge(birthdate: string): number {
+  const dob = new Date(birthdate);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+/**
+ * Ports profile.component.ts's updateProfile(): a person update (gender/
+ * age/birthdate), a person-name create-or-update, and then every dynamic
+ * field as a provider-attribute create-or-update — the last group fired in
+ * parallel, mirroring ProviderService.requestDataFromMultipleSources's
+ * forkJoin. Fields whose attribute type didn't come back from
+ * getProviderAttributeTypes (no `attributeTypeUuidByField` entry) are
+ * skipped rather than failing the whole save — that vocabulary is
+ * server-defined and this app doesn't control it.
+ */
+async function performUpdate(input: UpdateProviderProfileInput): Promise<void> {
+  const {
+    values,
+    providerUuid,
+    personUuid,
+    preferredNameUuid,
+    attributeTypeUuidByField,
+    existingAttributeUuidByField,
+  } = input;
+
+  const personResult = await profileService.updatePerson(personUuid, {
+    gender: values.gender,
+    age: computeAge(values.birthdate),
+    birthdate: values.birthdate,
+  });
+  if (!personResult.ok) throw personResult.error;
+
+  const nameResult = await profileService.savePersonName(
+    personUuid,
+    {
+      givenName: values.givenName,
+      middleName: values.middleName,
+      familyName: values.familyName,
+      preferred: true,
+      prefix: null,
+    },
+    preferredNameUuid ?? undefined
+  );
+  if (!nameResult.ok) throw nameResult.error;
+
+  const attributeResults = await Promise.all(
+    ATTRIBUTE_FIELD_MAP.map(({ field }) => {
+      const attributeTypeUuid = attributeTypeUuidByField[field];
+      if (!attributeTypeUuid) return null;
+
+      return profileService.addOrUpdateProviderAttribute(
+        providerUuid,
+        attributeTypeUuid,
+        values[field] ?? '',
+        existingAttributeUuidByField[field]
+      );
+    })
+  );
+
+  for (const result of attributeResults) {
+    if (result && !result.ok) throw result.error;
+  }
+}
+
+export function useUpdateProviderProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error | ApiError, UpdateProviderProfileInput>({
+    mutationFn: performUpdate,
+    onSuccess: () => {
+      showToast(
+        'Profile Updated',
+        'Your profile has been saved successfully.',
+        'success'
+      );
+      // Re-fetches the provider, matching profile.component.ts's own
+      // refresh-after-save (see useProviderProfile's query key).
+      void queryClient.invalidateQueries({ queryKey: ['provider-profile'] });
+    },
+    onError: error => {
+      showToast('Update Failed', error.message, 'error');
+    },
+  });
+}

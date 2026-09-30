@@ -17,7 +17,9 @@ function LoginProbe() {
 
 function renderScreen(state: Record<string, unknown> | undefined) {
   return render(
-    <MemoryRouter initialEntries={[{ pathname: '/auth/setup-new-password', state }]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/auth/setup-new-password', state }]}
+    >
       <Routes>
         <Route
           path="/auth/setup-new-password"
@@ -57,13 +59,19 @@ describe('SetupNewPasswordComponent', () => {
     const avatar = container.querySelector(
       'img[src*="personimage"]'
     ) as HTMLImageElement;
-    expect(avatar.src).toContain('/mock-api/personimage/u-1');
+    // Matches the reference app's real OpenMRS personimage call — see
+    // setup-new-password.component.tsx's own note on getOpenMrsBaseUrl.
+    expect(avatar.src).toContain('/personimage/u-1');
     fireEvent.error(avatar);
     expect(avatar.src).toBe(userIcon);
   });
 
   it('fills both password fields and shows the Excellent strength label when "Generate password" is clicked', () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
+    renderScreen({
+      username: 'nurse1',
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate password' }));
 
@@ -78,7 +86,11 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('shows a required-field error when submitted with both password fields empty', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
+    renderScreen({
+      username: 'nurse1',
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset Password' }));
 
@@ -90,11 +102,18 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('shows a mismatch error when password and confirmPassword differ', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
-
-    fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
-      target: { value: 'Abcdefg1' },
+    renderScreen({
+      username: 'nurse1',
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
     });
+
+    fireEvent.input(
+      screen.getByPlaceholderText('Enter or generate new password'),
+      {
+        target: { value: 'Abcdefg1' },
+      }
+    );
     fireEvent.input(screen.getByPlaceholderText('Re-enter new password'), {
       target: { value: 'Different1' },
     });
@@ -107,11 +126,18 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('warns via toast (not blocking) when the password lacks complexity, without calling resetPassword', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
-
-    fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
-      target: { value: 'plainpass' },
+    renderScreen({
+      username: 'nurse1',
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
     });
+
+    fireEvent.input(
+      screen.getByPlaceholderText('Enter or generate new password'),
+      {
+        target: { value: 'plainpass' },
+      }
+    );
     fireEvent.input(screen.getByPlaceholderText('Re-enter new password'), {
       target: { value: 'plainpass' },
     });
@@ -128,11 +154,18 @@ describe('SetupNewPasswordComponent', () => {
   });
 
   it('calls resetPassword with userUuid + newPassword + resetToken once complexity and match both pass', async () => {
-    renderScreen({ username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' });
-
-    fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
-      target: { value: 'Abcdefg1$' },
+    renderScreen({
+      username: 'nurse1',
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
     });
+
+    fireEvent.input(
+      screen.getByPlaceholderText('Enter or generate new password'),
+      {
+        target: { value: 'Abcdefg1$' },
+      }
+    );
     fireEvent.input(screen.getByPlaceholderText('Re-enter new password'), {
       target: { value: 'Abcdefg1$' },
     });

@@ -19,10 +19,10 @@ export interface SidebarNavItem {
  * main-container.component.html's `<ul class="admin-nav">` entries — the
  * system-admin-only rows (Ayu/Support/Report/User Creation) and the
  * nurse-vs-doctor profile-route split are left out, since neither role
- * branching nor those admin pages exist in this app yet. Only Dashboard
- * actually routes anywhere so far; My Profile/Change Password/Help are
- * kept as real nav rows (matching the reference UI) but point nowhere
- * until dashboard/profile.page.tsx and friends are migrated.
+ * branching nor those admin pages exist in this app yet. Dashboard and My
+ * Profile route to real pages; Change Password/Help are kept as real nav
+ * rows (matching the reference UI) but point nowhere until their own
+ * pages are migrated.
  */
 export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
   {
@@ -33,7 +33,7 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
   },
   {
     label: 'My Profile',
-    path: `${ROUTES.DASHBOARD}/profile`,
+    path: ROUTES.DASHBOARD_PROFILE,
     iconDefault: userBlue,
     iconActive: userWhite,
   },

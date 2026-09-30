@@ -8,6 +8,7 @@ import { PasswordStrengthMeterComponent } from '../../../components/auth/passwor
 import { NextButtonComponent } from '../../../components/auth/next-button.component';
 import { useResetPassword } from '../../../hooks/mutations/useResetPassword';
 import { ROUTES } from '../../../routes/paths';
+import { getOpenMrsBaseUrl } from '../../../services/http';
 import { showToast } from '../../../services/toast';
 import { generatePassword } from '../../../utils/generate-password';
 import {
@@ -23,11 +24,6 @@ import {
 } from './setup-new-password.validation';
 
 const LOGIN_PATH = `${ROUTES.AUTH.BASE}/${ROUTES.AUTH.LOGIN}`;
-// No real personimage endpoint exists yet — this relative path deliberately
-// 404s against apps/web's own origin (never leaves localhost) so the <img>
-// onError fallback below to assets/svgs/user.svg is exercised, matching
-// setup-new-password.component.ts's onImgError.
-const AVATAR_BASE_PATH = '/mock-api/personimage';
 
 interface SetupNewPasswordLocationState {
   username?: string;
@@ -98,7 +94,11 @@ export function SetupNewPasswordComponent() {
     }
 
     resetPassword(
-      { userUuid: safeUserUuid, newPassword: values.password, resetToken: safeResetToken },
+      {
+        userUuid: safeUserUuid,
+        newPassword: values.password,
+        resetToken: safeResetToken,
+      },
       { onSuccess: () => navigate(LOGIN_PATH) }
     );
   }
@@ -115,7 +115,11 @@ export function SetupNewPasswordComponent() {
       <div className="mb-4 flex items-center">
         <img
           className="h-12 w-12 rounded-full"
-          src={`${AVATAR_BASE_PATH}/${userUuid}`}
+          // Matches setup-new-password.component.html's own
+          // `baseUrl + '/personimage/' + userUuid` — a real OpenMRS call,
+          // not a mock; see getOpenMrsBaseUrl's own note on why the raw
+          // env.OPENMRS_URL isn't used directly here either.
+          src={`${getOpenMrsBaseUrl()}/personimage/${userUuid}`}
           alt=""
           onError={e => {
             e.currentTarget.onerror = null;

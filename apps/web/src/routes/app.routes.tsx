@@ -33,6 +33,9 @@ const SetupNewPasswordPage = lazy(
   () => import('../pages/auth/setup-new-password/setup-new-password.page')
 );
 const DashboardPage = lazy(() => import('../pages/dashboard/dashboard.page'));
+const ProfilePage = lazy(
+  () => import('../pages/dashboard/profile/profile.page')
+);
 const NotFoundPage = lazy(() => import('../pages/not-found/not-found.page'));
 
 /**
@@ -121,6 +124,14 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<RouteLoader />}>
               <DashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.DASHBOARD_PROFILE}
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <ProfilePage />
             </Suspense>
           }
         />

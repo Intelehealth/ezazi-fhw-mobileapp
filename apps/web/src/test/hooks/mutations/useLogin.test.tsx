@@ -4,16 +4,21 @@ import { configureStore } from '@reduxjs/toolkit';
 import { renderHook, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { success } from '@ezazi/api-client';
 import { rootReducer } from '../../../reducers';
 import { useLogin } from '../../../hooks/mutations/useLogin';
 import { authService } from '../../../services/auth.service';
+import { profileService } from '../../../services/profile.service';
 import { showToast } from '../../../services/toast';
 import type { AuthGatewayLoginResponse } from '../../../types/auth.types';
 
 vi.mock('../../../services/auth.service', () => ({
   authService: { login: vi.fn() },
+}));
+
+vi.mock('../../../services/profile.service', () => ({
+  profileService: { createSession: vi.fn() },
 }));
 
 vi.mock('../../../services/toast', () => ({ showToast: vi.fn() }));
@@ -60,6 +65,13 @@ function gatewayResponse(
 }
 
 describe('useLogin', () => {
+  beforeEach(() => {
+    vi.mocked(profileService.createSession).mockReset();
+    vi.mocked(profileService.createSession).mockResolvedValue(
+      success({ sessionId: 'sess-1', authenticated: true })
+    );
+  });
+
   it('persists the token and redirects to the plain dashboard for a non-nurse role', async () => {
     vi.mocked(authService.login).mockResolvedValue(success(gatewayResponse()));
 
@@ -68,11 +80,41 @@ describe('useLogin', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(localStorage.getItem('ezazi_web_auth_token')).toBe('tok-123');
+    expect(JSON.parse(localStorage.getItem('ezazi_web_auth_user')!)).toEqual(
+      result.current.data?.user
+    );
     expect(result.current.data?.user.displayName).toBe('Demo Male Doctor');
     expect(result.current.data?.user.roles).toEqual([
       'ORGANIZATIONAL: DOCTOR',
       'PROVIDER',
     ]);
+  });
+
+  it('establishes the OpenMRS session cookie with the plaintext credentials right after a successful gateway login', async () => {
+    vi.mocked(authService.login).mockResolvedValue(success(gatewayResponse()));
+
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    act(() => result.current.mutate(CREDENTIALS));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(profileService.createSession).toHaveBeenCalledWith(
+      CREDENTIALS.username,
+      CREDENTIALS.password
+    );
+  });
+
+  it('still succeeds when the OpenMRS session call fails — best-effort, not fatal to a gateway-approved login', async () => {
+    const { ApiError } = await import('@ezazi/api-client');
+    vi.mocked(authService.login).mockResolvedValue(success(gatewayResponse()));
+    vi.mocked(profileService.createSession).mockResolvedValue({
+      ok: false,
+      error: new ApiError('network', 'OpenMRS unreachable'),
+    });
+
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    act(() => result.current.mutate(CREDENTIALS));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it("shows a success toast matching login.component.ts's copy on successful login", async () => {

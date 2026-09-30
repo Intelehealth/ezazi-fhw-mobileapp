@@ -43,6 +43,67 @@ export const publicHttpClient: AxiosInstance = createApiClient({
 });
 
 /**
+ * Same dev-proxy-vs-real-host choice openMrsHttpClient's baseURL makes
+ * below, exported for the one direct (non-axios) OpenMRS request in the
+ * app: the profile photo `<img src>` (useProviderProfile.ts). That request
+ * carries no Authorization header either way (browsers never attach one to
+ * a plain `<img>` fetch) — it authenticates via the OpenMRS session cookie
+ * alone, same as openMrsHttpClient's other calls, and cookies are only
+ * sent for cross-site subresource requests at all when SameSite policy
+ * allows it. Routing through the same-origin dev proxy sidesteps that
+ * question entirely in dev, same as it does for CORS.
+ */
+export function getOpenMrsBaseUrl(): string {
+  return import.meta.env.MODE === 'development'
+    ? '/openmrs-api'
+    : env.OPENMRS_URL;
+}
+
+/**
+ * The OpenMRS REST API itself (env.OPENMRS_URL, NOT env.PORTAL_URL — see
+ * that constant's own note in config/env.ts). profile.component.ts's
+ * provider/person/attribute CRUD (services/profile.service.ts) lives here,
+ * a different backend than httpClient's auth-gateway.
+ *
+ * Deliberately NOT given a getAuthToken/Bearer interceptor, unlike this
+ * file's other authenticated clients: confirmed against
+ * intelehealth-doctor-webapp's own JwtInterceptor, which explicitly
+ * excludes any `/openmrs/ws/rest/` URL from its Bearer header. OpenMRS has
+ * no component that verifies this app's auth-gateway JWT (it's a private
+ * credential meaningful only to that gateway) — attaching it here would be
+ * dead weight at best, and a bad Authorization header on a cross-origin
+ * request is exactly what turns a simple CORS-eligible GET into one that
+ * needs (and can fail) a preflight. Auth instead rides an OpenMRS session
+ * cookie, same as the reference app: `withCredentials: true` below, and the
+ * cookie itself is established by profile.service.ts's createSession
+ * (Basic-auth to OpenMRS's own /session) right after every gateway login —
+ * see hooks/mutations/useLogin.ts.
+ *
+ * In dev mode this is routed through vite.config.ts's '/openmrs-api' proxy
+ * instead of calling env.OPENMRS_URL directly, so the cookie is same-origin
+ * too. `MODE === 'development'` (not `env.APP_ENV`) so this matches
+ * vite.config's own proxy-enablement check exactly and leaves `vitest run`
+ * (MODE 'test') calling env.OPENMRS_URL directly, same as this file's other
+ * clients.
+ */
+export const openMrsHttpClient: AxiosInstance = createApiClient({
+  baseURL: getOpenMrsBaseUrl(),
+});
+openMrsHttpClient.defaults.withCredentials = true;
+
+/**
+ * Authenticated client — the separate Node "mindmap" service
+ * (env.MINDMAP_URL) that only backs the profile feature's email/phone
+ * "already exists" check (services/profile.service.ts's
+ * validateProviderAttribute).
+ */
+export const mindmapHttpClient: AxiosInstance = createApiClient({
+  baseURL: env.MINDMAP_URL,
+  getAuthToken: () => storage.getAuthToken(),
+  onUnauthorized: () => handleUnauthorized(),
+});
+
+/**
  * Auth-gateway calls made before any session exists — the password-recovery
  * OTP flow (requestOtp/verifyOtp/resetPassword). Same baseURL as httpClient,
  * but deliberately WITHOUT its getAuthToken/onUnauthorized: there's no bearer

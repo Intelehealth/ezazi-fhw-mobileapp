@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import searchIcon from '../../assets/svgs/search-icon.svg';
 import userIcon from '../../assets/svgs/user.svg';
+import { ROUTES } from '../../routes/paths';
 
 interface AppHeaderComponentProps {
   userName: string;
@@ -15,7 +17,10 @@ interface AppHeaderComponentProps {
  * notification service neither of which exist in this app yet (this pass
  * is UI-only — see dashboard.component.tsx's own note).
  */
-export function AppHeaderComponent({ userName, avatarUrl }: AppHeaderComponentProps) {
+export function AppHeaderComponent({
+  userName,
+  avatarUrl,
+}: AppHeaderComponentProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
@@ -44,7 +49,10 @@ export function AppHeaderComponent({ userName, avatarUrl }: AppHeaderComponentPr
         >
           🔔
         </button>
-        <div className="flex items-center gap-3">
+        {/* Ports main-container.component.html's greeting-links-to-profile
+            behavior — the avatar + "Hello, {name}" both route to My Profile,
+            same destination as the sidebar's own profile row. */}
+        <Link to={ROUTES.DASHBOARD_PROFILE} className="flex items-center gap-3">
           <img
             src={avatarUrl ?? userIcon}
             onError={e => {
@@ -56,7 +64,7 @@ export function AppHeaderComponent({ userName, avatarUrl }: AppHeaderComponentPr
           <h6 className="mb-0 text-base font-bold whitespace-nowrap">
             Hello, {userName} 👋
           </h6>
-        </div>
+        </Link>
       </div>
     </nav>
   );

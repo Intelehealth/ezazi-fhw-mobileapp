@@ -34,6 +34,8 @@ function mockIsAuthenticated(isAuthenticated: boolean) {
               username: 'doctor1',
               displayName: 'Demo Male Doctor',
               roles: [],
+              providerUuid: 'p-1',
+              personUuid: 'per-1',
             }
           : null,
         token: null,

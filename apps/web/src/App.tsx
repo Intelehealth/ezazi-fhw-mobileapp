@@ -8,10 +8,10 @@ import { AppRoutes } from './routes/app.routes';
 
 function App() {
   // Config fetch-on-boot (migration guide §5) is disabled for now — no one
-  // is working on the config module yet and it was just hitting the
-  // placeholder example.org config URL (see @ezazi/config's DEFAULT_SERVERS)
-  // on every boot. Re-enable by uncommenting the import above and the call
-  // below once that module is actually being worked on.
+  // is working on the config module yet and CONFIG_URL isn't a confirmed
+  // real host (env.ts leaves it empty until it is), so this was just
+  // hitting nothing on every boot. Re-enable by uncommenting the import
+  // above and the call below once that module is actually being worked on.
   // useAppConfig();
 
   return (

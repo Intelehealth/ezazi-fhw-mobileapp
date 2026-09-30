@@ -4,6 +4,7 @@ import type { ApiError } from '@ezazi/api-client';
 import { loginSuccess } from '../../reducers/auth.reducer';
 import { resolvePostLoginPath } from '../../routes/paths';
 import { authService } from '../../services/auth.service';
+import { profileService } from '../../services/profile.service';
 import { showToast } from '../../services/toast';
 import { useAppDispatch } from '../../store/hooks';
 import type {
@@ -27,6 +28,8 @@ function toAuthUser(response: AuthGatewayLoginResponse): AuthUser {
     username: response.user.username,
     displayName: response.provider.display,
     roles: response.user.roles.map(role => role.toUpperCase()),
+    providerUuid: response.provider.uuid,
+    personUuid: response.provider.person.uuid,
   };
 }
 
@@ -62,6 +65,20 @@ async function performLogin(
     throw new Error("Couldn't find you, credentials provided are wrong.");
   }
 
+  // Establishes the OpenMRS session cookie that openMrsHttpClient rides for
+  // the doctor-profile feature (see that client's own note in services/http.ts)
+  // — the gateway JWT above is a separate, unrelated credential OpenMRS can't
+  // verify. Best-effort: a failure here (e.g. OpenMRS unreachable) shouldn't
+  // block a login that the auth-gateway itself already approved, only degrade
+  // the profile page until the user retries.
+  const sessionResult = await profileService.createSession(
+    credentials.username,
+    credentials.password
+  );
+  if (!sessionResult.ok) {
+    console.warn('Failed to establish OpenMRS session:', sessionResult.error);
+  }
+
   return { token: result.data.accessToken, user: toAuthUser(result.data) };
 }
 
@@ -78,6 +95,7 @@ export function useLogin() {
     mutationFn: performLogin,
     onSuccess: ({ token, user }) => {
       storage.setAuthToken(token);
+      storage.setStoredUser(JSON.stringify(user));
       dispatch(loginSuccess({ token, user }));
       showToast(
         'Login Successful',
