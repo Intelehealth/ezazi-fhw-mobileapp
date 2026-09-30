@@ -13,7 +13,7 @@ jest.mock('@/features/auth/stores/passwordReset.store', () => ({
 function renderScreen() {
   const navigation = { goBack: mockGoBack, reset: mockReset } as never;
   const route = {
-    params: { userUuid: 'u-1', resetToken: 'reset-jwt', origin: 'Setup' as const },
+    params: { userUuid: 'u-1', resetToken: 'fixture-reset-token', origin: 'Setup' as const },
   } as never;
   return render(<ForgotPasswordResetScreen navigation={navigation} route={route} />);
 }
@@ -41,8 +41,8 @@ describe('ForgotPasswordResetScreen', () => {
   it('enables Reset Password once both fields hold a matching, valid password', () => {
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Doctor@123');
-    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Doctor@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Fixture@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Fixture@123');
 
     expect(screen.getByRole('button', { name: 'Reset Password' }).props.accessibilityState.disabled).toBe(false);
   });
@@ -51,15 +51,15 @@ describe('ForgotPasswordResetScreen', () => {
     resetPassword.mockResolvedValue({ ok: true, data: {} });
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Doctor@123');
-    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Doctor@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Fixture@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Fixture@123');
     fireEvent.press(screen.getByRole('button', { name: 'Reset Password' }));
 
     await waitFor(() =>
       expect(resetPassword).toHaveBeenCalledWith({
         userUuid: 'u-1',
-        newPassword: 'Doctor@123',
-        resetToken: 'reset-jwt',
+        newPassword: 'Fixture@123',
+        resetToken: 'fixture-reset-token',
       }),
     );
     expect(await screen.findByText('Successful')).toBeTruthy();
@@ -72,8 +72,8 @@ describe('ForgotPasswordResetScreen', () => {
     });
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Doctor@123');
-    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Doctor@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Fixture@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Fixture@123');
     fireEvent.press(screen.getByRole('button', { name: 'Reset Password' }));
 
     expect(await screen.findByText('Something went wrong')).toBeTruthy();
@@ -85,8 +85,8 @@ describe('ForgotPasswordResetScreen', () => {
     resetPassword.mockResolvedValue({ ok: true, data: {} });
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Doctor@123');
-    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Doctor@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter new password'), 'Fixture@123');
+    fireEvent.changeText(screen.getByPlaceholderText('Re-enter new password'), 'Fixture@123');
     fireEvent.press(screen.getByRole('button', { name: 'Reset Password' }));
 
     fireEvent.press(await screen.findByRole('button', { name: 'Back to Login' }));

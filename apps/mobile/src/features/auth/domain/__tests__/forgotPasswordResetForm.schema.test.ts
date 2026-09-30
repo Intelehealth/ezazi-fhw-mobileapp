@@ -6,7 +6,7 @@ const NAMESPACE = 'forgotPassword.reset.errors';
 describe('PASSWORD_REGEX', () => {
 
   it('accepts a password with a digit, lower, upper, symbol and 8+ chars', () => {
-    expect(PASSWORD_REGEX.test('Nurse@1245')).toBe(true);
+    expect(PASSWORD_REGEX.test('Fixture@123')).toBe(true);
   });
 
   it('rejects a password under 8 characters', () => {
@@ -39,7 +39,7 @@ describe('createForgotPasswordResetFormSchema', () => {
 
   it('accepts matching, valid new/confirm passwords', () => {
     const schema = createForgotPasswordResetFormSchema(t);
-    const result = schema.safeParse({ newPassword: 'Nurse@1245', confirmPassword: 'Nurse@1245' });
+    const result = schema.safeParse({ newPassword: 'Fixture@123', confirmPassword: 'Fixture@123' });
     expect(result.success).toBe(true);
   });
 
@@ -65,7 +65,7 @@ describe('createForgotPasswordResetFormSchema', () => {
 
   it('reports confirmRequired for an empty confirm field', () => {
     const schema = createForgotPasswordResetFormSchema(t);
-    const result = schema.safeParse({ newPassword: 'Nurse@1245', confirmPassword: '' });
+    const result = schema.safeParse({ newPassword: 'Fixture@123', confirmPassword: '' });
     expect(result.success).toBe(false);
     if (!result.success) {
       const confirmIssue = result.error.issues.find(i => i.path[0] === 'confirmPassword');
@@ -75,7 +75,7 @@ describe('createForgotPasswordResetFormSchema', () => {
 
   it('reports noMatch when confirm differs from the new password', () => {
     const schema = createForgotPasswordResetFormSchema(t);
-    const result = schema.safeParse({ newPassword: 'Nurse@1245', confirmPassword: 'Nurse@9999' });
+    const result = schema.safeParse({ newPassword: 'Fixture@123', confirmPassword: 'Fixture@999' });
     expect(result.success).toBe(false);
     if (!result.success) {
       const confirmIssue = result.error.issues.find(i => i.path[0] === 'confirmPassword');

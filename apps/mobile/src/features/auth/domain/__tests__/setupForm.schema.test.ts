@@ -9,14 +9,14 @@ describe('createSetupFormSchema', () => {
     const result = schema.safeParse({
       location: 'Civil Hospital',
       username: 'nurse1',
-      password: 'password123',
+      password: 'fixture-pw1',
     });
     expect(result.success).toBe(true);
   });
 
   it('reports locationRequired for an empty location, namespaced under setup.errors', () => {
     const schema = createSetupFormSchema(t);
-    const result = schema.safeParse({ location: '', username: 'nurse1', password: 'password123' });
+    const result = schema.safeParse({ location: '', username: 'nurse1', password: 'fixture-pw1' });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].message).toBe('setup.errors.locationRequired');

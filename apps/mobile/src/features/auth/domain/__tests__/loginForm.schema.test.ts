@@ -6,7 +6,7 @@ describe('createLoginFormSchema', () => {
 
   it('accepts valid username/password', () => {
     const schema = createLoginFormSchema(t);
-    const result = schema.safeParse({ username: 'nurse1', password: 'password123' });
+    const result = schema.safeParse({ username: 'nurse1', password: 'fixture-pw1' });
     expect(result.success).toBe(true);
   });
 

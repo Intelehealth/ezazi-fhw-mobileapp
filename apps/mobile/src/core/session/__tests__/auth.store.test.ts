@@ -133,7 +133,7 @@ describe('useAuthStore', () => {
         },
       });
 
-      const result = await useAuthStore.getState().login('nurse1', 'password123');
+      const result = await useAuthStore.getState().login('nurse1', 'fixture-pw1');
 
       expect(result.ok).toBe(true);
       expect(secureStorage.set).toHaveBeenCalledWith('accessToken', 'access-1');

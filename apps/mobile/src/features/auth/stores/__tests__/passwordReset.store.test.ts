@@ -47,7 +47,7 @@ describe('usePasswordResetStore', () => {
     it('forwards params to passwordApi and returns a successful result as-is', async () => {
       const response = {
         ok: true,
-        data: { verified: true, userUuid: 'u-1', resetToken: 'reset-jwt', expiresIn: 600 },
+        data: { verified: true, userUuid: 'u-1', resetToken: 'fixture-reset-token', expiresIn: 600 },
       };
       (passwordApi.verifyOtp as jest.Mock).mockResolvedValue(response);
 
@@ -86,14 +86,14 @@ describe('usePasswordResetStore', () => {
 
       const result = await usePasswordResetStore.getState().resetPassword({
         userUuid: 'u-1',
-        newPassword: 'Nurse@1245',
-        resetToken: 'reset-jwt',
+        newPassword: 'Fixture@123',
+        resetToken: 'fixture-reset-token',
       });
 
       expect(passwordApi.resetPassword).toHaveBeenCalledWith({
         userUuid: 'u-1',
-        newPassword: 'Nurse@1245',
-        resetToken: 'reset-jwt',
+        newPassword: 'Fixture@123',
+        resetToken: 'fixture-reset-token',
       });
       expect(result).toEqual(response);
     });
@@ -104,8 +104,8 @@ describe('usePasswordResetStore', () => {
 
       const result = await usePasswordResetStore.getState().resetPassword({
         userUuid: 'u-1',
-        newPassword: 'Nurse@1245',
-        resetToken: 'reset-jwt',
+        newPassword: 'Fixture@123',
+        resetToken: 'fixture-reset-token',
       });
 
       expect(result).toEqual({ ok: false, error: apiError });

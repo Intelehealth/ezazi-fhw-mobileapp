@@ -39,10 +39,10 @@ describe('passwordApi', () => {
   });
 
   it('resetPassword() POSTs to /auth/resetPassword/:userUuid with newPassword and resetToken', () => {
-    passwordApi.resetPassword({ userUuid: 'u-1', newPassword: 'new-pass', resetToken: 'reset-jwt' });
+    passwordApi.resetPassword({ userUuid: 'u-1', newPassword: 'fixture-new-pw', resetToken: 'fixture-reset-token' });
     expect(http.post).toHaveBeenCalledWith('/auth/resetPassword/u-1', {
-      newPassword: 'new-pass',
-      resetToken: 'reset-jwt',
+      newPassword: 'fixture-new-pw',
+      resetToken: 'fixture-reset-token',
     });
   });
 

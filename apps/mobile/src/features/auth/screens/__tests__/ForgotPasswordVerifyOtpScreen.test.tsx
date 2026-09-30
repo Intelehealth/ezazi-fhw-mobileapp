@@ -13,7 +13,7 @@ jest.mock('@/features/auth/stores/passwordReset.store', () => ({
 function renderScreen() {
   const navigation = { replace: mockReplace, goBack: mockGoBack } as never;
   const route = {
-    params: { phoneNumber: '8208574727', countryCode: '91', origin: 'Setup' as const },
+    params: { phoneNumber: '9999999999', countryCode: '91', origin: 'Setup' as const },
   } as never;
   return render(<ForgotPasswordVerifyOtpScreen navigation={navigation} route={route} />);
 }
@@ -42,7 +42,7 @@ describe('ForgotPasswordVerifyOtpScreen', () => {
   it('renders the masked phone number and 6 OTP cells, with Verify OTP disabled until filled', () => {
     renderScreen();
 
-    expect(screen.getByText(/\*+727/)).toBeTruthy();
+    expect(screen.getByText(/\*+999/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Verify OTP' }).props.accessibilityState.disabled).toBe(true);
   });
 
@@ -63,7 +63,7 @@ describe('ForgotPasswordVerifyOtpScreen', () => {
   it('verifies the OTP and replaces with ForgotPasswordReset, carrying the resetToken', async () => {
     verifyOtp.mockResolvedValue({
       ok: true,
-      data: { verified: true, userUuid: 'u-1', resetToken: 'reset-jwt', expiresIn: 600 },
+      data: { verified: true, userUuid: 'u-1', resetToken: 'fixture-reset-token', expiresIn: 600 },
     });
     renderScreen();
 
@@ -71,7 +71,7 @@ describe('ForgotPasswordVerifyOtpScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Verify OTP' }));
 
     await waitFor(() =>
-      expect(verifyOtp).toHaveBeenCalledWith({ phoneNumber: '8208574727', countryCode: '91', otp: '123456' }),
+      expect(verifyOtp).toHaveBeenCalledWith({ phoneNumber: '9999999999', countryCode: '91', otp: '123456' }),
     );
     expect(await screen.findByText('OTP Verified')).toBeTruthy();
 
@@ -79,7 +79,7 @@ describe('ForgotPasswordVerifyOtpScreen', () => {
 
     expect(mockReplace).toHaveBeenCalledWith('ForgotPasswordReset', {
       userUuid: 'u-1',
-      resetToken: 'reset-jwt',
+      resetToken: 'fixture-reset-token',
       origin: 'Setup',
     });
   });
@@ -115,7 +115,7 @@ describe('ForgotPasswordVerifyOtpScreen', () => {
     fireEvent.press(resendLink);
 
     await waitFor(() =>
-      expect(requestOtp).toHaveBeenCalledWith({ phoneNumber: '8208574727', countryCode: '91' }),
+      expect(requestOtp).toHaveBeenCalledWith({ phoneNumber: '9999999999', countryCode: '91' }),
     );
     expect(await screen.findByText('Resend in 60s')).toBeTruthy();
   });

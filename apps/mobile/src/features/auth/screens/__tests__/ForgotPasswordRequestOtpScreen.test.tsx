@@ -38,7 +38,7 @@ describe('ForgotPasswordRequestOtpScreen', () => {
   it('enables Send OTP once a valid 10-digit number is entered', () => {
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '8208574727');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '9999999999');
 
     expect(screen.getByRole('button', { name: 'Send OTP' }).props.accessibilityState.disabled).toBe(false);
   });
@@ -47,14 +47,14 @@ describe('ForgotPasswordRequestOtpScreen', () => {
     requestOtp.mockResolvedValue({ ok: true, data: { message: 'sent' } });
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '8208574727');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '9999999999');
     fireEvent.press(screen.getByRole('button', { name: 'Send OTP' }));
 
     await waitFor(() =>
-      expect(requestOtp).toHaveBeenCalledWith({ phoneNumber: '8208574727', countryCode: '91' }),
+      expect(requestOtp).toHaveBeenCalledWith({ phoneNumber: '9999999999', countryCode: '91' }),
     );
     expect(mockReplace).toHaveBeenCalledWith('ForgotPasswordVerify', {
-      phoneNumber: '8208574727',
+      phoneNumber: '9999999999',
       countryCode: '91',
       origin: 'Setup',
     });
@@ -67,7 +67,7 @@ describe('ForgotPasswordRequestOtpScreen', () => {
     });
     renderScreen();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '8208574727');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '9999999999');
     fireEvent.press(screen.getByRole('button', { name: 'Send OTP' }));
 
     expect(await screen.findByText('Something went wrong')).toBeTruthy();
