@@ -176,8 +176,13 @@ describe('NEPAL_CLIENT_CONFIG', () => {
       });
     });
 
-    it('development URLs point to localhost', () => {
-      URL_KEYS.forEach(key => {
+    it('development authGatewayUrl points to the shared eRevamp staging gateway', () => {
+      expect(NEPAL_CLIENT_CONFIG.servers.development.authGatewayUrl)
+        .toBe('https://erevamp.intelehealth.org:3030');
+    });
+
+    it('development portal/webrtc/config URLs point to localhost', () => {
+      (['portalUrl', 'webrtcUrl', 'configUrl'] as const).forEach(key => {
         expect(NEPAL_CLIENT_CONFIG.servers.development[key]).toMatch(/^http:\/\/localhost/);
       });
     });
