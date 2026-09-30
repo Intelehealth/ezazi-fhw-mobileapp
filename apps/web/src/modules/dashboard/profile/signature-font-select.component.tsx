@@ -57,7 +57,7 @@ export function SignatureFontSelect({
         onClick={() => setOpen(v => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex h-12 w-full items-center justify-between rounded-lg border border-[rgba(178,175,190,0.2)] bg-[#FAF9FF] px-4"
+        className="flex h-12 w-full cursor-pointer items-center justify-between rounded-lg border border-[rgba(178,175,190,0.2)] bg-[#FAF9FF] px-4"
       >
         {/* These signature fonts (arty/asem/youthness/almondita) have an
             unusually tall ascent baked into the font files themselves — far
@@ -106,7 +106,7 @@ export function SignatureFontSelect({
                   type="button"
                   onClick={() => selectFont(font.name)}
                   style={{ fontFamily: font.name }}
-                  className="block w-full px-4 py-2 text-left text-[40px] leading-tight text-[#1B163A] hover:bg-[#FAF9FF]"
+                  className="block w-full cursor-pointer px-4 py-2 text-left text-[40px] leading-tight text-[#1B163A] hover:bg-[#FAF9FF]"
                 >
                   {preview}
                 </button>

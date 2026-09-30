@@ -25,6 +25,8 @@ const USER: AuthUser = {
   username: 'doctor1',
   displayName: 'Demo Male Doctor',
   roles: ['ORGANIZATIONAL: DOCTOR'],
+  providerUuid: 'p-1',
+  personUuid: 'per-1',
 };
 
 function mockAuthState(user: AuthUser | null) {

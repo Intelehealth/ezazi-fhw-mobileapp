@@ -1,18 +1,26 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemo, useState } from 'react';
-import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
+import { useMemo, useState, type ChangeEvent } from 'react';
+import {
+  Controller,
+  useForm,
+  type UseFormRegisterReturn,
+} from 'react-hook-form';
 import cameraIcon from '../../../assets/svgs/camera.svg';
 import chevronIcon from '../../../assets/svgs/chevron-down.svg';
 import editIcon from '../../../assets/svgs/edit.svg';
 import userIcon from '../../../assets/svgs/user.svg';
 import profileBg from '../../../assets/images/profile-bg.png';
+import { PhoneNumberFieldComponent } from '../../../components/common/phone-number-field.component';
+import { useProviderProfile } from '../../../hooks/queries/useProviderProfile';
+import type { ProviderProfileData } from '../../../hooks/queries/useProviderProfile';
+import { useUpdateProviderProfile } from '../../../hooks/mutations/useUpdateProviderProfile';
+import { useUpdateProfileImage } from '../../../hooks/mutations/useUpdateProfileImage';
+import { useValidateProviderAttribute } from '../../../hooks/mutations/useValidateProviderAttribute';
 import {
-  FACILITY_OPTIONS,
-  MOCK_DOCTOR_PROFILE,
   QUALIFICATION_OPTIONS,
   SPECIALIZATION_OPTIONS,
   WARD_OPTIONS,
-} from './profile.mock-data';
+} from './profile.static-options';
 import { SignatureFontSelect } from './signature-font-select.component';
 import { profileSchema, type ProfileFormValues } from './profile.validation';
 import type { Gender } from './profile.types';
@@ -37,22 +45,59 @@ function fullName(profile: { givenName: string; familyName: string }) {
  * an edit-mode form behind the pencil icon, matching `personalInfoForm`'s
  * field set and required-field validation (see profile.validation.ts).
  *
- * One deliberate simplification versus the Angular source: qualification/
- * specialization/facility/ward are plain text inputs here rather than
- * ng-select dropdowns (those load their options from lookups this app
- * doesn't fetch yet). The signature-font picker (see
- * signature-font-select.component.tsx) is ported using the same four font
- * files as the reference app. Data is static (profile.mock-data.ts) until
- * a profile endpoint lands in the shared api-client package, the same
- * "build the UI ahead of the backend" pattern dashboard.component.tsx
- * already uses for visit rows.
+ * Real API integration (see hooks/queries/useProviderProfile.ts and
+ * hooks/mutations/use{UpdateProviderProfile,UpdateProfileImage,
+ * ValidateProviderAttribute}.ts): loads the signed-in doctor's OpenMRS
+ * provider record, saves person/name/attribute changes the same way the
+ * Angular source does (parallel provider-attribute POSTs, not one combined
+ * "profile" endpoint — OpenMRS has no such endpoint), and uploads a new
+ * photo as base64. One deliberate simplification versus the Angular
+ * source: qualification/specialization/ward stay hardcoded option lists
+ * (profile.static-options.ts) because the reference app hardcodes them too — only
+ * Facility Name is genuinely API-backed there (GET /location), and this
+ * port fetches it the same way.
  */
 export function ProfileComponent() {
+  const query = useProviderProfile();
+
+  if (query.isPending) {
+    return <ProfileStatusCard message="Loading profile…" />;
+  }
+
+  if (query.isError) {
+    return <ProfileStatusCard message={query.error.message} isError />;
+  }
+
+  return <ProfileEditor data={query.data} />;
+}
+
+function ProfileStatusCard({
+  message,
+  isError,
+}: {
+  message: string;
+  isError?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div
+        className={`rounded-xl bg-white p-10 text-center shadow-[0px_4px_24px_rgba(31,28,58,0.08)] md:col-span-4 ${isError ? 'text-red-600' : 'text-[#7F7B92]'}`}
+      >
+        {message}
+      </div>
+    </div>
+  );
+}
+
+function ProfileEditor({ data }: { data: ProviderProfileData }) {
   const [editMode, setEditMode] = useState(false);
-  const [profile, setProfile] = useState(MOCK_DOCTOR_PROFILE);
+  const updateProfile = useUpdateProviderProfile();
+  const updatePhoto = useUpdateProfileImage();
+  const validateAttribute = useValidateProviderAttribute();
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -61,23 +106,78 @@ export function ProfileComponent() {
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     mode: 'onChange',
-    defaultValues: profile,
+    defaultValues: data.profile,
   });
+
+  // Separate from RHF's own `errors` state on purpose: the zod resolver
+  // re-validates emailId/phoneNumber on every change/blur and would
+  // immediately clear a `setError()` call for this async, schema-external
+  // check (RHF's next validation pass has no way to know about it) —
+  // see ProviderAttributeValidator's Angular equivalent, an async
+  // validator wired into the FormControl itself instead of the schema.
+  const [emailTaken, setEmailTaken] = useState(false);
+  const [phoneTaken, setPhoneTaken] = useState(false);
 
   const qualification = watch('qualification');
   const fontOfSign = watch('fontOfSign');
   const textOfSign = watch('textOfSign');
-  const age = useMemo(() => computeAge(profile.birthdate), [profile.birthdate]);
+  const birthdate = watch('birthdate');
+  const age = useMemo(() => computeAge(birthdate), [birthdate]);
+  // Matches profile.component.html's `[max]="today"` on its mat-datepicker —
+  // the doctor can't pick a future DOB (which would otherwise compute a
+  // negative age below).
+  const maxBirthdate = new Date().toISOString().slice(0, 10);
+  const facilityOptions = useMemo(
+    () => data.facilities.map(facility => facility.display),
+    [data.facilities]
+  );
 
   function openEdit() {
-    reset(profile);
+    reset(data.profile);
     setEditMode(true);
   }
 
   function handleSave(values: ProfileFormValues) {
-    // TODO: call profileApi.updateProfile(values) once the profile endpoint exists.
-    setProfile(prev => ({ ...prev, ...values }));
-    setEditMode(false);
+    updateProfile.mutate(
+      {
+        values,
+        providerUuid: data.providerUuid,
+        personUuid: data.personUuid,
+        preferredNameUuid: data.preferredNameUuid,
+        attributeTypeUuidByField: data.attributeTypeUuidByField,
+        existingAttributeUuidByField: data.existingAttributeUuidByField,
+      },
+      { onSuccess: () => setEditMode(false) }
+    );
+  }
+
+  function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) updatePhoto.mutate({ personUuid: data.personUuid, file });
+  }
+
+  /**
+   * Ports ProviderAttributeValidator/AuthService.validateProviderAttribute —
+   * checked on blur rather than Angular's debounced valueChanges stream,
+   * since this field only needs a one-shot check, not a live one. Takes the
+   * raw value directly (not a blur event) since PhoneNumberFieldComponent's
+   * onBlur — used for the phoneNumber case — hands back neither.
+   */
+  async function checkAttributeAvailable(
+    field: 'emailId' | 'phoneNumber',
+    rawValue: string
+  ) {
+    const value = rawValue.trim();
+    if (!value) return;
+
+    const isAvailable = await validateAttribute.mutateAsync({
+      attributeType: field,
+      attributeValue: value,
+      providerUuid: data.providerUuid,
+    });
+
+    const setTaken = field === 'emailId' ? setEmailTaken : setPhoneTaken;
+    setTaken(!isAvailable);
   }
 
   return (
@@ -93,7 +193,7 @@ export function ProfileComponent() {
         <div className="flex h-full w-1/2 flex-col items-center justify-center gap-3 rounded-xl bg-white px-2 py-4">
           <div className="relative">
             <img
-              src={profile.photoUrl ?? userIcon}
+              src={data.profile.photoUrl ?? userIcon}
               onError={e => {
                 e.currentTarget.src = userIcon;
               }}
@@ -102,19 +202,18 @@ export function ProfileComponent() {
             />
             <label className="absolute right-0 bottom-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[rgba(178,175,190,0.2)] bg-white">
               <img src={cameraIcon} alt="" className="w-3.5" />
-              {/* Photo upload itself is out of scope here — this input has no
-                  onChange handler yet, matching how dashboard.component.tsx's
-                  search box and bell are visual-only for the same reason. */}
               <input
                 id="profile-pic"
                 type="file"
                 accept="image/jpg"
                 className="hidden"
+                onChange={handlePhotoChange}
+                disabled={updatePhoto.isPending}
               />
             </label>
           </div>
           <h6 className="text-center text-base font-bold text-[#1B163A]">
-            Dr. {fullName(profile)}
+            Dr. {fullName(data.profile)}
           </h6>
         </div>
       </div>
@@ -136,43 +235,49 @@ export function ProfileComponent() {
             <ul className="list-none p-0">
               <ProfileInfoRow
                 label="Gender"
-                value={GENDER_LABELS[profile.gender]}
+                value={GENDER_LABELS[data.profile.gender]}
               />
-              <ProfileInfoRow label="State" value={profile.visitState} />
-              <ProfileInfoRow label="Mobile No." value={profile.phoneNumber} />
-              <ProfileInfoRow label="WhatsApp No." value={profile.whatsapp} />
-              <ProfileInfoRow label="Email" value={profile.emailId} />
+              <ProfileInfoRow label="State" value={data.profile.visitState} />
+              <ProfileInfoRow
+                label="Mobile No."
+                value={data.profile.phoneNumber}
+              />
+              <ProfileInfoRow
+                label="WhatsApp No."
+                value={data.profile.whatsapp}
+              />
+              <ProfileInfoRow label="Email" value={data.profile.emailId} />
               <ProfileInfoRow
                 label="Qualification"
                 value={
-                  profile.qualification === 'Other' &&
-                  profile.otherQualification
-                    ? `${profile.qualification} (${profile.otherQualification})`
-                    : profile.qualification
+                  data.profile.qualification === 'Other' &&
+                  data.profile.otherQualification
+                    ? `${data.profile.qualification} (${data.profile.otherQualification})`
+                    : data.profile.qualification
                 }
               />
               <ProfileInfoRow
                 label="Specialization"
-                value={profile.specialization}
+                value={data.profile.specialization}
               />
               <ProfileInfoRow
                 label="Registration No."
-                value={profile.registrationNumber}
+                value={data.profile.registrationNumber}
               />
               <ProfileInfoRow
                 label="Facility Name"
-                value={profile.facilityName}
+                value={data.profile.facilityName}
               />
-              <ProfileInfoRow label="Ward" value={profile.providerWard} />
+              <ProfileInfoRow label="Ward" value={data.profile.providerWard} />
               <li className="mt-2 flex items-center gap-4 rounded-md bg-[rgba(215,212,234,0.4)] px-4 py-3">
                 <span className="w-2/5 shrink-0 text-base text-[#7F7B92]">
                   Signature
                 </span>
                 <span
-                  style={{ fontFamily: profile.fontOfSign }}
+                  style={{ fontFamily: data.profile.fontOfSign }}
                   className="text-[28px] leading-none text-[#1B163A]"
                 >
-                  {profile.textOfSign || 'NA'}
+                  {data.profile.textOfSign || 'NA'}
                 </span>
               </li>
             </ul>
@@ -223,29 +328,66 @@ export function ProfileComponent() {
             <TextField
               type="date"
               label="Date of birth *"
+              max={maxBirthdate}
               registration={register('birthdate')}
               error={isSubmitted ? errors.birthdate?.message : undefined}
             />
             <TextField label="Age *" value={age} disabled readOnly />
 
-            <TextField
-              label="Phone Number *"
-              placeholder="Enter Mobile Number"
-              registration={register('phoneNumber')}
-              error={isSubmitted ? errors.phoneNumber?.message : undefined}
+            <Controller
+              name="phoneNumber"
+              control={control}
+              render={({ field }) => (
+                <PhoneNumberFieldComponent
+                  id="phoneNumber"
+                  label="Phone Number *"
+                  value={field.value}
+                  onChange={value => {
+                    field.onChange(value);
+                    setPhoneTaken(false);
+                  }}
+                  onBlur={() => {
+                    field.onBlur();
+                    void checkAttributeAvailable('phoneNumber', field.value);
+                  }}
+                  error={
+                    (isSubmitted ? errors.phoneNumber?.message : undefined) ??
+                    (phoneTaken
+                      ? 'Phone number already exists. Please enter another phone number.'
+                      : undefined)
+                  }
+                />
+              )}
             />
-            <TextField
-              label="WhatsApp Number *"
-              placeholder="Enter Mobile Number"
-              registration={register('whatsapp')}
-              error={isSubmitted ? errors.whatsapp?.message : undefined}
+            <Controller
+              name="whatsapp"
+              control={control}
+              render={({ field }) => (
+                <PhoneNumberFieldComponent
+                  id="whatsapp"
+                  label="WhatsApp Number *"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={isSubmitted ? errors.whatsapp?.message : undefined}
+                />
+              )}
             />
             <TextField
               type="email"
               label="Email ID *"
               placeholder="Enter email"
-              registration={register('emailId')}
-              error={isSubmitted ? errors.emailId?.message : undefined}
+              registration={register('emailId', {
+                onBlur: event =>
+                  checkAttributeAvailable('emailId', event.target.value),
+                onChange: () => setEmailTaken(false),
+              })}
+              error={
+                (isSubmitted ? errors.emailId?.message : undefined) ??
+                (emailTaken
+                  ? 'Email already exists. Please enter another email.'
+                  : undefined)
+              }
             />
 
             <TextField
@@ -287,7 +429,7 @@ export function ProfileComponent() {
             />
             <SelectField
               label="Facility Name *"
-              options={FACILITY_OPTIONS}
+              options={facilityOptions}
               registration={register('facilityName')}
               error={isSubmitted ? errors.facilityName?.message : undefined}
             />
@@ -323,9 +465,10 @@ export function ProfileComponent() {
             <div className="flex items-end justify-end md:col-span-3">
               <button
                 type="submit"
-                className="h-14 min-w-[206px] rounded-lg bg-[#2E1E91] px-6 text-lg text-white"
+                disabled={updateProfile.isPending}
+                className="h-14 min-w-[206px] cursor-pointer rounded-lg bg-[#2E1E91] px-6 text-lg text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Save
+                {updateProfile.isPending ? 'Saving…' : 'Save'}
               </button>
             </div>
           </form>
@@ -361,6 +504,7 @@ interface TextFieldProps {
   value?: string;
   disabled?: boolean;
   readOnly?: boolean;
+  max?: string;
 }
 
 function TextField({
@@ -372,6 +516,7 @@ function TextField({
   value,
   disabled,
   readOnly,
+  max,
 }: TextFieldProps) {
   // registration.name (e.g. "textOfSign") doubles as the input id so the
   // label is programmatically associated with it — without this, clicking
@@ -391,6 +536,7 @@ function TextField({
         value={value}
         disabled={disabled}
         readOnly={readOnly}
+        max={max}
         className={INPUT_CLASS}
         {...registration}
       />
@@ -410,10 +556,11 @@ interface SelectFieldProps {
  * Ports the ng-select dropdowns for Qualification/Specialization/Facility
  * Name/Ward (profile.component.html) — a native `<select>` styled to match
  * TextField, since none of these need ng-select's per-option custom
- * rendering (that's only the signature-font picker's job). Options come
- * from profile.mock-data.ts, standing in for the Angular source's hardcoded
- * professions/specializations/wards arrays (facilities is the one genuinely
- * API-backed list there — mocked here the same way).
+ * rendering (that's only the signature-font picker's job). Qualification/
+ * Specialization/Ward options are hardcoded (profile.static-options.ts, matching
+ * the Angular source's own hardcoded arrays); Facility Name's come from
+ * useProviderProfile's GET /location call — the one genuinely API-backed
+ * list there.
  */
 function SelectField({
   label,
@@ -431,7 +578,7 @@ function SelectField({
       <div className="relative">
         <select
           id={id}
-          className={`${INPUT_CLASS} appearance-none pr-10`}
+          className={`${INPUT_CLASS} cursor-pointer appearance-none pr-10`}
           {...registration}
         >
           {options.map(option => (

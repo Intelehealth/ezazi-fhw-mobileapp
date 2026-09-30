@@ -13,6 +13,14 @@ export interface AuthUser {
   displayName: string;
   /** Uppercased role names, e.g. 'ORGANIZATIONAL: NURSE' — see hooks/mutations/useLogin.ts. */
   roles: string[];
+  /**
+   * OpenMRS provider/person uuids, carried straight through from the login
+   * response's `provider` object (see AuthGatewayLoginResponse below) — the
+   * profile feature's OPENMRS_URL calls (services/profile.service.ts) key
+   * off these, not the auth-gateway's own `user.uuid`.
+   */
+  providerUuid: string;
+  personUuid: string;
 }
 
 export interface LoginCredentials {
