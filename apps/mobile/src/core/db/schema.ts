@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 /**
  * Offline SQLite schema (OpenMRS data model), ported 1:1 from the Android /
@@ -9,8 +9,8 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
  *  - `sync` (dirty flag: 'false'/'true') and `voided` (soft-delete: '0'/'1') are
  *    kept as TEXT with their Android defaults and are managed by the sync engine.
  *  - Every column is TEXT unless noted; optional columns are nullable.
- * TODO: add explicit indexes on FK columns (patientuuid, visituuid, encounteruuid,
- * …) and the `sync` dirty-flag columns before the query layer / sync engine land.
+ *  - FK-reference columns and the `sync` dirty-flag column are indexed below,
+ *    for the query layer / sync engine's lookups and unsynced-row scans.
  */
 
 export const patient = sqliteTable('tbl_patient', {
@@ -40,7 +40,10 @@ export const patient = sqliteTable('tbl_patient', {
   modified_date: text('modified_date'),
   voided: text('voided').notNull().default('0'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_patient_creatoruuid').on(table.creatoruuid),
+  index('idx_patient_sync').on(table.sync),
+]);
 
 export const patientAttribute = sqliteTable('tbl_patient_attribute', {
   uuid: text('uuid').primaryKey(),
@@ -50,7 +53,11 @@ export const patientAttribute = sqliteTable('tbl_patient_attribute', {
   modified_date: text('modified_date'),
   voided: text('voided').notNull().default('0'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_patient_attribute_patientuuid').on(table.patientuuid),
+  index('idx_patient_attribute_person_attribute_type_uuid').on(table.person_attribute_type_uuid),
+  index('idx_patient_attribute_sync').on(table.sync),
+]);
 
 export const patientAttributeMaster = sqliteTable('tbl_patient_attribute_master', {
   uuid: text('uuid').primaryKey(),
@@ -58,7 +65,9 @@ export const patientAttributeMaster = sqliteTable('tbl_patient_attribute_master'
   modified_date: text('modified_date'),
   voided: text('voided').notNull().default('0'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_patient_attribute_master_sync').on(table.sync),
+]);
 
 export const visit = sqliteTable('tbl_visit', {
   uuid: text('uuid').primaryKey(),
@@ -73,7 +82,12 @@ export const visit = sqliteTable('tbl_visit', {
   voided: text('voided').notNull().default('0'),
   sync: text('sync').notNull().default('false'),
   issubmitted: integer('issubmitted').notNull().default(0),
-});
+}, (table) => [
+  index('idx_visit_patientuuid').on(table.patientuuid),
+  index('idx_visit_visit_type_uuid').on(table.visit_type_uuid),
+  index('idx_visit_locationuuid').on(table.locationuuid),
+  index('idx_visit_sync').on(table.sync),
+]);
 
 export const visitAttribute = sqliteTable('tbl_visit_attribute', {
   uuid: text('uuid').primaryKey(),
@@ -82,7 +96,11 @@ export const visitAttribute = sqliteTable('tbl_visit_attribute', {
   visit_attribute_type_uuid: text('visit_attribute_type_uuid'),
   voided: text('voided'),
   sync: text('sync'),
-});
+}, (table) => [
+  index('idx_visit_attribute_visit_uuid').on(table.visit_uuid),
+  index('idx_visit_attribute_visit_attribute_type_uuid').on(table.visit_attribute_type_uuid),
+  index('idx_visit_attribute_sync').on(table.sync),
+]);
 
 export const encounter = sqliteTable('tbl_encounter', {
   uuid: text('uuid').primaryKey(),
@@ -94,7 +112,12 @@ export const encounter = sqliteTable('tbl_encounter', {
   sync: text('sync').notNull().default('false'),
   voided: text('voided').notNull().default('0'),
   privacynotice_value: text('privacynotice_value'),
-});
+}, (table) => [
+  index('idx_encounter_visituuid').on(table.visituuid),
+  index('idx_encounter_provider_uuid').on(table.provider_uuid),
+  index('idx_encounter_encounter_type_uuid').on(table.encounter_type_uuid),
+  index('idx_encounter_sync').on(table.sync),
+]);
 
 export const obs = sqliteTable('tbl_obs', {
   uuid: text('uuid').primaryKey(),
@@ -109,7 +132,12 @@ export const obs = sqliteTable('tbl_obs', {
   modified_date: text('modified_date'),
   created_date: text('created_date'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_obs_encounteruuid').on(table.encounteruuid),
+  index('idx_obs_conceptuuid').on(table.conceptuuid),
+  index('idx_obs_creatoruuid').on(table.creatoruuid),
+  index('idx_obs_sync').on(table.sync),
+]);
 
 export const location = sqliteTable('tbl_location', {
   name: text('name'),
@@ -118,7 +146,9 @@ export const location = sqliteTable('tbl_location', {
   modified_date: text('modified_date'),
   voided: text('voided').notNull().default('0'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_location_sync').on(table.sync),
+]);
 
 export const provider = sqliteTable('tbl_provider', {
   uuid: text('uuid').primaryKey(),
@@ -130,7 +160,10 @@ export const provider = sqliteTable('tbl_provider', {
   voided: text('voided').notNull().default('0'),
   modified_date: text('modified_date'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_provider_useruuid').on(table.useruuid),
+  index('idx_provider_sync').on(table.sync),
+]);
 
 export const providerAttribute = sqliteTable('tbl_provider_attribute', {
   uuid: text('uuid').primaryKey(),
@@ -138,7 +171,10 @@ export const providerAttribute = sqliteTable('tbl_provider_attribute', {
   attributetypeuuid: text('attributetypeuuid'),
   value: text('value'),
   voided: text('voided'),
-});
+}, (table) => [
+  index('idx_provider_attribute_provideruuid').on(table.provideruuid),
+  index('idx_provider_attribute_attributetypeuuid').on(table.attributetypeuuid),
+]);
 
 export const drSpeciality = sqliteTable('tbl_dr_speciality', {
   uuid: text('uuid').primaryKey(),
@@ -146,7 +182,10 @@ export const drSpeciality = sqliteTable('tbl_dr_speciality', {
   attributetypeuuid: text('attributetypeuuid'),
   value: text('value'),
   voided: text('voided'),
-});
+}, (table) => [
+  index('idx_dr_speciality_provideruuid').on(table.provideruuid),
+  index('idx_dr_speciality_attributetypeuuid').on(table.attributetypeuuid),
+]);
 
 export const uuidDictionary = sqliteTable('tbl_uuid_dictionary', {
   uuid: text('uuid').primaryKey(),
@@ -163,7 +202,12 @@ export const imageRecords = sqliteTable('tbl_image_records', {
   image_type: text('image_type'),
   voided: text('voided').notNull().default('0'),
   sync: text('sync').notNull().default('false'),
-});
+}, (table) => [
+  index('idx_image_records_patientuuid').on(table.patientuuid),
+  index('idx_image_records_visituuid').on(table.visituuid),
+  index('idx_image_records_encounteruuid').on(table.encounteruuid),
+  index('idx_image_records_sync').on(table.sync),
+]);
 
 // Android has no uuid PK here (WatermelonDB auto-generated an id) → synthetic PK.
 export const userCredentials = sqliteTable('tbl_user_credentials', {
@@ -173,13 +217,18 @@ export const userCredentials = sqliteTable('tbl_user_credentials', {
   creator_uuid_cred: text('creator_uuid_cred'),
   chwname: text('chwname'),
   provider_uuid_cred: text('provider_uuid_cred'),
-});
+}, (table) => [
+  index('idx_user_credentials_creator_uuid_cred').on(table.creator_uuid_cred),
+  index('idx_user_credentials_provider_uuid_cred').on(table.provider_uuid_cred),
+]);
 
 export const rtcConnectionLog = sqliteTable('tbl_rtc_connection_log', {
   uuid: text('uuid').primaryKey(),
   visit_uuid: text('visit_uuid'),
   connection_info: text('connection_info'),
-});
+}, (table) => [
+  index('idx_rtc_connection_log_visit_uuid').on(table.visit_uuid),
+]);
 
 /** All tables, for `drizzle(expoDb, { schema })` and drizzle-kit. */
 export const schema = {
