@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { profileService } from '../../services/profile.service';
-import { mindmapHttpClient, openMrsHttpClient } from '../../services/http';
+import { httpClient, openMrsHttpClient } from '../../services/http';
 import type { OpenMrsProvider } from '../../types/profile.types';
 
 vi.mock('../../services/http', () => ({
   openMrsHttpClient: { get: vi.fn(), post: vi.fn() },
-  mindmapHttpClient: { post: vi.fn() },
+  httpClient: { post: vi.fn() },
 }));
 
 beforeEach(() => {
   vi.mocked(openMrsHttpClient.get).mockClear();
   vi.mocked(openMrsHttpClient.post).mockClear();
-  vi.mocked(mindmapHttpClient.post).mockClear();
+  vi.mocked(httpClient.post).mockClear();
 });
 
 const PROVIDER: OpenMrsProvider = {
@@ -314,8 +314,8 @@ describe('profileService.updateProfileImage', () => {
 });
 
 describe('profileService.validateProviderAttribute', () => {
-  it('POSTs to the mindmap client (not openMrsHttpClient) and returns the availability flag', async () => {
-    vi.mocked(mindmapHttpClient.post).mockResolvedValue({
+  it('POSTs to the auth-gateway client (not openMrsHttpClient) and returns the availability flag', async () => {
+    vi.mocked(httpClient.post).mockResolvedValue({
       data: { success: true, data: true },
     });
     const payload = {
@@ -326,7 +326,7 @@ describe('profileService.validateProviderAttribute', () => {
 
     const result = await profileService.validateProviderAttribute(payload);
 
-    expect(mindmapHttpClient.post).toHaveBeenCalledWith(
+    expect(httpClient.post).toHaveBeenCalledWith(
       '/auth/validateProviderAttribute',
       payload
     );
@@ -335,7 +335,7 @@ describe('profileService.validateProviderAttribute', () => {
   });
 
   it('maps a rejected request into a failure result instead of throwing', async () => {
-    vi.mocked(mindmapHttpClient.post).mockRejectedValue(
+    vi.mocked(httpClient.post).mockRejectedValue(
       new Error('network down')
     );
 

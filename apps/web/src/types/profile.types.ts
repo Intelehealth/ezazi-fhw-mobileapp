@@ -79,7 +79,7 @@ export interface UpdateProfileImagePayload {
   base64EncodedImage: string;
 }
 
-/** Body for POST {MINDMAP_URL}/auth/validateProviderAttribute. */
+/** Body for POST {AUTH_GATEWAY_URL}/auth/validateProviderAttribute. */
 export interface ValidateProviderAttributePayload {
   attributeType: 'emailId' | 'phoneNumber';
   attributeValue: string;

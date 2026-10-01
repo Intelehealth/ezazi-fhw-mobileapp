@@ -75,6 +75,10 @@ export function PhoneNumberFieldComponent({
         <PhoneInput
           defaultCountry={DEFAULT_COUNTRY}
           disableDialCodeAndPrefix
+          // The library's per-country masks (India: ".....-.....") insert a
+          // dash mid-number; the persisted value and the Angular source's
+          // ng2TelInput show plain digits, so turn masking off.
+          disableFormatting
           showDisabledDialCodeAndPrefix
           value={`+${dialCode}${value}`}
           onChange={(fullValue, meta) => {

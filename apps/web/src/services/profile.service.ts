@@ -4,7 +4,7 @@ import {
   success,
   type ApiResult,
 } from '@ezazi/api-client';
-import { mindmapHttpClient, openMrsHttpClient } from './http';
+import { httpClient, openMrsHttpClient } from './http';
 import type {
   OpenMrsLocation,
   OpenMrsProvider,
@@ -195,16 +195,17 @@ export const profileService = {
   },
 
   /**
-   * POST {MINDMAP_URL}/auth/validateProviderAttribute —
+   * POST {AUTH_GATEWAY_URL}/auth/validateProviderAttribute —
    * AuthService.validateProviderAttribute, the email/phone "already exists"
-   * check. A separate Node service, not OpenMRS — see mindmapHttpClient.
+   * check, served by auth-gateway (not OpenMRS, and no longer the legacy
+   * mindmap service).
    */
   async validateProviderAttribute(
     payload: ValidateProviderAttributePayload
   ): Promise<ApiResult<ValidateProviderAttributeResponse>> {
     try {
       const { data } =
-        await mindmapHttpClient.post<ValidateProviderAttributeResponse>(
+        await httpClient.post<ValidateProviderAttributeResponse>(
           '/auth/validateProviderAttribute',
           payload
         );

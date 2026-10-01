@@ -10,6 +10,7 @@ import chevronIcon from '../../../assets/svgs/chevron-down.svg';
 import editIcon from '../../../assets/svgs/edit.svg';
 import userIcon from '../../../assets/svgs/user.svg';
 import profileBg from '../../../assets/images/profile-bg.png';
+import { DatePickerComponent } from '../../../components/common/date-picker.component';
 import { PhoneNumberFieldComponent } from '../../../components/common/phone-number-field.component';
 import { useProviderProfile } from '../../../hooks/queries/useProviderProfile';
 import type { ProviderProfileData } from '../../../hooks/queries/useProviderProfile';
@@ -126,7 +127,8 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
   // Matches profile.component.html's `[max]="today"` on its mat-datepicker —
   // the doctor can't pick a future DOB (which would otherwise compute a
   // negative age below).
-  const maxBirthdate = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const maxBirthdate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const facilityOptions = useMemo(
     () => data.facilities.map(facility => facility.display),
     [data.facilities]
@@ -325,12 +327,20 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
                 </p>
               )}
             </div>
-            <TextField
-              type="date"
-              label="Date of birth *"
-              max={maxBirthdate}
-              registration={register('birthdate')}
-              error={isSubmitted ? errors.birthdate?.message : undefined}
+            <Controller
+              name="birthdate"
+              control={control}
+              render={({ field }) => (
+                <DatePickerComponent
+                  id="birthdate"
+                  label="Date of birth *"
+                  value={field.value}
+                  max={maxBirthdate}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={isSubmitted ? errors.birthdate?.message : undefined}
+                />
+              )}
             />
             <TextField label="Age *" value={age} disabled readOnly />
 
@@ -465,7 +475,7 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
             <div className="flex items-end justify-end md:col-span-3">
               <button
                 type="submit"
-                disabled={updateProfile.isPending}
+                disabled={updateProfile.isPending || emailTaken || phoneTaken}
                 className="h-14 min-w-[206px] cursor-pointer rounded-lg bg-[#2E1E91] px-6 text-lg text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {updateProfile.isPending ? 'Saving…' : 'Save'}

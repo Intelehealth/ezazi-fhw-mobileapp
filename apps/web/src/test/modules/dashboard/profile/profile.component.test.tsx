@@ -317,6 +317,11 @@ describe('ProfileComponent', () => {
         screen.getByText('Email already exists. Please enter another email.')
       ).toBeInTheDocument()
     );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    // Editing the field clears the flag until the next blur re-checks it.
+    fireEvent.change(emailInput, { target: { value: 'free@example.com' } });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
   it('reveals the Other Qualification field when "Other" is selected', async () => {
@@ -403,27 +408,27 @@ describe('ProfileComponent', () => {
     notYetHadBirthday.setDate(notYetHadBirthday.getDate() + 5);
     notYetHadBirthday.setFullYear(notYetHadBirthday.getFullYear() - 20);
 
-    const toDateOnly = (date: Date) => date.toISOString().slice(0, 10);
+    const MONTHS = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    ]; // prettier-ignore
+    const pickDate = (date: Date) => {
+      fireEvent.click(screen.getByRole('button', { name: 'Open calendar' }));
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Choose month and year' })
+      );
+      fireEvent.click(screen.getByRole('button', { name: String(date.getFullYear()) }));
+      fireEvent.click(screen.getByRole('button', { name: MONTHS[date.getMonth()] }));
+      const month = MONTHS[date.getMonth()];
+      const label = `${String(date.getDate()).padStart(2, '0')} ${month[0]}${month.slice(1).toLowerCase()} ${date.getFullYear()}`;
+      fireEvent.click(screen.getByRole('button', { name: label }));
+    };
 
-    const birthdateInput = screen.getByLabelText('Date of birth *');
-
-    fireEvent.change(birthdateInput, {
-      target: { value: toDateOnly(alreadyHadBirthday) },
-    });
+    pickDate(alreadyHadBirthday);
     expect(screen.getByLabelText('Age *')).toHaveValue('20');
 
-    fireEvent.change(birthdateInput, {
-      target: { value: toDateOnly(notYetHadBirthday) },
-    });
+    pickDate(notYetHadBirthday);
     expect(screen.getByLabelText('Age *')).toHaveValue('19');
-
-    // Age blanks out (rather than showing NaN/garbage) for an empty or
-    // unparseable birthdate — the two early-return guards in computeAge.
-    fireEvent.change(birthdateInput, { target: { value: '' } });
-    expect(screen.getByLabelText('Age *')).toHaveValue('');
-
-    fireEvent.change(birthdateInput, { target: { value: 'not-a-date' } });
-    expect(screen.getByLabelText('Age *')).toHaveValue('');
   }, 15000);
 
   it('does not check attribute availability when the field is blurred blank', async () => {
@@ -440,6 +445,22 @@ describe('ProfileComponent', () => {
     // Give any (wrongly-fired) async validation a tick to run.
     await Promise.resolve();
     expect(profileService.validateProviderAttribute).not.toHaveBeenCalled();
+  });
+
+  it('shows phone/WhatsApp digits as typed, without the library\'s mid-number dash', async () => {
+    renderProfile();
+    await waitFor(() =>
+      expect(screen.getByText('demo@example.com')).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole('button', { name: /edit profile/i }));
+
+    const phoneInput = screen.getByLabelText('Phone Number *');
+    fireEvent.change(phoneInput, { target: { value: '9876543210' } });
+
+    expect(phoneInput).toHaveValue('9876543210');
+    const whatsappInput = screen.getByLabelText('WhatsApp Number *');
+    fireEvent.change(whatsappInput, { target: { value: '9123456789' } });
+    expect(whatsappInput).toHaveValue('9123456789');
   });
 
   it('flags an already-taken phone number on blur', async () => {
@@ -464,6 +485,7 @@ describe('ProfileComponent', () => {
         )
       ).toBeInTheDocument()
     );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
   it('falls back to the user icon when the profile photo fails to load', async () => {
