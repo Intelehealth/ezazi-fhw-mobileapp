@@ -8,6 +8,7 @@
 #     --build-arg VITE_AUTH_GATEWAY_URL=https://... \
 #     --build-arg VITE_PORTAL_URL=https://... \
 #     --build-arg VITE_CONFIG_URL=https://... \
+#     --build-arg VITE_OPENMRS_URL=/openmrs/ws/rest/v1 \
 #     --build-arg VITE_RECAPTCHA_SITE_KEY=... \
 #     --build-arg VITE_CLIENT_ID=default \
 #     --build-arg VITE_BASE_PATH=/intelehealth \
@@ -48,13 +49,18 @@ ARG VITE_APP_ENV=production
 ARG VITE_AUTH_GATEWAY_URL
 ARG VITE_PORTAL_URL
 ARG VITE_CONFIG_URL
+# The doctor-profile feature's OpenMRS REST base. Without it the bundle calls
+# `/provider`, `/location`, … on the app's own host (404). The default is
+# same-origin (the app and OpenMRS share a host behind the same nginx), which
+# also keeps the OpenMRS session cookie first-party.
+ARG VITE_OPENMRS_URL=/openmrs/ws/rest/v1
 ARG VITE_RECAPTCHA_SITE_KEY
 ARG VITE_CLIENT_ID=default
 ARG VITE_BASE_PATH
 
-RUN printf 'VITE_APP_ENV=%s\nVITE_AUTH_GATEWAY_URL=%s\nVITE_PORTAL_URL=%s\nVITE_CONFIG_URL=%s\nVITE_RECAPTCHA_SITE_KEY=%s\nVITE_CLIENT_ID=%s\nVITE_BASE_PATH=%s\n' \
+RUN printf 'VITE_APP_ENV=%s\nVITE_AUTH_GATEWAY_URL=%s\nVITE_PORTAL_URL=%s\nVITE_CONFIG_URL=%s\nVITE_OPENMRS_URL=%s\nVITE_RECAPTCHA_SITE_KEY=%s\nVITE_CLIENT_ID=%s\nVITE_BASE_PATH=%s\n' \
       "$VITE_APP_ENV" "$VITE_AUTH_GATEWAY_URL" "$VITE_PORTAL_URL" \
-      "$VITE_CONFIG_URL" "$VITE_RECAPTCHA_SITE_KEY" "$VITE_CLIENT_ID" "$VITE_BASE_PATH" \
+      "$VITE_CONFIG_URL" "$VITE_OPENMRS_URL" "$VITE_RECAPTCHA_SITE_KEY" "$VITE_CLIENT_ID" "$VITE_BASE_PATH" \
       > apps/web/.env.production
 
 RUN npx turbo run typecheck build --filter=./apps/web...
