@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -9,6 +9,7 @@ import { ForgotPasswordHeader } from '@/features/auth/components/ForgotPasswordH
 import { usePasswordResetStore } from '@/features/auth/stores/passwordReset.store';
 import {
   createForgotPasswordRequestFormSchema,
+  HEALTH_WORKER_ROLE,
   PHONE_REGEX,
   type ForgotPasswordRequestFormValues,
 } from '@/features/auth/domain/forgotPasswordRequestForm.schema';
@@ -81,13 +82,18 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
       return;
     }
 
-    // Console-only. The legacy Android app also gated on `role === "Nurse"`
-    // here, but this backend's actual response is just
-    // `{ message: "If the account exists, an OTP has been sent." }` —
-    // no userUuid/role at all (confirmed live 2026-09-17, deliberately
-    // account-existence-preserving). There's nothing to gate on any more;
-    // any successful response proceeds to OTP verification.
+    // Console-only. Only health-worker accounts may reset a password here:
+    // the response's `roles` must include HEALTH_WORKER_ROLE, otherwise stay
+    // on this screen and show the "not a health worker" banner.
     logger.debug('[ForgotPassword] requestOtp response', result.data);
+
+    if (!result.data.roles?.includes(HEALTH_WORKER_ROLE)) {
+      setBanner({
+        title: t('forgotPassword.request.errors.notHealthWorker.title'),
+        message: t('forgotPassword.request.errors.notHealthWorker.message'),
+      });
+      return;
+    }
 
     // replace, not navigate — Request is a spent step once OTP is sent, so
     // Verify's back button should land on Setup/Login, not back on Request.
@@ -98,6 +104,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
   // disabled state, so re-entrance is blocked here too.
   const handleContinue = () => {
     if (isSubmitting) return;
+    Keyboard.dismiss();
     setBanner(null);
     void handleSubmit(onValidSubmit)();
   };

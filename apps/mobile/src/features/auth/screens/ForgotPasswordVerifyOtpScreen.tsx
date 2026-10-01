@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Keyboard, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -136,6 +136,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
   // isSubmitting guard: re-entrance while a verify call is already in flight.
   const handleContinue = () => {
     if (isSubmitting) return;
+    Keyboard.dismiss();
     setBanner(null);
     void handleSubmit(onValidSubmit)();
   };

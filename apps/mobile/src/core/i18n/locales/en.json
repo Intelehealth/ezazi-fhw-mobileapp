@@ -143,6 +143,10 @@
           "title": "Something went wrong",
           "message": "Please check your connection and try again."
         },
+        "notHealthWorker": {
+          "title": "Entered mobile number is not associated with Health worker",
+          "message": "Please check the number and try again."
+        },
         "genericError": {
           "title": "Something went wrong",
           "message": "Please try again in a moment."

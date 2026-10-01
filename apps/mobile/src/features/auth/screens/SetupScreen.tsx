@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Keyboard, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -143,6 +143,7 @@ export const SetupScreen: React.FC = () => {
   // bypasses AppButton's disabled state, so re-entrance is blocked here too.
   const handleSetup = () => {
     if (isSubmitting) return;
+    Keyboard.dismiss();
     setBanner(null);
     void handleSubmit(onValidSubmit)();
   };

@@ -14,11 +14,11 @@ import { createRequestMethods } from '@/core/api/responseHandler';
  *
  * RESPONSE shape does NOT match the legacy app's PasswordResponseModel,
  * though — this backend was redesigned to not leak account existence/role.
- * Confirmed live (2026-09-17): `requestOtp` returns only
- * `{ message: "If the account exists, an OTP has been sent." }`, no
- * userUuid/providerUuid/role. There is no way to gate on "must be a Nurse
- * account" at this step any more — that check (and its legacy copy) has
- * been removed from the Request OTP screen.
+ * Confirmed live (2026-09-17): `requestOtp` returned only
+ * `{ message: "If the account exists, an OTP has been sent." }`. As of
+ * 2026-09-30 the live response again carries `roles` (plus userUuid,
+ * providerUuid, role, ...), so the Request OTP screen gates on
+ * HEALTH_WORKER_ROLE (domain/forgotPasswordRequestForm.schema.ts) being in `roles` before moving on to Verify.
  *
  * verifyOtp's response CONFIRMED live (2026-09-22, via the logged response —
  * see ForgotPasswordVerifyOtpScreen.tsx): `{ verified, userUuid, resetToken,
@@ -61,9 +61,10 @@ export interface ResetPasswordParams {
   resetToken: string;
 }
 
-/** Confirmed live — deliberately reveals nothing about the account. */
+/** Confirmed live (2026-09-30) — only `message` and `roles` are read by the app. */
 export interface RequestOtpResponse {
   message: string;
+  roles?: string[];
 }
 
 /** Confirmed live (2026-09-22) — see the doc comment above. */

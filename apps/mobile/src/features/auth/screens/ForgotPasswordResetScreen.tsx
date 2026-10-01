@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -77,6 +77,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
   // bypasses AppButton's disabled state, so re-entrance is blocked here too.
   const handleSave = () => {
     if (isSubmitting) return;
+    Keyboard.dismiss();
     setBanner(null);
     void handleSubmit(onValidSubmit)();
   };

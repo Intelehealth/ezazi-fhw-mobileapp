@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -114,6 +114,7 @@ export const LoginScreen: React.FC = () => {
   // bypasses AppButton's disabled state, so re-entrance is blocked here too.
   const handleLogin = () => {
     if (isSubmitting) return;
+    Keyboard.dismiss();
     setBanner(null);
     void handleSubmit(onValidSubmit)();
   };
