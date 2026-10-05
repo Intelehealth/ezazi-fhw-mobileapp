@@ -7,6 +7,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { ThemeProvider } from '@/core/ui/ThemeContext';
 import { useMonitorService } from '@/core/services/monitor';
+import { useBatteryGuard } from '@/core/services/batteryGuard';
+import { useAuthStore } from '@/core/session/auth.store';
 import '@/core/i18n';
 
 // Keep the native splash up until Lato is loaded — core/ui/Text.tsx assumes
@@ -19,8 +21,10 @@ void SplashScreen.preventAutoHideAsync();
 // app on `useMigrations(db, migrations)` here to apply drizzle/ migrations on boot.
 export default function App() {
   const [fontsLoaded] = useFonts({ Lato_400Regular, Lato_700Bold });
+  const authStatus = useAuthStore((s) => s.status);
 
-  useMonitorService();
+  useMonitorService(authStatus === 'authenticated');
+  useBatteryGuard(authStatus === 'authenticated');
 
   useEffect(() => {
     if (fontsLoaded) {

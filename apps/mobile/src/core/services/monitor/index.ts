@@ -36,9 +36,22 @@ async function startWithRetry(): Promise<void> {
   }
 }
 
-/** Long-lived singleton, started once from the composition root (App.tsx). */
-export function useMonitorService(): void {
+/**
+ * Long-lived singleton, started once from the composition root (App.tsx) —
+ * but only once `enabled`. Must stay false until the user is authenticated:
+ * `startMonitorService()` calls `notifee.requestPermission()` for
+ * POST_NOTIFICATIONS, which races SplashScreen's own `PermissionsAndroid.
+ * requestMultiple()` (also requesting POST_NOTIFICATIONS on API 33+) if both
+ * fire on mount — two concurrent native permission requests for the same
+ * permission, which can leave one of them never resolving (confirmed
+ * on-device: SplashScreen's "Loading…" hung indefinitely with this
+ * unconditional). There's no reason to run the labour monitor before a
+ * health worker is even logged in anyway.
+ */
+export function useMonitorService(enabled: boolean): void {
   useEffect(() => {
+    if (!enabled) return;
+
     // Sequenced, not concurrent — both touch notifee's own shared native
     // state (channels, the foreground-service lifecycle); firing them
     // together dropped the heartbeat's notification in testing.
@@ -58,7 +71,7 @@ export function useMonitorService(): void {
       }
     });
     return unsubscribe;
-  }, []);
+  }, [enabled]);
 }
 
 /** Live tick count, re-rendering on every tick — for an on-screen debug indicator. */

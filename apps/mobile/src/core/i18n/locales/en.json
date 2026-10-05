@@ -243,5 +243,19 @@
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"
+  },
+  "batteryGuard": {
+    "dialog": {
+      "title": "Low Battery",
+      "message": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly.",
+      "dismiss": "OK",
+      "a11y": {
+        "dismiss": "Dismiss low battery warning"
+      }
+    },
+    "notification": {
+      "title": "Low Battery",
+      "body": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly."
+    }
   }
 }

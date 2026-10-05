@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { useAuthStore } from '@/core/session/auth.store';
 import { ApiProgressOverlay } from '@/core/ui/ApiProgressOverlay';
+import { LowBatteryDialog } from '@/core/ui/LowBatteryDialog';
 
 import { SplashScreen } from '@/features/auth/screens/SplashScreen';
 import { SetupScreen } from '@/features/auth/screens/SetupScreen';
@@ -57,6 +58,7 @@ export const RootNavigator: React.FC = () => {
       </Stack.Navigator>
     </NavigationContainer>
     <ApiProgressOverlay />
+    <LowBatteryDialog />
     </>
   );
 };

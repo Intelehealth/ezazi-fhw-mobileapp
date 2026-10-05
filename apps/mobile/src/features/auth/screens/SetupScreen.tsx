@@ -37,6 +37,7 @@ export const SetupScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { isTablet, fs, scale } = useResponsive();
   const login = useAuthStore(s => s.login);
+  const setAuthenticated = useAuthStore(s => s.setAuthenticated);
   const locations = useLocationStore(s => s.locations);
   const isLocationsLoading = useLocationStore(s => s.isLoading);
   const fetchLocations = useLocationStore(s => s.fetchLocations);
@@ -297,6 +298,21 @@ export const SetupScreen: React.FC = () => {
       >
         <Text style={[styles.tempLoginText, { fontSize: fs('link') }]}>
           {t('setup.tempNavLogin')}
+        </Text>
+      </TouchableOpacity>
+
+      {/* TEMPORARY — dev/QA shortcut to force `authenticated` status without
+          real backend credentials, for on-device testing of anything gated
+          on login (monitor service, battery guard). Remove once no longer
+          needed for testing. */}
+      <TouchableOpacity
+        style={styles.tempLoginRow}
+        accessibilityRole="link"
+        accessibilityLabel="Force authenticated (temp, dev only)"
+        onPress={() => void setAuthenticated('dev-test-uuid', 'health_worker')}
+      >
+        <Text style={[styles.tempLoginText, { fontSize: fs('link') }]}>
+          Force authenticated (temp, dev only)
         </Text>
       </TouchableOpacity>
 
