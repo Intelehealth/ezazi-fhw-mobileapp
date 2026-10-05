@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { useAuthStore } from '@/core/session/auth.store';
+import { ApiProgressOverlay } from '@/core/ui/ApiProgressOverlay';
 
 import { SplashScreen } from '@/features/auth/screens/SplashScreen';
 import { SetupScreen } from '@/features/auth/screens/SetupScreen';
@@ -21,6 +22,7 @@ export const RootNavigator: React.FC = () => {
   const needsAuthStack = status === 'needsSetup' || status === 'needsLogin';
 
   return (
+    <>
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
@@ -54,5 +56,7 @@ export const RootNavigator: React.FC = () => {
         {status === 'authenticated' && <Stack.Screen name="Home" component={HomeScreen} />}
       </Stack.Navigator>
     </NavigationContainer>
+    <ApiProgressOverlay />
+    </>
   );
 };

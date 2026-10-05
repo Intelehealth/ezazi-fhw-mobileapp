@@ -3,6 +3,7 @@ import { env } from '@/core/config/env';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { logger } from '@/core/utils/logger';
 import { createApiClient } from '@ezazi/api-client';
+import { trackApiActivity } from './trackApiActivity';
 
 /**
  * Shared axios instance for auth-gateway calls. Per-module API files import this
@@ -47,5 +48,7 @@ const apiClient = createApiClient({
   getAuthToken: () => secureStorage.get('accessToken'),
   onUnauthorized: refreshAccessToken,
 });
+
+trackApiActivity(apiClient);
 
 export { apiClient };
