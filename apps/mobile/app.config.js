@@ -73,6 +73,12 @@ module.exports = {
         'USE_FINGERPRINT',
         'READ_SMS',
         'RECEIVE_SMS',
+        // Without this, notify-kit's SET_EXACT_AND_ALLOW_WHILE_IDLE backbone
+        // trigger silently falls back to an inexact alarm (confirmed via
+        // logcat: "SCHEDULE_EXACT_ALARM permission not granted") — Android
+        // may then batch/delay delivery by minutes, defeating the whole
+        // point of this layer.
+        'SCHEDULE_EXACT_ALARM',
       ],
     },
     plugins: [
@@ -89,6 +95,19 @@ module.exports = {
       'expo-localization',
       'expo-secure-store',
       'expo-local-authentication',
+      [
+        'react-native-notify-kit',
+        {
+          android: {
+            foregroundService: {
+              // Mirrors the legacy Android app's FOREGROUND_SERVICE_DATA_SYNC
+              // permission (CallListenerBackgroundService) for the same job:
+              // periodically re-checking local state, not sensors/media/calls.
+              types: ['dataSync'],
+            },
+          },
+        },
+      ],
     ],
     extra: {},
   },
