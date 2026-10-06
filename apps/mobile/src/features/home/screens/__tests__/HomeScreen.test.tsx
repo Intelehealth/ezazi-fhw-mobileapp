@@ -3,6 +3,12 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { HomeScreen } from '../HomeScreen';
 import { useAuthStore } from '@/core/session/auth.store';
 
+// HomeScreen pulls in the labour-monitor service, which imports AsyncStorage
+// (no native module under Jest), so use the library's official jest mock.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 jest.mock('@/core/session/auth.store', () => ({
   useAuthStore: jest.fn(),
 }));
