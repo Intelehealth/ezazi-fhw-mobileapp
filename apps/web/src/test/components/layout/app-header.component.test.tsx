@@ -1,7 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useIsNurse } from '../../../hooks/useIsNurse';
 import { AppHeaderComponent } from '../../../components/layout/app-header.component';
+
+/*
+ * Mocked rather than a real react-redux Provider — same dual-React-hoisting
+ * reason as dashboard.page.test.tsx.
+ */
+vi.mock('../../../hooks/useIsNurse', () => ({ useIsNurse: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(useIsNurse).mockReturnValue(false);
+});
 
 describe('AppHeaderComponent', () => {
   it('greets the user by name', () => {
@@ -12,6 +23,28 @@ describe('AppHeaderComponent', () => {
     );
 
     expect(screen.getByText('Hello, Demo Doctor 👋')).toBeInTheDocument();
+  });
+
+  it('shows the patient search for doctors but hides it for nurses', () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <AppHeaderComponent userName="Demo Doctor" />
+      </MemoryRouter>
+    );
+    expect(
+      screen.getByPlaceholderText('Search by patient name or ID')
+    ).toBeInTheDocument();
+
+    vi.mocked(useIsNurse).mockReturnValue(true);
+    rerender(
+      <MemoryRouter>
+        <AppHeaderComponent userName="Demo Nurse" />
+      </MemoryRouter>
+    );
+    expect(
+      screen.queryByPlaceholderText('Search by patient name or ID')
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Hello, Demo Nurse 👋')).toBeInTheDocument();
   });
 
   it('links the avatar/greeting to the profile page', () => {

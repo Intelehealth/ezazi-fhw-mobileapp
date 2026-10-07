@@ -1,7 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useIsNurse } from '../../../hooks/useIsNurse';
 import { DashboardLayoutComponent } from '../../../components/layout/dashboard-layout.component';
+
+/*
+ * Mocked rather than a real react-redux Provider — same dual-React-hoisting
+ * reason as dashboard.page.test.tsx.
+ */
+vi.mock('../../../hooks/useIsNurse', () => ({ useIsNurse: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(useIsNurse).mockReturnValue(false);
+});
 
 describe('DashboardLayoutComponent', () => {
   it('renders the header greeting, sidebar nav and children content together', () => {

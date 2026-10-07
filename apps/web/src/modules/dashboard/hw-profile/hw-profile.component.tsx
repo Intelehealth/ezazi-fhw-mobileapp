@@ -10,11 +10,6 @@ import { useUpdateProviderProfile } from '../../../hooks/mutations/useUpdateProv
 import { useUpdateProfileImage } from '../../../hooks/mutations/useUpdateProfileImage';
 import { useValidateProviderAttribute } from '../../../hooks/mutations/useValidateProviderAttribute';
 import {
-  QUALIFICATION_OPTIONS,
-  SPECIALIZATION_OPTIONS,
-  WARD_OPTIONS,
-} from './profile.static-options';
-import {
   GENDER_LABELS,
   LABEL_CLASS,
   ProfileInfoRow,
@@ -23,44 +18,57 @@ import {
   TextField,
   computeAge,
   fullName,
-} from './profile-fields';
-import { SignatureFontSelect } from './signature-font-select.component';
-import { profileSchema, type ProfileFormValues } from './profile.validation';
-import type { Gender } from './profile.types';
+} from '../profile/profile-fields';
+import { WARD_OPTIONS } from '../profile/profile.static-options';
+import type { Gender } from '../profile/profile.types';
+import {
+  hwProfileSchema,
+  type HwProfileFormValues,
+} from './hw-profile.validation';
+
+/** hw-profile.component.ts's `provider_ward` control defaults to 'Labor Ward'. */
+const DEFAULT_WARD = 'Labor Ward';
+
+function toFormValues(data: ProviderProfileData): HwProfileFormValues {
+  const { profile } = data;
+  return {
+    givenName: profile.givenName,
+    middleName: profile.middleName,
+    familyName: profile.familyName,
+    gender: profile.gender,
+    birthdate: profile.birthdate,
+    phoneNumber: profile.phoneNumber,
+    whatsapp: profile.whatsapp,
+    emailId: profile.emailId,
+    facilityName: profile.facilityName,
+    providerWard: profile.providerWard || DEFAULT_WARD,
+  };
+}
 
 /**
- * Ports profile.component.html (intelehealth-doctor-webapp) 1:1: a photo
- * card, then a view-mode label/value list (Gender…Signature, same order) or
- * an edit-mode form behind the pencil icon, matching `personalInfoForm`'s
- * field set and required-field validation (see profile.validation.ts).
- *
- * Real API integration (see hooks/queries/useProviderProfile.ts and
- * hooks/mutations/use{UpdateProviderProfile,UpdateProfileImage,
- * ValidateProviderAttribute}.ts): loads the signed-in doctor's OpenMRS
- * provider record, saves person/name/attribute changes the same way the
- * Angular source does (parallel provider-attribute POSTs, not one combined
- * "profile" endpoint — OpenMRS has no such endpoint), and uploads a new
- * photo as base64. One deliberate simplification versus the Angular
- * source: qualification/specialization/ward stay hardcoded option lists
- * (profile.static-options.ts) because the reference app hardcodes them too — only
- * Facility Name is genuinely API-backed there (GET /location), and this
- * port fetches it the same way.
+ * Ports hw-profile.component.html (intelehealth-doctor-webapp) — the profile
+ * screen nurses (health workers) get instead of the doctor's
+ * ProfileComponent. Same photo card and view/edit layout, but only the
+ * person + contact + facility/ward fields: no State, qualification,
+ * specialization, registration number or signature. Reuses the doctor
+ * profile's data hooks and form primitives (see profile/profile-fields.tsx);
+ * saving leaves the doctor-only attributes untouched.
  */
-export function ProfileComponent() {
+export function HwProfileComponent() {
   const query = useProviderProfile();
 
   if (query.isPending) {
-    return <ProfileStatusCard message="Loading profile…" />;
+    return <HwProfileStatusCard message="Loading profile…" />;
   }
 
   if (query.isError) {
-    return <ProfileStatusCard message={query.error.message} isError />;
+    return <HwProfileStatusCard message={query.error.message} isError />;
   }
 
-  return <ProfileEditor data={query.data} />;
+  return <HwProfileEditor data={query.data} />;
 }
 
-function ProfileStatusCard({
+function HwProfileStatusCard({
   message,
   isError,
 }: {
@@ -78,7 +86,7 @@ function ProfileStatusCard({
   );
 }
 
-function ProfileEditor({ data }: { data: ProviderProfileData }) {
+function HwProfileEditor({ data }: { data: ProviderProfileData }) {
   const [editMode, setEditMode] = useState(false);
   const updateProfile = useUpdateProviderProfile();
   const updatePhoto = useUpdateProfileImage();
@@ -89,45 +97,35 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
     control,
     handleSubmit,
     watch,
-    setValue,
     reset,
     formState: { errors, isSubmitted },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
+  } = useForm<HwProfileFormValues>({
+    resolver: zodResolver(hwProfileSchema),
     mode: 'onChange',
-    defaultValues: data.profile,
+    defaultValues: toFormValues(data),
   });
 
-  // Separate from RHF's own `errors` state on purpose: the zod resolver
-  // re-validates emailId/phoneNumber on every change/blur and would
-  // immediately clear a `setError()` call for this async, schema-external
-  // check (RHF's next validation pass has no way to know about it) —
-  // see ProviderAttributeValidator's Angular equivalent, an async
-  // validator wired into the FormControl itself instead of the schema.
+  // See profile.component.tsx: async "already exists" results live outside
+  // RHF's schema-driven errors, which would otherwise clear them.
   const [emailTaken, setEmailTaken] = useState(false);
   const [phoneTaken, setPhoneTaken] = useState(false);
 
-  const qualification = watch('qualification');
-  const fontOfSign = watch('fontOfSign');
-  const textOfSign = watch('textOfSign');
   const birthdate = watch('birthdate');
   const age = useMemo(() => computeAge(birthdate), [birthdate]);
-  // Matches profile.component.html's `[max]="today"` on its mat-datepicker —
-  // the doctor can't pick a future DOB (which would otherwise compute a
-  // negative age below).
   const now = new Date();
   const maxBirthdate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const facilityOptions = useMemo(
     () => data.facilities.map(facility => facility.display),
     [data.facilities]
   );
+  const profile = toFormValues(data);
 
   function openEdit() {
-    reset(data.profile);
+    reset(toFormValues(data));
     setEditMode(true);
   }
 
-  function handleSave(values: ProfileFormValues) {
+  function handleSave(values: HwProfileFormValues) {
     updateProfile.mutate(
       {
         values,
@@ -146,13 +144,6 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
     if (file) updatePhoto.mutate({ personUuid: data.personUuid, file });
   }
 
-  /**
-   * Ports ProviderAttributeValidator/AuthService.validateProviderAttribute —
-   * checked on blur rather than Angular's debounced valueChanges stream,
-   * since this field only needs a one-shot check, not a live one. Takes the
-   * raw value directly (not a blur event) since PhoneNumberFieldComponent's
-   * onBlur — used for the phoneNumber case — hands back neither.
-   */
   async function checkAttributeAvailable(
     field: 'emailId' | 'phoneNumber',
     rawValue: string
@@ -174,7 +165,7 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
       <ProfilePhotoCard
         photoUrl={data.profile.photoUrl}
-        name={`Dr. ${fullName(data.profile)}`}
+        name={fullName(data.profile)}
         onPhotoChange={handlePhotoChange}
         uploading={updatePhoto.isPending}
       />
@@ -196,51 +187,16 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
             <ul className="list-none p-0">
               <ProfileInfoRow
                 label="Gender"
-                value={GENDER_LABELS[data.profile.gender]}
+                value={GENDER_LABELS[profile.gender]}
               />
-              <ProfileInfoRow label="State" value={data.profile.visitState} />
-              <ProfileInfoRow
-                label="Mobile No."
-                value={data.profile.phoneNumber}
-              />
-              <ProfileInfoRow
-                label="WhatsApp No."
-                value={data.profile.whatsapp}
-              />
-              <ProfileInfoRow label="Email" value={data.profile.emailId} />
-              <ProfileInfoRow
-                label="Qualification"
-                value={
-                  data.profile.qualification === 'Other' &&
-                  data.profile.otherQualification
-                    ? `${data.profile.qualification} (${data.profile.otherQualification})`
-                    : data.profile.qualification
-                }
-              />
-              <ProfileInfoRow
-                label="Specialization"
-                value={data.profile.specialization}
-              />
-              <ProfileInfoRow
-                label="Registration No."
-                value={data.profile.registrationNumber}
-              />
+              <ProfileInfoRow label="Mobile No." value={profile.phoneNumber} />
+              <ProfileInfoRow label="WhatsApp No." value={profile.whatsapp} />
+              <ProfileInfoRow label="Email" value={profile.emailId} />
               <ProfileInfoRow
                 label="Facility Name"
-                value={data.profile.facilityName}
+                value={profile.facilityName}
               />
-              <ProfileInfoRow label="Ward" value={data.profile.providerWard} />
-              <li className="mt-2 flex items-center gap-4 rounded-md bg-[rgba(215,212,234,0.4)] px-4 py-3">
-                <span className="w-2/5 shrink-0 text-base text-[#7F7B92]">
-                  Signature
-                </span>
-                <span
-                  style={{ fontFamily: data.profile.fontOfSign }}
-                  className="text-[28px] leading-none text-[#1B163A]"
-                >
-                  {data.profile.textOfSign || 'NA'}
-                </span>
-              </li>
+              <ProfileInfoRow label="Ward" value={profile.providerWard} />
             </ul>
           </>
         ) : (
@@ -359,43 +315,6 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
               }
             />
 
-            <TextField
-              label="State"
-              placeholder="Enter state"
-              registration={register('visitState')}
-              error={isSubmitted ? errors.visitState?.message : undefined}
-            />
-            <SelectField
-              label="Qualification *"
-              options={QUALIFICATION_OPTIONS}
-              registration={register('qualification')}
-              error={isSubmitted ? errors.qualification?.message : undefined}
-            />
-            {qualification === 'Other' && (
-              <TextField
-                label="Other Qualification *"
-                placeholder="Enter other qualification"
-                registration={register('otherQualification')}
-                error={
-                  isSubmitted ? errors.otherQualification?.message : undefined
-                }
-              />
-            )}
-            <SelectField
-              label="Specialization *"
-              options={SPECIALIZATION_OPTIONS}
-              registration={register('specialization')}
-              error={isSubmitted ? errors.specialization?.message : undefined}
-            />
-
-            <TextField
-              label="Registration Number *"
-              placeholder="Enter registration number"
-              registration={register('registrationNumber')}
-              error={
-                isSubmitted ? errors.registrationNumber?.message : undefined
-              }
-            />
             <SelectField
               label="Facility Name *"
               options={facilityOptions}
@@ -408,28 +327,6 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
               registration={register('providerWard')}
               error={isSubmitted ? errors.providerWard?.message : undefined}
             />
-
-            <div className="md:col-span-3">
-              <h6 className="text-lg font-bold text-[#2E1E91]">
-                Edit signature
-              </h6>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:col-span-3 md:grid-cols-2">
-              <TextField
-                label="Signature letters *"
-                placeholder="Enter signature letters"
-                registration={register('textOfSign')}
-                error={isSubmitted ? errors.textOfSign?.message : undefined}
-              />
-              <SignatureFontSelect
-                value={fontOfSign}
-                onChange={name =>
-                  setValue('fontOfSign', name, { shouldValidate: true })
-                }
-                previewText={textOfSign}
-                error={isSubmitted ? errors.fontOfSign?.message : undefined}
-              />
-            </div>
 
             <div className="flex items-end justify-end md:col-span-3">
               <button

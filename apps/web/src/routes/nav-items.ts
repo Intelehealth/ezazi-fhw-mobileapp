@@ -13,14 +13,17 @@ export interface SidebarNavItem {
   path: string;
   iconDefault: string;
   iconActive: string;
+  /** Restricts the row to one role, like the Angular sidebar's `*ngxPermissionsOnly/Except` — omitted means everyone. */
+  role?: 'doctor' | 'nurse';
 }
 
 /**
  * main-container.component.html's `<ul class="admin-nav">` entries — the
- * system-admin-only rows (Ayu/Support/Report/User Creation) and the
- * nurse-vs-doctor profile-route split are left out, since neither role
- * branching nor those admin pages exist in this app yet. Dashboard and My
- * Profile route to real pages; Change Password/Help are kept as real nav
+ * system-admin-only rows (Ayu/Support/Report/User Creation) are left out,
+ * since those admin pages don't exist in this app yet. Like the Angular
+ * sidebar, nurses (see `role`) don't get Dashboard or Help and have their own
+ * My Profile row pointing at /dashboard/hw-profile. Dashboard and the profile
+ * rows route to real pages; Change Password/Help are kept as real nav
  * rows (matching the reference UI) but point nowhere until their own
  * pages are migrated.
  */
@@ -30,12 +33,21 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     path: ROUTES.DASHBOARD,
     iconDefault: homeBlue,
     iconActive: homeWhite,
+    role: 'doctor',
   },
   {
     label: 'My Profile',
     path: ROUTES.DASHBOARD_PROFILE,
     iconDefault: userBlue,
     iconActive: userWhite,
+    role: 'doctor',
+  },
+  {
+    label: 'My Profile',
+    path: ROUTES.DASHBOARD_HW_PROFILE,
+    iconDefault: userBlue,
+    iconActive: userWhite,
+    role: 'nurse',
   },
   {
     label: 'Change Password',
@@ -48,5 +60,6 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     path: `${ROUTES.DASHBOARD}/help`,
     iconDefault: infoBlue,
     iconActive: infoWhite,
+    role: 'doctor',
   },
 ];

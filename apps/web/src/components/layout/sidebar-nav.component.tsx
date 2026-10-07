@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { clientConfig } from '../../config/clients';
+import { useIsNurse } from '../../hooks/useIsNurse';
 import { SIDEBAR_NAV_ITEMS } from '../../routes/nav-items';
 import ezaziSmallLogo from '../../assets/ezazi/ezazi-sm-logo.svg';
 import toggleExpandedIcon from '../../assets/icons/dashboard-icons/Vector.png';
@@ -25,6 +26,10 @@ export function SidebarNavComponent({
   onLogout,
 }: SidebarNavComponentProps) {
   const location = useLocation();
+  const isNurse = useIsNurse();
+  const navItems = SIDEBAR_NAV_ITEMS.filter(
+    item => !item.role || item.role === (isNurse ? 'nurse' : 'doctor')
+  );
 
   return (
     <div
@@ -70,7 +75,7 @@ export function SidebarNavComponent({
       </div>
 
       <ul className="flex h-full flex-col overflow-auto px-4 pb-5">
-        {SIDEBAR_NAV_ITEMS.map(item => {
+        {navItems.map(item => {
           const isActive = location.pathname === item.path;
           return (
             <li key={item.path} className="mb-1 h-[52px] w-full">

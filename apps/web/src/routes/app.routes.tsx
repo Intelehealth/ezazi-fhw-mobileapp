@@ -11,6 +11,7 @@ import { RouteErrorBoundary } from '../components/common/route-error-boundary.co
 import { env } from '../config/env';
 import { ROUTES } from './paths';
 import { ProtectedRoute } from './protected.route';
+import { NurseRedirect } from './nurse-redirect.route';
 
 const RouteLoader = () => (
   <div className="flex min-h-screen items-center justify-center">Loading…</div>
@@ -35,6 +36,9 @@ const SetupNewPasswordPage = lazy(
 const DashboardPage = lazy(() => import('../pages/dashboard/dashboard.page'));
 const ProfilePage = lazy(
   () => import('../pages/dashboard/profile/profile.page')
+);
+const HwProfilePage = lazy(
+  () => import('../pages/dashboard/hw-profile/hw-profile.page')
 );
 const NotFoundPage = lazy(() => import('../pages/not-found/not-found.page'));
 
@@ -123,16 +127,18 @@ const router = createBrowserRouter(
           path={ROUTES.DASHBOARD_HW_PROFILE}
           element={
             <Suspense fallback={<RouteLoader />}>
-              <DashboardPage />
+              <HwProfilePage />
             </Suspense>
           }
         />
         <Route
           path={ROUTES.DASHBOARD_PROFILE}
           element={
-            <Suspense fallback={<RouteLoader />}>
-              <ProfilePage />
-            </Suspense>
+            <NurseRedirect to={ROUTES.DASHBOARD_HW_PROFILE}>
+              <Suspense fallback={<RouteLoader />}>
+                <ProfilePage />
+              </Suspense>
+            </NurseRedirect>
           }
         />
       </Route>

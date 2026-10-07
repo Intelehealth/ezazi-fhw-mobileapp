@@ -14,10 +14,10 @@ export const ROUTES = {
     OTP_VERIFICATION: 'otp-verification',
     SETUP_NEW_PASSWORD: 'setup-new-password',
   },
-  // login.component.ts's real post-login targets (loginSuccess()). Both
-  // routes currently render the same placeholder pages/dashboard/dashboard.page.tsx
-  // (see routes/app.routes.tsx) — the real, role-specific dashboard modules
-  // aren't migrated to apps/web yet.
+  /*
+   * login.component.ts's real post-login targets (loginSuccess()): doctors
+   * land on the dashboard, nurses on their hw-profile screen.
+   */
   DASHBOARD: '/dashboard',
   DASHBOARD_HW_PROFILE: '/dashboard/hw-profile',
   DASHBOARD_PROFILE: '/dashboard/profile',

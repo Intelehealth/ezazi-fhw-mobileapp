@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import searchIcon from '../../assets/svgs/search-icon.svg';
 import userIcon from '../../assets/svgs/user.svg';
+import { useIsNurse } from '../../hooks/useIsNurse';
 import { ROUTES } from '../../routes/paths';
 
 interface AppHeaderComponentProps {
@@ -22,6 +23,7 @@ export function AppHeaderComponent({
   avatarUrl,
 }: AppHeaderComponentProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const isNurse = useIsNurse();
 
   return (
     // px-5 matches dashboard-layout.component.tsx's content wrapper
@@ -29,19 +31,23 @@ export function AppHeaderComponent({
     // cases chip below it, instead of the p-4 this had before leaving it
     // 4px further left than the content underneath.
     <nav className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-white px-10 py-4">
-      <div className="flex h-[52px] w-[25vw] items-center rounded-lg border-2 border-[rgba(178,175,190,0.2)] bg-[#FAF9FF] px-4">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          placeholder="Search by patient name or ID"
-          aria-label="Search by patient name or ID"
-          className="w-full border-none bg-transparent text-base outline-none"
-        />
-        <img src={searchIcon} alt="" width={20} height={20} />
-      </div>
+      {/* Nurses don't get the global patient search (the Angular header only
+          renders it on the doctor Dashboard page). */}
+      {!isNurse && (
+        <div className="flex h-[52px] w-[25vw] items-center rounded-lg border-2 border-[rgba(178,175,190,0.2)] bg-[#FAF9FF] px-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search by patient name or ID"
+            aria-label="Search by patient name or ID"
+            className="w-full border-none bg-transparent text-base outline-none"
+          />
+          <img src={searchIcon} alt="" width={20} height={20} />
+        </div>
+      )}
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-3">
         <button
           type="button"
           aria-label="Notifications"

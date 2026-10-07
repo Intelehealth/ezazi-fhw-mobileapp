@@ -15,6 +15,13 @@ import type { AuthUser } from '../../../types/auth.types';
 // react-redux, unrelated to anything this component does. Mocking
 // store/hooks tests DashboardPage's own logic without depending on that
 // still-open tooling gap.
+/*
+ * The header avatar reads the profile query; its own suite covers the hook.
+ */
+vi.mock('../../../hooks/queries/useProviderProfile', () => ({
+  useProviderProfile: () => ({ data: undefined }),
+}));
+
 vi.mock('../../../store/hooks', () => ({
   useAppSelector: vi.fn(),
   useAppDispatch: vi.fn(),

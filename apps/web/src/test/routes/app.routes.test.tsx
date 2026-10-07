@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useAppSelector } from '../../store/hooks';
 
@@ -20,11 +20,23 @@ vi.mock('../../store/hooks', () => ({
   useAppDispatch: () => vi.fn(),
 }));
 
+/*
+ * The dashboard/profile pages read the provider-profile query; this file only
+ * checks which screen each route renders, so keep it pending (no QueryClient).
+ */
+vi.mock('../../hooks/queries/useProviderProfile', () => ({
+  useProviderProfile: () => ({
+    isPending: true,
+    isError: false,
+    data: undefined,
+  }),
+}));
+
 vi.mock('../../hooks/mutations/useLogin', () => ({
   useLogin: () => ({ mutate: vi.fn(), isPending: false, error: null }),
 }));
 
-function mockIsAuthenticated(isAuthenticated: boolean) {
+function mockIsAuthenticated(isAuthenticated: boolean, roles: string[] = []) {
   vi.mocked(useAppSelector).mockImplementation(selector =>
     selector({
       auth: {
@@ -33,7 +45,7 @@ function mockIsAuthenticated(isAuthenticated: boolean) {
               uuid: 'u-1',
               username: 'doctor1',
               displayName: 'Demo Male Doctor',
-              roles: [],
+              roles,
               providerUuid: 'p-1',
               personUuid: 'per-1',
             }
@@ -94,12 +106,33 @@ describe('AppRoutes', () => {
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('renders the same placeholder dashboard at /dashboard/hw-profile', async () => {
-    mockIsAuthenticated(true);
+  it('renders the nurse profile screen at /dashboard/hw-profile', async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: NURSE']);
 
     await renderAtPath('/dashboard/hw-profile');
 
-    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    expect(await screen.findByText('Loading profile…')).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+  });
+
+  it('sends a nurse who opens /dashboard/profile to /dashboard/hw-profile', async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: NURSE']);
+
+    await renderAtPath('/dashboard/profile');
+
+    expect(await screen.findByText('Loading profile…')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/dashboard/hw-profile')
+    );
+  });
+
+  it('keeps a doctor on /dashboard/profile', async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: DOCTOR']);
+
+    await renderAtPath('/dashboard/profile');
+
+    expect(await screen.findByText('Loading profile…')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/dashboard/profile');
   });
 
   it('redirects an unauthenticated visitor away from a protected route to login', async () => {

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type ProxyOptions } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -14,15 +14,7 @@ export default defineConfig(({ mode }) => {
   // VITE_PORTAL_API_PROXY_TARGET (see .env.example) and the route is simply
   // omitted below when it's unset, rather than pointing at a fake
   // dev.example.org host that would silently fail every call through it.
-  const proxy: Record<
-    string,
-    {
-      target: string;
-      changeOrigin: true;
-      secure: false;
-      rewrite: (path: string) => string;
-    }
-  > = {};
+  const proxy: Record<string, ProxyOptions> = {};
   if (env.VITE_PORTAL_API_PROXY_TARGET) {
     proxy['/portal-api'] = {
       target: env.VITE_PORTAL_API_PROXY_TARGET,
@@ -42,6 +34,13 @@ export default defineConfig(({ mode }) => {
       changeOrigin: true,
       secure: false,
       rewrite: (path: string) => path.replace(/^\/openmrs-api/, ''),
+      /*
+       * OpenMRS sets JSESSIONID with Path=/openmrs, which the browser would
+       * never send back on '/openmrs-api/...' requests — so every call after
+       * /session reached OpenMRS anonymous ("Privileges required: Get People").
+       */
+      cookiePathRewrite: { '*': '/' },
+      cookieDomainRewrite: { '*': '' },
     };
   }
 

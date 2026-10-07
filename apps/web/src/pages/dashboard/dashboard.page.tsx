@@ -1,6 +1,7 @@
 import { logout } from '../../actions/auth.actions';
 import { DashboardLayoutComponent } from '../../components/layout/dashboard-layout.component';
 import { DashboardComponent } from '../../modules/dashboard/dashboard.component';
+import { useProviderProfile } from '../../hooks/queries/useProviderProfile';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 
 /**
@@ -20,10 +21,16 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 export default function DashboardPage() {
   const user = useAppSelector(state => state.auth.user);
   const dispatch = useAppDispatch();
+  /*
+   * Shares the ['provider-profile'] query with ProfileComponent, so the header
+   * avatar updates the moment a new photo is uploaded.
+   */
+  const { data: providerProfile } = useProviderProfile();
 
   return (
     <DashboardLayoutComponent
       userName={user?.displayName ?? user?.username ?? 'unknown user'}
+      avatarUrl={providerProfile?.profile.photoUrl ?? undefined}
       onLogout={() => dispatch(logout())}
     >
       <DashboardComponent />

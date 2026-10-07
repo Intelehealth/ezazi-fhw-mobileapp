@@ -5,8 +5,19 @@ import { showToast } from '../../services/toast';
 import { ATTRIBUTE_FIELD_MAP } from '../../modules/dashboard/profile/profile.attribute-map';
 import type { ProfileFormValues } from '../../modules/dashboard/profile/profile.validation';
 
+/**
+ * The doctor form's values, or the nurse (hw-profile) form's subset of them —
+ * only the person fields are mandatory; attribute fields the form doesn't
+ * have are left untouched on save rather than blanked.
+ */
+export type ProviderProfileFormValues = Pick<
+  ProfileFormValues,
+  'givenName' | 'middleName' | 'familyName' | 'gender' | 'birthdate'
+> &
+  Partial<ProfileFormValues>;
+
 export interface UpdateProviderProfileInput {
-  values: ProfileFormValues;
+  values: ProviderProfileFormValues;
   providerUuid: string;
   personUuid: string;
   preferredNameUuid: string | null;
@@ -69,7 +80,7 @@ async function performUpdate(input: UpdateProviderProfileInput): Promise<void> {
   const attributeResults = await Promise.all(
     ATTRIBUTE_FIELD_MAP.map(({ field }) => {
       const attributeTypeUuid = attributeTypeUuidByField[field];
-      if (!attributeTypeUuid) return null;
+      if (!attributeTypeUuid || values[field] === undefined) return null;
 
       return profileService.addOrUpdateProviderAttribute(
         providerUuid,

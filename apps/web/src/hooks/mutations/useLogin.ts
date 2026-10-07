@@ -13,9 +13,7 @@ import type {
   LoginCredentials,
 } from '../../types/auth.types';
 import { storage } from '../../utils/storage';
-
-/** Matches the backend's own casing — uppercased below when building AuthUser. */
-const NURSE_ROLE = 'ORGANIZATIONAL: NURSE';
+import { NURSE_ROLE } from '../useIsNurse';
 
 interface LoginResult {
   token: string;

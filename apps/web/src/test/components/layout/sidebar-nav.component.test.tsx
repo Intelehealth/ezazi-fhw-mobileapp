@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useIsNurse } from '../../../hooks/useIsNurse';
 import { SidebarNavComponent } from '../../../components/layout/sidebar-nav.component';
 
 function renderSidebar(pathname = '/dashboard', collapsed = false) {
@@ -18,6 +19,16 @@ function renderSidebar(pathname = '/dashboard', collapsed = false) {
   return { ...utils, onToggleCollapsed, onLogout };
 }
 
+/*
+ * Mocked rather than a real react-redux Provider — same dual-React-hoisting
+ * reason as dashboard.page.test.tsx.
+ */
+vi.mock('../../../hooks/useIsNurse', () => ({ useIsNurse: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(useIsNurse).mockReturnValue(false);
+});
+
 describe('SidebarNavComponent', () => {
   it('renders every nav item plus Log-out', () => {
     renderSidebar();
@@ -26,6 +37,20 @@ describe('SidebarNavComponent', () => {
     expect(screen.getByText('My Profile')).toBeInTheDocument();
     expect(screen.getByText('Change Password')).toBeInTheDocument();
     expect(screen.getByText('Help')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log-out' })).toBeInTheDocument();
+  });
+
+  it('shows nurses only My Profile (to hw-profile) and Change Password', () => {
+    vi.mocked(useIsNurse).mockReturnValue(true);
+    renderSidebar('/dashboard/hw-profile');
+
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Help')).not.toBeInTheDocument();
+    expect(screen.getByText('Change Password')).toBeInTheDocument();
+    expect(screen.getByText('My Profile').closest('a')).toHaveAttribute(
+      'href',
+      '/dashboard/hw-profile'
+    );
     expect(screen.getByRole('button', { name: 'Log-out' })).toBeInTheDocument();
   });
 
