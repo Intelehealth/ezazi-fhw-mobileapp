@@ -18,8 +18,11 @@ import type { AuthUser } from '../../../types/auth.types';
 /*
  * The header avatar reads the profile query; its own suite covers the hook.
  */
+const providerProfile = vi.hoisted(() => ({
+  data: undefined as { profile: { photoUrl: string | null } } | undefined,
+}));
 vi.mock('../../../hooks/queries/useProviderProfile', () => ({
-  useProviderProfile: () => ({ data: undefined }),
+  useProviderProfile: () => providerProfile,
 }));
 
 vi.mock('../../../store/hooks', () => ({
@@ -100,6 +103,22 @@ describe('DashboardPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log-out' }));
 
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the doctor's photo in the header once the profile has loaded", () => {
+    mockAuthState(USER);
+    vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
+    providerProfile.data = { profile: { photoUrl: '/personimage/per-1' } };
+
+    try {
+      const { container } = renderDashboardPage();
+
+      expect(
+        container.querySelector('nav img[src="/personimage/per-1"]')
+      ).not.toBeNull();
+    } finally {
+      providerProfile.data = undefined;
+    }
   });
 
   it('renders the dashboard case sections inside the shell', () => {

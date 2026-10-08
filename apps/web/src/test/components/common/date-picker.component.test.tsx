@@ -50,7 +50,9 @@ describe('DatePickerComponent', () => {
       'aria-pressed',
       'true'
     );
-    expect(screen.getByRole('button', { name: '01 Jul 2000' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '01 Jul 2000' })
+    ).toBeInTheDocument();
   });
 
   it('selects a day, closes the calendar and reports the ISO date', () => {
@@ -88,7 +90,9 @@ describe('DatePickerComponent', () => {
     render(<Harness />);
     open();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Choose month and year' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Choose month and year' })
+    );
     fireEvent.click(screen.getByRole('button', { name: '2010' }));
     fireEvent.click(screen.getByRole('button', { name: 'MAR' }));
 
@@ -99,12 +103,16 @@ describe('DatePickerComponent', () => {
     render(<Harness />);
     open();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Choose month and year' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Choose month and year' })
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Earlier years' }));
 
     // max year 2026, 24 per page -> the second page starts at 2026 - 47 = 1979.
     expect(screen.getByRole('button', { name: '1979' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '2026' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '2026' })
+    ).not.toBeInTheDocument();
   });
 
   it('disables days after max and stops forward navigation past it', () => {
@@ -136,5 +144,110 @@ describe('DatePickerComponent', () => {
     expect(screen.getByPlaceholderText('Enter DOB')).toHaveValue('');
     open();
     expect(screen.getByText(/THU OCT 01 2026/)).toBeInTheDocument();
+  });
+
+  it('closes the calendar when its toggle button is clicked again', () => {
+    render(<Harness />);
+
+    open();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    open();
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('returns from the year picker to the day view when the header toggle is clicked again', () => {
+    render(<Harness />);
+    open();
+
+    const toggle = screen.getByRole('button', {
+      name: 'Choose month and year',
+    });
+    fireEvent.click(toggle);
+    expect(screen.queryByText('S')).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+
+    expect(screen.getAllByText('S')).toHaveLength(2);
+  });
+
+  it('rolls December over to January of the next year', () => {
+    render(<Harness initial="2000-12-15" />);
+    open();
+
+    fireEvent.click(screen.getByRole('button', { name: /next month/i }));
+
+    expect(screen.getByText('JAN')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '01 Jan 2001' })
+    ).toBeInTheDocument();
+  });
+
+  it('works without a max date: starts at today and allows years up to 50 ahead', () => {
+    render(
+      <DatePickerComponent
+        id="dob"
+        label="Date of birth *"
+        value=""
+        onChange={vi.fn()}
+      />
+    );
+    open();
+
+    const today = new Date();
+    expect(
+      screen.getByText(new RegExp(String(today.getFullYear())))
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /next month/i }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Choose month and year' })
+    );
+    expect(
+      screen.getByRole('button', { name: String(today.getFullYear() + 50) })
+    ).toBeInTheDocument();
+  });
+
+  it('shows an unparseable value as an empty field', () => {
+    render(<Harness initial="not-a-date" />);
+
+    expect(screen.getByLabelText('Date of birth *')).toHaveValue('');
+  });
+
+  it('shows the error message under the field', () => {
+    render(
+      <DatePickerComponent
+        id="dob"
+        label="Date of birth *"
+        value=""
+        onChange={vi.fn()}
+        error="Enter DOB"
+      />
+    );
+
+    expect(screen.getByText('Enter DOB')).toBeInTheDocument();
+  });
+
+  it('opens and closes the calendar when the read-only field itself is clicked', () => {
+    render(<Harness />);
+    const input = screen.getByLabelText('Date of birth *');
+
+    fireEvent.click(input);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(input);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('pages forward again to later years after paging back', () => {
+    render(<Harness />);
+    open();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Choose month and year' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Earlier years' }));
+    expect(screen.getByRole('button', { name: '1979' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Later years' }));
+
+    expect(screen.getByRole('button', { name: '2026' })).toBeInTheDocument();
   });
 });

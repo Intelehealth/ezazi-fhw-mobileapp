@@ -80,12 +80,13 @@ async function performUpdate(input: UpdateProviderProfileInput): Promise<void> {
   const attributeResults = await Promise.all(
     ATTRIBUTE_FIELD_MAP.map(({ field }) => {
       const attributeTypeUuid = attributeTypeUuidByField[field];
-      if (!attributeTypeUuid || values[field] === undefined) return null;
+      const value = values[field];
+      if (!attributeTypeUuid || value === undefined) return null;
 
       return profileService.addOrUpdateProviderAttribute(
         providerUuid,
         attributeTypeUuid,
-        values[field] ?? '',
+        value,
         existingAttributeUuidByField[field]
       );
     })

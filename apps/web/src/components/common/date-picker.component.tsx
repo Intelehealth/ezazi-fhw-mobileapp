@@ -20,8 +20,7 @@ function toIso(date: Date): string {
 function parseIso(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
-  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return Number.isNaN(date.getTime()) ? null : date;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
 /** "06 Jul 2000" — the format the Angular Material field shows. */

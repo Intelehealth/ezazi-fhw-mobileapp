@@ -87,7 +87,6 @@ export function OtpVerificationComponent() {
   const maskedValue = maskContact((phoneNumber ?? email) as string, via);
 
   function handleResend() {
-    if (counter > 0) return;
     requestOtp({ otpFor: safeVerifyFor, phoneNumber, countryCode, email });
     setCounter(RESEND_COUNTDOWN_SECONDS);
   }

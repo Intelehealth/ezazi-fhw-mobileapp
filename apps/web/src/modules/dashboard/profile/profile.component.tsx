@@ -280,6 +280,12 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
                   </label>
                 ))}
               </div>
+              {/*
+               * The radio group always holds a valid code (see toGender), so
+               * the schema's gender error can't surface from this form — kept
+               * for parity with the Angular template's own error block.
+               */}
+              {/* v8 ignore next 5 -- @preserve */}
               {isSubmitted && errors.gender && (
                 <p className="mt-1 text-xs text-red-600">
                   {errors.gender.message}

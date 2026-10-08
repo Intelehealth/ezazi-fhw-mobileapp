@@ -417,8 +417,12 @@ describe('ProfileComponent', () => {
       fireEvent.click(
         screen.getByRole('button', { name: 'Choose month and year' })
       );
-      fireEvent.click(screen.getByRole('button', { name: String(date.getFullYear()) }));
-      fireEvent.click(screen.getByRole('button', { name: MONTHS[date.getMonth()] }));
+      fireEvent.click(
+        screen.getByRole('button', { name: String(date.getFullYear()) })
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: MONTHS[date.getMonth()] })
+      );
       const month = MONTHS[date.getMonth()];
       const label = `${String(date.getDate()).padStart(2, '0')} ${month[0]}${month.slice(1).toLowerCase()} ${date.getFullYear()}`;
       fireEvent.click(screen.getByRole('button', { name: label }));
@@ -447,7 +451,7 @@ describe('ProfileComponent', () => {
     expect(profileService.validateProviderAttribute).not.toHaveBeenCalled();
   });
 
-  it('shows phone/WhatsApp digits as typed, without the library\'s mid-number dash', async () => {
+  it("shows phone/WhatsApp digits as typed, without the library's mid-number dash", async () => {
     renderProfile();
     await waitFor(() =>
       expect(screen.getByText('demo@example.com')).toBeInTheDocument()
@@ -558,5 +562,79 @@ describe('ProfileComponent', () => {
     );
     expect(screen.getByText('Enter other qualification')).toBeInTheDocument();
     expect(profileService.updatePerson).not.toHaveBeenCalled();
+  });
+
+  it("shows every field's validation error on an invalid submit", async () => {
+    vi.mocked(profileService.getProvider).mockResolvedValue(
+      success({
+        ...PROVIDER,
+        person: { ...PROVIDER.person, birthdate: '' },
+        attributes: PROVIDER.attributes.filter(
+          attr => attr.attributeType.display !== 'fontOfSign'
+        ),
+      })
+    );
+
+    renderProfile();
+    await waitFor(() =>
+      expect(screen.getByText('demo@example.com')).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole('button', { name: /edit profile/i }));
+
+    const clear = (element: HTMLElement) =>
+      fireEvent.change(element, { target: { value: '' } });
+    clear(screen.getByLabelText('Middle name *'));
+    clear(screen.getByLabelText('Last name *'));
+    fireEvent.change(screen.getByPlaceholderText('Enter state'), {
+      target: { value: '123' },
+    });
+    clear(screen.getByLabelText('Phone Number *'));
+    clear(screen.getByLabelText('WhatsApp Number *'));
+    clear(screen.getByPlaceholderText('Enter email'));
+    clear(screen.getByLabelText('Qualification *'));
+    clear(screen.getByLabelText('Specialization *'));
+    clear(screen.getByPlaceholderText('Enter registration number'));
+    clear(screen.getByLabelText('Facility Name *'));
+    clear(screen.getByLabelText('Ward *'));
+    clear(screen.getByPlaceholderText('Enter signature letters'));
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Enter middle name')).toBeInTheDocument()
+    );
+    expect(screen.getByText('Enter last name')).toBeInTheDocument();
+    expect(screen.getByText('Enter DOB')).toBeInTheDocument();
+    expect(
+      screen.getByText('State should contains alphabates only')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Enter phone number')).toBeInTheDocument();
+    expect(screen.getByText('Enter whatsApp number')).toBeInTheDocument();
+    expect(screen.getByText('Enter email')).toBeInTheDocument();
+    expect(screen.getByText('Select qualification')).toBeInTheDocument();
+    expect(screen.getByText('Select specialization')).toBeInTheDocument();
+    expect(screen.getByText('Enter registration number')).toBeInTheDocument();
+    expect(screen.getByText('Select facility name')).toBeInTheDocument();
+    expect(screen.getByText('Select ward')).toBeInTheDocument();
+    expect(screen.getByText('Enter signature letters')).toBeInTheDocument();
+    /* The picker's own label shares this text, so the error is the second match. */
+    expect(screen.getAllByText('Select Signature')).toHaveLength(2);
+    expect(profileService.updatePerson).not.toHaveBeenCalled();
+  });
+
+  it('shows "Saving…" on the submit button while the save is in flight', async () => {
+    vi.mocked(profileService.updatePerson).mockReturnValue(
+      new Promise(() => undefined)
+    );
+
+    renderProfile();
+    await waitFor(() =>
+      expect(screen.getByText('demo@example.com')).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole('button', { name: /edit profile/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
+    );
   });
 });

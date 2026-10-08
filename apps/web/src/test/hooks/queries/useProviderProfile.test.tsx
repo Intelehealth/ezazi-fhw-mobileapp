@@ -312,4 +312,32 @@ describe('useProviderProfile', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.profile.birthdate).toBe('');
   });
+
+  it('rejects a fetch attempted without a signed-in user, instead of calling the API', async () => {
+    vi.mocked(profileService.getProvider).mockClear();
+    vi.mocked(useAppSelector).mockImplementation(selector =>
+      selector({
+        auth: { user: null, token: null, isAuthenticated: false },
+        config: { data: null, error: null, lastFetched: null },
+      })
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result } = renderHook(() => useProviderProfile(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>{children}</MemoryRouter>
+        </QueryClientProvider>
+      ),
+    });
+
+    /* The query is disabled without a user, so force the fetch the guard protects. */
+    const query = queryClient
+      .getQueryCache()
+      .find({ queryKey: ['provider-profile', undefined] });
+    await expect(query?.fetch()).rejects.toThrow('Not authenticated.');
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(profileService.getProvider).not.toHaveBeenCalled();
+  });
 });
