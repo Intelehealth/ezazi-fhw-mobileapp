@@ -1,8 +1,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import notifee, { EventType } from 'react-native-notify-kit';
 import { logger } from '@/core/utils/logger';
-import { getTickCount, startMonitorService, subscribeTickCount } from './foregroundService';
-import { getBackboneStatus, handleTriggerDelivered, startBackboneAlerts } from './backboneTrigger';
+import { getTickCount, startMonitorService, stopMonitorService, subscribeTickCount } from './foregroundService';
+import { getBackboneStatus, handleTriggerDelivered, startBackboneAlerts, stopBackboneAlerts } from './backboneTrigger';
 import { MONITOR_TRIGGER_NOTIFICATION_ID } from './constants';
 
 const BACKBONE_POLL_MS = 3000;
@@ -19,10 +19,12 @@ const STARTUP_RETRY_DELAYS_MS = [2000, 4000, 8000, 16000, 30000];
  * the source brief — a kill-and-relaunch can easily land behind a locked
  * screen. A silent failure here is exactly the opposite of "fail loud."
  */
-async function startWithRetry(): Promise<void> {
+async function startWithRetry(isCancelled: () => boolean): Promise<void> {
   for (let attempt = 0; ; attempt += 1) {
+    if (isCancelled()) return;
     try {
       await startMonitorService();
+      if (isCancelled()) return;
       await startBackboneAlerts();
       if (attempt > 0) {
         logger.info(`[monitor] startup succeeded on retry ${attempt}`);
@@ -33,6 +35,24 @@ async function startWithRetry(): Promise<void> {
       logger.error(`[monitor] startup attempt ${attempt} failed, retrying in ${delay}ms`, error);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
+  }
+}
+
+/**
+ * Tears down everything startWithRetry() started: the foreground-service
+ * notification + heartbeat, and the self-rescheduling AlarmManager chain.
+ * Each step is isolated so one failing doesn't leave the other running.
+ */
+async function stopAll(): Promise<void> {
+  try {
+    await stopBackboneAlerts();
+  } catch (error) {
+    logger.error('[monitor] stopBackboneAlerts failed', error);
+  }
+  try {
+    await stopMonitorService();
+  } catch (error) {
+    logger.error('[monitor] stopMonitorService failed', error);
   }
 }
 
@@ -55,7 +75,12 @@ export function useMonitorService(enabled: boolean): void {
     // Sequenced, not concurrent — both touch notifee's own shared native
     // state (channels, the foreground-service lifecycle); firing them
     // together dropped the heartbeat's notification in testing.
-    void startWithRetry();
+    let cancelled = false;
+    void startWithRetry(() => cancelled).then(() => {
+      // Disabled (e.g. logout) while startup was still in flight: the start
+      // steps that already ran must be undone too.
+      if (cancelled) void stopAll();
+    });
 
     // index.js's onBackgroundEvent only catches a delivery while the app is
     // backgrounded. A delivery landing while the app happens to be in the
@@ -70,7 +95,14 @@ export function useMonitorService(enabled: boolean): void {
         void handleTriggerDelivered();
       }
     });
-    return unsubscribe;
+    // `enabled` flipping to false (logout) or unmount must stop the service —
+    // otherwise the foreground notification stays up and the alarm chain
+    // keeps re-arming itself every minute after the user has logged out.
+    return () => {
+      cancelled = true;
+      unsubscribe();
+      void stopAll();
+    };
   }, [enabled]);
 }
 

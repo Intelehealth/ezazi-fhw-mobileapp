@@ -203,8 +203,13 @@ export async function startBatteryGuard(): Promise<void> {
 export async function stopBatteryGuard(): Promise<void> {
   activeStateSubscription?.remove();
   activeStateSubscription = null;
-  await notifee.cancelTriggerNotifications([TRIGGER_NOTIFICATION_ID]);
+  // Flag first: an in-flight handleCheckTriggerDelivered() reads it to decide
+  // whether to re-arm, so clearing it before cancelling closes that race.
   await AsyncStorage.setItem(RUNNING_FLAG_KEY, 'false');
+  await notifee.cancelTriggerNotifications([TRIGGER_NOTIFICATION_ID]);
+  // The low-battery alert is `ongoing` (can't be swiped away) — without this
+  // it stays stuck at its last percentage after logout.
+  await clearAlertState();
   logger.debug('[batteryGuard] stopped');
 }
 

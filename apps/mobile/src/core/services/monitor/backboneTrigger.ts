@@ -61,8 +61,10 @@ export async function startBackboneAlerts(): Promise<void> {
 }
 
 export async function stopBackboneAlerts(): Promise<void> {
-  await notifee.cancelTriggerNotifications([MONITOR_TRIGGER_NOTIFICATION_ID]);
+  // Flag first: handleTriggerDelivered() reads it to decide whether to re-arm,
+  // so clearing it before cancelling closes the in-flight-delivery race.
   await AsyncStorage.setItem(MONITOR_TRIGGER_RUNNING_FLAG_KEY, 'false');
+  await notifee.cancelTriggerNotifications([MONITOR_TRIGGER_NOTIFICATION_ID]);
   logger.debug('[MonitorTrigger] stopped');
 }
 
