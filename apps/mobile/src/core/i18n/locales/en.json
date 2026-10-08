@@ -143,6 +143,10 @@
           "title": "Something went wrong",
           "message": "Please check your connection and try again."
         },
+        "notHealthWorker": {
+          "title": "Entered mobile number is not associated with Health worker",
+          "message": "Please check the number and try again."
+        },
         "genericError": {
           "title": "Something went wrong",
           "message": "Please try again in a moment."
@@ -239,5 +243,19 @@
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"
+  },
+  "batteryGuard": {
+    "dialog": {
+      "title": "Low Battery",
+      "message": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly.",
+      "dismiss": "OK",
+      "a11y": {
+        "dismiss": "Dismiss low battery warning"
+      }
+    },
+    "notification": {
+      "title": "Low Battery",
+      "body": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly."
+    }
   }
 }

@@ -5,6 +5,9 @@ type Translate = (key: string) => string;
 
 export const PHONE_REGEX = new RegExp(`^\\d{${clientConfig.phone.numberLength}}$`);
 
+/** Role value (in the requestOtp response's `roles`) that marks a health-worker account. */
+export const HEALTH_WORKER_ROLE = 'Organizational: Nurse';
+
 const NAMESPACE = 'forgotPassword.request.errors';
 
 export function createForgotPasswordRequestFormSchema(t: Translate) {

@@ -10,7 +10,9 @@ jest.mock('@/core/services/storage/secure-storage', () => ({
 jest.mock('@/core/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn() } }));
 jest.mock('@ezazi/api-client', () => ({
   ...jest.requireActual('@ezazi/api-client'),
-  createApiClient: jest.fn(() => ({})),
+  createApiClient: jest.fn(() => ({
+    interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } },
+  })),
 }));
 
 import '../client';

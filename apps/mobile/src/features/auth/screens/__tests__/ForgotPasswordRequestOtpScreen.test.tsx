@@ -44,7 +44,7 @@ describe('ForgotPasswordRequestOtpScreen', () => {
   });
 
   it('calls requestOtp() and replaces with ForgotPasswordVerify on success', async () => {
-    requestOtp.mockResolvedValue({ ok: true, data: { message: 'sent' } });
+    requestOtp.mockResolvedValue({ ok: true, data: { message: 'sent', roles: ['Organizational: Nurse', 'Provider'] } });
     renderScreen();
 
     fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '9999999999');
@@ -58,6 +58,32 @@ describe('ForgotPasswordRequestOtpScreen', () => {
       countryCode: '91',
       origin: 'Setup',
     });
+  });
+
+  it('shows the not-a-health-worker banner and does not navigate when roles lacks Organizational: Nurse', async () => {
+    requestOtp.mockResolvedValue({ ok: true, data: { message: 'sent', roles: ['Provider'] } });
+    renderScreen();
+
+    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '9999999999');
+    fireEvent.press(screen.getByRole('button', { name: 'Send OTP' }));
+
+    expect(
+      await screen.findByText('Entered mobile number is not associated with Health worker'),
+    ).toBeTruthy();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('treats a response with no roles as not a health worker', async () => {
+    requestOtp.mockResolvedValue({ ok: true, data: { message: 'sent' } });
+    renderScreen();
+
+    fireEvent.changeText(screen.getByPlaceholderText('Enter Mobile Number'), '9999999999');
+    fireEvent.press(screen.getByRole('button', { name: 'Send OTP' }));
+
+    expect(
+      await screen.findByText('Entered mobile number is not associated with Health worker'),
+    ).toBeTruthy();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it('shows the network banner and does not navigate when requestOtp() fails offline', async () => {
