@@ -257,5 +257,48 @@
       "title": "Low Battery",
       "body": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly."
     }
+  },
+  "timeline": {
+    "ageGravida": "{{age}} years · {{gravida}}",
+    "viewLcg": "View LCG",
+    "postpartumReport": "Postpartum Report",
+    "stages": {
+      "stage1": "Stage 1",
+      "stage2": "Stage 2",
+      "delivery": "Delivery",
+      "earlyPostpartum": "Early Postpartum"
+    },
+    "stageStep": "{{index}}. {{label}}",
+    "stageHeading": "{{label}}",
+    "status": {
+      "completed": "Completed",
+      "missed": "Missed",
+      "dueNow": "Due Now",
+      "upcoming": "Upcoming"
+    },
+    "checkpoint": {
+      "completedBody": "You have captured the observations",
+      "completedRecordedAt": "Recorded at {{time}}",
+      "missedBody": "You have missed the collection of observation",
+      "dueNowBody": "Tap to capture observations",
+      "upcomingBody": "Will be available at {{time}} (in {{minutes}} min)",
+      "recordNow": "Record Now"
+    },
+    "actions": {
+      "sos": "SOS",
+      "chat": "Chat",
+      "videoCall": "Video Call",
+      "rx": "Rx"
+    },
+    "endStage": "End First Stage",
+    "a11y": {
+      "close": "Close timeline",
+      "viewLcg": "View Labour Care Guide",
+      "postpartumReport": "View Postpartum Report",
+      "sos": "Send SOS alert",
+      "chat": "Open chat",
+      "videoCall": "Start video call",
+      "rx": "Open prescription"
+    }
   }
 }

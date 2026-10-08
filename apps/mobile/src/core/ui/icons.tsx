@@ -1,6 +1,73 @@
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
 
+interface RxIconProps {
+  size?: number;
+  color?: string;
+}
+
+/**
+ * Timeline bottom action bar — "Rx". Figma export: Icon.svg (provided
+ * 2026-10-05). Stroke-based (not filled), so it doesn't fit AppIcon's
+ * single fill+d slot — kept as its own component like NetworkErrorIcon.
+ * Native 34×34 viewBox.
+ */
+export const RxIcon: React.FC<RxIconProps> = ({ size = 34, color = '#2E1E91' }) => (
+  <Svg width={size} height={size} viewBox="0 0 34 34" fill="none">
+    <Path
+      d="M9.9165 28.3333V8.5H15.0165C16.2188 8.5 17.3719 8.97762 18.2221 9.82778C19.0722 10.6779 19.5498 11.831 19.5498 13.0333C19.5498 14.2356 19.0722 15.3887 18.2221 16.2389C17.3719 17.089 16.2188 17.5667 15.0165 17.5667H9.9165"
+      stroke={color}
+      strokeWidth={2.83333}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M15.0171 17.5654L25.5004 28.3321"
+      stroke={color}
+      strokeWidth={2.83333}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M25.5 18.4167L17 28.3334"
+      stroke={color}
+      strokeWidth={2.83333}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+interface SosAlertIconProps {
+  size?: number;
+  color?: string;
+}
+
+/**
+ * Timeline bottom action bar — "SOS" warning triangle. Figma export:
+ * "Outline/Essentional, UI/Vector.svg" from Ezazi design.zip (provided
+ * 2026-10-05). Native 31×28 viewBox, kept as-is rather than forced into
+ * AppIcon's 24×24 slot to avoid distorting the triangle's proportions.
+ */
+export const SosAlertIcon: React.FC<SosAlertIconProps> = ({ size = 28, color = '#FFFFFF' }) => (
+  <Svg width={(size * 31) / 28} height={size} viewBox="0 0 31 28" fill="none">
+    <Path
+      d="M15.2291 7.08333C15.8159 7.08333 16.2916 7.55903 16.2916 8.14583V15.2292C16.2916 15.816 15.8159 16.2917 15.2291 16.2917C14.6423 16.2917 14.1666 15.816 14.1666 15.2292V8.14583C14.1666 7.55903 14.6423 7.08333 15.2291 7.08333Z"
+      fill={color}
+    />
+    <Path
+      d="M15.2291 20.8958C16.0115 20.8958 16.6458 20.2616 16.6458 19.4792C16.6458 18.6968 16.0115 18.0625 15.2291 18.0625C14.4467 18.0625 13.8125 18.6968 13.8125 19.4792C13.8125 20.2616 14.4467 20.8958 15.2291 20.8958Z"
+      fill={color}
+    />
+    <Path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M9.97957 3.15411C11.4981 1.22531 13.1067 0 15.2291 0C17.3515 0 18.9602 1.22531 20.4787 3.15411C21.9721 5.05104 23.5548 7.85715 25.5797 11.4474L26.1967 12.5413C27.8706 15.5092 29.1927 17.8532 29.8872 19.7347C30.5968 21.6574 30.7654 23.4032 29.6919 24.9432C28.6501 26.4375 26.9119 27.0489 24.7196 27.3375C22.5357 27.625 19.5988 27.625 15.831 27.625H14.6273C10.8595 27.625 7.92255 27.625 5.73866 27.3375C3.54635 27.0489 1.80818 26.4375 0.766402 24.9432C-0.307163 23.4032 -0.138574 21.6574 0.571108 19.7347C1.26556 17.8532 2.58766 15.5092 4.26159 12.5413L4.87845 11.4476C6.90342 7.85725 8.4861 5.05108 9.97957 3.15411ZM11.6492 4.46861C10.2694 6.22126 8.76498 8.88232 6.67951 12.5799L6.16433 13.4933C4.42718 16.5734 3.19271 18.7689 2.56465 20.4705C1.94466 22.1503 2.03062 23.0408 2.5096 23.7279C3.02036 24.4605 3.97903 24.9626 6.016 25.2307C8.04465 25.4978 10.8412 25.5 14.7139 25.5H15.7443C19.6171 25.5 22.4136 25.4978 24.4423 25.2307C26.4792 24.9626 27.4379 24.4605 27.9487 23.7279C28.4277 23.0408 28.5136 22.1503 27.8936 20.4705C27.2656 18.7689 26.0311 16.5734 24.2939 13.4933L23.7788 12.5799C21.6933 8.88232 20.1889 6.22126 18.8091 4.46861C17.442 2.73226 16.3803 2.125 15.2291 2.125C14.078 2.125 13.0162 2.73226 11.6492 4.46861Z"
+      fill={color}
+    />
+  </Svg>
+);
+
 /**
  * Central SVG registry — the RN equivalent of Android's drawable/*.xml.
  * Every icon/wave path lives here ONCE; screens must not declare path strings.
@@ -69,6 +136,38 @@ export const iconPaths = {
   shieldLock: {
     fillRule: 'evenodd',
     d: 'M12 2.1L5 4.6V10.8C5 15.9 7.9 19.8 12 21.5C16.1 19.8 19 15.9 19 10.8V4.6L12 2.1Z M12 9.4a1.6 1.6 0 100 3.2 1.6 1.6 0 000-3.2Z M11.1 12.5L10.3 16H13.7L12.9 12.5Z',
+  },
+
+  // Timeline screen's header "Close" (✕) button.
+  // PLACEHOLDER — hand-authored, no Figma export provided yet.
+  close: 'M6.4 4.98L4.98 6.4 10.59 12l-5.61 5.6 1.42 1.42L12 13.41l5.6 5.61 1.42-1.42L13.41 12l5.61-5.6-1.42-1.42L12 10.59z',
+
+  // Timeline bottom action bar — "Chat".
+  // PLACEHOLDER — hand-authored, no Figma export provided yet.
+  chatBubble: {
+    fillRule: 'evenodd',
+    d: 'M4 4a2 2 0 00-2 2v10a2 2 0 002 2h3v3.5a.75.75 0 001.28.53L12.81 18H18a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h14v10h-5.5a1 1 0 00-.68.27L9 18.65V17a1 1 0 00-1-1H4V6z',
+  },
+
+  // Timeline bottom action bar — "Video Call".
+  // PLACEHOLDER — hand-authored, no Figma export provided yet.
+  videoCamera: {
+    fillRule: 'evenodd',
+    d: 'M3 6a2 2 0 012-2h8a2 2 0 012 2v2.38l3.4-2.1A1 1 0 0120 7.1v9.8a1 1 0 01-1.6.82L15 15.62V18a2 2 0 01-2 2H5a2 2 0 01-2-2V6zm2 0v12h8V6H5zm12 7.98l2 1.24V7.78l-2 1.24v4.96z',
+  },
+
+  // Timeline header — "View LCG".
+  // PLACEHOLDER — hand-authored, no Figma export provided yet.
+  document: {
+    fillRule: 'evenodd',
+    d: 'M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8.83a2 2 0 00-.59-1.42l-4.82-4.82A2 2 0 0013.17 2H6zm0 2h7v5a1 1 0 001 1h5v10H6V4zm9 .41L18.59 8H15V4.41zM7 12h10v2H7v-2zm0 4h10v2H7v-2z',
+  },
+
+  // Timeline header — "Postpartum Report".
+  // PLACEHOLDER — hand-authored, no Figma export provided yet.
+  report: {
+    fillRule: 'evenodd',
+    d: 'M5 3a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h14v14H5V5zm2 9h2v3H7v-3zm4-4h2v7h-2V10zm4-3h2v10h-2V7z',
   },
 } as const;
 

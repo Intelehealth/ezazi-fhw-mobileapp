@@ -14,6 +14,7 @@ import { ForgotPasswordRequestOtpScreen } from '@/features/auth/screens/ForgotPa
 import { ForgotPasswordVerifyOtpScreen } from '@/features/auth/screens/ForgotPasswordVerifyOtpScreen';
 import { ForgotPasswordResetScreen } from '@/features/auth/screens/ForgotPasswordResetScreen';
 import { HomeScreen } from '@/features/home/screens/HomeScreen';
+import { TimelineScreen } from '@/features/labour-care-guide/screens/TimelineScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -51,10 +52,20 @@ export const RootNavigator: React.FC = () => {
               name="ForgotPasswordReset"
               component={ForgotPasswordResetScreen}
             />
+            {/* TEMPORARY — registered here (not just under `authenticated`)
+                so SetupScreen's dev/QA shortcut can reach it pre-login.
+                Remove this duplicate registration once a real, authenticated
+                entry point (a patient-list screen) exists. */}
+            <Stack.Screen name="Timeline" component={TimelineScreen} />
           </>
         )}
 
-        {status === 'authenticated' && <Stack.Screen name="Home" component={HomeScreen} />}
+        {status === 'authenticated' && (
+          <>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Timeline" component={TimelineScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
     <ApiProgressOverlay />
