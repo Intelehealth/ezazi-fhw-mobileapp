@@ -34,7 +34,9 @@ import {
  * the notification cancels without waiting for the next poll.
  */
 
-const TRIGGER_CHANNEL_ID = 'battery-guard-trigger';
+// `-v2`: Android fixes a channel's importance at creation and ignores later
+// changes, so making this channel IMPORTANCE_MIN needed a new id.
+const TRIGGER_CHANNEL_ID = 'battery-guard-trigger-v2';
 const TRIGGER_NOTIFICATION_ID = 'battery-guard-trigger';
 const RUNNING_FLAG_KEY = 'battery_guard_running';
 
@@ -47,7 +49,9 @@ async function ensureChannels(): Promise<void> {
   await notifee.createChannel({
     id: TRIGGER_CHANNEL_ID,
     name: 'Battery check (internal)',
-    importance: AndroidImportance.LOW,
+    // MIN: silent, no status-bar icon, collapsed in the shade. This
+    // notification is only the alarm's vehicle, not something to read.
+    importance: AndroidImportance.MIN,
   });
   await notifee.createChannel({
     id: BATTERY_SILENT_CHANNEL_ID,
@@ -168,6 +172,14 @@ export async function evaluateBatteryNow(): Promise<void> {
 
 /** Called from index.js's onBackgroundEvent / index.ts's onForegroundEvent on the trigger's DELIVERED event. */
 export async function handleCheckTriggerDelivered(): Promise<void> {
+  // Same as handleTriggerDelivered(): dismiss the displayed "Battery check"
+  // vehicle notification; isolated so it can never block the check or re-arm.
+  try {
+    await notifee.cancelDisplayedNotification(TRIGGER_NOTIFICATION_ID);
+  } catch (error) {
+    logger.error('[batteryGuard] could not dismiss the displayed trigger notification', error);
+  }
+
   await evaluateBatteryNow();
 
   const stillRunning = (await AsyncStorage.getItem(RUNNING_FLAG_KEY)) === 'true';

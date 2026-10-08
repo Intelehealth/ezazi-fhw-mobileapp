@@ -16,7 +16,9 @@ export const MONITOR_TICK_INTERVAL_MS = 5_000;
 // TimestampTrigger; IntervalTrigger's own floor is 15 minutes, which is
 // exactly Stage 1/2's production interval class (30/15-min) — so production
 // use switches to a plain IntervalTrigger, no manual rescheduling needed.
-export const MONITOR_TRIGGER_CHANNEL_ID = 'labour-monitor-trigger';
+// `-v2`: Android fixes a channel's importance at creation and ignores later
+// changes, so making this channel IMPORTANCE_MIN needed a new id.
+export const MONITOR_TRIGGER_CHANNEL_ID = 'labour-monitor-trigger-v2';
 export const MONITOR_TRIGGER_NOTIFICATION_ID = 'labour-monitor-trigger';
 export const MONITOR_TRIGGER_INTERVAL_MINUTES = 1;
 

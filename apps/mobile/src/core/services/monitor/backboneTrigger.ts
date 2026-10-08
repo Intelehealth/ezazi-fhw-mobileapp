@@ -31,7 +31,9 @@ async function ensureTriggerChannel(): Promise<void> {
   await notifee.createChannel({
     id: MONITOR_TRIGGER_CHANNEL_ID,
     name: 'Labour monitoring (reliable check)',
-    importance: AndroidImportance.LOW,
+    // MIN: silent, no status-bar icon, collapsed in the shade. This
+    // notification is only the alarm's vehicle, not something to read.
+    importance: AndroidImportance.MIN,
   });
 }
 
@@ -70,6 +72,17 @@ export async function stopBackboneAlerts(): Promise<void> {
 
 /** Called from index.js's onBackgroundEvent on EventType.DELIVERED — records the tick, then re-arms the next one. */
 export async function handleTriggerDelivered(): Promise<void> {
+  // The trigger notification is only the AlarmManager vehicle — dismiss the
+  // displayed copy so users don't see "Monitor check" pile up in the shade.
+  // displayed-only (not cancelNotification, which would also cancel a pending
+  // trigger of the same id), and isolated: a failure here must never stop the
+  // re-arm below, or the whole alarm chain dies.
+  try {
+    await notifee.cancelDisplayedNotification(MONITOR_TRIGGER_NOTIFICATION_ID);
+  } catch (error) {
+    logger.error('[MonitorTrigger] could not dismiss the displayed trigger notification', error);
+  }
+
   const prevRaw = await AsyncStorage.getItem(MONITOR_TRIGGER_TICK_COUNT_KEY);
   const next = (prevRaw ? Number(prevRaw) : 0) + 1;
   const now = new Date().toISOString();
