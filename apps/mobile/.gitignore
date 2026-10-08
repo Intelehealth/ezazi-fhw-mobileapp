@@ -183,6 +183,9 @@ android/
 .DS_Store
 Thumbs.db
 
-# Personal, machine-specific notes — never shared with the team
+# Local-only working docs and agent notes — never shared with the team
 RUNBOOK.md
 DB_INIT_DESIGN.md
+MERGE_LANDMINES.md
+ROADMAP.md
+CLAUDE.md
