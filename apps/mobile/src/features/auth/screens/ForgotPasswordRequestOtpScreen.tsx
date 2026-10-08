@@ -21,7 +21,6 @@ import { Text } from '@/core/ui/Text';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { clientConfig } from '@/core/config/clients';
 import { colors, dimens } from '@/core/config/theme';
-import { env } from '@/core/config/env';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { logger } from '@/core/utils/logger';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
@@ -63,14 +62,6 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
     // Bare digits, no "+" — matches the legacy CountryCodePicker.getSelectedCountryCode()
     // value the real auth-gateway expects (confirmed via its VALIDATION_ERROR field names).
     const countryCode = clientConfig.phone.dialCode.replace('+', '');
-
-    // Console-only — the exact URL + body being sent, since the request
-    // body itself is assembled inside passwordApi.requestOtp (otpFor/source
-    // are baked in there, not visible from this call site otherwise).
-    logger.debug('[ForgotPassword] requestOtp request', {
-      url: `${env.AUTH_GATEWAY_URL}/auth/requestOtp`,
-      body: { otpFor: 'password', phoneNumber, countryCode, source: 'mobile' },
-    });
 
     const result = await requestOtp({ phoneNumber, countryCode });
 

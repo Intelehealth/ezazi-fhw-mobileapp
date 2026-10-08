@@ -22,7 +22,6 @@ import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 import { logger } from '@/core/utils/logger';
-import { env } from '@/core/config/env';
 
 // CountDownTimer(60000, 1000) from OTPVerificationFragment.java
 const RESEND_COUNTDOWN_SEC = 60;
@@ -99,12 +98,6 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
   }, [secondsLeft, isResending, phoneNumber, countryCode, requestOtp, t]);
 
   const onValidSubmit = async (data: ForgotPasswordVerifyFormValues) => {
-    // Console-only — the exact URL + body sent (verifyFor is baked in by passwordApi.verifyOtp).
-    logger.debug('[ForgotPassword] verifyOtp request', {
-      url: `${env.AUTH_GATEWAY_URL}/auth/verifyOtp`,
-      body: { verifyFor: 'password', phoneNumber, countryCode, otp: data.otp },
-    });
-
     const result = await verifyOtp({ phoneNumber, countryCode, otp: data.otp });
 
     if (result.ok) {
