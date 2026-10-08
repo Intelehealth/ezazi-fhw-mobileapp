@@ -15,6 +15,17 @@ import { useAppSelector } from '../../store/hooks';
  * exercises routing outcomes, not the login mutation itself (LoginComponent
  * has its own full suite) — avoids needing a QueryClientProvider here.
  */
+/*
+ * The real search box needs a QueryClient and has its own suite
+ * (patient-search.component.test.tsx); this file only cares that the header
+ * hosts it.
+ */
+vi.mock('../../components/layout/patient-search.component', () => ({
+  PatientSearchComponent: () => (
+    <input placeholder="Search by patient name or ID" />
+  ),
+}));
+
 vi.mock('../../store/hooks', () => ({
   useAppSelector: vi.fn(),
   useAppDispatch: () => vi.fn(),

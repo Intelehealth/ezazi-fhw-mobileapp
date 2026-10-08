@@ -43,20 +43,19 @@ export const publicHttpClient: AxiosInstance = createApiClient({
 });
 
 /**
- * Same dev-proxy-vs-real-host choice openMrsHttpClient's baseURL makes
- * below, exported for the one direct (non-axios) OpenMRS request in the
- * app: the profile photo `<img src>` (useProviderProfile.ts). That request
- * carries no Authorization header either way (browsers never attach one to
- * a plain `<img>` fetch) — it authenticates via the OpenMRS session cookie
- * alone, same as openMrsHttpClient's other calls, and cookies are only
- * sent for cross-site subresource requests at all when SameSite policy
- * allows it. Routing through the same-origin dev proxy sidesteps that
- * question entirely in dev, same as it does for CORS.
+ * The OpenMRS base URL (env.OPENMRS_URL) in every mode, dev included —
+ * there is no dev proxy. Exported for the one direct (non-axios) OpenMRS
+ * request in the app: the profile photo `<img src>` (useProviderProfile.ts).
+ * That request carries no Authorization header (browsers never attach one
+ * to a plain `<img>` fetch) — it authenticates via the OpenMRS session
+ * cookie alone, same as openMrsHttpClient's other calls. Because dev now
+ * calls the real host cross-origin, the OpenMRS server must allow CORS with
+ * credentials for the dev origin and send its session cookie with
+ * `SameSite=None; Secure`, or every call after /session arrives anonymous
+ * ("Privileges required: Get People").
  */
 export function getOpenMrsBaseUrl(): string {
-  return import.meta.env.MODE === 'development'
-    ? '/openmrs-api'
-    : env.OPENMRS_URL;
+  return env.OPENMRS_URL;
 }
 
 /**
@@ -79,12 +78,7 @@ export function getOpenMrsBaseUrl(): string {
  * (Basic-auth to OpenMRS's own /session) right after every gateway login —
  * see hooks/mutations/useLogin.ts.
  *
- * In dev mode this is routed through vite.config.ts's '/openmrs-api' proxy
- * instead of calling env.OPENMRS_URL directly, so the cookie is same-origin
- * too. `MODE === 'development'` (not `env.APP_ENV`) so this matches
- * vite.config's own proxy-enablement check exactly and leaves `vitest run`
- * (MODE 'test') calling env.OPENMRS_URL directly, same as this file's other
- * clients.
+ * Calls go straight to env.OPENMRS_URL in every mode (see getOpenMrsBaseUrl).
  */
 export const openMrsHttpClient: AxiosInstance = createApiClient({
   baseURL: getOpenMrsBaseUrl(),

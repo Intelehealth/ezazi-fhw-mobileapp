@@ -21,6 +21,8 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   DASHBOARD_HW_PROFILE: '/dashboard/hw-profile',
   DASHBOARD_PROFILE: '/dashboard/profile',
+  /** WHO LCG view of one visit — `${DASHBOARD_ELCG}/:visitUuid`; the search modal's "View" target. */
+  DASHBOARD_ELCG: '/dashboard/elcg',
   NOT_FOUND: '*',
 } as const;
 

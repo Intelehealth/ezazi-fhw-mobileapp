@@ -8,6 +8,17 @@ import { DashboardLayoutComponent } from '../../../components/layout/dashboard-l
  * Mocked rather than a real react-redux Provider — same dual-React-hoisting
  * reason as dashboard.page.test.tsx.
  */
+/*
+ * The real search box needs a QueryClient and has its own suite
+ * (patient-search.component.test.tsx); this file only cares that the header
+ * hosts it.
+ */
+vi.mock('../../../components/layout/patient-search.component', () => ({
+  PatientSearchComponent: () => (
+    <input placeholder="Search by patient name or ID" />
+  ),
+}));
+
 vi.mock('../../../hooks/useIsNurse', () => ({ useIsNurse: vi.fn() }));
 
 beforeEach(() => {

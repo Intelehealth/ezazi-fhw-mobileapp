@@ -90,13 +90,13 @@ function buildProviderProfileData(
     providerWard: valueByField.providerWard ?? '',
     textOfSign: valueByField.textOfSign ?? '',
     fontOfSign: valueByField.fontOfSign ?? '',
-    // Ports profile.component.html's `[src]="profilePicUrl"` — a plain GET
-    // rendered by the <img> tag itself, not routed through our authenticated
-    // axios client, exactly like the Angular source (see profile.service.ts's
-    // own note on what this app does and doesn't wrap in HttpClient).
-    // getOpenMrsBaseUrl() (not env.OPENMRS_URL directly) so this rides the
-    // same dev-proxy path as every other OpenMRS call — see that function's
-    // own note in services/http.ts on why the raw cross-origin URL 401s here.
+    /*
+     * Ports profile.component.html's `[src]="profilePicUrl"` — a plain GET
+     * rendered by the <img> tag itself, not routed through our authenticated
+     * axios client, exactly like the Angular source (see profile.service.ts's
+     * own note on what this app does and doesn't wrap in HttpClient). It
+     * uses the same OpenMRS base URL as every other OpenMRS call.
+     */
     photoUrl: `${getOpenMrsBaseUrl()}/personimage/${person.uuid}`,
   };
 

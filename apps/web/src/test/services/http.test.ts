@@ -165,14 +165,7 @@ describe('http', () => {
     expect(window.location.hash).toBe('#/auth/login');
   });
 
-  it('getOpenMrsBaseUrl returns the same-origin dev-proxy path in development mode', async () => {
-    vi.stubEnv('MODE', 'development');
-    const { getOpenMrsBaseUrl } = await import('../../services/http');
-
-    expect(getOpenMrsBaseUrl()).toBe('/openmrs-api');
-  });
-
-  it('getOpenMrsBaseUrl returns env.OPENMRS_URL directly outside development mode', async () => {
+  it('getOpenMrsBaseUrl returns env.OPENMRS_URL directly, including in development mode', async () => {
     const { env } = await import('../../config/env');
     const { getOpenMrsBaseUrl } = await import('../../services/http');
 
