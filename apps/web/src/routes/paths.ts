@@ -8,6 +8,25 @@ export const ROUTES = {
   AUTH: {
     BASE: '/auth',
     LOGIN: 'login',
+    FORGOT_USERNAME: 'forgot-username',
+    FORGOT_PASSWORD: 'forgot-password',
+    VERIFICATION_METHOD: 'verification-method',
+    OTP_VERIFICATION: 'otp-verification',
+    SETUP_NEW_PASSWORD: 'setup-new-password',
   },
+  /*
+   * login.component.ts's real post-login targets (loginSuccess()): doctors
+   * land on the dashboard, nurses on their hw-profile screen.
+   */
+  DASHBOARD: '/dashboard',
+  DASHBOARD_HW_PROFILE: '/dashboard/hw-profile',
+  DASHBOARD_PROFILE: '/dashboard/profile',
+  /** WHO LCG view of one visit — `${DASHBOARD_ELCG}/:visitUuid`; the search modal's "View" target. */
+  DASHBOARD_ELCG: '/dashboard/elcg',
   NOT_FOUND: '*',
 } as const;
+
+/** Mirrors login.component.ts's loginSuccess() role branch. */
+export function resolvePostLoginPath(isNurse: boolean): string {
+  return isNurse ? ROUTES.DASHBOARD_HW_PROFILE : ROUTES.DASHBOARD;
+}

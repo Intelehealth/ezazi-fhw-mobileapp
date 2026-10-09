@@ -1,0 +1,37 @@
+/**
+ * Visual theme override for react-toastify: light background (react-toastify's
+ * own "light" theme default) with a colored left border + colored type icon
+ * as the only accent — not a full solid-color fill. Colors match this
+ * product's ngx-toastr palette (intelehealth-doctor-webapp's ezazi_dev_master,
+ * src/assets/scss/toastr.css's `.toast-{type} { border-left: 7px solid ... }`
+ * rules, loaded globally via angular.json — the same left-border accent
+ * pattern that CSS already uses alongside its full-fill background-color
+ * rules) so the accent color still matches what users of the Angular app
+ * already associate with each toast type; title/description text stay at
+ * react-toastify's default dark-on-light colors for readability.
+ *
+ * Selectors chain `.Toastify__toast` + `.Toastify__toast-theme--light` with
+ * the type class (matching react-toastify's real class list on the element:
+ * `Toastify__toast Toastify__toast-theme--light Toastify__toast--{type}`)
+ * rather than the type class alone, for the same reason noted when this file
+ * was first introduced: `@tailwindcss/vite` re-emits react-toastify's own
+ * ReactToastify.css a second time into the bundle (confirmed via a
+ * headless-Chrome dump of `document.styleSheets`), so any override here
+ * needs to out-specificity react-toastify's own rules regardless of which
+ * copy loads last — not just background/color from that older text.
+ */
+.Toastify__toast.Toastify__toast-theme--light.Toastify__toast--success {
+  border-left: 6px solid #0fd197;
+}
+
+.Toastify__toast.Toastify__toast-theme--light.Toastify__toast--error {
+  border-left: 6px solid #ea315b;
+}
+
+.Toastify__toast.Toastify__toast-theme--light.Toastify__toast--info {
+  border-left: 6px solid #2e1e91;
+}
+
+.Toastify__toast.Toastify__toast-theme--light.Toastify__toast--warning {
+  border-left: 6px solid #f89406;
+}

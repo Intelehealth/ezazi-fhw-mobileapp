@@ -1,23 +1,58 @@
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig, loadEnv } from 'vite';
-
-// Deliberately NOT importing @ezazi/config here (unlike src/config/env.ts,
-// which imports it fine): vite.config.ts loads in Vite's Node-context config
-// loader, which externalizes node_modules imports by default — including
-// workspace packages resolved through a node_modules symlink — and can't
-// natively load @ezazi/config's raw .ts entry point (its package.json
-// "main" points at src/index.ts, not a compiled dist/ file) the way the
-// browser-side app bundle can. The placeholder below matches
-// packages/config/src/servers.ts's DEFAULT_SERVERS.development.portalUrl.
-const FALLBACK_DEV_PORTAL_URL = 'https://dev.example.org/portal-api';
+import { defineConfig, loadEnv, type ProxyOptions } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
+  // Mirrors intelehealth-hw-webapp-react's vite.config.ts dev proxy shape
+  // ('/portal-api' rewritten to the portal's '/api'). TODO(EZAZI_PORTAL_PROXY):
+  // that reference proxies to a hardcoded intelehealth.org dev host — eZAZI's
+  // own dev portal host isn't confirmed yet, so this reads
+  // VITE_PORTAL_API_PROXY_TARGET (see .env.example) and the route is simply
+  // omitted below when it's unset, rather than pointing at a fake
+  // dev.example.org host that would silently fail every call through it.
+  const proxy: Record<string, ProxyOptions> = {};
+  if (env.VITE_PORTAL_API_PROXY_TARGET) {
+    proxy['/portal-api'] = {
+      target: env.VITE_PORTAL_API_PROXY_TARGET,
+      changeOrigin: true,
+      secure: false,
+      rewrite: (path: string) => path.replace(/^\/portal-api/, '/api'),
+    };
+  }
+  // See src/services/http.ts: openMrsHttpClient's baseURL switches to this
+  // same-origin '/openmrs-api' path in dev mode so the browser never makes
+  // the cross-origin request directly (that gets CORS-preflight-blocked —
+  // see that file's own note). Omitted, same as above, when VITE_OPENMRS_URL
+  // isn't set — env.ts's OPENMRS_URL has no placeholder fallback either.
+  if (env.VITE_OPENMRS_URL) {
+    proxy['/openmrs-api'] = {
+      target: env.VITE_OPENMRS_URL,
+      changeOrigin: true,
+      secure: false,
+      rewrite: (path: string) => path.replace(/^\/openmrs-api/, ''),
+      /*
+       * OpenMRS sets JSESSIONID with Path=/openmrs, which the browser would
+       * never send back on '/openmrs-api/...' requests — so every call after
+       * /session reached OpenMRS anonymous ("Privileges required: Get People").
+       */
+      cookiePathRewrite: { '*': '/' },
+      cookieDomainRewrite: { '*': '' },
+    };
+  }
+
+  // Matches src/config/env.ts's BASE_PATH: the sub-path this app is served
+  // under behind a reverse proxy (e.g. VITE_BASE_PATH=/doctor-portal ->
+  // base '/doctor-portal/'), defaulting to root when unset.
+  const basePath = env.VITE_BASE_PATH
+    ? `${env.VITE_BASE_PATH.replace(/\/$/, '')}/`
+    : '/';
+
   return {
+    base: basePath,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -29,25 +64,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 4200,
-      proxy:
-        mode === 'development'
-          ? {
-              // Mirrors intelehealth-hw-webapp-react's vite.config.ts dev
-              // proxy shape ('/portal-api' rewritten to the portal's '/api').
-              // TODO(EZAZI_PORTAL_PROXY): that reference proxies to a
-              // hardcoded intelehealth.org dev host — eZAZI's own dev portal
-              // host isn't confirmed yet, so this reads
-              // VITE_PORTAL_API_PROXY_TARGET (see .env.example) and falls
-              // back to @ezazi/config's placeholder dev URL so `npm run dev`
-              // doesn't error on a missing env var.
-              '/portal-api': {
-                target: env.VITE_PORTAL_API_PROXY_TARGET || FALLBACK_DEV_PORTAL_URL,
-                changeOrigin: true,
-                secure: false,
-                rewrite: (path: string) => path.replace(/^\/portal-api/, '/api'),
-              },
-            }
-          : undefined,
+      proxy: mode === 'development' ? proxy : undefined,
     },
   };
 });
