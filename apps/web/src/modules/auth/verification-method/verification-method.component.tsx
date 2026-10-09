@@ -36,12 +36,12 @@ interface VerificationMethodLocationState {
  * rebuild's actual entry point into this flow (screen 2 hands off `username`
  * via route state; see forgot-password.component.tsx).
  *
- * `username` is carried through to screen 4/5 for DISPLAY only (screen 5's
- * profile row) — this screen's own requestOtp call identifies the account
- * by the phone/email the user re-types here, matching auth-gateway's
- * `otpFor: 'password'` fallback lookup (username-first, else phone/email);
- * since this screen already has the user pick a specific channel to type
- * into, `username` is deliberately not also sent here.
+ * `username` is carried through to screen 4, which sends it with verifyOtp
+ * so the gateway can check the phone/email really belongs to that account,
+ * and on to screen 5 (profile row). This screen's own requestOtp call does
+ * NOT send it: auth-gateway's `otpFor: 'password'` looks the account up by
+ * `username` first when it is given, which would bypass the specific
+ * phone/email channel the user picks and types into here.
  *
  * Both tabs map to real backend actions now — auth-gateway's `otpFor:
  * 'password'` accepts `phoneNumber` OR `email` (see useRequestOtp.ts).

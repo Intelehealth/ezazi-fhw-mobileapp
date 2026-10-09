@@ -15,7 +15,9 @@ describe('OtpInputComponent', () => {
   });
 
   it('auto-advances focus to the next box after a digit is entered', () => {
-    const { rerender } = render(<OtpInputComponent value="" onChange={vi.fn()} />);
+    const { rerender } = render(
+      <OtpInputComponent value="" onChange={vi.fn()} />
+    );
     const boxes = screen.getAllByLabelText(/OTP digit/);
 
     fireEvent.change(boxes[0], { target: { value: '5' } });
@@ -36,7 +38,9 @@ describe('OtpInputComponent', () => {
 
   it('shows an error border when hasError is true', () => {
     render(<OtpInputComponent value="" onChange={vi.fn()} hasError />);
-    expect(screen.getAllByLabelText(/OTP digit/)[0].className).toContain('border-red-600');
+    expect(screen.getAllByLabelText(/OTP digit/)[0].className).toContain(
+      'border-red-600'
+    );
   });
 
   it('fills all boxes and focuses the last one when the full 6 digits are pasted', () => {
@@ -73,5 +77,50 @@ describe('OtpInputComponent', () => {
     });
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the other digits in place when a middle box is cleared', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="123456" onChange={onChange} />);
+
+    fireEvent.change(screen.getAllByLabelText(/OTP digit/)[2], {
+      target: { value: '' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith('12 456');
+  });
+
+  it('shows a blank slot as an empty box and fills it without moving its neighbours', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="12 456" onChange={onChange} />);
+    const boxes = screen.getAllByLabelText(/OTP digit/);
+
+    expect(boxes[2]).toHaveValue('');
+    expect(boxes[3]).toHaveValue('4');
+
+    fireEvent.change(boxes[2], { target: { value: '9' } });
+    expect(onChange).toHaveBeenCalledWith('129456');
+  });
+
+  it('keeps earlier boxes empty when a later box is filled first', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="" onChange={onChange} />);
+
+    fireEvent.change(screen.getAllByLabelText(/OTP digit/)[4], {
+      target: { value: '7' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith('    7');
+  });
+
+  it('reports an empty string once every box has been cleared', () => {
+    const onChange = vi.fn();
+    render(<OtpInputComponent value="5" onChange={onChange} />);
+
+    fireEvent.change(screen.getAllByLabelText(/OTP digit/)[0], {
+      target: { value: '' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith('');
   });
 });

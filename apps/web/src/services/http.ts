@@ -1,6 +1,11 @@
 import { createApiClient } from '@ezazi/api-client';
 import type { AxiosInstance } from 'axios';
 import { env } from '../config/env';
+import { queryClient } from '../config/query-client';
+import { loggedOut } from '../reducers/auth.reducer';
+import { ROUTES } from '../routes/paths';
+import { store } from '../store/store';
+import { redirectTo } from '../utils/navigation';
 import { storage } from '../utils/storage';
 
 /**
@@ -16,16 +21,27 @@ import { storage } from '../utils/storage';
  * onUnauthorized: apps/web has no refresh-token flow yet — the auth-gateway
  * contract for one hasn't been confirmed for this product (unlike
  * apps/mobile's, see apps/mobile/src/services/api/client.ts). A 401 clears
- * the stored session and bounces to /auth/login rather than retrying.
+ * the stored session (storage, Redux, query cache) and sends the browser to
+ * /auth/login rather than retrying.
  */
 function handleUnauthorized(): null {
   storage.clearAuthToken();
   storage.clearStoredUser();
+  store.dispatch(loggedOut());
+  queryClient.clear();
+
+  /*
+   * The router is a browser (path-based) router served under BASE_PATH, so
+   * the redirect has to be a real path — setting `location.hash` is ignored
+   * by it. A full navigation also drops every in-memory leftover of the
+   * expired session.
+   */
+  const authBasePath = `${env.BASE_PATH}${ROUTES.AUTH.BASE}`;
   if (
     typeof window !== 'undefined' &&
-    !window.location.hash.startsWith('#/auth')
+    !window.location.pathname.startsWith(authBasePath)
   ) {
-    window.location.hash = '#/auth/login';
+    redirectTo(`${authBasePath}/${ROUTES.AUTH.LOGIN}`);
   }
   return null;
 }
@@ -84,18 +100,6 @@ export const openMrsHttpClient: AxiosInstance = createApiClient({
   baseURL: getOpenMrsBaseUrl(),
 });
 openMrsHttpClient.defaults.withCredentials = true;
-
-/**
- * Authenticated client — the separate Node "mindmap" service
- * (env.MINDMAP_URL) that only backs the profile feature's email/phone
- * "already exists" check (services/profile.service.ts's
- * validateProviderAttribute).
- */
-export const mindmapHttpClient: AxiosInstance = createApiClient({
-  baseURL: env.MINDMAP_URL,
-  getAuthToken: () => storage.getAuthToken(),
-  onUnauthorized: () => handleUnauthorized(),
-});
 
 /**
  * Auth-gateway calls made before any session exists — the password-recovery

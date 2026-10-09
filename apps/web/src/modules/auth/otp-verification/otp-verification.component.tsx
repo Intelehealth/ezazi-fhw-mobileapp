@@ -93,7 +93,20 @@ export function OtpVerificationComponent() {
 
   function onSubmit(values: OtpFormValues) {
     verifyOtp(
-      { verifyFor: safeVerifyFor, phoneNumber, countryCode, email, otp: values.otp },
+      /*
+       * `username` is only present on the password-recovery path (carried
+       * from screen 2), and lets the gateway reject a phone/email that
+       * doesn't belong to the account the user typed — otherwise the reset
+       * would run against whichever account owns that phone/email.
+       */
+      {
+        verifyFor: safeVerifyFor,
+        phoneNumber,
+        countryCode,
+        email,
+        username,
+        otp: values.otp,
+      },
       {
         onSuccess: data => {
           if (safeVerifyFor === 'username') {

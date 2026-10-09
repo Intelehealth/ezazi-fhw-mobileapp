@@ -283,4 +283,34 @@ describe('useUpdateProviderProfile', () => {
       })
     );
   });
+
+  it('sends age 0 when the birthdate cannot be parsed', async () => {
+    vi.mocked(profileService.updatePerson).mockResolvedValue(
+      success(undefined)
+    );
+    vi.mocked(profileService.savePersonName).mockResolvedValue(
+      success(undefined)
+    );
+
+    const { result } = renderHook(() => useUpdateProviderProfile(), {
+      wrapper,
+    });
+    act(() => {
+      result.current.mutate({
+        values: { ...VALUES, birthdate: '' },
+        providerUuid: 'p-1',
+        personUuid: 'per-1',
+        preferredNameUuid: null,
+        attributeTypeUuidByField: {},
+        existingAttributeUuidByField: {},
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(profileService.updatePerson).toHaveBeenCalledWith('per-1', {
+      gender: 'M',
+      age: 0,
+      birthdate: '',
+    });
+  });
 });

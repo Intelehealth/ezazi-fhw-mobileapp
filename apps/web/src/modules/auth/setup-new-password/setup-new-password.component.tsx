@@ -8,7 +8,6 @@ import { PasswordStrengthMeterComponent } from '../../../components/auth/passwor
 import { NextButtonComponent } from '../../../components/auth/next-button.component';
 import { useResetPassword } from '../../../hooks/mutations/useResetPassword';
 import { ROUTES } from '../../../routes/paths';
-import { getOpenMrsBaseUrl } from '../../../services/http';
 import { showToast } from '../../../services/toast';
 import { generatePassword } from '../../../utils/generate-password';
 import {
@@ -113,19 +112,14 @@ export function SetupNewPasswordComponent() {
       </p>
 
       <div className="mb-4 flex items-center">
-        <img
-          className="h-12 w-12 rounded-full"
-          // Matches setup-new-password.component.html's own
-          // `baseUrl + '/personimage/' + userUuid` — a real OpenMRS call,
-          // not a mock; see getOpenMrsBaseUrl's own note on why the raw
-          // env.OPENMRS_URL isn't used directly here either.
-          src={`${getOpenMrsBaseUrl()}/personimage/${userUuid}`}
-          alt=""
-          onError={e => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = userIcon;
-          }}
-        />
+        {/*
+         * Always the placeholder icon: /personimage/ is keyed by *person*
+         * uuid, but verifyOtp only returns the user uuid, and there's no
+         * OpenMRS session at this point in the recovery flow anyway — so the
+         * Angular template's `baseUrl + '/personimage/' + userUuid` request
+         * could never succeed.
+         */}
+        <img className="h-12 w-12 rounded-full" src={userIcon} alt="" />
         <div className="flex flex-col justify-center pl-3">
           <span className="text-sm text-[#7F7B92]">Username</span>
           <h6 className="text-base text-[#1B163A]">{username}</h6>

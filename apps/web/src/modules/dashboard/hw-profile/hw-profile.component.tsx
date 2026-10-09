@@ -4,11 +4,11 @@ import { Controller, useForm } from 'react-hook-form';
 import editIcon from '../../../assets/svgs/edit.svg';
 import { DatePickerComponent } from '../../../components/common/date-picker.component';
 import { PhoneNumberFieldComponent } from '../../../components/common/phone-number-field.component';
+import { useProviderAttributeAvailability } from '../../../hooks/useProviderAttributeAvailability';
 import { useProviderProfile } from '../../../hooks/queries/useProviderProfile';
 import type { ProviderProfileData } from '../../../hooks/queries/useProviderProfile';
 import { useUpdateProviderProfile } from '../../../hooks/mutations/useUpdateProviderProfile';
 import { useUpdateProfileImage } from '../../../hooks/mutations/useUpdateProfileImage';
-import { useValidateProviderAttribute } from '../../../hooks/mutations/useValidateProviderAttribute';
 import {
   GENDER_LABELS,
   LABEL_CLASS,
@@ -90,13 +90,13 @@ function HwProfileEditor({ data }: { data: ProviderProfileData }) {
   const [editMode, setEditMode] = useState(false);
   const updateProfile = useUpdateProviderProfile();
   const updatePhoto = useUpdateProfileImage();
-  const validateAttribute = useValidateProviderAttribute();
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    getValues,
     reset,
     formState: { errors, isSubmitted },
   } = useForm<HwProfileFormValues>({
@@ -105,10 +105,10 @@ function HwProfileEditor({ data }: { data: ProviderProfileData }) {
     defaultValues: toFormValues(data),
   });
 
-  // See profile.component.tsx: async "already exists" results live outside
-  // RHF's schema-driven errors, which would otherwise clear them.
-  const [emailTaken, setEmailTaken] = useState(false);
-  const [phoneTaken, setPhoneTaken] = useState(false);
+  const { emailTaken, phoneTaken, checkAvailability, clearTaken } =
+    useProviderAttributeAvailability(data.providerUuid, field =>
+      getValues(field)
+    );
 
   const birthdate = watch('birthdate');
   const age = useMemo(() => computeAge(birthdate), [birthdate]);
@@ -142,23 +142,6 @@ function HwProfileEditor({ data }: { data: ProviderProfileData }) {
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) updatePhoto.mutate({ personUuid: data.personUuid, file });
-  }
-
-  async function checkAttributeAvailable(
-    field: 'emailId' | 'phoneNumber',
-    rawValue: string
-  ) {
-    const value = rawValue.trim();
-    if (!value) return;
-
-    const isAvailable = await validateAttribute.mutateAsync({
-      attributeType: field,
-      attributeValue: value,
-      providerUuid: data.providerUuid,
-    });
-
-    const setTaken = field === 'emailId' ? setEmailTaken : setPhoneTaken;
-    setTaken(!isAvailable);
   }
 
   return (
@@ -275,11 +258,11 @@ function HwProfileEditor({ data }: { data: ProviderProfileData }) {
                   value={field.value}
                   onChange={value => {
                     field.onChange(value);
-                    setPhoneTaken(false);
+                    clearTaken('phoneNumber');
                   }}
                   onBlur={() => {
                     field.onBlur();
-                    void checkAttributeAvailable('phoneNumber', field.value);
+                    void checkAvailability('phoneNumber', field.value);
                   }}
                   error={
                     (isSubmitted ? errors.phoneNumber?.message : undefined) ??
@@ -310,8 +293,8 @@ function HwProfileEditor({ data }: { data: ProviderProfileData }) {
               placeholder="Enter email"
               registration={register('emailId', {
                 onBlur: event =>
-                  checkAttributeAvailable('emailId', event.target.value),
-                onChange: () => setEmailTaken(false),
+                  checkAvailability('emailId', event.target.value),
+                onChange: () => clearTaken('emailId'),
               })}
               error={
                 (isSubmitted ? errors.emailId?.message : undefined) ??

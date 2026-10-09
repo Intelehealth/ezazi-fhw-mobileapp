@@ -3,6 +3,7 @@ import type { ApiError } from '@ezazi/api-client';
 import { profileService } from '../../services/profile.service';
 import { showToast } from '../../services/toast';
 import { ATTRIBUTE_FIELD_MAP } from '../../modules/dashboard/profile/profile.attribute-map';
+import { calculateAge } from '../../utils/age';
 import type { ProfileFormValues } from '../../modules/dashboard/profile/profile.validation';
 
 /**
@@ -23,18 +24,6 @@ export interface UpdateProviderProfileInput {
   preferredNameUuid: string | null;
   attributeTypeUuidByField: Partial<Record<string, string>>;
   existingAttributeUuidByField: Partial<Record<string, string>>;
-}
-
-/** Whole years between `birthdate` (YYYY-MM-DD) and today — same computation profile.component.tsx's readonly Age field displays. */
-function computeAge(birthdate: string): number {
-  const dob = new Date(birthdate);
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > dob.getMonth() ||
-    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
 }
 
 /**
@@ -59,7 +48,7 @@ async function performUpdate(input: UpdateProviderProfileInput): Promise<void> {
 
   const personResult = await profileService.updatePerson(personUuid, {
     gender: values.gender,
-    age: computeAge(values.birthdate),
+    age: calculateAge(values.birthdate) ?? 0,
     birthdate: values.birthdate,
   });
   if (!personResult.ok) throw personResult.error;

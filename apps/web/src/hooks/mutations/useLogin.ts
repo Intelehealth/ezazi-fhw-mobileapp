@@ -63,18 +63,27 @@ async function performLogin(
     throw new Error("Couldn't find you, credentials provided are wrong.");
   }
 
-  // Establishes the OpenMRS session cookie that openMrsHttpClient rides for
-  // the doctor-profile feature (see that client's own note in services/http.ts)
-  // — the gateway JWT above is a separate, unrelated credential OpenMRS can't
-  // verify. Best-effort: a failure here (e.g. OpenMRS unreachable) shouldn't
-  // block a login that the auth-gateway itself already approved, only degrade
-  // the profile page until the user retries.
+  /*
+   * Establishes the OpenMRS session cookie that openMrsHttpClient rides for
+   * the doctor-profile feature (see that client's own note in services/http.ts)
+   * — the gateway JWT above is a separate, unrelated credential OpenMRS can't
+   * verify. A failure here (e.g. OpenMRS unreachable, or a different OpenMRS
+   * password) doesn't block a login the auth-gateway already approved. But
+   * it must not leave a previous user's still-valid session cookie in place
+   * for this user to ride, so any existing session is ended and the user is
+   * told the OpenMRS-backed features won't work until they log in again.
+   */
   const sessionResult = await profileService.createSession(
     credentials.username,
     credentials.password
   );
   if (!sessionResult.ok) {
-    console.warn('Failed to establish OpenMRS session:', sessionResult.error);
+    await profileService.endSession();
+    showToast(
+      'OpenMRS Session Unavailable',
+      'Profile and patient features may not work until you log in again.',
+      'warning'
+    );
   }
 
   return { token: result.data.accessToken, user: toAuthUser(result.data) };

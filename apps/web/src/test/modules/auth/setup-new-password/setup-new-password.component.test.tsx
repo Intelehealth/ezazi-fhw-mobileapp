@@ -47,7 +47,7 @@ describe('SetupNewPasswordComponent', () => {
     expect(await screen.findByText('login-screen')).toBeInTheDocument();
   });
 
-  it('shows the username from route state and falls back to the user icon on avatar load error', () => {
+  it('shows the username from route state with the placeholder avatar, without requesting a person image', () => {
     const { container } = renderScreen({
       username: 'nurse1',
       userUuid: 'u-1',
@@ -55,15 +55,10 @@ describe('SetupNewPasswordComponent', () => {
     });
     expect(screen.getByText('nurse1')).toBeInTheDocument();
 
-    // alt="" images have no accessible "img" role, hence container.querySelector here.
-    const avatar = container.querySelector(
-      'img[src*="personimage"]'
-    ) as HTMLImageElement;
-    // Matches the reference app's real OpenMRS personimage call — see
-    // setup-new-password.component.tsx's own note on getOpenMrsBaseUrl.
-    expect(avatar.src).toContain('/personimage/u-1');
-    fireEvent.error(avatar);
-    expect(avatar.src).toBe(userIcon);
+    /* alt="" images have no accessible "img" role, hence container.querySelector here. */
+    const avatar = container.querySelector('img.rounded-full') as HTMLImageElement;
+    expect(avatar.src).toBe(new URL(userIcon, window.location.href).href);
+    expect(container.querySelector('img[src*="personimage"]')).toBeNull();
   });
 
   it('fills both password fields and shows the Excellent strength label when "Generate password" is clicked', () => {

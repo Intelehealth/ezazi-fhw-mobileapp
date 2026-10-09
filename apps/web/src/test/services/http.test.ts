@@ -14,6 +14,17 @@ vi.mock('@ezazi/api-client', () => ({
   createApiClient: (...args: unknown[]) => createApiClient(...args),
 }));
 
+const dispatch = vi.hoisted(() => vi.fn());
+vi.mock('../../store/store', () => ({ store: { dispatch } }));
+
+const clearQueryCache = vi.hoisted(() => vi.fn());
+vi.mock('../../config/query-client', () => ({
+  queryClient: { clear: clearQueryCache },
+}));
+
+const redirectTo = vi.hoisted(() => vi.fn());
+vi.mock('../../utils/navigation', () => ({ redirectTo }));
+
 vi.mock('../../utils/storage', () => ({
   storage: {
     getAuthToken: vi.fn(() => 'stored-token'),
@@ -26,11 +37,14 @@ describe('http', () => {
   beforeEach(() => {
     vi.resetModules();
     createApiClient.mockClear();
-    window.location.hash = '';
+    dispatch.mockClear();
+    clearQueryCache.mockClear();
+    redirectTo.mockClear();
+    window.history.pushState(null, '', '/');
   });
 
   afterEach(() => {
-    window.location.hash = '';
+    window.history.pushState(null, '', '/');
     vi.unstubAllEnvs();
   });
 
@@ -65,33 +79,51 @@ describe('http', () => {
     expect(options.onUnauthorized).toBeUndefined();
   });
 
-  it('on 401, clears the stored session and redirects to #/auth/login when not already there', async () => {
+  it('on 401, clears the stored session, Redux state and query cache, then redirects to the login path', async () => {
     const { storage } = await import('../../utils/storage');
+    const { loggedOut } = await import('../../reducers/auth.reducer');
     await import('../../services/http');
 
     const options = createApiClient.mock.calls[0][0] as {
       onUnauthorized: () => void;
     };
-    window.location.hash = '#/dashboard';
+    window.history.pushState(null, '', '/dashboard/profile');
 
     options.onUnauthorized();
 
-    expect(storage.clearAuthToken).toHaveBeenCalledTimes(1);
-    expect(storage.clearStoredUser).toHaveBeenCalledTimes(1);
-    expect(window.location.hash).toBe('#/auth/login');
+    expect(storage.clearAuthToken).toHaveBeenCalled();
+    expect(storage.clearStoredUser).toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalledWith(loggedOut());
+    expect(clearQueryCache).toHaveBeenCalledTimes(1);
+    expect(redirectTo).toHaveBeenCalledWith('/auth/login');
   });
 
-  it('on 401, does not rewrite the hash if already somewhere under #/auth', async () => {
+  it('on 401, prefixes the login path with VITE_BASE_PATH', async () => {
+    vi.stubEnv('VITE_BASE_PATH', '/intelehealth');
     await import('../../services/http');
 
     const options = createApiClient.mock.calls[0][0] as {
       onUnauthorized: () => void;
     };
-    window.location.hash = '#/auth/forgot-password';
+    window.history.pushState(null, '', '/intelehealth/dashboard');
 
     options.onUnauthorized();
 
-    expect(window.location.hash).toBe('#/auth/forgot-password');
+    expect(redirectTo).toHaveBeenCalledWith('/intelehealth/auth/login');
+  });
+
+  it('on 401, does not redirect if already somewhere under the auth routes', async () => {
+    await import('../../services/http');
+
+    const options = createApiClient.mock.calls[0][0] as {
+      onUnauthorized: () => void;
+    };
+    window.history.pushState(null, '', '/auth/forgot-password');
+
+    options.onUnauthorized();
+
+    expect(redirectTo).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalled();
   });
 
   it('builds the OpenMRS client against OPENMRS_URL with no Bearer auth, riding a session cookie instead', async () => {
@@ -116,53 +148,6 @@ describe('http', () => {
         }
       ).defaults.withCredentials
     ).toBe(true);
-  });
-
-  it('builds the mindmap client against MINDMAP_URL with a token provider and 401 handler', async () => {
-    const { env } = await import('../../config/env');
-    await import('../../services/http');
-
-    // baseURL alone doesn't disambiguate: MINDMAP_URL and CONFIG_URL are both
-    // '' by default (no placeholder host — see env.ts), so publicHttpClient's
-    // call would match first too. getAuthToken presence picks out the
-    // authenticated one, same disambiguation the AUTH_GATEWAY_URL test below
-    // already needs for its own two same-baseURL clients.
-    const mindmapCall = createApiClient.mock.calls.find(
-      ([opts]) =>
-        (opts as { baseURL: string }).baseURL === env.MINDMAP_URL &&
-        (opts as Record<string, unknown>).getAuthToken
-    );
-    expect(mindmapCall).toBeDefined();
-
-    const options = mindmapCall![0] as {
-      getAuthToken: () => string | null;
-      onUnauthorized: () => void;
-    };
-    expect(options.getAuthToken()).toBe('stored-token');
-    expect(typeof options.onUnauthorized).toBe('function');
-  });
-
-  it("on 401, the mindmap client's onUnauthorized clears the session too", async () => {
-    const { env } = await import('../../config/env');
-    const { storage } = await import('../../utils/storage');
-    await import('../../services/http');
-
-    const mindmapCall = createApiClient.mock.calls.find(
-      ([opts]) =>
-        (opts as { baseURL: string }).baseURL === env.MINDMAP_URL &&
-        (opts as Record<string, unknown>).getAuthToken
-    );
-    const options = mindmapCall![0] as { onUnauthorized: () => void };
-    window.location.hash = '#/dashboard';
-
-    options.onUnauthorized();
-
-    // toHaveBeenCalled (not an exact count): the utils/storage mock module
-    // isn't re-created per vi.resetModules() the way services/http.ts is
-    // (vi.mock's factory runs once for the whole file), so its call count
-    // accumulates across this file's other 401 tests too.
-    expect(storage.clearAuthToken).toHaveBeenCalled();
-    expect(window.location.hash).toBe('#/auth/login');
   });
 
   it('getOpenMrsBaseUrl returns env.OPENMRS_URL directly, including in development mode', async () => {

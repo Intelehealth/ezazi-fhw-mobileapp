@@ -286,6 +286,7 @@ describe('forgot-password recovery flow', () => {
       phoneNumber: '9876543210',
       countryCode: '91',
       email: undefined,
+      username: 'nurse1',
       otp: '123456',
     });
 

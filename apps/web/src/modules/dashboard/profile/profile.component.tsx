@@ -4,11 +4,11 @@ import { Controller, useForm } from 'react-hook-form';
 import editIcon from '../../../assets/svgs/edit.svg';
 import { DatePickerComponent } from '../../../components/common/date-picker.component';
 import { PhoneNumberFieldComponent } from '../../../components/common/phone-number-field.component';
+import { useProviderAttributeAvailability } from '../../../hooks/useProviderAttributeAvailability';
 import { useProviderProfile } from '../../../hooks/queries/useProviderProfile';
 import type { ProviderProfileData } from '../../../hooks/queries/useProviderProfile';
 import { useUpdateProviderProfile } from '../../../hooks/mutations/useUpdateProviderProfile';
 import { useUpdateProfileImage } from '../../../hooks/mutations/useUpdateProfileImage';
-import { useValidateProviderAttribute } from '../../../hooks/mutations/useValidateProviderAttribute';
 import {
   QUALIFICATION_OPTIONS,
   SPECIALIZATION_OPTIONS,
@@ -82,13 +82,13 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
   const [editMode, setEditMode] = useState(false);
   const updateProfile = useUpdateProviderProfile();
   const updatePhoto = useUpdateProfileImage();
-  const validateAttribute = useValidateProviderAttribute();
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     reset,
     formState: { errors, isSubmitted },
@@ -98,14 +98,10 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
     defaultValues: data.profile,
   });
 
-  // Separate from RHF's own `errors` state on purpose: the zod resolver
-  // re-validates emailId/phoneNumber on every change/blur and would
-  // immediately clear a `setError()` call for this async, schema-external
-  // check (RHF's next validation pass has no way to know about it) —
-  // see ProviderAttributeValidator's Angular equivalent, an async
-  // validator wired into the FormControl itself instead of the schema.
-  const [emailTaken, setEmailTaken] = useState(false);
-  const [phoneTaken, setPhoneTaken] = useState(false);
+  const { emailTaken, phoneTaken, checkAvailability, clearTaken } =
+    useProviderAttributeAvailability(data.providerUuid, field =>
+      getValues(field)
+    );
 
   const qualification = watch('qualification');
   const fontOfSign = watch('fontOfSign');
@@ -144,30 +140,6 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) updatePhoto.mutate({ personUuid: data.personUuid, file });
-  }
-
-  /**
-   * Ports ProviderAttributeValidator/AuthService.validateProviderAttribute —
-   * checked on blur rather than Angular's debounced valueChanges stream,
-   * since this field only needs a one-shot check, not a live one. Takes the
-   * raw value directly (not a blur event) since PhoneNumberFieldComponent's
-   * onBlur — used for the phoneNumber case — hands back neither.
-   */
-  async function checkAttributeAvailable(
-    field: 'emailId' | 'phoneNumber',
-    rawValue: string
-  ) {
-    const value = rawValue.trim();
-    if (!value) return;
-
-    const isAvailable = await validateAttribute.mutateAsync({
-      attributeType: field,
-      attributeValue: value,
-      providerUuid: data.providerUuid,
-    });
-
-    const setTaken = field === 'emailId' ? setEmailTaken : setPhoneTaken;
-    setTaken(!isAvailable);
   }
 
   return (
@@ -319,11 +291,11 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
                   value={field.value}
                   onChange={value => {
                     field.onChange(value);
-                    setPhoneTaken(false);
+                    clearTaken('phoneNumber');
                   }}
                   onBlur={() => {
                     field.onBlur();
-                    void checkAttributeAvailable('phoneNumber', field.value);
+                    void checkAvailability('phoneNumber', field.value);
                   }}
                   error={
                     (isSubmitted ? errors.phoneNumber?.message : undefined) ??
@@ -354,8 +326,8 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
               placeholder="Enter email"
               registration={register('emailId', {
                 onBlur: event =>
-                  checkAttributeAvailable('emailId', event.target.value),
-                onChange: () => setEmailTaken(false),
+                  checkAvailability('emailId', event.target.value),
+                onChange: () => clearTaken('emailId'),
               })}
               error={
                 (isSubmitted ? errors.emailId?.message : undefined) ??

@@ -43,12 +43,43 @@ describe('env', () => {
     expect(env.RECAPTCHA_SITE_KEY).toBe('my-site-key');
   });
 
-  it('falls back to the Google test site key when unset', async () => {
+  it('falls back to the Google test site key when unset outside production', async () => {
     vi.stubEnv('VITE_RECAPTCHA_SITE_KEY', undefined);
+    vi.stubEnv('VITE_APP_ENV', 'preview');
     const { env } = await import('../../config/env');
     expect(env.RECAPTCHA_SITE_KEY).toBe(
       '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
     );
+  });
+
+  it('never falls back to the Google test key in production: stays empty and logs an error', async () => {
+    vi.stubEnv('VITE_RECAPTCHA_SITE_KEY', '');
+    vi.stubEnv('VITE_APP_ENV', 'production');
+    const error = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    const { env } = await import('../../config/env');
+
+    expect(env.RECAPTCHA_SITE_KEY).toBe('');
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('VITE_RECAPTCHA_SITE_KEY')
+    );
+    error.mockRestore();
+  });
+
+  it('uses an explicit VITE_RECAPTCHA_SITE_KEY in production without logging', async () => {
+    vi.stubEnv('VITE_RECAPTCHA_SITE_KEY', 'prod-key');
+    vi.stubEnv('VITE_APP_ENV', 'production');
+    const error = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    const { env } = await import('../../config/env');
+
+    expect(env.RECAPTCHA_SITE_KEY).toBe('prod-key');
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 
   it('prefers an explicit VITE_AUTH_GATEWAY_URL over the empty-string default', async () => {
@@ -78,7 +109,6 @@ describe('env', () => {
   it.each([
     ['VITE_PORTAL_URL', 'PORTAL_URL'],
     ['VITE_CONFIG_URL', 'CONFIG_URL'],
-    ['VITE_MINDMAP_URL', 'MINDMAP_URL'],
   ] as const)(
     'falls back to an empty string (no placeholder host) when %s is unset',
     async (viteVar, envKey) => {

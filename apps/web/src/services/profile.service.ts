@@ -33,7 +33,7 @@ const PROVIDER_REPRESENTATION =
  * NOT ported (defined in the Angular source but unused by its own active
  * code paths, per that file's own dead branches): signature
  * generate/upload (createsign/uploadsign, commented out), the standalone
- * getPersonName/getSignture getters, and deleteProviderAttribute.
+ * getPersonName/getSignture getters.
  */
 export const profileService = {
   /**
@@ -61,6 +61,21 @@ export const profileService = {
         }
       );
       return success(data);
+    } catch (error) {
+      return failure(mapAxiosError(error));
+    }
+  },
+
+  /**
+   * DELETE {OPENMRS_URL}/session — ends the OpenMRS session (invalidates the
+   * JSESSIONID cookie server-side). Called on logout, and on login when a new
+   * session couldn't be established, so a previous user's still-valid cookie
+   * can't be silently reused for the next person on a shared machine.
+   */
+  async endSession(): Promise<ApiResult<void>> {
+    try {
+      await openMrsHttpClient.delete('/session');
+      return success(undefined);
     } catch (error) {
       return failure(mapAxiosError(error));
     }
@@ -150,15 +165,13 @@ export const profileService = {
    * field (email, phone, qualification, signature, …) is one of these
    * OpenMRS "provider attribute" values, not its own column.
    *
-   * A falsy `value` skips the request entirely (returns success with no
-   * network call) — matches the Angular source's own `if (value) {...}
-   * else return of(null)` exactly. Several optional fields (e.g.
-   * `otherQualification` whenever qualification isn't "Other") are blank on
-   * most saves; without this gate they'd POST an empty-string attribute
-   * value, which OpenMRS can reject outright — and since every attribute
-   * call runs in the same Promise.all as the rest of the save (see
-   * useUpdateProviderProfile.ts), one rejected empty field fails the whole
-   * profile update.
+   * A falsy `value` never POSTs an empty string — OpenMRS can reject one
+   * outright, and every attribute call runs in the same Promise.all as the
+   * rest of the save (see useUpdateProviderProfile.ts), so one rejected
+   * empty field would fail the whole profile update. Instead a blank value
+   * clears an attribute that already exists (DELETE, which OpenMRS voids),
+   * so emptying an optional field like State actually sticks, and does
+   * nothing at all when there is no existing attribute to clear.
    */
   async addOrUpdateProviderAttribute(
     providerUuid: string,
@@ -166,9 +179,16 @@ export const profileService = {
     value: string,
     existingAttributeUuid?: string
   ): Promise<ApiResult<void>> {
-    if (!value) return success(undefined);
+    if (!value && !existingAttributeUuid) return success(undefined);
 
     try {
+      if (!value) {
+        await openMrsHttpClient.delete(
+          `/provider/${providerUuid}/attribute/${existingAttributeUuid}`
+        );
+        return success(undefined);
+      }
+
       const path = existingAttributeUuid
         ? `/provider/${providerUuid}/attribute/${existingAttributeUuid}`
         : `/provider/${providerUuid}/attribute`;

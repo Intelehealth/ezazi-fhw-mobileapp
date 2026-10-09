@@ -4,13 +4,14 @@ import { httpClient, openMrsHttpClient } from '../../services/http';
 import type { OpenMrsProvider } from '../../types/profile.types';
 
 vi.mock('../../services/http', () => ({
-  openMrsHttpClient: { get: vi.fn(), post: vi.fn() },
+  openMrsHttpClient: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
   httpClient: { post: vi.fn() },
 }));
 
 beforeEach(() => {
   vi.mocked(openMrsHttpClient.get).mockClear();
   vi.mocked(openMrsHttpClient.post).mockClear();
+  vi.mocked(openMrsHttpClient.delete).mockReset();
   vi.mocked(httpClient.post).mockClear();
 });
 
@@ -123,6 +124,27 @@ describe('profileService.getProviderAttributeTypes', () => {
     );
 
     const result = await profileService.getProviderAttributeTypes();
+
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('profileService.endSession', () => {
+  it('DELETEs /session', async () => {
+    vi.mocked(openMrsHttpClient.delete).mockResolvedValue({ data: {} });
+
+    const result = await profileService.endSession();
+
+    expect(openMrsHttpClient.delete).toHaveBeenCalledWith('/session');
+    expect(result).toEqual({ ok: true, data: undefined });
+  });
+
+  it('maps a rejected request into a failure result instead of throwing', async () => {
+    vi.mocked(openMrsHttpClient.delete).mockRejectedValue(
+      new Error('network down')
+    );
+
+    const result = await profileService.endSession();
 
     expect(result.ok).toBe(false);
   });
@@ -259,7 +281,7 @@ describe('profileService.addOrUpdateProviderAttribute', () => {
     );
   });
 
-  it('skips the request entirely for a falsy value, matching the Angular source', async () => {
+  it('makes no request for a blank value when there is no existing attribute to clear', async () => {
     const result = await profileService.addOrUpdateProviderAttribute(
       'p-1',
       'type-otherQualification',
@@ -267,7 +289,40 @@ describe('profileService.addOrUpdateProviderAttribute', () => {
     );
 
     expect(openMrsHttpClient.post).not.toHaveBeenCalled();
+    expect(openMrsHttpClient.delete).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: true, data: undefined });
+  });
+
+  it('DELETEs the existing attribute when the value is blanked, instead of POSTing an empty string', async () => {
+    vi.mocked(openMrsHttpClient.delete).mockResolvedValue({ data: {} });
+
+    const result = await profileService.addOrUpdateProviderAttribute(
+      'p-1',
+      'type-visitState',
+      '',
+      'attr-state'
+    );
+
+    expect(openMrsHttpClient.delete).toHaveBeenCalledWith(
+      '/provider/p-1/attribute/attr-state'
+    );
+    expect(openMrsHttpClient.post).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: true, data: undefined });
+  });
+
+  it('maps a failed DELETE into a failure result instead of throwing', async () => {
+    vi.mocked(openMrsHttpClient.delete).mockRejectedValue(
+      new Error('network down')
+    );
+
+    const result = await profileService.addOrUpdateProviderAttribute(
+      'p-1',
+      'type-visitState',
+      '',
+      'attr-state'
+    );
+
+    expect(result.ok).toBe(false);
   });
 
   it('maps a rejected request into a failure result instead of throwing', async () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { calculateAge } from '../../../utils/age';
 
 /**
  * Matches profile.component.ts's `personalInfoForm` validators exactly
@@ -15,19 +16,10 @@ const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/;
 const STATE_PATTERN = /^[A-Za-z ]*$/;
 const OTHER_QUALIFICATION_PATTERN = /^[A-Za-z, ]*$/;
 
-/** Whole years between `birthdate` (YYYY-MM-DD) and today — mirrors profile.component.tsx's own computeAge. */
+/* Format errors surface elsewhere (calculateAge is null for them), not here. */
 function isAtLeast18(birthdate: string): boolean {
-  const dob = new Date(birthdate);
-  if (Number.isNaN(dob.getTime())) return true; // format errors surface elsewhere, not here
-
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > dob.getMonth() ||
-    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-
-  return age >= 18;
+  const age = calculateAge(birthdate);
+  return age === null || age >= 18;
 }
 
 export const profileSchema = z
@@ -47,10 +39,12 @@ export const profileSchema = z
     gender: z.enum(['M', 'F', 'U'], {
       errorMap: () => ({ message: 'Select gender' }),
     }),
-    // profile.component.ts's `age` control is `Validators.min(18)` — but
-    // age here is derived (read-only, computed from birthdate — see
-    // profile.component.tsx's computeAge), so the equivalent check has to
-    // live on birthdate itself, the field a user can actually edit.
+    /*
+     * profile.component.ts's `age` control is `Validators.min(18)` — but
+     * age here is derived (read-only, computed from birthdate — see
+     * computeAge), so the equivalent check has to live on birthdate itself,
+     * the field a user can actually edit.
+     */
     birthdate: z
       .string()
       .min(1, 'Enter DOB')

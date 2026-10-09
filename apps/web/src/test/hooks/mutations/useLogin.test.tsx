@@ -18,7 +18,7 @@ vi.mock('../../../services/auth.service', () => ({
 }));
 
 vi.mock('../../../services/profile.service', () => ({
-  profileService: { createSession: vi.fn() },
+  profileService: { createSession: vi.fn(), endSession: vi.fn() },
 }));
 
 vi.mock('../../../services/toast', () => ({ showToast: vi.fn() }));
@@ -67,6 +67,8 @@ function gatewayResponse(
 describe('useLogin', () => {
   beforeEach(() => {
     vi.mocked(profileService.createSession).mockReset();
+    vi.mocked(profileService.endSession).mockReset();
+    vi.mocked(profileService.endSession).mockResolvedValue(success(undefined));
     vi.mocked(profileService.createSession).mockResolvedValue(
       success({ sessionId: 'sess-1', authenticated: true })
     );
@@ -103,7 +105,7 @@ describe('useLogin', () => {
     );
   });
 
-  it('still succeeds when the OpenMRS session call fails — best-effort, not fatal to a gateway-approved login', async () => {
+  it('still logs in when the OpenMRS session call fails, but ends any old session and warns', async () => {
     const { ApiError } = await import('@ezazi/api-client');
     vi.mocked(authService.login).mockResolvedValue(success(gatewayResponse()));
     vi.mocked(profileService.createSession).mockResolvedValue({
@@ -115,6 +117,22 @@ describe('useLogin', () => {
     act(() => result.current.mutate(CREDENTIALS));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(profileService.endSession).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith(
+      'OpenMRS Session Unavailable',
+      'Profile and patient features may not work until you log in again.',
+      'warning'
+    );
+  });
+
+  it('leaves the freshly created OpenMRS session alone when it is established', async () => {
+    vi.mocked(authService.login).mockResolvedValue(success(gatewayResponse()));
+
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    act(() => result.current.mutate(CREDENTIALS));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(profileService.endSession).not.toHaveBeenCalled();
   });
 
   it("shows a success toast matching login.component.ts's copy on successful login", async () => {

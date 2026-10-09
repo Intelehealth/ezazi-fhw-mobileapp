@@ -4,6 +4,7 @@ import cameraIcon from '../../../assets/svgs/camera.svg';
 import chevronIcon from '../../../assets/svgs/chevron-down.svg';
 import userIcon from '../../../assets/svgs/user.svg';
 import profileBg from '../../../assets/images/profile-bg.png';
+import { calculateAge } from '../../../utils/age';
 import type { Gender } from './profile.types';
 
 /**
@@ -202,18 +203,8 @@ export function SelectField({
   );
 }
 
-/** Whole years between `birthdate` (YYYY-MM-DD) and today — mirrors profile.component.ts's readonly `age` field, computed on the fly instead of stored. */
+/** The read-only Age field's text — profile.component.ts's `age`, computed on the fly instead of stored. Empty while the birthdate is blank or invalid. */
 export function computeAge(birthdate: string): string {
-  if (!birthdate) return '';
-  const dob = new Date(birthdate);
-  if (Number.isNaN(dob.getTime())) return '';
-
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > dob.getMonth() ||
-    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-
-  return String(age);
+  const age = calculateAge(birthdate);
+  return age === null ? '' : String(age);
 }

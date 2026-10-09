@@ -7,6 +7,29 @@ function resolveAppEnv(): AppEnvironment {
 
 const appEnv = resolveAppEnv();
 
+/* Google's published "always passes" test key — fine for dev, never for production. */
+const RECAPTCHA_TEST_SITE_KEY = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+
+/*
+ * No real per-client site key is checked into this repo (Angular's
+ * envConfig.ezaziCaptchaSiteKey/nepalCaptchaSiteKey are generated at build
+ * time from a secret, not source-controlled). Outside production, a missing
+ * key falls back to the test key so the widget renders. In production that
+ * fallback would silently disable the captcha (or fail every login against
+ * the real secret), so the key stays empty and the problem is logged loudly.
+ */
+function resolveRecaptchaSiteKey(): string {
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+  if (siteKey) return siteKey;
+  if (appEnv === 'production') {
+    console.error(
+      'VITE_RECAPTCHA_SITE_KEY is not set for this production build — the reCAPTCHA widget will not work.'
+    );
+    return '';
+  }
+  return RECAPTCHA_TEST_SITE_KEY;
+}
+
 /**
  * Typed `import.meta.env` wrapper (migration guide §3). Every server URL is
  * read straight from its VITE_* var (see .env.example) with NO placeholder
@@ -16,8 +39,8 @@ const appEnv = resolveAppEnv();
  * silently resolves to nothing is worse than an empty string that fails
  * loudly the moment a call is made: it was a permanent standing invitation
  * to mistake "unset" for "configured but broken". AUTH_GATEWAY_URL and
- * OPENMRS_URL already have real confirmed values checked into .env; PORTAL_URL,
- * CONFIG_URL and MINDMAP_URL don't yet (their real hosts aren't confirmed —
+ * OPENMRS_URL already have real confirmed values checked into .env; PORTAL_URL
+ * and CONFIG_URL don't yet (their real hosts aren't confirmed —
  * see PORTAL_URL's own note in services/http.ts) and now surface that
  * honestly instead of masking it.
  */
@@ -32,19 +55,7 @@ export const env = {
   // provider/person/attribute calls are direct OpenMRS calls, confirmed
   // against the real erevamp.intelehealth.org host (see .env).
   OPENMRS_URL: import.meta.env.VITE_OPENMRS_URL || '',
-  // profile.component.ts's own environment.mindmapURL (a separate Node
-  // service, `{base}:3004/api`) backs only the doctor-profile email/phone
-  // "already exists" check (services/profile.service.ts's
-  // validateProviderAttribute) — host not confirmed yet.
-  MINDMAP_URL: import.meta.env.VITE_MINDMAP_URL || '',
-  // No real per-client site key is checked into this repo (Angular's
-  // envConfig.ezaziCaptchaSiteKey/nepalCaptchaSiteKey are generated at build
-  // time from a secret, not source-controlled). Falls back to Google's
-  // published "always passes" test key so the widget renders in dev — a
-  // real, working value, unlike the removed URL fallbacks above.
-  RECAPTCHA_SITE_KEY:
-    import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
-    '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+  RECAPTCHA_SITE_KEY: resolveRecaptchaSiteKey(),
   // Sub-path this app is served under when deployed behind a reverse proxy
   // (e.g. '/doctor-portal') — routes/app.routes.tsx's router `basename` and
   // vite.config.ts's own `base` both key off this. Empty string (the

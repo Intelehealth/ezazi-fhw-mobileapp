@@ -2,6 +2,14 @@ import { useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
 
 const OTP_LENGTH = 6;
 
+/*
+ * Stands in for an empty box inside the combined value, so a digit keeps
+ * its position when a box before it is cleared ('123456' minus box 3 is
+ * '12 456', not '12456'). Trailing blanks are trimmed off, and otpSchema
+ * rejects any value that still contains one.
+ */
+const EMPTY_SLOT = ' ';
+
 interface OtpInputComponentProps {
   value: string;
   onChange: (value: string) => void;
@@ -21,12 +29,14 @@ export function OtpInputComponent({
   hasError,
 }: OtpInputComponentProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const digits = Array.from({ length: OTP_LENGTH }, (_, i) => value[i] ?? '');
+  const digits = Array.from({ length: OTP_LENGTH }, (_, i) =>
+    value[i] === EMPTY_SLOT ? '' : (value[i] ?? '')
+  );
 
   function setDigit(index: number, digit: string) {
     const next = digits.slice();
     next[index] = digit;
-    onChange(next.join(''));
+    onChange(next.map(d => d || EMPTY_SLOT).join('').trimEnd());
   }
 
   function handleChange(index: number, raw: string) {

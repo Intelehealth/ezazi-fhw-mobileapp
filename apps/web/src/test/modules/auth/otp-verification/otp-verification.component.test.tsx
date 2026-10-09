@@ -102,7 +102,7 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
     expect(screen.getByRole('button', { name: 'Resend' })).toBeInTheDocument();
   });
 
-  it('verifies with phoneNumber/countryCode/otp and navigates to setup-new-password with the returned userUuid + resetToken', async () => {
+  it('verifies with phoneNumber/countryCode/username/otp and navigates to setup-new-password with the returned userUuid + resetToken', async () => {
     verifyOtpMutate.mockImplementation((_vars, { onSuccess }) =>
       onSuccess({ verified: true, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 })
     );
@@ -125,6 +125,7 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
           phoneNumber: '9876543210',
           countryCode: '91',
           email: undefined,
+          username: 'nurse1',
           otp: '123456',
         },
         expect.objectContaining({ onSuccess: expect.any(Function) })
