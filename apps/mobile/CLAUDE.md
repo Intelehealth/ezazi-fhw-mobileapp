@@ -30,6 +30,14 @@ Offline-first Expo/React Native app for frontline health workers (clinical data)
 9. **Clinical data lives in the DB** (Drizzle live queries), never in Zustand. Forms are RHF + zod, never `useState`.
 10. **One sync seam** — features never call sync/API endpoints directly; go through repositories and `src/db/sync`.
 
+Background services (`core/services/monitor`, `core/services/batteryGuard`) — full rules in `ARCHITECTURE_RULES.md` §11:
+
+11. **A JS timer stops when the app is backgrounded** — `setInterval` looks alive in the foreground and silently stops behind it. Anything that must fire in the background uses an AlarmManager trigger.
+12. **One `onBackgroundEvent` per app, in `index.js`** — a second registration replaces the first and kills the other alarm chain. Add a branch instead (eslint blocks a second one in `src/`).
+13. **Handle trigger delivery in the foreground too** (`onForegroundEvent`) — the delivery handler re-arms the next alarm; one missed delivery ends the chain.
+14. **Clear the "running" flag before cancelling a trigger** — otherwise an in-flight delivery re-arms it after logout.
+15. **Channel importance/sound can't change after creation** — create a new channel id (`-v2`), don't edit the old one.
+
 ## Where to look (read only what the task needs)
 
 | Doing | Read |
@@ -38,6 +46,7 @@ Offline-first Expo/React Native app for frontline health workers (clinical data)
 | adding/moving a file, or a new feature | `MOBILE_STACK.md` §2 + §9 |
 | running the app, onboarding | `README.md` |
 | monorepo-wide layout | `../../ARCHITECTURE.md` |
+| background services, notifications, alarms | `ARCHITECTURE_RULES.md` §11 + `src/core/services/{monitor,batteryGuard}/README.md` |
 
 **Import & folder boundaries are enforced by eslint** (`.eslintrc.cjs`) — do **not** read `MOBILE_STACK.md` to answer "may X import Y". Run `npm run lint`; if it passes, you are compliant.
 

@@ -182,6 +182,7 @@ export const dimens = {
   btnArrowInset: 8, // screen_container_padding — arrow inset from button right edge
   labelGap: 6, // gap between label and its input
   fieldGap: 20, // vertical gap between form fields
+  timelineDotSize: { phone: 28, tablet: 34 }, // TimelineCheckpointCard — checkpoint circle
 } as const;
 
 export const spacing = {
@@ -211,6 +212,14 @@ export const fontSizes = {
   heading: { phone: 16, tablet: 20 }, // forgot_password_label_size
   instruction: { phone: 14, tablet: 16 }, // forgot_password_instruction_size
   headerTitle: { phone: 18, tablet: 30 }, // wave-header title
+
+  // TimelineCheckpointCard / StageProgressBar / TimelineActionBar
+  timelineStageLabel: { phone: 11, tablet: 13 }, // "1. Stage 1" stepper label
+  timelineTime: { phone: 13, tablet: 15 }, // "9:30 AM" bold time
+  timelineDate: { phone: 11, tablet: 13 }, // "25 Aug 2026" date
+  timelineCardLabel: { phone: 11, tablet: 13 }, // "COMPLETED" / "MISSED" / "DUE NOW" / "UPCOMING" badge
+  timelineCardBody: { phone: 13, tablet: 15 }, // checkpoint card description line
+  timelineActionLabel: { phone: 11, tablet: 13 }, // SOS / Chat / Video Call / Rx captions
 } as const;
 
 export const typography = {
