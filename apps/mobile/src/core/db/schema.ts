@@ -1,17 +1,11 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 
 /**
- * Offline SQLite schema (OpenMRS data model), ported 1:1 from the Android /
- * WatermelonDB layer. See ARCHITECTURE_RULES §6:
- *  - `uuid` is the real PRIMARY KEY (Android/Java-UUID format) — except
- *    tbl_location (keys on `locationuuid`) and tbl_user_credentials (no uuid in
- *    Android → synthetic autoincrement id).
- *  - `sync` (dirty flag: 'false'/'true') and `voided` (soft-delete: '0'/'1') are
- *    kept as TEXT with their Android defaults and are managed by the sync engine.
- *  - Every column is TEXT unless noted; optional columns are nullable.
- *  - Indexes: FK/lookup columns and the `sync` dirty flag are indexed per table
- *    (third argument of each `sqliteTable`). The sync engine scans on `sync`
- *    and joins on the *uuid columns, so keep these in step with its queries.
+ * Offline SQLite schema (OpenMRS model), ported 1:1 from Android. See ARCHITECTURE_RULES §6.
+ * `uuid` is the PK, except tbl_location (`locationuuid`) and tbl_user_credentials (synthetic id).
+ * `sync`/`voided` are INTEGER mirroring the API: `sync` boolean (wire `syncd`), `voided` 0/1.
+ * Every other column is TEXT unless noted; optional columns are nullable.
+ * Indexes (3rd arg per table): FK/lookup columns plus `sync` — keep in step with the sync engine.
  */
 
 export const patient = sqliteTable('tbl_patient', {
@@ -39,8 +33,8 @@ export const patient = sqliteTable('tbl_patient', {
   dead: text('dead'),
   dateCreated: text('dateCreated'),
   modified_date: text('modified_date'),
-  voided: text('voided').notNull().default('0'),
-  sync: text('sync').notNull().default('false'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_patient_sync').on(table.sync),
 ]);
@@ -51,8 +45,8 @@ export const patientAttribute = sqliteTable('tbl_patient_attribute', {
   person_attribute_type_uuid: text('person_attribute_type_uuid'),
   patientuuid: text('patientuuid'),
   modified_date: text('modified_date'),
-  voided: text('voided').notNull().default('0'),
-  sync: text('sync').notNull().default('false'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_patient_attribute_patientuuid').on(table.patientuuid),
   index('idx_tbl_patient_attribute_sync').on(table.sync),
@@ -62,8 +56,8 @@ export const patientAttributeMaster = sqliteTable('tbl_patient_attribute_master'
   uuid: text('uuid').primaryKey(),
   name: text('name'),
   modified_date: text('modified_date'),
-  voided: text('voided').notNull().default('0'),
-  sync: text('sync').notNull().default('false'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_patient_attribute_master_sync').on(table.sync),
 ]);
@@ -78,8 +72,8 @@ export const visit = sqliteTable('tbl_visit', {
   creator: text('creator'),
   modified_date: text('modified_date'),
   isdownloaded: text('isdownloaded').notNull().default('false'),
-  voided: text('voided').notNull().default('0'),
-  sync: text('sync').notNull().default('false'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
   issubmitted: integer('issubmitted').notNull().default(0),
 }, (table) => [
   index('idx_tbl_visit_patientuuid').on(table.patientuuid),
@@ -92,8 +86,8 @@ export const visitAttribute = sqliteTable('tbl_visit_attribute', {
   visit_uuid: text('visit_uuid'),
   value: text('value'),
   visit_attribute_type_uuid: text('visit_attribute_type_uuid'),
-  voided: text('voided'),
-  sync: text('sync'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_visit_attribute_visit_uuid').on(table.visit_uuid),
   index('idx_tbl_visit_attribute_sync').on(table.sync),
@@ -106,8 +100,8 @@ export const encounter = sqliteTable('tbl_encounter', {
   provider_uuid: text('provider_uuid'),
   encounter_type_uuid: text('encounter_type_uuid'),
   modified_date: text('modified_date'),
-  sync: text('sync').notNull().default('false'),
-  voided: text('voided').notNull().default('0'),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
+  voided: integer('voided').notNull().default(0),
   privacynotice_value: text('privacynotice_value'),
 }, (table) => [
   index('idx_tbl_encounter_visituuid').on(table.visituuid),
@@ -122,11 +116,11 @@ export const obs = sqliteTable('tbl_obs', {
   comment: text('comment'),
   creator: text('creator'),
   creatoruuid: text('creatoruuid'),
-  voided: text('voided').notNull().default('0'),
+  voided: integer('voided').notNull().default(0),
   obsservermodifieddate: text('obsservermodifieddate'),
   modified_date: text('modified_date'),
   created_date: text('created_date'),
-  sync: text('sync').notNull().default('false'),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_obs_encounteruuid').on(table.encounteruuid),
   index('idx_tbl_obs_conceptuuid').on(table.conceptuuid),
@@ -138,8 +132,8 @@ export const location = sqliteTable('tbl_location', {
   locationuuid: text('locationuuid').primaryKey(),
   retired: integer('retired'),
   modified_date: text('modified_date'),
-  voided: text('voided').notNull().default('0'),
-  sync: text('sync').notNull().default('false'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_location_sync').on(table.sync),
 ]);
@@ -151,9 +145,9 @@ export const provider = sqliteTable('tbl_provider', {
   family_name: text('family_name'),
   role: text('role'),
   useruuid: text('useruuid'),
-  voided: text('voided').notNull().default('0'),
+  voided: integer('voided').notNull().default(0),
   modified_date: text('modified_date'),
-  sync: text('sync').notNull().default('false'),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_provider_sync').on(table.sync),
 ]);
@@ -163,7 +157,7 @@ export const providerAttribute = sqliteTable('tbl_provider_attribute', {
   provideruuid: text('provideruuid'),
   attributetypeuuid: text('attributetypeuuid'),
   value: text('value'),
-  voided: text('voided'),
+  voided: integer('voided').notNull().default(0),
 }, (table) => [
   index('idx_tbl_provider_attribute_provideruuid').on(table.provideruuid),
 ]);
@@ -173,7 +167,7 @@ export const drSpeciality = sqliteTable('tbl_dr_speciality', {
   provideruuid: text('provideruuid'),
   attributetypeuuid: text('attributetypeuuid'),
   value: text('value'),
-  voided: text('voided'),
+  voided: integer('voided').notNull().default(0),
 }, (table) => [
   index('idx_tbl_dr_speciality_provideruuid').on(table.provideruuid),
 ]);
@@ -191,8 +185,8 @@ export const imageRecords = sqliteTable('tbl_image_records', {
   image_path: text('image_path'),
   obs_time_date: text('obs_time_date'),
   image_type: text('image_type'),
-  voided: text('voided').notNull().default('0'),
-  sync: text('sync').notNull().default('false'),
+  voided: integer('voided').notNull().default(0),
+  sync: integer('sync', { mode: 'boolean' }).notNull().default(false),
 }, (table) => [
   index('idx_tbl_image_records_patientuuid').on(table.patientuuid),
   index('idx_tbl_image_records_visituuid').on(table.visituuid),

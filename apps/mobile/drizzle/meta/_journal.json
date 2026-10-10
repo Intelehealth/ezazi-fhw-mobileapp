@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1788969943386,
-      "tag": "0000_tiny_domino",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1789035855469,
-      "tag": "0001_kind_blue_blade",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1789042271251,
-      "tag": "0002_wet_martin_li",
+      "when": 1791662486405,
+      "tag": "0000_colossal_black_queen",
       "breakpoints": true
     }
   ]

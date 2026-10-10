@@ -50,7 +50,7 @@ export function resetSchemaInit(): void {
 async function runSchemaInit(): Promise<void> {
   const db = getDb();
 
-  // 1. Structure: tables (0000) + indexes (0001) + app state (0002).
+  // 1. Structure: tables, indexes and tbl_app_state (0000).
   await migrate(db, migrations);
 
   // 2. Static reference data that ships with the app, not synced clinical data.
