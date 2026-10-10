@@ -59,3 +59,4 @@ export function resetDbHandle(): void {
 }
 
 export { schema };
+export { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO, VOIDED_YES } from './syncFlags';
