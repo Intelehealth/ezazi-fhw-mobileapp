@@ -54,6 +54,22 @@ describe('test database', () => {
     expect(row.voided).toBe(VOIDED_NO);
   });
 
+  describe('relational result mapper patch', () => {
+    const session = (ctx?: TestDb) =>
+      (ctx!.db as unknown as { session: Record<string, unknown> }).session;
+
+    it('forwards the mapper the sql-js driver drops', () => {
+      // Drops to 4 if the patch is removed, and `with:` silently returns JSON strings.
+      expect((session(ctx).prepareQuery as (...a: unknown[]) => unknown).length).toBe(5);
+    });
+
+    it('still needs the patch — delete it when drizzle fixes the arity', () => {
+      // Fails on upgrade, which is the signal to remove the patch rather than carry it forever.
+      const upstream = Object.getPrototypeOf(session(ctx)).prepareQuery as (...a: unknown[]) => unknown;
+      expect(upstream.length).toBe(4);
+    });
+  });
+
   it('isolates databases, so one test cannot see another’s rows', async () => {
     await ctx.db.insert(patient).values({ uuid: 'p1' });
     const other = await createTestDb();
