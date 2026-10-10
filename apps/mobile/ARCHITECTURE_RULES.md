@@ -113,6 +113,16 @@ Before adding/bumping any native package: (1) check **reactnative.directory** fo
 - **Rows arriving from the server are written with `sync = 'true'`**, or the push engine will try to re-upload the entire initial pull.
 - **`tbl_user_credentials` is unused.** It exists only because it existed in the native Android app; its purpose is not documented and **nothing is designed around it**. Do not infer one.
 
+## 6b. Comment budget (hard limits)
+
+Comments explain **why**, never what the code already says. Over-long comments go stale and get ignored.
+
+- **JSDoc / block doc comments — max 5 lines.**
+- **Multi-line inline comments — max 2 lines.**
+- **Same-line (trailing) comments — 0–10 words.**
+
+If an explanation genuinely needs more room, it belongs in a doc, not in the source.
+
 ## 7. White-label boundary (what may / may not differ per client)
 
 Ships as **eZAZI (India)** and **eLCG (Nepal)** from one codebase (`@ezazi/config` — **shared with the web app**, so the boundary holds across *both* apps).
