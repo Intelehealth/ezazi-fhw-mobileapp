@@ -2,6 +2,7 @@ import { drizzle, type SQLJsDatabase } from 'drizzle-orm/sql-js';
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 
 import migrations from '../../../../../drizzle/migrations';
+import { schemaRelations } from '../../relations';
 import { schema } from '../../schema';
 
 /**
@@ -10,8 +11,10 @@ import { schema } from '../../schema';
  * from the shipped `drizzle/` bundle, never a hand-written CREATE TABLE — a
  * test therefore fails when the migrations drift from `schema.ts`.
  */
+type TestSchema = typeof schema & typeof schemaRelations;
+
 export interface TestDb {
-  db: SQLJsDatabase<typeof schema>;
+  db: SQLJsDatabase<TestSchema>;
   /** Raw handle, for PRAGMA and sqlite_master assertions. */
   client: Database;
   close: () => void;
@@ -36,7 +39,7 @@ function applyMigrations(client: Database): void {
  * fifth is discarded and `with:` returns child rows as an unparsed JSON string.
  * expo-sqlite forwards it, so the device is unaffected — delete this on upgrade.
  */
-function restoreRelationalMapper(db: SQLJsDatabase<typeof schema>): void {
+function restoreRelationalMapper(db: SQLJsDatabase<TestSchema>): void {
   const session = (db as unknown as { session: Record<string, unknown> }).session;
   const original = (session.prepareQuery as (...args: unknown[]) => Record<string, unknown>).bind(
     session,
@@ -66,7 +69,7 @@ export async function createTestDb(): Promise<TestDb> {
   const client = new engine.Database();
   applyMigrations(client);
 
-  const db = drizzle(client, { schema });
+  const db = drizzle(client, { schema: { ...schema, ...schemaRelations } });
   restoreRelationalMapper(db);
 
   return { db, client, close: () => client.close() };

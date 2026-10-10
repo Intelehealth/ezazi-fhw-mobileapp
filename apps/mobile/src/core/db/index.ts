@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
+import { schemaRelations } from './relations';
 import { schema } from './schema';
 
 /**
@@ -17,7 +18,9 @@ import { schema } from './schema';
 export const DATABASE_NAME = 'localrecords.db';
 
 function createOrm(raw: SQLiteDatabase) {
-  return drizzle(raw, { schema });
+  // Relations are spread in HERE, never imported into schema.ts — that direction
+  // is circular. Omit them and `db.query` is silently undefined, not a type error.
+  return drizzle(raw, { schema: { ...schema, ...schemaRelations } });
 }
 
 let rawHandle: SQLiteDatabase | null = null;
@@ -59,4 +62,5 @@ export function resetDbHandle(): void {
 }
 
 export { schema };
+export { schemaRelations } from './relations';
 export { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO, VOIDED_YES } from './syncFlags';

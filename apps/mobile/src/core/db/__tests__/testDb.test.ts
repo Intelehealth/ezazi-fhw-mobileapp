@@ -54,6 +54,13 @@ describe('test database', () => {
     expect(row.voided).toBe(VOIDED_NO);
   });
 
+  it('exposes db.query, with relations wired in', async () => {
+    // Spreading relations into drizzle() is what creates `query`. Omit them and
+    // this is undefined at runtime rather than a compile error.
+    expect(ctx.db.query.patient).toBeDefined();
+    await expect(ctx.db.query.patient.findMany({ with: { visits: true } })).resolves.toEqual([]);
+  });
+
   describe('relational result mapper patch', () => {
     const session = (ctx?: TestDb) =>
       (ctx!.db as unknown as { session: Record<string, unknown> }).session;
