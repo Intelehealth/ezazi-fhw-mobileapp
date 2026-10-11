@@ -2,6 +2,7 @@ import * as encounterTypes from '../constants/encounter';
 import * as obsConcepts from '../constants/obs';
 import * as patientAttributes from '../constants/patient';
 import * as providerAttributes from '../constants/provider';
+import * as providerRoles from '../constants/roles';
 import * as visitAttributes from '../constants/visit';
 
 /**
@@ -50,6 +51,16 @@ describe('uuid constants', () => {
     const malformed = entries.filter((e) => e.uuid.length !== 36 || /\s/.test(e.uuid));
 
     expect(malformed).toEqual([]);
+  });
+
+  it('keeps uuids out of roles.ts, which the sweep above does not cover', () => {
+    // roles.ts holds role strings, so it is excluded from FILES. This closes
+    // the hole that exclusion opens: a uuid parked there would go unguarded.
+    const uuidShaped = Object.values(providerRoles).filter(
+      (value) => typeof value === 'string' && value.length === 36 && !/\s/.test(value),
+    );
+
+    expect(uuidShaped).toEqual([]);
   });
 
   it('keeps the admission set at 15, matching the obs it writes', () => {
