@@ -5,10 +5,8 @@ import {
   obs,
   patient,
   patientAttribute,
-  patientAttributeMaster,
   provider,
   providerAttribute,
-  uuidDictionary,
   visit,
   visitAttribute,
 } from './schema';
@@ -16,9 +14,9 @@ import {
 /**
  * How rows join, for `db.query` nested reads. Mirrors the predicates the legacy
  * Android DAOs hand-wrote — nothing speculative. Emits zero DDL and no foreign
- * keys, so writes, deletes and sync are unaffected. `obs.creatoruuid` is absent
- * by design: it joins `provider.useruuid` under a role predicate, which no
- * relation can express — repositories do that join explicitly.
+ * keys, so writes, deletes and sync are unaffected. Type lookups are absent on
+ * purpose: resolve types by uuid constant. `obs.creatoruuid` is too — it joins
+ * `provider.useruuid` under a role predicate, which no relation can express.
  */
 
 export const patientRelations = relations(patient, ({ many }) => ({
@@ -30,10 +28,6 @@ export const patientAttributeRelations = relations(patientAttribute, ({ one }) =
   patient: one(patient, {
     fields: [patientAttribute.patientuuid],
     references: [patient.uuid],
-  }),
-  patientAttributeType: one(patientAttributeMaster, {
-    fields: [patientAttribute.person_attribute_type_uuid],
-    references: [patientAttributeMaster.uuid],
   }),
 }));
 
@@ -57,11 +51,6 @@ export const encounterRelations = relations(encounter, ({ one, many }) => ({
   visit: one(visit, {
     fields: [encounter.visituuid],
     references: [visit.uuid],
-  }),
-  // Reads only. Resolve encounter types by uuid constant, never by name.
-  encounterType: one(uuidDictionary, {
-    fields: [encounter.encounter_type_uuid],
-    references: [uuidDictionary.uuid],
   }),
   observations: many(obs),
 }));
