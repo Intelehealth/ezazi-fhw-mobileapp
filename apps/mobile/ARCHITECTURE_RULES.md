@@ -96,6 +96,11 @@ Before adding/bumping any native package: (1) check **reactnative.directory** fo
 
 ## 6. Data / schema & DB conventions (carried from Android)
 
+> **Writing anything under `src/core/db`, or calling it? Read [`DB_CONVENTIONS.md`](DB_CONVENTIONS.md) first.**
+> It covers the rules no tool enforces — repository signatures, transactions, the `sync` flag, what
+> must never be overwritten, and what already exists so you do not rebuild it. eslint checks import
+> boundaries, which is placement, not correctness.
+
 - **`uuid` is the primary key** in each clinical table (Java-UUID / RFC-4122; generate with `expo-crypto` `randomUUID()`). Exceptions: `tbl_location` keys on `locationuuid`; `tbl_user_credentials` uses a synthetic auto-increment PK.
 - **Keep `sync` and `voided` columns, stored as `integer`, never `text` — and mirror the API's own types.** `voided` is `integer(...)` exposed as a **number** (0/1), because the wire sends a JSON number; `sync` is `integer(..., { mode: 'boolean' })` exposed as a **boolean**, because the server's `syncd` is a JSON boolean. Both are INTEGER on disk; the TS shape matches the wire shape, so **neither direction needs a conversion**. Do not "harmonise" the two into one shape — that reintroduces a conversion and diverges from the source. The sync contract constrains the **wire** type, not the column type — `voided` rides the outgoing push body as a **JSON number** (`Ob.java:21-23`, `Encounter.java:35-37` in the legacy app, populated from the local row at `PatientsFrameJson.java:224/248`; confirmed against a live server capture). An integer column serialises to that identically. TEXT is what produced the legacy defects: seven distinct spellings on disk, and an `Integer.parseInt` on the raw column sitting directly on the push path (`ObsDAO.java:368`, uncaught — it aborts the whole push). Both failure classes are structurally impossible in an integer column. Declared `notNull()` with a default on **every** table — a NULL flag is invisible to every dirty predicate. No WMDB `_status`/`_changed` on this stack.
 - **`z.guid()`, never `z.uuid()`.** zod v4's `uuid()` **rejects** OpenMRS/Java UUIDs. Every UUID field in every schema uses `z.guid()`. (zod v4 also: issues are on `err.issues`; use `.prefault()` for input-typed defaults.)
