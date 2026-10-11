@@ -3,6 +3,7 @@ import { secureStorage } from '@/core/services/storage/secure-storage';
 import { sessionApi } from '@/core/session/session.api';
 import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
+import { teardownDb } from '@/core/db/teardown';
 
 export type AuthStatus = 'unknown' | 'unauthenticated' | 'authenticated';
 
@@ -54,8 +55,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Result intentionally unused — server may be offline, we still clear local state.
     await sessionApi.logout();
     await secureStorage.clear();
-    // Forget DB readiness, so the next login re-runs schema init. Full teardown
-    // (close connection, delete the .db file) lands with the hydration work.
+    // Clinical data must not outlive the session: closes the connection,
+    // deletes the .db file and invalidates both memos. Never throws.
+    await teardownDb();
+    // Forget DB readiness, so the next login re-runs schema init.
     useDbBootstrapStore.getState().reset();
     set({ status: 'unauthenticated', userUuid: null, role: null });
   },
