@@ -1,4 +1,7 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 /**
  * Timestamps for storage and the wire. Deliberately separate from
@@ -15,4 +18,13 @@ import dayjs from 'dayjs';
  */
 export function localIsoTimestamp(): string {
   return dayjs().format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
+}
+
+/**
+ * The same shape in UTC. The legacy is inconsistent about which it writes —
+ * patient and visit rows carry local time, encounter and obs rows carry UTC —
+ * and both reach the server, so the split is preserved rather than unified.
+ */
+export function utcIsoTimestamp(): string {
+  return dayjs().utc().format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
 }
