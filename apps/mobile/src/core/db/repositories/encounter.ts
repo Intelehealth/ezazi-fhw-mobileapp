@@ -10,7 +10,6 @@ import {
   NON_CLINICAL_ENCOUNTER_TYPES,
   STAGE3_HOUR1_1,
 } from '../constants/encounter';
-import { getDb } from '../index';
 import { encounter, uuidDictionary } from '../schema';
 import type { Encounter } from '../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO } from '../syncFlags';
@@ -76,12 +75,12 @@ function writeOne(row: NewEncounter, on: DbHandle): void {
 // ── writes ────────────────────────────────────────────────────────────────
 
 /** Pull-path bulk write, one transaction's worth of rows. */
-export function upsertMany(rows: NewEncounter[], on: DbHandle = getDb()): void {
+export function upsertMany(rows: NewEncounter[], on: DbHandle): void {
   for (const row of rows) writeOne({ ...row, sync: SYNC_CLEAN }, on);
 }
 
 /** The most-used write in the app. Dedupes by (visit, type). */
-export function upsert(row: NewEncounter, on: DbHandle = getDb()): void {
+export function upsert(row: NewEncounter, on: DbHandle): void {
   writeOne(row, on);
 }
 
@@ -90,7 +89,7 @@ export function upsert(row: NewEncounter, on: DbHandle = getDb()): void {
  * from `upsertMany`; the legacy opened a transaction per row, which was a
  * performance bug rather than a requirement.
  */
-export function insertManyReplacing(rows: NewEncounter[], on: DbHandle = getDb()): void {
+export function insertManyReplacing(rows: NewEncounter[], on: DbHandle): void {
   for (const row of rows) {
     const values = { ...row, modified_date: utcIsoTimestamp() };
     on.insert(encounter)
@@ -100,11 +99,11 @@ export function insertManyReplacing(rows: NewEncounter[], on: DbHandle = getDb()
   }
 }
 
-export function markDirty(uuid: string, on: DbHandle = getDb()): void {
+export function markDirty(uuid: string, on: DbHandle): void {
   on.update(encounter).set({ sync: SYNC_DIRTY }).where(eq(encounter.uuid, uuid)).run();
 }
 
-export function markSynced(uuid: string, on: DbHandle = getDb()): void {
+export function markSynced(uuid: string, on: DbHandle): void {
   on.update(encounter).set({ sync: SYNC_CLEAN }).where(eq(encounter.uuid, uuid)).run();
 }
 
@@ -114,7 +113,7 @@ export function markSynced(uuid: string, on: DbHandle = getDb()): void {
  */
 export function insertAdmission(
   input: { uuid: string; visitUuid: string; providerUuid: string; encounterTime: string },
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   writeOne(
     {
@@ -133,7 +132,7 @@ export function insertAdmission(
 /** Marks the visit complete. The legacy minted the uuid and backdated the time here; both move out. */
 export function insertVisitComplete(
   input: { uuid: string; visitUuid: string; providerUuid: string; encounterTime: string },
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   writeOne(
     {
@@ -150,7 +149,7 @@ export function insertVisitComplete(
 }
 
 /** Never deduped — a visit may carry many SOS encounters, by design. */
-export function insertSos(row: NewEncounter, on: DbHandle = getDb()): void {
+export function insertSos(row: NewEncounter, on: DbHandle): void {
   const values = { ...row, encounter_type_uuid: LCG_SOS, modified_date: utcIsoTimestamp() };
   on.insert(encounter)
     .values(values)
@@ -160,7 +159,7 @@ export function insertSos(row: NewEncounter, on: DbHandle = getDb()): void {
 
 export function insertDeliveryOutcomeStage3(
   row: Omit<NewEncounter, 'encounter_type_uuid'>,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   writeOne({ ...row, encounter_type_uuid: DELIVERY_OUTCOME_STAGE3 }, on);
 }
@@ -171,7 +170,7 @@ export function insertDeliveryOutcomeStage3(
 export function existsByVisitAndType(
   visitUuid: string,
   typeUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): boolean {
   return findUuidForDedupe(visitUuid, typeUuid, on) !== null;
 }
@@ -180,7 +179,7 @@ export function existsByVisitAndType(
 export function findUuidByVisitAndType(
   visitUuid: string,
   typeUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): string | null {
   const row = on
     .select({ uuid: encounter.uuid })
@@ -199,7 +198,7 @@ export function findUuidByVisitAndType(
 }
 
 /** Rows the server has not seen. Typeless encounters are excluded deliberately. */
-export function findUnsynced(on: DbHandle = getDb()): Encounter[] {
+export function findUnsynced(on: DbHandle): Encounter[] {
   return on
     .select()
     .from(encounter)
@@ -207,12 +206,12 @@ export function findUnsynced(on: DbHandle = getDb()): Encounter[] {
     .all();
 }
 
-export function findAll(on: DbHandle = getDb()): Encounter[] {
+export function findAll(on: DbHandle): Encounter[] {
   return on.select().from(encounter).orderBy(desc(encounter.encounter_time)).all();
 }
 
 /** The visit timeline, ascending, with the bookkeeping encounters filtered out. */
-export function findTimelineByVisit(visitUuid: string, on: DbHandle = getDb()): Encounter[] {
+export function findTimelineByVisit(visitUuid: string, on: DbHandle): Encounter[] {
   return on
     .select()
     .from(encounter)
@@ -233,7 +232,7 @@ export function findTimelineByVisit(visitUuid: string, on: DbHandle = getDb()): 
 /** The latest real clinical encounter. Excludes the three bookkeeping types. */
 export function findLatestClinicalByVisit(
   visitUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): Encounter | null {
   return (
     on
@@ -254,7 +253,7 @@ export function findLatestClinicalByVisit(
 }
 
 /** Present means stage 2 has ended. No voided filter, matching the legacy. */
-export function findVisitCompleteUuid(visitUuid: string, on: DbHandle = getDb()): string | null {
+export function findVisitCompleteUuid(visitUuid: string, on: DbHandle): string | null {
   const row = on
     .select({ uuid: encounter.uuid })
     .from(encounter)
@@ -273,7 +272,7 @@ export function findVisitCompleteUuid(visitUuid: string, on: DbHandle = getDb())
 /** All three columns the Home screen reads. Uses the voided IN-list, sorts newest first. */
 export function findByVisit(
   visitUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): Pick<Encounter, 'uuid' | 'encounter_type_uuid' | 'encounter_time'>[] {
   return on
     .select({
@@ -291,7 +290,7 @@ export function findByVisit(
 export function findLatestByVisitAndType(
   visitUuid: string,
   typeUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): Encounter | null {
   return (
     on
@@ -310,11 +309,11 @@ export function findLatestByVisitAndType(
   );
 }
 
-export function findLatestSosByVisit(visitUuid: string, on: DbHandle = getDb()): Encounter | null {
+export function findLatestSosByVisit(visitUuid: string, on: DbHandle): Encounter | null {
   return findLatestByVisitAndType(visitUuid, LCG_SOS, on);
 }
 
-export function isStage3Started(visitUuid: string, on: DbHandle = getDb()): boolean {
+export function isStage3Started(visitUuid: string, on: DbHandle): boolean {
   return findLatestByVisitAndType(visitUuid, STAGE3_HOUR1_1, on) !== null;
 }
 
@@ -326,7 +325,7 @@ export function isStage3Started(visitUuid: string, on: DbHandle = getDb()): bool
  * changes app behaviour. And this is one of the dictionary joins the staged
  * removal must restructure; see ROADMAP "Staged removal".
  */
-export function findCurrentStageName(visitUuid: string, on: DbHandle = getDb()): string | null {
+export function findCurrentStageName(visitUuid: string, on: DbHandle): string | null {
   const row = on
     .select({ name: uuidDictionary.name })
     .from(encounter)
@@ -346,7 +345,7 @@ export function findCurrentStageName(visitUuid: string, on: DbHandle = getDb()):
  */
 export function findLatestEncounterTypeName(
   visitUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): string | null {
   const row = on
     .select({ name: uuidDictionary.name })

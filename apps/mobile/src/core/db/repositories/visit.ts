@@ -4,7 +4,6 @@ import { localIsoTimestamp } from '@/core/utils/datetime';
 
 import { ENCOUNTER_VISIT_COMPLETE } from '../constants/encounter';
 import { VISIT_HOLDER } from '../constants/visit';
-import { getDb } from '../index';
 import { encounter, visit, visitAttribute } from '../schema';
 import type { Visit } from '../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO } from '../syncFlags';
@@ -72,7 +71,7 @@ function heldBy(on: DbHandle, providerId: string) {
  * survive: the legacy replaced the whole row and silently un-voided a visit
  * the server had voided, on every re-sync.
  */
-export function upsertManyFromServer(visits: NewVisit[], on: DbHandle = getDb()): void {
+export function upsertManyFromServer(visits: NewVisit[], on: DbHandle): void {
   for (const row of visits) {
     const values = { ...row, sync: SYNC_CLEAN };
     on.insert(visit)
@@ -86,19 +85,19 @@ export function upsertManyFromServer(visits: NewVisit[], on: DbHandle = getDb())
  * Local create. Plain insert, so a duplicate uuid throws rather than silently
  * replacing. Writes the visit row only — attributes are their own call.
  */
-export function create(row: NewVisit, on: DbHandle = getDb()): void {
+export function create(row: NewVisit, on: DbHandle): void {
   on.insert(visit)
     .values({ ...row, modified_date: localIsoTimestamp(), sync: SYNC_DIRTY })
     .run();
 }
 
 /** Marks a visit as needing a push. Every server-visible change must call this. */
-export function markDirty(uuid: string, on: DbHandle = getDb()): void {
+export function markDirty(uuid: string, on: DbHandle): void {
   on.update(visit).set({ sync: SYNC_DIRTY }).where(eq(visit.uuid, uuid)).run();
 }
 
 /** Clears the flag after the server has acknowledged the push. */
-export function markSynced(uuid: string, on: DbHandle = getDb()): void {
+export function markSynced(uuid: string, on: DbHandle): void {
   on.update(visit).set({ sync: SYNC_CLEAN }).where(eq(visit.uuid, uuid)).run();
 }
 
@@ -111,7 +110,7 @@ export function markSynced(uuid: string, on: DbHandle = getDb()): void {
  * Returns void: `DbHandle` leaves the driver's run result opaque so expo-sqlite
  * and sql.js both fit, so no row count is available. Check the visit exists first.
  */
-export function closeVisit(uuid: string, endDate: string, on: DbHandle = getDb()): void {
+export function closeVisit(uuid: string, endDate: string, on: DbHandle): void {
   if (!endDate) throw new Error('closeVisit requires an end date');
 
   on.update(visit)
@@ -130,14 +129,14 @@ export function closeVisit(uuid: string, endDate: string, on: DbHandle = getDb()
  * `.sync()` is required — on a sync driver `findMany` returns the query, and
  * only awaiting or calling sync() runs it.
  */
-export function findDirty(on: DbHandle = getDb()) {
+export function findDirty(on: DbHandle) {
   return on.query.visit
     .findMany({ where: eq(visit.sync, SYNC_DIRTY), with: { attributes: true } })
     .sync();
 }
 
 /** Explicit ordering — none of the legacy list reads had any. */
-export function findAll(on: DbHandle = getDb()): Visit[] {
+export function findAll(on: DbHandle): Visit[] {
   return on.select().from(visit).orderBy(desc(visit.startdate)).all();
 }
 
@@ -146,7 +145,7 @@ export function findAll(on: DbHandle = getDb()): Visit[] {
  * null. Replaces `fetchVisitUUIDFromPatientUUID`, which had no ordering and
  * returned closed and voided visits — do not reinstate it.
  */
-export function findActiveVisitUuid(patientUuid: string, on: DbHandle = getDb()): string | null {
+export function findActiveVisitUuid(patientUuid: string, on: DbHandle): string | null {
   const row = on
     .select({ uuid: visit.uuid })
     .from(visit)
@@ -158,7 +157,7 @@ export function findActiveVisitUuid(patientUuid: string, on: DbHandle = getDb())
   return row?.uuid ?? null;
 }
 
-export function findPatientUuidByVisit(visitUuid: string, on: DbHandle = getDb()): string | null {
+export function findPatientUuidByVisit(visitUuid: string, on: DbHandle): string | null {
   const row = on
     .select({ patientuuid: visit.patientuuid })
     .from(visit)
@@ -169,7 +168,7 @@ export function findPatientUuidByVisit(visitUuid: string, on: DbHandle = getDb()
 }
 
 /** Drives the Active Patients screen. */
-export function findActiveVisitsByProvider(providerId: string, on: DbHandle = getDb()): Visit[] {
+export function findActiveVisitsByProvider(providerId: string, on: DbHandle): Visit[] {
   return on
     .select()
     .from(visit)
@@ -182,7 +181,7 @@ export function findActiveVisitsByProvider(providerId: string, on: DbHandle = ge
 export function hasProviderAccess(
   visitUuid: string,
   providerId: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): boolean {
   const row = on
     .select({ uuid: visit.uuid })
@@ -197,7 +196,7 @@ export function hasProviderAccess(
 export function isVisitActive(
   visitUuid: string,
   providerId: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): boolean {
   const row = on
     .select({ uuid: visit.uuid })

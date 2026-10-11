@@ -2,7 +2,6 @@ import { and, eq, sql } from 'drizzle-orm';
 
 import { localIsoTimestamp } from '@/core/utils/datetime';
 
-import { getDb } from '../index';
 import { patient, patientAttribute, patientAttributeMaster } from '../schema';
 import type { Patient, PatientAttribute } from '../schema';
 import { SYNC_CLEAN, SYNC_DIRTY } from '../syncFlags';
@@ -39,7 +38,7 @@ export interface PatientAttributeInput {
  * Local CREATE. Writes the patient row only — attributes are a separate call,
  * and the parent must exist first. Wrap both in `transact` when atomicity matters.
  */
-export function createPatient(uuid: string, input: PatientInput, on: DbHandle = getDb()): void {
+export function createPatient(uuid: string, input: PatientInput, on: DbHandle): void {
   on.insert(patient)
     .values({
       ...input,
@@ -57,7 +56,7 @@ export function createPatient(uuid: string, input: PatientInput, on: DbHandle = 
  * excludes `dateCreated` — a real difference between the legacy create and edit
  * paths, preserved rather than normalised.
  */
-export function updatePatient(uuid: string, input: PatientUpdate, on: DbHandle = getDb()): void {
+export function updatePatient(uuid: string, input: PatientUpdate, on: DbHandle): void {
   on.update(patient)
     .set({ ...input, gender: 'F', dead: '0', modified_date: localIsoTimestamp(), sync: SYNC_DIRTY })
     .where(eq(patient.uuid, uuid))
@@ -69,7 +68,7 @@ export function updatePatient(uuid: string, input: PatientUpdate, on: DbHandle =
  * replace: SQLite REPLACE is DELETE+INSERT, so any column the server omits
  * would silently revert to its DDL default.
  */
-export function upsertPatients(rows: PatientUpsert[], on: DbHandle = getDb()): void {
+export function upsertPatients(rows: PatientUpsert[], on: DbHandle): void {
   for (const row of rows) {
     on.insert(patient)
       .values({ ...row, sync: SYNC_CLEAN })
@@ -81,7 +80,7 @@ export function upsertPatients(rows: PatientUpsert[], on: DbHandle = getDb()): v
 /** Local attribute write. Marks rows dirty, so the next push sends them. */
 export function upsertPatientAttributes(
   rows: PatientAttributeInput[],
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   writeAttributes(rows, SYNC_DIRTY, on);
 }
@@ -89,7 +88,7 @@ export function upsertPatientAttributes(
 /** Pull-path attribute write. Rows arrive already on the server, so clean. */
 export function upsertPatientAttributesFromServer(
   rows: PatientAttributeInput[],
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   writeAttributes(rows, SYNC_CLEAN, on);
 }
@@ -108,7 +107,7 @@ function writeAttributes(rows: PatientAttributeInput[], sync: boolean, on: DbHan
 /** Pull-path write of the name-to-uuid lookup every attribute read depends on. */
 export function upsertAttributeTypes(
   rows: { uuid: string; name: string }[],
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   for (const row of rows) {
     const values = { ...row, modified_date: localIsoTimestamp(), sync: SYNC_CLEAN };
@@ -128,7 +127,7 @@ export function setPatientAttribute(
   patientUuid: string,
   attributeTypeUuid: string,
   value: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   const existing = on
     .select({ uuid: patientAttribute.uuid })
@@ -159,7 +158,7 @@ export function markPatientSynced(
   uuid: string,
   openmrsId: string,
   synced: boolean,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): void {
   on.update(patient)
     .set({ openmrs_id: openmrsId, sync: synced })
@@ -171,14 +170,14 @@ export function markPatientSynced(
  * Stores a filesystem path, not image data. Deliberately does NOT mark the row
  * dirty — legacy behaviour, so a photo change alone is never pushed.
  */
-export function updatePatientPhoto(uuid: string, photoPath: string, on: DbHandle = getDb()): void {
+export function updatePatientPhoto(uuid: string, photoPath: string, on: DbHandle): void {
   on.update(patient).set({ patient_photo: photoPath }).where(eq(patient.uuid, uuid)).run();
 }
 
 // ── reads ─────────────────────────────────────────────────────────────────
 
 /** Every attribute row, voided ones included — the push sends those too. */
-export function listAttributes(patientUuid: string, on: DbHandle = getDb()): PatientAttribute[] {
+export function listAttributes(patientUuid: string, on: DbHandle): PatientAttribute[] {
   return on
     .select()
     .from(patientAttribute)
@@ -192,7 +191,7 @@ export function listAttributes(patientUuid: string, on: DbHandle = getDb()): Pat
  */
 export function getPatientHeader(
   patientUuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): Pick<Patient, 'openmrs_id' | 'first_name' | 'middle_name' | 'last_name'> | null {
   return (
     on
@@ -208,7 +207,7 @@ export function getPatientHeader(
   );
 }
 
-export function getAttributeName(attributeTypeUuid: string, on: DbHandle = getDb()): string | null {
+export function getAttributeName(attributeTypeUuid: string, on: DbHandle): string | null {
   const row = on
     .select({ name: patientAttributeMaster.name })
     .from(patientAttributeMaster)
@@ -219,7 +218,7 @@ export function getAttributeName(attributeTypeUuid: string, on: DbHandle = getDb
 }
 
 /** Inverse of `getAttributeName`. Case-insensitive, matching the legacy COLLATE NOCASE. */
-export function getAttributeTypeUuid(name: string, on: DbHandle = getDb()): string | null {
+export function getAttributeTypeUuid(name: string, on: DbHandle): string | null {
   const row = on
     .select({ uuid: patientAttributeMaster.uuid })
     .from(patientAttributeMaster)
@@ -234,11 +233,11 @@ export function getAttributeTypeUuid(name: string, on: DbHandle = getDb()): stri
  * spellings and still missed NULL; `sync` is a non-null boolean since D2, so
  * this is now exact.
  */
-export function listDirtyPatients(on: DbHandle = getDb()): Patient[] {
+export function listDirtyPatients(on: DbHandle): Patient[] {
   return on.select().from(patient).where(eq(patient.sync, SYNC_DIRTY)).all();
 }
 
-export function getOpenmrsId(uuid: string, on: DbHandle = getDb()): string | null {
+export function getOpenmrsId(uuid: string, on: DbHandle): string | null {
   const row = on
     .select({ openmrs_id: patient.openmrs_id })
     .from(patient)
@@ -255,7 +254,7 @@ export function getOpenmrsId(uuid: string, on: DbHandle = getDb()): string | nul
  */
 export function getPatientName(
   uuid: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): Pick<Patient, 'first_name' | 'middle_name' | 'last_name'> | null {
   return (
     on
@@ -271,7 +270,7 @@ export function getPatientName(
 }
 
 /** Format is not uniform: the pull writes `yyyy-MM-dd`, local writes store it raw. */
-export function getDateOfBirth(uuid: string, on: DbHandle = getDb()): string | null {
+export function getDateOfBirth(uuid: string, on: DbHandle): string | null {
   const row = on
     .select({ date_of_birth: patient.date_of_birth })
     .from(patient)
@@ -285,7 +284,7 @@ export function getDateOfBirth(uuid: string, on: DbHandle = getDb()): string | n
 export function getAttributeValue(
   patientUuid: string,
   attributeName: string,
-  on: DbHandle = getDb(),
+  on: DbHandle,
 ): string | null {
   const typeUuid = getAttributeTypeUuid(attributeName, on);
   if (!typeUuid) return null;

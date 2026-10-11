@@ -7,10 +7,12 @@ import type { schema } from './schema';
 type FullSchema = typeof schema & typeof schemaRelations;
 
 /**
- * A database handle OR a transaction. Repository functions take this, so one
- * function works standalone and composed inside a transaction. The run result
- * is left open on purpose: expo-sqlite returns `SQLiteRunResult`, the sql.js
- * test engine returns `void`, and pinning either breaks the other.
+ * A database handle OR a transaction. Every repository function takes one as
+ * its LAST and REQUIRED parameter, so the same function works standalone and
+ * composed inside a transaction — and forgetting to pass the transaction is a
+ * compile error rather than a silent write outside it.
+ * The run result is left open on purpose: expo-sqlite returns `SQLiteRunResult`,
+ * the sql.js test engine returns `void`, and pinning either breaks the other.
  */
 export type DbHandle = BaseSQLiteDatabase<'sync', unknown, FullSchema>;
 
