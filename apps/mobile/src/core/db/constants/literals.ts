@@ -25,3 +25,9 @@ export type Ward = typeof WARD_LABOR | typeof WARD_POST_NATAL;
  * verbatim; do not invent a boolean here. See ROADMAP "read status".
  */
 export const VISIT_READ_STATUS_VALUE = '$';
+
+/**
+ * `tbl_image_records.image_type`. The only value the legacy ever wrote or
+ * filtered on — the table holds patient profile pictures and nothing else.
+ */
+export const IMAGE_TYPE_PROFILE = 'PP';
