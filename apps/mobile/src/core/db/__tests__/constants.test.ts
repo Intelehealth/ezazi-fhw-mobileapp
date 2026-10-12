@@ -1,6 +1,5 @@
 import * as encounterTypes from '../constants/encounter';
 import * as obsConcepts from '../constants/obs';
-import * as patientAttributes from '../constants/patient';
 import * as dbLiterals from '../constants/literals';
 import * as providerAttributes from '../constants/provider';
 import * as visitAttributes from '../constants/visit';
@@ -14,7 +13,6 @@ import * as visitAttributes from '../constants/visit';
 const FILES = {
   'constants/encounter.ts': encounterTypes,
   'constants/obs.ts': obsConcepts,
-  'constants/patient.ts': patientAttributes,
   'constants/provider.ts': providerAttributes,
   'constants/visit.ts': visitAttributes,
 };
@@ -28,7 +26,7 @@ const entries = Object.entries(FILES).flatMap(([file, mod]) =>
 describe('uuid constants', () => {
   it('exports the full ported set', () => {
     // Deliberately brittle: a changed count means a constant was added or lost.
-    expect(entries).toHaveLength(110);
+    expect(entries).toHaveLength(101);
   });
 
   it('gives every uuid exactly one name, with no exceptions', () => {

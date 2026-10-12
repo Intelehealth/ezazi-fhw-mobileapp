@@ -1,6 +1,5 @@
 import * as encounterTypes from '../constants/encounter';
 import * as obsConcepts from '../constants/obs';
-import * as patientAttributes from '../constants/patient';
 import * as providerAttributes from '../constants/provider';
 import * as visitAttributes from '../constants/visit';
 import { UUID_ENTRIES } from '../seeds/uuidDictionary';
@@ -21,7 +20,6 @@ import { UUID_ENTRIES } from '../seeds/uuidDictionary';
 const CONSTANTS = {
   'constants/encounter.ts': encounterTypes,
   'constants/obs.ts': obsConcepts,
-  'constants/patient.ts': patientAttributes,
   'constants/provider.ts': providerAttributes,
   'constants/visit.ts': visitAttributes,
 };
@@ -38,8 +36,12 @@ describe('uuid dictionary seed', () => {
     // The other half of the rule. Android seeded 22 obs concepts and 8 patient
     // attribute types here; every read of this table is keyed on an encounter
     // type, so none of them was ever looked up. Dropped 2026-10-12.
+    // Patient attribute types are no longer checked because we hold no
+    // constants for them at all - the server sends the whole master list on
+    // every pull and `upsertAttributeTypes` writes it to
+    // `tbl_patient_attribute_master`. See `constants/index.ts`.
     const banned = new Set(
-      Object.values({ ...obsConcepts, ...patientAttributes })
+      Object.values({ ...obsConcepts })
         .filter((v) => typeof v === 'string')
         .map((v) => (v as string).toLowerCase()),
     );
