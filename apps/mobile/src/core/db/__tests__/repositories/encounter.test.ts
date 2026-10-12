@@ -17,6 +17,7 @@ import {
   findLatestSosByVisit,
   findTimelineByVisit,
   findUnsynced,
+  findTypeNameByUuid,
   findUuidByVisitAndType,
   findVisitCompleteUuid,
   insertAdmission,
@@ -358,5 +359,20 @@ describe('encounter repository', () => {
     ).toThrow('obs write failed');
 
     expect(rows()).toEqual([]);
+  });
+
+  describe('type name lookup', () => {
+    it('returns the structured code callers parse for stage and hour', () => {
+      ctx.db
+        .insert(uuidDictionary)
+        .values({ uuid: 'type-1', name: 'Stage1_Hour1_1' })
+        .run();
+
+      expect(findTypeNameByUuid('type-1', db)).toBe('Stage1_Hour1_1');
+    });
+
+    it('returns null for a uuid the dictionary does not hold', () => {
+      expect(findTypeNameByUuid('missing', db)).toBeNull();
+    });
   });
 });

@@ -366,3 +366,22 @@ export function findLatestEncounterTypeName(
 
   return row?.name ?? null;
 }
+
+/**
+ * One encounter type's NAME, by its uuid. The name is not a label — it is a
+ * structured code (`Stage1_Hour1_1`) that callers split to get the stage and
+ * hour numbers, or match with `contains('Stage1')`. Four live legacy call
+ * sites parse it this way; a fifth is commented out.
+ * Reads `tbl_uuid_dictionary`, so it depends on the seed; see the two
+ * stage-name reads above for the same caveat.
+ */
+export function findTypeNameByUuid(typeUuid: string, on: DbHandle): string | null {
+  const row = on
+    .select({ name: uuidDictionary.name })
+    .from(uuidDictionary)
+    .where(eq(uuidDictionary.uuid, typeUuid))
+    .limit(1)
+    .get();
+
+  return row?.name ?? null;
+}
