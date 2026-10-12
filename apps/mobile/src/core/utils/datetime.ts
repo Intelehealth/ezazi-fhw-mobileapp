@@ -21,10 +21,13 @@ export function localIsoTimestamp(): string {
 }
 
 /**
- * The same shape in UTC. The legacy is inconsistent about which it writes —
- * patient and visit rows carry local time, encounter and obs rows carry UTC —
- * and both reach the server, so the split is preserved rather than unified.
+ * A DIFFERENT shape, in UTC: `yyyy-MM-dd HH:mm:ss`, no T, no millis, no offset.
+ * The legacy uses a separate pattern for its UTC clock (`AppConstants.UTC_FORMAT`)
+ * from its local one, and the pull sends this shape too — so a column holding
+ * both would sort ' ' (0x20) below 'T' (0x54) and put every local row above
+ * every pulled one whatever the real time. Which entity gets which is the
+ * legacy's split, preserved: patient and visit local, encounter and obs UTC.
  */
 export function utcIsoTimestamp(): string {
-  return dayjs().utc().format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
+  return dayjs().utc().format('YYYY-MM-DD HH:mm:ss');
 }
