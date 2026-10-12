@@ -52,9 +52,10 @@ them first means each later phase rewrites its imports once instead of twice.
 - ☑ **1e** `services/storage/` → `core/services/storage/`
 - ☑ **1f** `services/api/` → `core/api/`  *(already a thin adapter over `@ezazi/api-client`)*
 - ☑ **1g** `db/` → `core/db/` — **also update `drizzle.config.ts`**
-  - ☐ *Deferred:* splitting `schema.ts` into `core/db/schema/`. It is a refactor, not a move, and
-    reshaping the file drizzle-kit reads risks a spurious migration against the on-device DB. Do it as
-    its own change, alongside the FK/dirty-flag indexes and `relations()` already tracked in §7.
+  - ☑ *Was deferred, now done (D7a):* `schema.ts` split into `core/db/schema/` — seven per-entity
+    modules behind a barrel, with `drizzle.config.ts` repointed. It was held back because reshaping
+    the file drizzle-kit reads risks a spurious migration, so it shipped as its own change. The
+    FK/dirty-flag indexes and `relations()` that §7 listed alongside it are done too.
 
 Green check after each sub-step.
 

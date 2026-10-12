@@ -2,9 +2,9 @@
 
 **Read this before writing anything under `src/core/db`, or anything that calls it.**
 
-eslint enforces *who may import whom*. Everything in this document compiles, lints and typechecks
-clean — it is the layer of correctness no tool can see. Most rules exist because the legacy Android
-app got them wrong and we know what it cost.
+Five of these rules are enforced by eslint and two by the type system; see section 8. The rest
+compile, lint and typecheck clean — that is the layer of correctness no tool can see. Most rules
+exist because the legacy Android app got them wrong and we know what it cost.
 
 Companion docs: `ARCHITECTURE_RULES.md` (§6 DB lifecycle) · `MOBILE_STACK.md` (layout).
 
@@ -125,13 +125,16 @@ updates and the UI just looks frozen.
 | An OpenMRS uuid | `constants/{entity}.ts` | an inline literal |
 | A `modified_date` | `localIsoTimestamp()` / `utcIsoTimestamp()` | `new Date().toISOString()` |
 | An id | `newUuid()` from `core/db/uuid` | `expo-crypto` directly |
-| A type name | the constant | a lookup in `tbl_uuid_dictionary` |
+| An encounter type NAME | `encounterTypeName(uuid)` from `constants/encounter` | a database lookup |
 
 **Do not hand-write row types.** `$inferSelect` derives them from the schema; a parallel interface
 drifts the moment a column changes.
 
-**Resolve types by uuid constant, never by name.** `tbl_uuid_dictionary` is seeded on create only and
-is staged for removal — a name lookup returns `''` on a miss and the caller silently no-ops.
+**Resolve types by uuid constant, never by a database name lookup.** `constants/encounter.ts` holds
+every encounter type — uuid AND name — and `encounterTypeName(uuid)` reads it without touching the
+database. There is no `tbl_uuid_dictionary`: it held exactly this mapping and was dropped on
+2026-10-12 (migration `0001`). The legacy looked names up in that table, which an upgraded device
+never re-seeded, so a miss returned `''` and the caller silently wrote nothing.
 
 **Two timestamp helpers, deliberately.** Patient and visit rows carry local time, encounter and obs
 rows carry UTC. That split is the legacy's and both reach the server, so it is preserved. Match the
@@ -158,7 +161,7 @@ ship an **empty database**.
 
 **`createTestDb()` from `__tests__/helpers/testDb.ts`** gives a migrated in-memory database per test.
 It applies the real shipped `drizzle/` bundle, so a test fails if the migrations drift from
-`schema.ts`.
+`schema/`.
 
 **Mutation-test the writes.** Break the rule the test claims to guard and confirm it fails. A guard
 that cannot fail is decoration — this caught a real gap in the SOS dedupe tests, where the test
@@ -178,10 +181,20 @@ runtime if replaced.
 
 ## 8. What eslint does and does not cover
 
-**Covers:** import boundaries — which layer may import which. Run `npm run lint`; if it passes, your
-*placement* is compliant.
+**Covers import boundaries** — which layer may import which — **plus five of the rules above**,
+added 2026-10-12:
 
-**Does not cover:** everything above. Placement is not correctness.
+| rule | section | eslint catches |
+|---|---|---|
+| a raw uuid literal outside `constants/` | §5 | `no-restricted-syntax` |
+| `z.uuid()` instead of `z.guid()` | §6 | same |
+| `db.close()` outside `teardown.ts` | §4 | same |
+| `.transaction(` instead of `transact` | §2 | same |
+| `getDb` imported inside `repositories/` | §1 | same |
 
-Two things are enforced by the type system rather than by eslint, and those cannot be forgotten:
-a missing `DbHandle` argument, and an async `transact` callback. Everything else is on you.
+**The type system catches two more**, and these cannot be forgotten: a missing `DbHandle` argument,
+and an async `transact` callback.
+
+**Everything else is still on you.** `npm run lint` passing means your placement is compliant and
+those five mistakes are absent. It does not mean the code is correct — nothing checks that you
+flipped `sync` in the same statement, or that you did not overwrite `tbl_obs.comment`.
