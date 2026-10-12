@@ -22,3 +22,12 @@ export const PROVIDER_SPECIALITY = 'ed1715f5-93e2-404e-b3c9-2a2d9600f062';
  * `tbl_uuid_dictionary`. Lived in `constants/encounter.ts` until 2026-10-12.
  */
 export const PROVIDER_ENCOUNTER_ROLE = '73bbb069-9781-4afc-a9d1-54b6b2270e04';
+
+/**
+ * Declared by the legacy but never referenced — not even as literals. Kept
+ * because they are the doctor-side counterparts of PROVIDER_ENCOUNTER_ROLE and
+ * the push seam may need them. Like it, neither is an encounter type, so
+ * neither is seeded.
+ */
+export const PROVIDER_ENCOUNTER_ROLE_DOCTOR = '73bbb069-9781-4afc-a9d1-54b6b2270e03';
+export const PROVIDER_DOCTOR_SLOT = 'f2f9948e-50e2-434e-8bf1-00a7426d6cc8';
