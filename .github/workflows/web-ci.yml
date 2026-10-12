@@ -7,20 +7,17 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'turbo.json'
-  push:
-    branches: [main, dev_kaveri_sprint45_revamp]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
+      - '.github/workflows/web-ci.yml'
 
 jobs:
-  build-and-test:
+  typecheck-lint-test-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-      - run: npm ci
+      # `npm install`, not `npm ci` — package-lock.json is gitignored in this
+      # repo (see apps/web/Dockerfile's note on the same thing).
+      - run: npm install
       - run: npx turbo run typecheck lint test build --filter=./apps/web...
