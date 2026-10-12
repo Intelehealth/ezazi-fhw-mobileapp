@@ -1,46 +1,121 @@
+import { sql } from 'drizzle-orm';
+
 import { getDb } from '../index';
 import { uuidDictionary } from '../schema';
 
-// All entries from InteleHealthDatabaseHelper.uuidInsert() — exact UUIDs and names
-// from Android. INSERT-OR-IGNORE on the uuid primary key preserves the Android
-// "don't duplicate" semantics.
-export const UUID_ENTRIES: { uuid: string; name: string }[] = [
-  { uuid: '3edb0e09-9135-481e-b8f0-07a26fa9a5ce', name: 'CURRENTCOMPLAINT' },
-  { uuid: 'e1761e85-9b50-48ae-8c4d-e6b7eeeba084', name: 'PHYSICAL_EXAMINATION' },
-  { uuid: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'HEIGHT' },
-  { uuid: '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'WEIGHT' },
-  { uuid: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'PULSE' },
-  { uuid: '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'SYSTOLIC_BP' },
-  { uuid: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'DIASTOLIC_BP' },
-  { uuid: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'TEMPERATURE' },
-  { uuid: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'RESPIRATORY' },
-  { uuid: '5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'SPO2' },
-  { uuid: '62bff84b-795a-45ad-aae1-80e7f5163a82', name: 'RHK_MEDICAL_HISTORY_BLURB' },
-  { uuid: 'e8caffd6-5d22-41c4-8d6a-bc31a44d0c86', name: 'FOLLOW_UP_VISIT' },
-  { uuid: 'ca5f5dc3-4f0b-4097-9cae-5cf2eb44a09c', name: 'EMERGENCY' },
-  { uuid: '537bb20d-d09d-4f88-930b-cc45c7d662df', name: 'TELEMEDICINE_DIAGNOSIS' },
-  { uuid: 'c38c0c50-2fd2-4ae3-b7ba-7dd25adca4ca', name: 'JSV_MEDICATIONS' },
-  { uuid: '67a050c1-35e5-451c-a4ab-fff9d57b0db1', name: 'MEDICAL_ADVICE' },
-  { uuid: '23601d71-50e6-483f-968d-aeef3031346d', name: 'REQUESTED_TESTS' },
-  { uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'ADDITIONAL_COMMENTS' },
-  { uuid: '35c3afdd-bb96-4b61-afb9-22a5fc2d088e', name: 'SON_WIFE_DAUGHTER' },
-  { uuid: '5fe2ef6f-bbf7-45df-a6ea-a284aee82ddc', name: 'OCCUPATION' },
-  { uuid: '8d5b27bc-c2cc-11de-8d13-0010c6dffd0f', name: 'ENCOUNTER_ADULTINITIAL' },
-  { uuid: '67a71486-1a54-468f-ac3e-7091a9a79584', name: 'ENCOUNTER_VITALS' },
-  { uuid: 'd7151f82-c1f3-4152-a605-2f9ea7414a79', name: 'ENCOUNTER_VISIT_NOTE' },
-  { uuid: '629a9d0b-48eb-405e-953d-a5964c88dc30', name: 'ENCOUNTER_PATIENT_EXIT_SURVEY' },
-  { uuid: '05a29f94-c0ed-11e2-94be-8c13b969e334', name: 'IDENTIFIER_OPENMRS_ID' },
-  { uuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7', name: 'ATTRIBUTE_PHONE_NUMBER' },
-  { uuid: '5a889d96-0c84-4a04-88dc-59a6e37db2d3', name: 'ATTRIBUTE_CASTE' },
-  { uuid: '1c718819-345c-4368-aad6-d69b4c267db7', name: 'ATTRIBUTE_EDUCATION_LEVEL' },
-  { uuid: 'f4af0ef3-579c-448a-8157-750283409122', name: 'ATTRIBUTE_ECONOMIC_STATUS' },
-  { uuid: '1b2f34f7-2bf8-4ef7-9736-f5b858afc160', name: 'ATTRIBUTE_SON_WIFE_DAUGHTER' },
-  { uuid: 'ecdaadb6-14a0-4ed9-b5b7-cfed87b44b87', name: 'ATTRIBUTE_OCCUPATION' },
-  { uuid: '8d87236c-c2cc-11de-8d13-0010c6dffd0f', name: 'ATTRIBUTE_HEALTH_CENTER' },
-  { uuid: 'a86ac96e-2e07-47a7-8e72-8216a1a75bfd', name: 'VISIT_TELEMEDICINE' },
-  { uuid: '78284507-fb71-4354-9b34-046ab205e18f', name: 'RATING' },
-  { uuid: '36d207d6-bee7-4b3e-9196-7d053c6eddce', name: 'COMMENTS' },
-  { uuid: 'ee560d18-34a1-4ad8-87c8-98aed99c663d', name: 'Stage1_Hour1_1' },
+import {
+  DELIVERY_OUTCOME_STAGE3,
+  ENCOUNTER_ADULTINITIAL,
+  ENCOUNTER_EMERGENCY,
+  ENCOUNTER_PATIENT_EXIT_SURVEY,
+  ENCOUNTER_VISIT_NOTE,
+  ENCOUNTER_VITALS,
+  LCG_SOS,
+  STAGE1_HOUR1_1,
+  STAGE3_HOUR1_1,
+} from '../constants/encounter';
+
+import {
+  ASSESSMENT,
+  BIRTH_OUTCOME,
+  COMMENTS,
+  COMPANION,
+  CURRENT_COMPLAINT,
+  DIASTOLIC_BP,
+  ENCOUNTER_TYPE,
+  FOLLOW_UP_VISIT,
+  MEDICINE,
+  MISSED_ENCOUNTER,
+  OCCUPATION,
+  PHYSICAL_EXAMINATION,
+  PLAN,
+  PULSE,
+  RATING,
+  RESPIRATORY,
+  RHK_MEDICAL_HISTORY_BLURB,
+  SPO2,
+  SYSTOLIC_BP,
+  TELEMEDICINE_DIAGNOSIS,
+  TEMPERATURE,
+  WEIGHT,
+} from '../constants/obs';
+
+import {
+  ATTRIBUTE_CASTE,
+  ATTRIBUTE_ECONOMIC_STATUS,
+  ATTRIBUTE_EDUCATION_LEVEL,
+  ATTRIBUTE_HEALTH_CENTER,
+  ATTRIBUTE_OCCUPATION,
+  ATTRIBUTE_PHONE_NUMBER,
+  ATTRIBUTE_SON_WIFE_DAUGHTER,
+  IDENTIFIER_OPENMRS_ID,
+} from '../constants/patient';
+
+import {
+  VISIT_TELEMEDICINE,
+} from '../constants/visit';
+
+/**
+ * Seed rows for `tbl_uuid_dictionary`, ported from
+ * `InteleHealthDatabaseHelper.uuidInsert()`. The table answers ONE question:
+ * what is this encounter type called? It is keyed on uuid, so it holds exactly
+ * one name per uuid and cannot carry the app's full vocabulary — see below.
+ *
+ * SHARED UUIDS IMPORT THEIR CONSTANT rather than repeating the literal, so each
+ * one is written in exactly one place. The 56 `Stage*_Hour*_*` rows stay literal:
+ * nothing else references them.
+ *
+ * SIX NAMES WERE CHANGED from the Android seed (2026-10-12, Arpan). Those uuids
+ * are declared twice in `UuidDictionary.java` — once under a generic name
+ * inherited from the project this was forked from, once under the labour-care
+ * name. Every generic name has ZERO usages in the Android app; only the labour
+ * name is live. We seed the live one: HEIGHT -> COMPANION,
+ * JSV_MEDICATIONS -> MEDICINE, MEDICAL_ADVICE -> ASSESSMENT,
+ * REQUESTED_TESTS -> BIRTH_OUTCOME, ADDITIONAL_COMMENTS -> PLAN,
+ * SON_WIFE_DAUGHTER -> MISSED_ENCOUNTER.
+ *
+ * `EMERGENCY` is NOT in that list. Both of its names are live and it is a
+ * genuine dual-role uuid — an encounter type at `PatientsFrameJson:235` and an
+ * obs concept at `EncounterDAO:485`. The table is joined on
+ * `encounter_type_uuid`, so this row keeps the encounter-type name.
+ */
+export const UUID_ENTRIES = [
+  { uuid: CURRENT_COMPLAINT, name: 'CURRENTCOMPLAINT' },
+  { uuid: PHYSICAL_EXAMINATION, name: 'PHYSICAL_EXAMINATION' },
+  { uuid: COMPANION, name: 'COMPANION' },
+  { uuid: WEIGHT, name: 'WEIGHT' },
+  { uuid: PULSE, name: 'PULSE' },
+  { uuid: SYSTOLIC_BP, name: 'SYSTOLIC_BP' },
+  { uuid: DIASTOLIC_BP, name: 'DIASTOLIC_BP' },
+  { uuid: TEMPERATURE, name: 'TEMPERATURE' },
+  { uuid: RESPIRATORY, name: 'RESPIRATORY' },
+  { uuid: SPO2, name: 'SPO2' },
+  { uuid: RHK_MEDICAL_HISTORY_BLURB, name: 'RHK_MEDICAL_HISTORY_BLURB' },
+  { uuid: FOLLOW_UP_VISIT, name: 'FOLLOW_UP_VISIT' },
+  { uuid: ENCOUNTER_EMERGENCY, name: 'EMERGENCY' },
+  { uuid: TELEMEDICINE_DIAGNOSIS, name: 'TELEMEDICINE_DIAGNOSIS' },
+  { uuid: MEDICINE, name: 'MEDICINE' },
+  { uuid: ASSESSMENT, name: 'ASSESSMENT' },
+  { uuid: BIRTH_OUTCOME, name: 'BIRTH_OUTCOME' },
+  { uuid: PLAN, name: 'PLAN' },
+  { uuid: MISSED_ENCOUNTER, name: 'MISSED_ENCOUNTER' },
+  { uuid: OCCUPATION, name: 'OCCUPATION' },
+  { uuid: ENCOUNTER_ADULTINITIAL, name: 'ENCOUNTER_ADULTINITIAL' },
+  { uuid: ENCOUNTER_VITALS, name: 'ENCOUNTER_VITALS' },
+  { uuid: ENCOUNTER_VISIT_NOTE, name: 'ENCOUNTER_VISIT_NOTE' },
+  { uuid: ENCOUNTER_PATIENT_EXIT_SURVEY, name: 'ENCOUNTER_PATIENT_EXIT_SURVEY' },
+  { uuid: IDENTIFIER_OPENMRS_ID, name: 'IDENTIFIER_OPENMRS_ID' },
+  { uuid: ATTRIBUTE_PHONE_NUMBER, name: 'ATTRIBUTE_PHONE_NUMBER' },
+  { uuid: ATTRIBUTE_CASTE, name: 'ATTRIBUTE_CASTE' },
+  { uuid: ATTRIBUTE_EDUCATION_LEVEL, name: 'ATTRIBUTE_EDUCATION_LEVEL' },
+  { uuid: ATTRIBUTE_ECONOMIC_STATUS, name: 'ATTRIBUTE_ECONOMIC_STATUS' },
+  { uuid: ATTRIBUTE_SON_WIFE_DAUGHTER, name: 'ATTRIBUTE_SON_WIFE_DAUGHTER' },
+  { uuid: ATTRIBUTE_OCCUPATION, name: 'ATTRIBUTE_OCCUPATION' },
+  { uuid: ATTRIBUTE_HEALTH_CENTER, name: 'ATTRIBUTE_HEALTH_CENTER' },
+  { uuid: VISIT_TELEMEDICINE, name: 'VISIT_TELEMEDICINE' },
+  { uuid: RATING, name: 'RATING' },
+  { uuid: COMMENTS, name: 'COMMENTS' },
+  { uuid: STAGE1_HOUR1_1, name: 'Stage1_Hour1_1' },
   { uuid: 'a367b296-601f-474b-afa4-c6989ef43f77', name: 'Stage1_Hour1_2' },
   { uuid: 'f540fdfb-9ad5-4b44-ae35-b941863b3439', name: 'Stage1_Hour2_1' },
   { uuid: 'ae69e6f0-7bf4-4981-8742-c59ad0040630', name: 'Stage1_Hour2_2' },
@@ -90,9 +165,9 @@ export const UUID_ENTRIES: { uuid: string; name: string }[] = [
   { uuid: 'ada81344-4a25-4b9b-9f63-7602673194e4', name: 'Stage2_Hour5_2' },
   { uuid: '5a58c6dc-f009-4adc-a650-5a435799bc84', name: 'Stage2_Hour5_3' },
   { uuid: '081e0959-ce88-414d-b4be-f6c1593395aa', name: 'Stage2_Hour5_4' },
-  { uuid: 'd1fb190a-9ebb-448f-8d61-dfeeb20fd931', name: 'Encounter Status' },
-  { uuid: '6ce3e2eb-35d4-4aa2-aa77-6d1d3b3f524a', name: 'LCG_SOS' },
-  { uuid: 'e58b22d1-b09e-4cda-b05c-a45d1e63d390', name: 'Stage3_Hour1_1' },
+  { uuid: ENCOUNTER_TYPE, name: 'Encounter Status' },
+  { uuid: LCG_SOS, name: 'LCG_SOS' },
+  { uuid: STAGE3_HOUR1_1, name: 'Stage3_Hour1_1' },
   { uuid: '2c112cc2-3922-400e-9dd9-11b27fc76404', name: 'Stage3_Hour1_2' },
   { uuid: '83ddb485-4d99-4efa-b7c9-8a2aab14c868', name: 'Stage3_Hour1_3' },
   { uuid: '45d3680e-b368-4a05-8ae5-e0baa31b1973', name: 'Stage3_Hour1_4' },
@@ -100,10 +175,14 @@ export const UUID_ENTRIES: { uuid: string; name: string }[] = [
   { uuid: '3b3960f4-c9d2-4d41-aed9-f376312fc33e', name: 'Stage3_Hour2_2' },
   { uuid: '0ca40a73-3581-47ae-9cb2-0c6cde17158e', name: 'Stage3_Hour3_1' },
   { uuid: '746e8cc9-e8e8-4055-87a2-2687888c7f88', name: 'Stage3_Hour4_1' },
-  { uuid: 'c5f95c0f-a499-4792-9ee0-ff138d8df425', name: 'DELIVERY_OUTCOME_STAGE3' },
+  { uuid: DELIVERY_OUTCOME_STAGE3, name: 'DELIVERY_OUTCOME_STAGE3' },
 ];
 
 export async function seedUuidDictionary(): Promise<void> {
-  // INSERT OR IGNORE on the uuid PK — idempotent, matches Android's non-duplicating insert.
-  await getDb().insert(uuidDictionary).values(UUID_ENTRIES).onConflictDoNothing();
+  // INSERT OR REPLACE on the uuid PK, as Android does. IGNORE would leave an
+  // install that seeded before the rename above stuck with the dead name.
+  await getDb()
+    .insert(uuidDictionary)
+    .values(UUID_ENTRIES)
+    .onConflictDoUpdate({ target: uuidDictionary.uuid, set: { name: sql`excluded.name` } });
 }
