@@ -5,6 +5,10 @@ node_modules/
 # Turborepo cache
 .turbo/
 
+# Expo cache (created at the root when a workspace command runs from here)
+.expo/
+.expo-shared/
+
 # Package build output
 dist/
 *.tsbuildinfo
@@ -28,4 +32,8 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 
-package-lock.json
+# package-lock.json is intentionally NOT ignored. It must be committed so that
+# every dev machine and CI get identical dependency versions. CI
+# (.github/workflows/*-ci.yml) uses actions/setup-node with `cache: 'npm'` and
+# `npm ci`, both of which fail when no lock file is found in the repo.
+# package-lock.json

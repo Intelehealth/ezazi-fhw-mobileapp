@@ -18,13 +18,17 @@ const CLIENT_NATIVE = {
     name: 'eLCG नेपाल',
     icon: './assets/clients/nepal/icon_rounded.png',
     splashImage: './assets/clients/nepal/splash.png',
+    splashBackgroundColor: '#FFFFFF',
     adaptiveIcon: './assets/clients/nepal/icon_adaptive_fg.png',
     themeColor: '#1F6F78',
   },
   default: {
     name: 'eZAZI',
     icon: './assets/clients/default/icon_white_bg.png',
-    splashImage: './assets/clients/default/splash.png',
+    // Same two-tone wordmark used on the JS splash (SplashScreen.tsx) so the
+    // native boot splash hands off to it with no flash of the old icon.
+    splashImage: './assets/clients/default/logo_on_dark.png',
+    splashBackgroundColor: '#2E1E91',
     adaptiveIcon: './assets/clients/default/icon_foreground.png',
     themeColor: '#FFFFFF',
   },
@@ -69,6 +73,12 @@ module.exports = {
         'USE_FINGERPRINT',
         'READ_SMS',
         'RECEIVE_SMS',
+        // Without this, notify-kit's SET_EXACT_AND_ALLOW_WHILE_IDLE backbone
+        // trigger silently falls back to an inexact alarm (confirmed via
+        // logcat: "SCHEDULE_EXACT_ALARM permission not granted") — Android
+        // may then batch/delay delivery by minutes, defeating the whole
+        // point of this layer.
+        'SCHEDULE_EXACT_ALARM',
       ],
     },
     plugins: [
@@ -77,7 +87,7 @@ module.exports = {
         {
           image: client.splashImage,
           resizeMode: 'contain',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: client.splashBackgroundColor,
         },
       ],
       'expo-asset',
@@ -85,6 +95,19 @@ module.exports = {
       'expo-localization',
       'expo-secure-store',
       'expo-local-authentication',
+      [
+        'react-native-notify-kit',
+        {
+          android: {
+            foregroundService: {
+              // Mirrors the legacy Android app's FOREGROUND_SERVICE_DATA_SYNC
+              // permission (CallListenerBackgroundService) for the same job:
+              // periodically re-checking local state, not sensors/media/calls.
+              types: ['dataSync'],
+            },
+          },
+        },
+      ],
     ],
     extra: {},
   },

@@ -12,21 +12,10 @@ import { logger } from '@/core/utils/logger';
  */
 export type DbPhase = 'idle' | 'preparing' | 'hydrating' | 'ready' | 'failed';
 
-/**
- * Automatic attempts before the UI stops retrying by itself and waits for the
- * user. Bounded on purpose: an unbounded retry loop across remounts would spin
- * forever against a genuinely broken database.
- */
-const MAX_AUTO_ATTEMPTS = 2;
-
 interface DbBootstrapState {
   phase: DbPhase;
-  error: string | null;
-  attempts: number;
   /** Idempotent — safe to call from a screen effect on every mount. */
   initialise: () => Promise<void>;
-  /** Manual retry from the failure UI; resets the automatic attempt budget. */
-  retry: () => Promise<void>;
   /** Logout teardown — forget readiness so the next login rebuilds from scratch. */
   reset: () => void;
 }
@@ -37,44 +26,38 @@ interface DbBootstrapState {
  * Lives in `core/session` rather than a feature because the DB lifecycle spans
  * login → home → logout, and because screens are forbidden from importing
  * `core/db` directly — this store is the legal seam between them.
+ *
+ * It drives no UI. `phase` exists only so a second caller in the same tick does
+ * not start a second migration run; nothing outside this file reads it. A
+ * failure is logged and leaves `phase` at 'failed', which the guard below does
+ * NOT treat as terminal — the next mount retries.
  */
 export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
   phase: 'idle',
-  error: null,
-  attempts: 0,
 
   initialise: async () => {
-    const { phase, attempts } = get();
-
     // Already running, or already done — nothing to do. zustand's set is
     // synchronous, so a second caller in the same tick sees 'preparing'.
+    const { phase } = get();
     if (phase === 'preparing' || phase === 'hydrating' || phase === 'ready') return;
 
-    // Out of automatic attempts: hold until the user presses Retry.
-    if (phase === 'failed' && attempts >= MAX_AUTO_ATTEMPTS) return;
-
-    set({ phase: 'preparing', error: null, attempts: attempts + 1 });
+    set({ phase: 'preparing' });
 
     try {
       await ensureSchema();
-      set({ phase: 'ready', error: null });
+      set({ phase: 'ready' });
     } catch (error: unknown) {
-      // Console-only; the screen shows a translated message, never this text.
+      // Console-only. Nothing surfaces this to the user by design.
       logger.error('[db] schema init failed', error);
-      set({
-        phase: 'failed',
-        error: error instanceof Error ? error.message : String(error),
-      });
+      set({ phase: 'failed' });
     }
   },
 
-  retry: async () => {
-    set({ phase: 'idle', error: null, attempts: 0 });
-    await get().initialise();
-  },
-
   reset: () => {
+    // `teardownDb()` already calls resetSchemaInit(), but reset() is also
+    // reachable on its own, and clearing `phase` is the half teardown cannot
+    // do — without it the next login sees 'ready' and skips init entirely.
     resetSchemaInit();
-    set({ phase: 'idle', error: null, attempts: 0 });
+    set({ phase: 'idle' });
   },
 }));

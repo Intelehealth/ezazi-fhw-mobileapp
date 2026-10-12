@@ -5,7 +5,9 @@ import type { ConfigResponse } from '@/core/config/config.types';
 jest.mock('@/core/config/env', () => ({ env: { CONFIG_URL: 'https://config.example.test' } }));
 jest.mock('@ezazi/api-client', () => ({
   ...jest.requireActual('@ezazi/api-client'),
-  createApiClient: jest.fn(() => ({})),
+  createApiClient: jest.fn(() => ({
+    interceptors: { request: { use: jest.fn() }, response: { use: jest.fn() } },
+  })),
 }));
 jest.mock('@/core/api/responseHandler', () => ({
   createRequestMethods: jest.fn(() => ({ get: jest.fn() })),

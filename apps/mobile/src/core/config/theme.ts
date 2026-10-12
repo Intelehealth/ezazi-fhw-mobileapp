@@ -126,6 +126,10 @@ const palette = {
   dialogTextStrong: '#222222', // PermissionDeniedDialog permission label
   dialogTextMuted: '#666666', // PermissionDeniedDialog reason / outline button
   dialogOverlay: 'rgba(0,0,0,0.55)',
+  hintGray: '#9B97AA', // Figma-verified — input hint text + field icons (Setup screen, 2026-09-15)
+  secondaryTextFigma: '#4A4665', // Figma "--Secondary-text" — LOCATION/USERNAME/PASSWORD field labels
+  alertFigma: '#D4154A', // Figma "--Alert" — network-error banner circle + title (Ezazi Developer File, 2026-09-22)
+  networkBannerBg: '#FEEAEF', // Figma network-error banner background (Ezazi Developer File, 2026-09-22)
 } as const;
 
 export const colors = {
@@ -139,15 +143,22 @@ export const colors = {
   onPrimary: palette.white,
   black: palette.colorBlack,
   error: palette.error_red,
+  // Network-error banner only (core/ui/ApiErrorBanner) — a separate, exact
+  // Figma spec from the generic `error`/`colorEmergencyBg` pair every other
+  // banner state still uses.
+  networkBannerBg: palette.networkBannerBg,
+  networkBannerAlert: palette.alertFigma,
+  networkBannerMessage: palette.secondaryTextFigma,
   success: palette.colorNormalAlert,
   warning: palette.colorMediumAlert,
   textPrimary: palette.font_black_0,
   textSecondary: palette.font_black_3,
+  fieldLabel: palette.secondaryTextFigma, // Figma "--Secondary-text" — field-label captions only
   textDisabled: palette.font_black_5,
   disabledBg: palette.font_black_6, // disabled button fill
   disabledText: palette.font_black_4, // disabled button label
-  placeholder: palette.font_black_4,
-  icon: palette.colorForgotPassword, // eye toggle, chevrons
+  placeholder: palette.hintGray,
+  icon: palette.hintGray, // eye toggle, chevrons, field icons
   inputBg: palette.colorLoginInputBg,
   inputBorder: palette.divider,
   border: palette.font_black_6,
@@ -163,12 +174,15 @@ export const colors = {
 // ── dimens.xml equivalent — structural sizes shared across screens ───────────
 export const dimens = {
   screenHPad: 28, // forgot_password_screen_padding
-  inputHeight: 56, // input_height (inputs AND buttons)
+  inputHeight: 60, // input_height (text fields only — see buttonHeight for AppButton)
+  buttonHeight: { phone: 60, tablet: 64 }, // AppButton — flat per phone/tablet, not run through useResponsive().scale()
+  otpCellHeight: { phone: 52, tablet: 64 }, // OtpInput — single-digit boxes, scaled via useResponsive().scale() on tablet
   // input_box_corner_radius — inputs and buttons, via useResponsive().cornerRadius
   cornerRadius: { phone: 8, tablet: 12 },
   btnArrowInset: 8, // screen_container_padding — arrow inset from button right edge
   labelGap: 6, // gap between label and its input
   fieldGap: 20, // vertical gap between form fields
+  timelineDotSize: { phone: 28, tablet: 34 }, // TimelineCheckpointCard — checkpoint circle
 } as const;
 
 export const spacing = {
@@ -191,13 +205,21 @@ export const radii = {
 // Read via useResponsive().fs('label') etc.
 export const fontSizes = {
   label: { phone: 12, tablet: 14 }, // input_label_size
-  input: { phone: 14, tablet: 16 }, // input_inner_size
+  input: { phone: 12, tablet: 14 }, // input_inner_size
   button: { phone: 14, tablet: 20 }, // button_text_size
   link: { phone: 12, tablet: 14 }, // forgot_pwd_size
   error: { phone: 12, tablet: 13 }, // validation caption
   heading: { phone: 16, tablet: 20 }, // forgot_password_label_size
   instruction: { phone: 14, tablet: 16 }, // forgot_password_instruction_size
   headerTitle: { phone: 18, tablet: 30 }, // wave-header title
+
+  // TimelineCheckpointCard / StageProgressBar / TimelineActionBar
+  timelineStageLabel: { phone: 11, tablet: 13 }, // "1. Stage 1" stepper label
+  timelineTime: { phone: 13, tablet: 15 }, // "9:30 AM" bold time
+  timelineDate: { phone: 11, tablet: 13 }, // "25 Aug 2026" date
+  timelineCardLabel: { phone: 11, tablet: 13 }, // "COMPLETED" / "MISSED" / "DUE NOW" / "UPCOMING" badge
+  timelineCardBody: { phone: 13, tablet: 15 }, // checkpoint card description line
+  timelineActionLabel: { phone: 11, tablet: 13 }, // SOS / Chat / Video Call / Rx captions
 } as const;
 
 export const typography = {

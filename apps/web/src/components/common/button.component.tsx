@@ -18,7 +18,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`w-full rounded-md bg-[--color-primary] px-4 py-2 font-medium text-white transition-opacity disabled:opacity-60 ${className}`}
+      className={`w-full cursor-pointer rounded-md bg-[--color-primary] px-4 py-2 font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       disabled={disabled || isLoading}
       {...rest}
     >

@@ -2,6 +2,7 @@ import { env } from '@/core/config/env';
 import type { ConfigResponse } from '@/core/config/config.types';
 import { createApiClient, ApiError, failure } from '@ezazi/api-client';
 import { createRequestMethods } from '@/core/api/responseHandler';
+import { trackApiActivity } from '@/core/api/trackApiActivity';
 import type { ApiResult } from '@ezazi/api-client';
 
 /**
@@ -9,6 +10,7 @@ import type { ApiResult } from '@ezazi/api-client';
  * baseURL comes from clientConfig.servers[APP_ENV].configUrl via env.CONFIG_URL.
  */
 const configClient = createApiClient({ baseURL: env.CONFIG_URL, timeout: 30_000 });
+trackApiActivity(configClient);
 const http = createRequestMethods(configClient);
 
 function hasRequiredShape(data: unknown): data is ConfigResponse {
