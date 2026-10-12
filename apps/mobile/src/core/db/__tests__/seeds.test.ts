@@ -27,9 +27,26 @@ const CONSTANTS = {
 };
 
 describe('uuid dictionary seed', () => {
-  it('holds every row the Android helper inserts', () => {
+  it('holds Android\'s 96 rows plus our two declared additions', () => {
     // Deliberately brittle: a changed count means a row was added or lost.
-    expect(UUID_ENTRIES).toHaveLength(96);
+    // Android seeds 96. We add ENCOUNTER_ADMISSION and ENCOUNTER_VISIT_COMPLETE,
+    // which it never seeded despite writing both - see the seed file header.
+    expect(UUID_ENTRIES).toHaveLength(98);
+  });
+
+  it('seeds EVERY encounter type, because every read joins on encounter_type_uuid', () => {
+    // The rule this table follows: if a uuid can appear in `encounter_type_uuid`
+    // it has a row here; otherwise it does not need one. This is the test that
+    // would have caught ENCOUNTER_ADMISSION and ENCOUNTER_VISIT_COMPLETE missing.
+    // Three uuids in constants/encounter.ts are NOT encounter types and moved to
+    // constants/provider.ts on 2026-10-12, so everything left here must be seeded.
+    const seeded = new Set(UUID_ENTRIES.map((e) => e.uuid.toLowerCase()));
+    const missing = Object.entries(encounterTypes)
+      .filter(([, v]) => typeof v === 'string')
+      .filter(([, v]) => !seeded.has((v as string).toLowerCase()))
+      .map(([k]) => k);
+
+    expect(missing).toEqual([]);
   });
 
   it('has no truncated or malformed uuid', () => {

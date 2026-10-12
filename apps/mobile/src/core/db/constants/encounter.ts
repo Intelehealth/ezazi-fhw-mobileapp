@@ -21,11 +21,6 @@ export const STAGE1_HOUR1_1 = 'ee560d18-34a1-4ad8-87c8-98aed99c663d';
 export const STAGE3_HOUR1_1 = 'e58b22d1-b09e-4cda-b05c-a45d1e63d390';
 export const DELIVERY_OUTCOME_STAGE3 = 'c5f95c0f-a499-4792-9ee0-ff138d8df425';
 
-// Encounter roles and the provider slot, not encounter types.
-export const ENCOUNTER_ROLE = '73bbb069-9781-4afc-a9d1-54b6b2270e04';
-export const ENCOUNTER_DR_ROLE = '73bbb069-9781-4afc-a9d1-54b6b2270e03';
-export const ENCOUNTER_DR_PROVIDER = 'f2f9948e-50e2-434e-8bf1-00a7426d6cc8';
-
 /**
  * Excluded when asking for the latest real clinical encounter on a visit.
  * Legacy inlines these three as literals in two different queries; keep one list.

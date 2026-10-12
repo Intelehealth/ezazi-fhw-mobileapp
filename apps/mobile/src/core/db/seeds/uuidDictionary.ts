@@ -5,8 +5,10 @@ import { uuidDictionary } from '../schema';
 
 import {
   DELIVERY_OUTCOME_STAGE3,
+  ENCOUNTER_ADMISSION,
   ENCOUNTER_ADULTINITIAL,
   ENCOUNTER_PATIENT_EXIT_SURVEY,
+  ENCOUNTER_VISIT_COMPLETE,
   ENCOUNTER_VISIT_NOTE,
   ENCOUNTER_VITALS,
   LCG_SOS,
@@ -177,6 +179,11 @@ export const UUID_ENTRIES = [
   { uuid: '0ca40a73-3581-47ae-9cb2-0c6cde17158e', name: 'Stage3_Hour3_1' },
   { uuid: '746e8cc9-e8e8-4055-87a2-2687888c7f88', name: 'Stage3_Hour4_1' },
   { uuid: DELIVERY_OUTCOME_STAGE3, name: 'DELIVERY_OUTCOME_STAGE3' },
+  // Added 2026-10-12: both are encounter types this app WRITES, and every
+  // dictionary read joins on `encounter_type_uuid`. Android never seeded
+  // them, so `findTypeNameByUuid` returned null for an admission encounter.
+  { uuid: ENCOUNTER_ADMISSION, name: 'ENCOUNTER_ADMISSION' },
+  { uuid: ENCOUNTER_VISIT_COMPLETE, name: 'ENCOUNTER_VISIT_COMPLETE' },
 ];
 
 export async function seedUuidDictionary(): Promise<void> {
