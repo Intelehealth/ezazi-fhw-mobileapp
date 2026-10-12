@@ -14,6 +14,12 @@
 #     --build-arg VITE_BASE_PATH=/intelehealth \
 #     -t ezazi-web .
 #
+# Expected deployment: the reverse proxy in front of this container forwards
+# the /intelehealth prefix UNCHANGED (it does not strip it), and nginx.conf
+# strips it itself — so the built app (VITE_BASE_PATH=/intelehealth) works both
+# behind that proxy and, with VITE_BASE_PATH unset, served from the root. If the
+# proxy is ever changed to strip the prefix instead, nothing here needs to change.
+#
 # All VITE_* build args get compiled into the JS bundle (Vite env vars are
 # build-time, not runtime) — there is no way to change them by restarting
 # the container, only by rebuilding the image.
