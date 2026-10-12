@@ -6,7 +6,6 @@ import { uuidDictionary } from '../schema';
 import {
   DELIVERY_OUTCOME_STAGE3,
   ENCOUNTER_ADULTINITIAL,
-  ENCOUNTER_EMERGENCY,
   ENCOUNTER_PATIENT_EXIT_SURVEY,
   ENCOUNTER_VISIT_NOTE,
   ENCOUNTER_VITALS,
@@ -74,10 +73,12 @@ import {
  * REQUESTED_TESTS -> BIRTH_OUTCOME, ADDITIONAL_COMMENTS -> PLAN,
  * SON_WIFE_DAUGHTER -> MISSED_ENCOUNTER.
  *
- * `EMERGENCY` is NOT in that list. Both of its names are live and it is a
- * genuine dual-role uuid — an encounter type at `PatientsFrameJson:235` and an
- * obs concept at `EncounterDAO:485`. The table is joined on
- * `encounter_type_uuid`, so this row keeps the encounter-type name.
+ * `EMERGENCY` keeps its name and stays a LITERAL, because it is the one row
+ * here with no constant: nothing in this app writes or matches that uuid.
+ * Android declares it twice (`EMERGENCY`, `EMERGENCY_OBS`) but never inserts
+ * either — its only live use is a push-path guard, and its one insert path,
+ * `EncounterDAO.setEmergency`, has zero callers. The row stays so the seed
+ * still mirrors Android's 96 exactly.
  */
 export const UUID_ENTRIES = [
   { uuid: CURRENT_COMPLAINT, name: 'CURRENTCOMPLAINT' },
@@ -92,7 +93,7 @@ export const UUID_ENTRIES = [
   { uuid: SPO2, name: 'SPO2' },
   { uuid: RHK_MEDICAL_HISTORY_BLURB, name: 'RHK_MEDICAL_HISTORY_BLURB' },
   { uuid: FOLLOW_UP_VISIT, name: 'FOLLOW_UP_VISIT' },
-  { uuid: ENCOUNTER_EMERGENCY, name: 'EMERGENCY' },
+  { uuid: 'ca5f5dc3-4f0b-4097-9cae-5cf2eb44a09c', name: 'EMERGENCY' },
   { uuid: TELEMEDICINE_DIAGNOSIS, name: 'TELEMEDICINE_DIAGNOSIS' },
   { uuid: MEDICINE, name: 'MEDICINE' },
   { uuid: ASSESSMENT, name: 'ASSESSMENT' },

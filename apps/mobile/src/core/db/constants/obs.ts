@@ -21,9 +21,6 @@ export const TELEMEDICINE_DIAGNOSIS = '537bb20d-d09d-4f88-930b-cc45c7d662df';
 export const COMPLEX_IMAGE_AD = '07a816ce-ffc0-49b9-ad92-a1bf9bf5e2ba';
 export const COMPLEX_IMAGE_PE = '200b7a45-77bc-4986-b879-cc727f5f7d5b';
 
-/** Same uuid as ENCOUNTER_EMERGENCY in encounter.ts, used here as a concept. */
-export const OBS_EMERGENCY = 'ca5f5dc3-4f0b-4097-9cae-5cf2eb44a09c';
-
 // Timeline — supportive care offered to the woman during labour.
 export const COMPANION = '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const PAIN_RELIEF = '9d313f72-538f-11e6-9cfe-86f436325720';

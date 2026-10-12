@@ -19,13 +19,6 @@ const FILES = {
   'constants/visit.ts': visitAttributes,
 };
 
-/**
- * The one uuid deliberately exported twice. It is used as an encounter type at
- * PatientsFrameJson:235 and as a concept at EncounterDAO:485 — a server-side
- * question, see ROADMAP. Any OTHER collision is a defect.
- */
-const ALLOWED_ALIAS = ['ENCOUNTER_EMERGENCY', 'OBS_EMERGENCY'];
-
 const entries = Object.entries(FILES).flatMap(([file, mod]) =>
   Object.entries(mod)
     .filter(([, value]) => typeof value === 'string')
@@ -35,15 +28,18 @@ const entries = Object.entries(FILES).flatMap(([file, mod]) =>
 describe('uuid constants', () => {
   it('exports the full ported set', () => {
     // Deliberately brittle: a changed count means a constant was added or lost.
-    expect(entries).toHaveLength(112);
+    expect(entries).toHaveLength(110);
   });
 
-  it('gives every uuid exactly one name, bar the documented alias', () => {
+  it('gives every uuid exactly one name, with no exceptions', () => {
     const byUuid = new Map<string, string[]>();
     for (const e of entries) byUuid.set(e.uuid, [...(byUuid.get(e.uuid) ?? []), e.name]);
 
+    // There used to be one documented exception, ca5f5dc3, exported as both
+    // ENCOUNTER_EMERGENCY and OBS_EMERGENCY. Both were dropped on 2026-10-12:
+    // Android never inserts that uuid in either role. No exception remains.
     const shared = [...byUuid.values()].filter((names) => names.length > 1);
-    expect(shared.map((names) => [...names].sort())).toEqual([[...ALLOWED_ALIAS].sort()]);
+    expect(shared).toEqual([]);
   });
 
   it('has no truncated or malformed uuid', () => {
