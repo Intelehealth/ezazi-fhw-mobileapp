@@ -1,3 +1,45 @@
+/**
+ * core/db invariants — D16a. Each compiles, lints and typechecks clean on its
+ * own; the cost of getting one wrong is silent and clinical.
+ *
+ * These are composed explicitly into every `overrides` entry below, NOT
+ * inherited. ESLint REPLACES `no-restricted-syntax` in an override rather than
+ * merging it, so an override that lists one selector silently disables the
+ * rest for those files — which is exactly what the first draft of this did.
+ */
+const NO_ZOD_UUID = {
+  selector: "CallExpression[callee.object.name='z'][callee.property.name='uuid']",
+  message:
+    "z.uuid() REJECTS OpenMRS uuids - zod v4 enforces RFC 4122 variant bits the server's ids do not carry, so every uuid field silently fails validation. Use z.guid(). (CLAUDE.md tripwire 1.)",
+};
+
+const NO_DB_CLOSE = {
+  selector: "CallExpression[callee.property.name='close'][callee.object.name=/^(db|database|handle|on)$/]",
+  message:
+    'Never close the database outside teardown.ts - the handle is shared and memoised, so closing it breaks every later call. The legacy getAllVisits did exactly this. (DB_CONVENTIONS section 4.)',
+};
+
+const NO_DIRECT_TRANSACTION = {
+  selector: "CallExpression[callee.property.name='transaction']",
+  message:
+    'Use transact() from core/db/tx, never .transaction() directly - transact carries the synchronous-callback guard. An async callback commits before its awaits run, a rejection never rolls back, and the caller still sees the rejection. (DB_CONVENTIONS section 2.)',
+};
+
+const NO_RAW_UUID = {
+  selector:
+    'Literal[value=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/]',
+  message:
+    'Raw uuid literal. Import the named constant from core/db/constants instead - an inline uuid cannot be reviewed, cannot be grepped, and a transposed character typechecks clean (one reached our seed data and was caught only by comparing against Android).',
+};
+
+const NO_GETDB_IN_REPOSITORIES = {
+  selector: "ImportSpecifier[imported.name='getDb']",
+  message:
+    'Repositories must not import getDb - take the handle as the last, required parameter instead. Importing it lets a function write outside the caller transaction and still compile. (DB_CONVENTIONS section 1.)',
+};
+
+const DB_RULES = [NO_ZOD_UUID, NO_DB_CLOSE, NO_DIRECT_TRANSACTION];
+
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
   root: true,
@@ -161,7 +203,38 @@ module.exports = {
         ],
       },
     ],
+    // ── core/db invariants (DB_CONVENTIONS — D16a) ──
+    // Defined at the top of this file and composed per-override below.
+    'no-restricted-syntax': ['error', ...DB_RULES],
   },
+  overrides: [
+    {
+      // Everything under src/, plus the raw-uuid ban. constants/ and seeds/
+      // are the two places a uuid literal is allowed; tests use fixtures.
+      files: ['src/**/*.ts', 'src/**/*.tsx'],
+      excludedFiles: ['src/core/db/constants/**', 'src/core/db/seeds/**', 'src/**/__tests__/**'],
+      rules: { 'no-restricted-syntax': ['error', ...DB_RULES, NO_RAW_UUID] },
+    },
+    {
+      // A repository reaches the database ONLY through the handle it is given.
+      // Must come after the src/** entry — later overrides win outright.
+      files: ['src/core/db/repositories/**/*.ts'],
+      excludedFiles: ['src/**/__tests__/**'],
+      rules: {
+        'no-restricted-syntax': ['error', ...DB_RULES, NO_RAW_UUID, NO_GETDB_IN_REPOSITORIES],
+      },
+    },
+    {
+      // The one file allowed to close the database.
+      files: ['src/core/db/teardown.ts'],
+      rules: { 'no-restricted-syntax': ['error', NO_ZOD_UUID, NO_DIRECT_TRANSACTION, NO_RAW_UUID] },
+    },
+    {
+      // The one file allowed to open a transaction — it IS the guard.
+      files: ['src/core/db/tx.ts'],
+      rules: { 'no-restricted-syntax': ['error', NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID] },
+    },
+  ],
   ignorePatterns: [
     'node_modules/',
     '.expo/',
