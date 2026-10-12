@@ -3,7 +3,6 @@ import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import migrations from '../../../drizzle/migrations';
 import { getDb } from './index';
 import { appState } from './schema';
-import { seedUuidDictionary } from './seeds/uuidDictionary';
 
 /** `tbl_app_state` is a single row, always this id. */
 export const APP_STATE_ID = 1;
@@ -53,9 +52,6 @@ async function runSchemaInit(): Promise<void> {
   // 1. Structure: tables, indexes and tbl_app_state (0000).
   await migrate(db, migrations);
 
-  // 2. Static reference data that ships with the app, not synced clinical data.
-  await seedUuidDictionary();
-
-  // 3. Bookkeeping row, so the hydration resolver always has something to read.
+  // 2. Bookkeeping row, so the hydration resolver always has something to read.
   await db.insert(appState).values({ id: APP_STATE_ID }).onConflictDoNothing();
 }

@@ -10,7 +10,7 @@ import { appState, userCredentials } from './app';
 import { encounter, obs } from './encounter';
 import { imageRecords, rtcConnectionLog } from './media';
 import { patient, patientAttribute, patientAttributeMaster } from './patient';
-import { location, uuidDictionary } from './reference';
+import { location } from './reference';
 import { drSpeciality, provider, providerAttribute } from './provider';
 import { visit, visitAttribute } from './visit';
 
@@ -36,7 +36,6 @@ export const schema = {
   provider,
   providerAttribute,
   drSpeciality,
-  uuidDictionary,
   imageRecords,
   userCredentials,
   rtcConnectionLog,
@@ -55,7 +54,6 @@ export type Location = typeof location.$inferSelect;
 export type Provider = typeof provider.$inferSelect;
 export type ProviderAttribute = typeof providerAttribute.$inferSelect;
 export type DrSpeciality = typeof drSpeciality.$inferSelect;
-export type UuidDictionary = typeof uuidDictionary.$inferSelect;
 export type ImageRecord = typeof imageRecords.$inferSelect;
 export type UserCredentials = typeof userCredentials.$inferSelect;
 export type RtcConnectionLog = typeof rtcConnectionLog.$inferSelect;

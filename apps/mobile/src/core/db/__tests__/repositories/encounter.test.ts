@@ -3,8 +3,10 @@ import { eq } from 'drizzle-orm';
 import {
   DELIVERY_OUTCOME_STAGE3,
   ENCOUNTER_ADMISSION,
+  encounterTypeName,
   ENCOUNTER_VITALS,
   LCG_SOS,
+  STAGE1_HOUR1_1,
   STAGE3_HOUR1_1,
 } from '../../constants/encounter';
 import {
@@ -17,7 +19,6 @@ import {
   findLatestSosByVisit,
   findTimelineByVisit,
   findUnsynced,
-  findTypeNameByUuid,
   findUuidByVisitAndType,
   findVisitCompleteUuid,
   insertAdmission,
@@ -31,7 +32,7 @@ import {
   upsert,
   upsertMany,
 } from '../../repositories/encounter';
-import { encounter, uuidDictionary } from '../../schema';
+import { encounter } from '../../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_YES } from '../../syncFlags';
 import { transact, type DbHandle } from '../../tx';
 import { createTestDb, type TestDb } from '../helpers/testDb';
@@ -312,35 +313,29 @@ describe('encounter repository', () => {
     });
   });
 
-  describe('stage names via the dictionary', () => {
-    beforeEach(() => {
-      ctx.db
-        .insert(uuidDictionary)
-        .values([
-          { uuid: 'type-a', name: 'Stage2_Hr9_1' },
-          { uuid: 'type-b', name: 'Stage2_Hr10_1' },
-        ])
-        .run();
-    });
+  describe('stage names', () => {
+    // Real encounter types. Names come from constants/encounter now, so there
+    // is no dictionary to seed - and these two show the quirk below.
+    const HOUR_9 = 'f3641f3f-a83e-47c7-b734-e11be3998836'; // Stage1_Hour9_1
+    const HOUR_10 = 'e91e88fe-6282-42c5-93fe-2646b995983d'; // Stage1_Hour10_1
 
-    it('sorts stage names LEXICOGRAPHICALLY, so Hr9 outranks Hr10', () => {
+    it('sorts stage names LEXICOGRAPHICALLY, so Hour9 outranks Hour10', () => {
       // Ported verbatim. Changing it to encounter_time changes app behaviour.
-      upsert({ uuid: 'e1', visituuid: VISIT, encounter_type_uuid: 'type-a' }, db);
-      upsert({ uuid: 'e2', visituuid: VISIT, encounter_type_uuid: 'type-b' }, db);
+      upsert({ uuid: 'e1', visituuid: VISIT, encounter_type_uuid: HOUR_9 }, db);
+      upsert({ uuid: 'e2', visituuid: VISIT, encounter_type_uuid: HOUR_10 }, db);
 
-      expect(findCurrentStageName(VISIT, db)).toBe('Stage2_Hr9_1');
+      expect(findCurrentStageName(VISIT, db)).toBe('Stage1_Hour9_1');
     });
 
     it('returns the latest type name, SOS included', () => {
       // No voided filter and no SOS exclusion here, unlike the clinical read.
-      upsert({ uuid: 'e1', visituuid: VISIT, encounter_type_uuid: 'type-a', encounter_time: '2026-01-01' }, db);
-      ctx.db.insert(uuidDictionary).values({ uuid: LCG_SOS, name: 'LCG_SOS' }).run();
+      upsert({ uuid: 'e1', visituuid: VISIT, encounter_type_uuid: HOUR_9, encounter_time: '2026-01-01' }, db);
       insertSos({ uuid: 's1', visituuid: VISIT, encounter_time: '2026-06-01' }, db);
 
       expect(findLatestEncounterTypeName(VISIT, db)).toBe('LCG_SOS');
     });
 
-    it('returns null when the type is not in the dictionary', () => {
+    it('returns null when the type is not a known encounter type', () => {
       upsert({ uuid: 'e1', visituuid: VISIT, encounter_type_uuid: 'unknown-type' }, db);
 
       expect(findCurrentStageName(VISIT, db)).toBeNull();
@@ -363,16 +358,12 @@ describe('encounter repository', () => {
 
   describe('type name lookup', () => {
     it('returns the structured code callers parse for stage and hour', () => {
-      ctx.db
-        .insert(uuidDictionary)
-        .values({ uuid: 'type-1', name: 'Stage1_Hour1_1' })
-        .run();
-
-      expect(findTypeNameByUuid('type-1', db)).toBe('Stage1_Hour1_1');
+      // Pure now — no table, no seed. See constants/encounter.
+      expect(encounterTypeName(STAGE1_HOUR1_1)).toBe('Stage1_Hour1_1');
     });
 
-    it('returns null for a uuid the dictionary does not hold', () => {
-      expect(findTypeNameByUuid('missing', db)).toBeNull();
+    it('returns null for a uuid that is not an encounter type', () => {
+      expect(encounterTypeName('missing')).toBeNull();
     });
   });
 });

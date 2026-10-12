@@ -2,7 +2,14 @@ import { and, desc, eq, inArray, notExists, notInArray, sql } from 'drizzle-orm'
 
 import { utcIsoTimestamp } from '@/core/utils/datetime';
 
-import { DELIVERY_OUTCOME_STAGE3, ENCOUNTER_ADMISSION } from '../constants/encounter';
+import {
+  DELIVERY_OUTCOME_STAGE3,
+  ENCOUNTER_ADMISSION,
+  LCG_SOS,
+  STAGE_1_2_TYPES,
+  STAGE_3_TYPES,
+  STAGE_TYPES,
+} from '../constants/encounter';
 import {
   ADMISSION_CONCEPTS,
   BIRTH_OUTCOME,
@@ -670,8 +677,12 @@ export function hasStage3ObsForVisit(visitUuid: string, on: DbHandle): boolean {
  * The risk-score inputs, stage-aware: once the visit reaches stage 3 only
  * stage-3 encounters (and SOS encounters tagged stage 3) are admitted,
  * otherwise only stages 1 and 2. Raw SQL on purpose — the CASE drives off a
- * correlated subquery, and this is ported verbatim rather than re-expressed.
- * It reads `tbl_uuid_dictionary.name`, so that table must be seeded.
+ * correlated subquery.
+ *
+ * The legacy asked `tbl_uuid_dictionary` for `ud.name LIKE 'Stage3_%'`. The
+ * stage sets are now resolved in TypeScript from `constants/encounter`, so the
+ * query filters on `encounter_type_uuid` directly and joins no dictionary.
+ * Same sets, same answer, one source of truth.
  */
 export function getLatestObsByVisitAndConcepts(
   visitUuid: string,
@@ -681,34 +692,33 @@ export function getLatestObsByVisitAndConcepts(
   const concepts = [...new Set(conceptUuids)];
   if (concepts.length === 0) return [];
 
-  const conceptList = sql.join(
-    concepts.map((concept) => sql`${concept}`),
-    sql`, `,
-  );
+  const list = (values: readonly string[]) =>
+    sql.join(
+      values.map((v) => sql`${v}`),
+      sql`, `,
+    );
 
   const rows = on.all<RiskObs>(sql`
     SELECT o.comment, o.conceptuuid, o.encounteruuid, o.value
     FROM tbl_obs o
     INNER JOIN tbl_encounter e ON o.encounteruuid = e.uuid
-    LEFT JOIN tbl_uuid_dictionary ud ON e.encounter_type_uuid = ud.uuid
     WHERE e.visituuid = ${visitUuid}
       AND o.voided = ${VOIDED_NO}
       AND e.voided = ${VOIDED_NO}
-      AND o.conceptuuid IN (${conceptList})
+      AND o.conceptuuid IN (${list(concepts)})
       AND CASE
         WHEN (
-          SELECT ud2.name
+          SELECT e2.encounter_type_uuid
           FROM tbl_encounter e2
-          LEFT JOIN tbl_uuid_dictionary ud2 ON e2.encounter_type_uuid = ud2.uuid
           WHERE e2.visituuid = e.visituuid
             AND e2.voided = ${VOIDED_NO}
-            AND ud2.name LIKE 'Stage%'
+            AND e2.encounter_type_uuid IN (${list(STAGE_TYPES)})
           ORDER BY e2.encounter_time DESC
           LIMIT 1
-        ) LIKE 'Stage3_%'
+        ) IN (${list(STAGE_3_TYPES)})
         THEN (
-          ud.name LIKE 'Stage3_%'
-          OR (ud.name = 'LCG_SOS' AND EXISTS (
+          e.encounter_type_uuid IN (${list(STAGE_3_TYPES)})
+          OR (e.encounter_type_uuid = ${LCG_SOS} AND EXISTS (
             SELECT 1 FROM tbl_obs sos_o
             WHERE sos_o.encounteruuid = o.encounteruuid
               AND sos_o.conceptuuid = ${SOS_STAGE_HOUR}
@@ -716,8 +726,8 @@ export function getLatestObsByVisitAndConcepts(
           ))
         )
         ELSE (
-          ud.name LIKE 'Stage1_%' OR ud.name LIKE 'Stage2_%'
-          OR (ud.name = 'LCG_SOS' AND EXISTS (
+          e.encounter_type_uuid IN (${list(STAGE_1_2_TYPES)})
+          OR (e.encounter_type_uuid = ${LCG_SOS} AND EXISTS (
             SELECT 1 FROM tbl_obs sos_o
             WHERE sos_o.encounteruuid = o.encounteruuid
               AND sos_o.conceptuuid = ${SOS_STAGE_HOUR}

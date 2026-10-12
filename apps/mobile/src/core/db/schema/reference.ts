@@ -12,9 +12,3 @@ export const location = sqliteTable('tbl_location', {
 }, (table) => [
   index('idx_tbl_location_sync').on(table.sync),
 ]);
-
-// Staged for removal — resolve types by uuid constant. See ROADMAP "Staged removal".
-export const uuidDictionary = sqliteTable('tbl_uuid_dictionary', {
-  uuid: text('uuid').primaryKey(),
-  name: text('name'),
-});

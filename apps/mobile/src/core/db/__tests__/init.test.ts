@@ -41,7 +41,6 @@ const count = (client: Database, sql: string): number => {
 
 const tables = (client: Database) =>
   count(client, "SELECT count(*) FROM sqlite_master WHERE type='table'");
-const seeds = (client: Database) => count(client, 'SELECT count(*) FROM tbl_uuid_dictionary');
 const stateRows = (client: Database) => count(client, 'SELECT count(*) FROM tbl_app_state');
 const journal = (client: Database) => count(client, 'SELECT count(*) FROM __drizzle_migrations');
 
@@ -70,14 +69,16 @@ describe('ensureSchema', () => {
   afterEach(() => client.close());
 
   describe('first run', () => {
-    it('applies migrations, seeds and the state row', async () => {
-      // Every number here is what the device reported on 2026-10-10.
+    it('applies migrations and the state row', async () => {
+      // The device reported 18 tables and 96 seed rows on 2026-10-10. Both
+      // changed on 2026-10-12: tbl_uuid_dictionary was dropped (migration
+      // 0001), so there is one table fewer and no seeding at all. Encounter
+      // type names live in constants/encounter now.
       await ensureSchema();
 
-      expect(tables(client)).toBe(18);
-      expect(seeds(client)).toBe(68);
+      expect(tables(client)).toBe(17);
       expect(stateRows(client)).toBe(1);
-      expect(journal(client)).toBe(1);
+      expect(journal(client)).toBe(2);
     });
 
     it('writes the state row under the id the hydration resolver reads', async () => {
@@ -98,17 +99,12 @@ describe('ensureSchema', () => {
       await ensureSchema();
     });
 
-    it('does not duplicate seed rows', () => {
-      // 192 here would mean onConflictDoNothing stopped working.
-      expect(seeds(client)).toBe(68);
-    });
-
     it('does not duplicate the state row', () => {
       expect(stateRows(client)).toBe(1);
     });
 
     it('does not re-apply migrations', () => {
-      expect(journal(client)).toBe(1);
+      expect(journal(client)).toBe(2);
     });
   });
 
@@ -120,7 +116,9 @@ describe('ensureSchema', () => {
 
       expect(first).toBe(second);
       await Promise.all([first, second]);
-      expect(mockGetDbCalls).toBe(2);
+      // ONE handle fetch, not one per caller. Was 2 until 2026-10-12, because
+      // seedUuidDictionary() fetched its own; that seeding is gone.
+      expect(mockGetDbCalls).toBe(1);
     });
 
     it('does no work again until resetSchemaInit is called', async () => {
@@ -134,7 +132,7 @@ describe('ensureSchema', () => {
       // Only now may the work run, which is what logout then login does.
       resetSchemaInit();
       await ensureSchema();
-      expect(tables(other)).toBe(18);
+      expect(tables(other)).toBe(17);
       other.close();
     });
   });
@@ -147,7 +145,7 @@ describe('ensureSchema', () => {
       // A cached rejection would brick init for the whole process.
       mockFail = false;
       await expect(ensureSchema()).resolves.toBeUndefined();
-      expect(tables(client)).toBe(18);
+      expect(tables(client)).toBe(17);
     });
   });
 });

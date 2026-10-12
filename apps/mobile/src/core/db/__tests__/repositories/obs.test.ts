@@ -1,6 +1,12 @@
 import { eq } from 'drizzle-orm';
 
-import { DELIVERY_OUTCOME_STAGE3, ENCOUNTER_ADMISSION } from '../../constants/encounter';
+import {
+  DELIVERY_OUTCOME_STAGE3,
+  ENCOUNTER_ADMISSION,
+  LCG_SOS,
+  STAGE1_HOUR1_1,
+  STAGE3_HOUR1_1,
+} from '../../constants/encounter';
 import {
   ADMISSION_CONCEPTS,
   BIRTH_OUTCOME,
@@ -45,7 +51,7 @@ import {
   upsertManyFromServer,
   writeAdmissionValues,
 } from '../../repositories/obs';
-import { encounter, obs, provider, uuidDictionary } from '../../schema';
+import { encounter, obs, provider } from '../../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO, VOIDED_YES } from '../../syncFlags';
 import { transact, type DbHandle } from '../../tx';
 import { createTestDb, type TestDb } from '../helpers/testDb';
@@ -598,22 +604,11 @@ describe('obs repository', () => {
   });
 
   describe('the stage-aware risk read', () => {
-    const TYPE_STAGE1 = 'type-stage1';
-    const TYPE_STAGE3 = 'type-stage3';
-    const TYPE_SOS = 'type-sos';
-
-    const seedDictionary = () => {
-      ctx.db
-        .insert(uuidDictionary)
-        .values([
-          { uuid: TYPE_STAGE1, name: 'Stage1_Hr1_1' },
-          { uuid: TYPE_STAGE3, name: 'Stage3_Hr1_1' },
-          { uuid: TYPE_SOS, name: 'LCG_SOS' },
-        ])
-        .run();
-    };
-
-    beforeEach(seedDictionary);
+    // Real encounter types, because the stage sets are now resolved from
+    // constants/encounter rather than from a seeded dictionary table.
+    const TYPE_STAGE1 = STAGE1_HOUR1_1;
+    const TYPE_STAGE3 = STAGE3_HOUR1_1;
+    const TYPE_SOS = LCG_SOS;
 
     it('reads stage 1 and 2 while the visit has not reached stage 3', () => {
       seedEncounter('s1', { encounter_type_uuid: TYPE_STAGE1, encounter_time: '2026-01-01' });
@@ -695,14 +690,19 @@ describe('obs repository', () => {
       expect(getLatestObsByVisitAndConcepts(VISIT, [], db)).toEqual([]);
     });
 
-    it('returns nothing when the dictionary is not seeded', () => {
-      // The whole CASE reads tbl_uuid_dictionary.name, so an unseeded
-      // dictionary silently yields an empty risk read.
-      ctx.db.delete(uuidDictionary).run();
+    it('excludes an unknown encounter type without emptying the read', () => {
+      // This replaces a test for the opposite behaviour. The dictionary version
+      // matched the whole CASE on ud.name, so an unseeded table returned
+      // NOTHING AT ALL. The stage sets are constants now, so a type we do not
+      // know excludes only its own encounter.
       seedEncounter('s1', { encounter_type_uuid: TYPE_STAGE1, encounter_time: '2026-01-01' });
+      seedEncounter('other', { encounter_type_uuid: 'not-a-stage', encounter_time: '2026-01-02' });
       insert({ encounteruuid: 's1', conceptuuid: CONCEPT_A, value: '1', comment: 'Y' }, db);
+      insert({ encounteruuid: 'other', conceptuuid: CONCEPT_B, value: '2', comment: 'R' }, db);
 
-      expect(getLatestObsByVisitAndConcepts(VISIT, [CONCEPT_A], db)).toEqual([]);
+      expect(getLatestObsByVisitAndConcepts(VISIT, [CONCEPT_A, CONCEPT_B], db)).toEqual([
+        { encounteruuid: 's1', conceptuuid: CONCEPT_A, value: '1', comment: 'Y' },
+      ]);
     });
   });
 

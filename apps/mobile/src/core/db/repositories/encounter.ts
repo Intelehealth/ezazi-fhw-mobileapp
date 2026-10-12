@@ -6,11 +6,12 @@ import {
   DELIVERY_OUTCOME_STAGE3,
   ENCOUNTER_ADMISSION,
   ENCOUNTER_VISIT_COMPLETE,
+  encounterTypeName,
   LCG_SOS,
   NON_CLINICAL_ENCOUNTER_TYPES,
   STAGE3_HOUR1_1,
 } from '../constants/encounter';
-import { encounter, uuidDictionary } from '../schema';
+import { encounter } from '../schema';
 import type { Encounter } from '../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO } from '../syncFlags';
 import type { DbHandle } from '../tx';
@@ -318,39 +319,39 @@ export function isStage3Started(visitUuid: string, on: DbHandle): boolean {
 }
 
 /**
- * The current stage NAME, via `tbl_uuid_dictionary`.
+ * The current stage NAME.
  *
- * TWO THINGS TO KNOW. The ORDER BY is a LEXICOGRAPHIC sort on names, so
- * 'Stage2_Hr9_1' outranks 'Stage2_Hr10_1' — ported verbatim because changing it
- * changes app behaviour. And this is one of the dictionary joins the staged
- * removal must restructure; see ROADMAP "Staged removal".
+ * THE ORDER IS A LEXICOGRAPHIC SORT ON NAMES, so 'Stage2_Hr9_1' outranks
+ * 'Stage2_Hr10_1' — ported verbatim because changing it changes app behaviour.
+ * The legacy INNER JOINed `tbl_uuid_dictionary`; names come from
+ * `constants/encounter` now, and a type with no name is skipped exactly as an
+ * unmatched join row was.
  */
 export function findCurrentStageName(visitUuid: string, on: DbHandle): string | null {
-  const row = on
-    .select({ name: uuidDictionary.name })
+  const names = on
+    .select({ type: encounter.encounter_type_uuid })
     .from(encounter)
-    .innerJoin(uuidDictionary, eq(uuidDictionary.uuid, encounter.encounter_type_uuid))
     .where(and(eq(encounter.visituuid, visitUuid), eq(encounter.voided, VOIDED_NO)))
-    .orderBy(desc(uuidDictionary.name))
-    .limit(1)
-    .get();
+    .all()
+    .map((row) => (row.type ? encounterTypeName(row.type) : null))
+    .filter((name): name is string => name !== null);
 
-  return row?.name ?? null;
+  return names.sort().at(-1) ?? null;
 }
 
 /**
  * The latest encounter's type NAME. No voided filter and no SOS exclusion, so
  * an SOS encounter can be returned as latest — the legacy behaviour.
- * Also a dictionary join; see `findCurrentStageName`.
+ * The legacy's INNER JOIN dropped unnamed types BEFORE ordering, so this takes
+ * the newest encounter that HAS a name rather than the newest encounter.
  */
 export function findLatestEncounterTypeName(
   visitUuid: string,
   on: DbHandle,
 ): string | null {
-  const row = on
-    .select({ name: uuidDictionary.name })
+  const rows = on
+    .select({ type: encounter.encounter_type_uuid })
     .from(encounter)
-    .innerJoin(uuidDictionary, eq(uuidDictionary.uuid, encounter.encounter_type_uuid))
     .where(
       and(
         eq(encounter.visituuid, visitUuid),
@@ -361,27 +362,13 @@ export function findLatestEncounterTypeName(
       ),
     )
     .orderBy(desc(encounter.encounter_time))
-    .limit(1)
-    .get();
+    .all();
 
-  return row?.name ?? null;
+  for (const row of rows) {
+    const name = row.type ? encounterTypeName(row.type) : null;
+    if (name !== null) return name;
+  }
+
+  return null;
 }
 
-/**
- * One encounter type's NAME, by its uuid. The name is not a label — it is a
- * structured code (`Stage1_Hour1_1`) that callers split to get the stage and
- * hour numbers, or match with `contains('Stage1')`. Four live legacy call
- * sites parse it this way; a fifth is commented out.
- * Reads `tbl_uuid_dictionary`, so it depends on the seed; see the two
- * stage-name reads above for the same caveat.
- */
-export function findTypeNameByUuid(typeUuid: string, on: DbHandle): string | null {
-  const row = on
-    .select({ name: uuidDictionary.name })
-    .from(uuidDictionary)
-    .where(eq(uuidDictionary.uuid, typeUuid))
-    .limit(1)
-    .get();
-
-  return row?.name ?? null;
-}
