@@ -17,3 +17,11 @@ export const WARD_LABOR = 'Labor Ward';
 export const WARD_POST_NATAL = 'Post Natal Ward';
 
 export type Ward = typeof WARD_LABOR | typeof WARD_POST_NATAL;
+
+/**
+ * `tbl_visit_attribute.value` for VISIT_READ_STATUS. Written BOTH when a visit
+ * is created and when it is marked read, so it does not distinguish the two
+ * states — what they actually are is not inferable from the legacy. Ported
+ * verbatim; do not invent a boolean here. See ROADMAP "read status".
+ */
+export const VISIT_READ_STATUS_VALUE = '$';
