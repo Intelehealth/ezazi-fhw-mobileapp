@@ -17,8 +17,10 @@ import '@/core/i18n';
 void SplashScreen.preventAutoHideAsync();
 
 // Note: Drizzle needs no DB provider — import `db` from '@/core/db' and read via
-// `useLiveQuery` in components. When the DB gains its first consumer, gate the
-// app on `useMigrations(db, migrations)` here to apply drizzle/ migrations on boot.
+// `useLiveQuery` in components. Do NOT gate the app on `useMigrations` here: migrations
+// run through `migrate()` inside `ensureSchema()`, after login, triggered from Home.
+// Applying them on boot would create the database for a logged-out user
+// (ARCHITECTURE_RULES §6 "DB lifecycle").
 export default function App() {
   const [fontsLoaded] = useFonts({ Lato_400Regular, Lato_700Bold });
   const authStatus = useAuthStore((s) => s.status);

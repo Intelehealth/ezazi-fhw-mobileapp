@@ -73,12 +73,15 @@ Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.*
 | `i18next` · `react-i18next` · `intl-pluralrules` | `^23.15` · `^15.0` · `^2.0.1` | i18n. `intl-pluralrules` is a **required polyfill** — Hermes ships no `Intl.PluralRules`; dropping it breaks i18next at runtime. |
 | `dayjs` · `nepali-date-converter` | `^1.11` · `^3.4` | Calendar: AD + Nepali BS. Which one a client uses is a per-client config choice (§7); both ship in every build. |
 | `axios` | `^1.7` | Transport under `@ezazi/api-client`, which owns the client factory + interceptors. Direct use in mobile is deliberately limited to the raw refresh POST in `services/api/client.ts` (must bypass the interceptor to avoid recursing on 401) and type-only imports. **Build new API surface on `@ezazi/api-client`, not raw axios.** |
+| `@expo-google-fonts/lato` | `0.4.1` | The Lato webfont package. Pinned EXACT, and deliberately not (B) — it is not an Expo SDK module, so `npx expo install` does not manage its version. `App.tsx` gates the splash on `useFonts` until it loads, because `core/ui/Text.tsx` assumes the family is registered. |
 | `react-native-notify-kit` | `^10.8.0` | Background services (§11): Android foreground service, AlarmManager-backed trigger notifications, notification channels. Used by `core/services/monitor` and `core/services/batteryGuard`. **Android-only; New-Arch-only** (passes the §5 gate). Config plugin in `app.config.js` (`foregroundService.types: ['dataSync']`). Single-maintainer risk — see §10. |
 
 ### (B) SDK-managed — install via `npx expo install`, NEVER hardcode
-`expo-sqlite`, `@react-native-async-storage/async-storage`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`.
+`expo-sqlite`, `@react-native-async-storage/async-storage`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`, `expo-crypto`, `expo-font`.
 
 Also SDK-managed (added 2026-10-05 with the low-battery alert, §11): `expo-battery` — battery level + plug state for `core/services/batteryGuard`.
+
+Two more arrived on 2026-10-12 and are listed in (B) above: `expo-crypto` (`randomUUID()`, reached only through `core/db/uuid.ts`) and `expo-font` (required by `@expo-google-fonts/lato`; keep the direct entry rather than relying on `expo` hoisting it).
 
 ### (C) Tooling — must be installed
 `typescript`, `eslint`, `@typescript-eslint/*`, `eslint-plugin-react(-hooks)`, **`eslint-plugin-boundaries`** (feature isolation), `prettier`, `jest`, `jest-expo`, `@testing-library/react-native`, `drizzle-kit`, `babel-plugin-inline-import`, `@react-native-community/cli`, `turbo` (root).

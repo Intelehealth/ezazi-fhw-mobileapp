@@ -198,3 +198,17 @@ and an async `transact` callback.
 **Everything else is still on you.** `npm run lint` passing means your placement is compliant and
 those five mistakes are absent. It does not mean the code is correct — nothing checks that you
 flipped `sync` in the same statement, or that you did not overwrite `tbl_obs.comment`.
+
+---
+
+## 9. Per-table specifics
+
+Four behaviours that are not guessable from the schema.
+
+**`obs.getAdmissionValues` is latest-wins, so admission values are never UPDATED.** It orders by `created_date DESC` and takes the first row per concept. Correcting a value means **writing a new obs**; the previous one survives as history. There is no update path and no write-once restriction — do not add either. This is also why `writeOne` always sets `created_date`: four legacy writers left it NULL, and a NULL sorts arbitrarily under that `ORDER BY`, which breaks latest-wins outright.
+
+**The visit-attribute pull is whitelisted.** `visitAttribute.upsertManyFromPull` writes only the types in `PULLED_VISIT_ATTRIBUTE_TYPES`; the server offers far more than we store. An unrecognised type is returned in `skipped`, not dropped silently — so a new server attribute shows up as a reported skip rather than as missing data nobody noticed.
+
+**`tbl_location` is write-only.** Pull-sync fills it and nothing in the legacy app reads it — it appears in zero JOINs. The `location` repository is insert-only plus the two reads added to make the writes testable. Do not build a read API for it on spec.
+
+**`constants/roles.ts` is exempt from the uuid sweep.** It holds role NAME strings (`'Organizational: Doctor'`), not uuids, so the eslint rule banning raw uuid literals and the test asserting every value in `constants/` is a well-formed 36-char uuid would both fail on it. The exemption is closed by its own test, which asserts `roles.ts` holds no uuid-shaped values.

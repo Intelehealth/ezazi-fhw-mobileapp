@@ -137,7 +137,7 @@ Two related notes:
 direct `.transaction(`, `getDb` in a repository). Those are `no-restricted-syntax`, not boundaries —
 see [`DB_CONVENTIONS.md`](DB_CONVENTIONS.md) §8.
 
-Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak past. **Known debt:** `features/auth/screens/SetupScreen.tsx` violates (3) — it calls `sessionApi.login()` directly — and carries a scoped `eslint-disable` with a TODO. The fix is a `login()` action on `core/session/auth.store.ts`; it was deliberately **not** done during the restructure because no screen has test coverage and the login path is the app's critical entry point.
+Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak past. **That debt is now closed** (2026-10-12): `core/session/auth.store.ts` exposes a `login()` action and `SetupScreen.tsx` calls it through the store, so no screen reaches `sessionApi` directly any more and the scoped `eslint-disable` for it is gone.
 
 ⚠️ **A boundary rule is only live while its `boundaries/elements` globs still match real folders.** They are literal paths: move a folder without updating them and the guarding policy silently stops firing while eslint still exits 0. This happened during Phase 1 and was caught only by an explicit probe. **After any folder move, probe a known-bad import and confirm it errors.**
 
