@@ -11,4 +11,4 @@ export * as encounterTypes from './encounter';
 export * as patientAttributes from './patient';
 export * as visitAttributes from './visit';
 export * as providerAttributes from './provider';
-export * as providerRoles from './roles';
+export * as dbLiterals from './literals';

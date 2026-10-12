@@ -1,8 +1,8 @@
 import * as encounterTypes from '../constants/encounter';
 import * as obsConcepts from '../constants/obs';
 import * as patientAttributes from '../constants/patient';
+import * as dbLiterals from '../constants/literals';
 import * as providerAttributes from '../constants/provider';
-import * as providerRoles from '../constants/roles';
 import * as visitAttributes from '../constants/visit';
 
 /**
@@ -53,10 +53,10 @@ describe('uuid constants', () => {
     expect(malformed).toEqual([]);
   });
 
-  it('keeps uuids out of roles.ts, which the sweep above does not cover', () => {
-    // roles.ts holds role strings, so it is excluded from FILES. This closes
-    // the hole that exclusion opens: a uuid parked there would go unguarded.
-    const uuidShaped = Object.values(providerRoles).filter(
+  it('keeps uuids out of literals.ts, which the sweep above does not cover', () => {
+    // literals.ts holds non-uuid column values, so it is excluded from FILES.
+    // This closes the hole that opens: a uuid parked there would go unguarded.
+    const uuidShaped = Object.values(dbLiterals).filter(
       (value) => typeof value === 'string' && value.length === 36 && !/\s/.test(value),
     );
 

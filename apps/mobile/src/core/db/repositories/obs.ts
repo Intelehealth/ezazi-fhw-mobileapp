@@ -13,7 +13,7 @@ import {
   OUT_OF_TIME,
   SOS_STAGE_HOUR,
 } from '../constants/obs';
-import { PROVIDER_ROLE_DOCTOR } from '../constants/roles';
+import { PROVIDER_ROLE_DOCTOR } from '../constants/literals';
 import { encounter, obs, provider } from '../schema';
 import type { Obs } from '../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO, VOIDED_YES } from '../syncFlags';
