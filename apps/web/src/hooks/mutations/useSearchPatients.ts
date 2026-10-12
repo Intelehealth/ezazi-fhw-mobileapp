@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ApiError } from '@ezazi/api-client';
 import { patientService } from '../../services/patient.service';
 import { showToast } from '../../services/toast';
+import { getErrorMessage } from '../../utils/error-message';
 import type { OpenMrsPatientSearchResult } from '../../types/patient.types';
 
 /**
@@ -17,7 +18,14 @@ export function useSearchPatients() {
       return result.data.filter(patient => patient.identifiers.length > 0);
     },
     onError: error => {
-      showToast('Search Failed', error.message, 'error');
+      showToast(
+        'Search Failed',
+        getErrorMessage(
+          error,
+          'Could not search patients right now. Please try again.'
+        ),
+        'error'
+      );
     },
   });
 }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../routes/paths';
 import { patientService } from '../../services/patient.service';
 import { showToast } from '../../services/toast';
+import { getErrorMessage } from '../../utils/error-message';
 
 /**
  * Ports searched-patients.component.ts's view(): looks up the patient's
@@ -29,7 +30,14 @@ export function useOpenPatientVisit(onOpened: () => void) {
       onOpened();
     },
     onError: error => {
-      showToast('Could Not Open Patient', error.message, 'error');
+      showToast(
+        'Could Not Open Patient',
+        getErrorMessage(
+          error,
+          "Could not load this patient's visits. Please try again."
+        ),
+        'error'
+      );
     },
   });
 }

@@ -76,4 +76,23 @@ describe('useSearchPatients', () => {
       'error'
     );
   });
+
+  it('shows a friendly message instead of OpenMRS\'s literal "[null]"', async () => {
+    vi.mocked(patientService.searchPatients).mockResolvedValue({
+      ok: false,
+      error: new ApiError('server', '[null]', { status: 500 }),
+    });
+
+    const { result } = renderHook(() => useSearchPatients(), { wrapper });
+    act(() => {
+      result.current.mutate('Asha');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Search Failed',
+      'Could not search patients right now. Please try again.',
+      'error'
+    );
+  });
 });

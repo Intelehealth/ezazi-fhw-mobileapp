@@ -94,4 +94,25 @@ describe('useOpenPatientVisit', () => {
     );
     expect(navigate).not.toHaveBeenCalled();
   });
+
+  it('shows a friendly message instead of OpenMRS\'s literal "[null]"', async () => {
+    vi.mocked(patientService.recentVisits).mockResolvedValue({
+      ok: false,
+      error: new ApiError('server', '[null]', { status: 500 }),
+    });
+
+    const { result } = renderHook(() => useOpenPatientVisit(vi.fn()), {
+      wrapper,
+    });
+    act(() => {
+      result.current.mutate('pat-1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Could Not Open Patient',
+      "Could not load this patient's visits. Please try again.",
+      'error'
+    );
+  });
 });
