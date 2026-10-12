@@ -75,7 +75,7 @@ describe('ensureSchema', () => {
       await ensureSchema();
 
       expect(tables(client)).toBe(18);
-      expect(seeds(client)).toBe(98);
+      expect(seeds(client)).toBe(68);
       expect(stateRows(client)).toBe(1);
       expect(journal(client)).toBe(1);
     });
@@ -100,7 +100,7 @@ describe('ensureSchema', () => {
 
     it('does not duplicate seed rows', () => {
       // 192 here would mean onConflictDoNothing stopped working.
-      expect(seeds(client)).toBe(98);
+      expect(seeds(client)).toBe(68);
     });
 
     it('does not duplicate the state row', () => {

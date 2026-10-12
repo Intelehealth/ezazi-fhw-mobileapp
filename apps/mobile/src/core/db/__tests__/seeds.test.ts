@@ -27,11 +27,25 @@ const CONSTANTS = {
 };
 
 describe('uuid dictionary seed', () => {
-  it('holds Android\'s 96 rows plus our two declared additions', () => {
+  it('holds exactly the encounter types', () => {
     // Deliberately brittle: a changed count means a row was added or lost.
-    // Android seeds 96. We add ENCOUNTER_ADMISSION and ENCOUNTER_VISIT_COMPLETE,
-    // which it never seeded despite writing both - see the seed file header.
-    expect(UUID_ENTRIES).toHaveLength(98);
+    // 67 encounter-type constants plus EMERGENCY, which is an encounter type
+    // with no constant - nothing in this app writes or matches that uuid.
+    expect(UUID_ENTRIES).toHaveLength(68);
+  });
+
+  it('seeds NOTHING but encounter types', () => {
+    // The other half of the rule. Android seeded 22 obs concepts and 8 patient
+    // attribute types here; every read of this table is keyed on an encounter
+    // type, so none of them was ever looked up. Dropped 2026-10-12.
+    const banned = new Set(
+      Object.values({ ...obsConcepts, ...patientAttributes })
+        .filter((v) => typeof v === 'string')
+        .map((v) => (v as string).toLowerCase()),
+    );
+    const strays = UUID_ENTRIES.filter((e) => banned.has(e.uuid.toLowerCase())).map((e) => e.name);
+
+    expect(strays).toEqual([]);
   });
 
   it('seeds EVERY encounter type, because every read joins on encounter_type_uuid', () => {

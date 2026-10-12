@@ -17,42 +17,6 @@ import {
 } from '../constants/encounter';
 
 import {
-  ASSESSMENT,
-  BIRTH_OUTCOME,
-  COMMENTS,
-  COMPANION,
-  CURRENT_COMPLAINT,
-  DIASTOLIC_BP,
-  ENCOUNTER_TYPE,
-  FOLLOW_UP_VISIT,
-  MEDICINE,
-  MISSED_ENCOUNTER,
-  OCCUPATION,
-  PHYSICAL_EXAMINATION,
-  PLAN,
-  PULSE,
-  RATING,
-  RESPIRATORY,
-  RHK_MEDICAL_HISTORY_BLURB,
-  SPO2,
-  SYSTOLIC_BP,
-  TELEMEDICINE_DIAGNOSIS,
-  TEMPERATURE,
-  WEIGHT,
-} from '../constants/obs';
-
-import {
-  ATTRIBUTE_CASTE,
-  ATTRIBUTE_ECONOMIC_STATUS,
-  ATTRIBUTE_EDUCATION_LEVEL,
-  ATTRIBUTE_HEALTH_CENTER,
-  ATTRIBUTE_OCCUPATION,
-  ATTRIBUTE_PHONE_NUMBER,
-  ATTRIBUTE_SON_WIFE_DAUGHTER,
-  IDENTIFIER_OPENMRS_ID,
-} from '../constants/patient';
-
-import {
   VISIT_TELEMEDICINE,
 } from '../constants/visit';
 
@@ -61,6 +25,16 @@ import {
  * `InteleHealthDatabaseHelper.uuidInsert()`. The table answers ONE question:
  * what is this encounter type called? It is keyed on uuid, so it holds exactly
  * one name per uuid and cannot carry the app's full vocabulary — see below.
+ *
+ * SCOPE, set 2026-10-12: this table holds ENCOUNTER TYPES AND NOTHING ELSE.
+ * Every read of it in the Android app is keyed on an encounter type - the two
+ * that look like exceptions are not (`PatientsDAO.checkStage` takes an
+ * encounter type uuid, and `EncounterDAO:699` is commented "this returns
+ * Stagex_Hrx_x format encounter"). Android also seeded 23 obs concepts and 8
+ * patient attribute types; nothing ever looked them up, and they are dropped
+ * here. The obs concepts live in `constants/obs.ts`, the attribute types in
+ * `constants/patient.ts`, and the server sends its own attribute-type list on
+ * the pull.
  *
  * SHARED UUIDS IMPORT THEIR CONSTANT rather than repeating the literal, so each
  * one is written in exactly one place. The 56 `Stage*_Hour*_*` rows stay literal:
@@ -83,41 +57,12 @@ import {
  * still mirrors Android's 96 exactly.
  */
 export const UUID_ENTRIES = [
-  { uuid: CURRENT_COMPLAINT, name: 'CURRENTCOMPLAINT' },
-  { uuid: PHYSICAL_EXAMINATION, name: 'PHYSICAL_EXAMINATION' },
-  { uuid: COMPANION, name: 'COMPANION' },
-  { uuid: WEIGHT, name: 'WEIGHT' },
-  { uuid: PULSE, name: 'PULSE' },
-  { uuid: SYSTOLIC_BP, name: 'SYSTOLIC_BP' },
-  { uuid: DIASTOLIC_BP, name: 'DIASTOLIC_BP' },
-  { uuid: TEMPERATURE, name: 'TEMPERATURE' },
-  { uuid: RESPIRATORY, name: 'RESPIRATORY' },
-  { uuid: SPO2, name: 'SPO2' },
-  { uuid: RHK_MEDICAL_HISTORY_BLURB, name: 'RHK_MEDICAL_HISTORY_BLURB' },
-  { uuid: FOLLOW_UP_VISIT, name: 'FOLLOW_UP_VISIT' },
   { uuid: 'ca5f5dc3-4f0b-4097-9cae-5cf2eb44a09c', name: 'EMERGENCY' },
-  { uuid: TELEMEDICINE_DIAGNOSIS, name: 'TELEMEDICINE_DIAGNOSIS' },
-  { uuid: MEDICINE, name: 'MEDICINE' },
-  { uuid: ASSESSMENT, name: 'ASSESSMENT' },
-  { uuid: BIRTH_OUTCOME, name: 'BIRTH_OUTCOME' },
-  { uuid: PLAN, name: 'PLAN' },
-  { uuid: MISSED_ENCOUNTER, name: 'MISSED_ENCOUNTER' },
-  { uuid: OCCUPATION, name: 'OCCUPATION' },
   { uuid: ENCOUNTER_ADULTINITIAL, name: 'ENCOUNTER_ADULTINITIAL' },
   { uuid: ENCOUNTER_VITALS, name: 'ENCOUNTER_VITALS' },
   { uuid: ENCOUNTER_VISIT_NOTE, name: 'ENCOUNTER_VISIT_NOTE' },
   { uuid: ENCOUNTER_PATIENT_EXIT_SURVEY, name: 'ENCOUNTER_PATIENT_EXIT_SURVEY' },
-  { uuid: IDENTIFIER_OPENMRS_ID, name: 'IDENTIFIER_OPENMRS_ID' },
-  { uuid: ATTRIBUTE_PHONE_NUMBER, name: 'ATTRIBUTE_PHONE_NUMBER' },
-  { uuid: ATTRIBUTE_CASTE, name: 'ATTRIBUTE_CASTE' },
-  { uuid: ATTRIBUTE_EDUCATION_LEVEL, name: 'ATTRIBUTE_EDUCATION_LEVEL' },
-  { uuid: ATTRIBUTE_ECONOMIC_STATUS, name: 'ATTRIBUTE_ECONOMIC_STATUS' },
-  { uuid: ATTRIBUTE_SON_WIFE_DAUGHTER, name: 'ATTRIBUTE_SON_WIFE_DAUGHTER' },
-  { uuid: ATTRIBUTE_OCCUPATION, name: 'ATTRIBUTE_OCCUPATION' },
-  { uuid: ATTRIBUTE_HEALTH_CENTER, name: 'ATTRIBUTE_HEALTH_CENTER' },
   { uuid: VISIT_TELEMEDICINE, name: 'VISIT_TELEMEDICINE' },
-  { uuid: RATING, name: 'RATING' },
-  { uuid: COMMENTS, name: 'COMMENTS' },
   { uuid: STAGE1_HOUR1_1, name: 'Stage1_Hour1_1' },
   { uuid: 'a367b296-601f-474b-afa4-c6989ef43f77', name: 'Stage1_Hour1_2' },
   { uuid: 'f540fdfb-9ad5-4b44-ae35-b941863b3439', name: 'Stage1_Hour2_1' },
@@ -168,7 +113,6 @@ export const UUID_ENTRIES = [
   { uuid: 'ada81344-4a25-4b9b-9f63-7602673194e4', name: 'Stage2_Hour5_2' },
   { uuid: '5a58c6dc-f009-4adc-a650-5a435799bc84', name: 'Stage2_Hour5_3' },
   { uuid: '081e0959-ce88-414d-b4be-f6c1593395aa', name: 'Stage2_Hour5_4' },
-  { uuid: ENCOUNTER_TYPE, name: 'Encounter Status' },
   { uuid: LCG_SOS, name: 'LCG_SOS' },
   { uuid: STAGE3_HOUR1_1, name: 'Stage3_Hour1_1' },
   { uuid: '2c112cc2-3922-400e-9dd9-11b27fc76404', name: 'Stage3_Hour1_2' },
@@ -179,9 +123,6 @@ export const UUID_ENTRIES = [
   { uuid: '0ca40a73-3581-47ae-9cb2-0c6cde17158e', name: 'Stage3_Hour3_1' },
   { uuid: '746e8cc9-e8e8-4055-87a2-2687888c7f88', name: 'Stage3_Hour4_1' },
   { uuid: DELIVERY_OUTCOME_STAGE3, name: 'DELIVERY_OUTCOME_STAGE3' },
-  // Added 2026-10-12: both are encounter types this app WRITES, and every
-  // dictionary read joins on `encounter_type_uuid`. Android never seeded
-  // them, so `findTypeNameByUuid` returned null for an admission encounter.
   { uuid: ENCOUNTER_ADMISSION, name: 'ENCOUNTER_ADMISSION' },
   { uuid: ENCOUNTER_VISIT_COMPLETE, name: 'ENCOUNTER_VISIT_COMPLETE' },
 ];
