@@ -93,12 +93,16 @@ describe('provider repository', () => {
       expect(row('p1')?.sync).toBe(SYNC_CLEAN);
     });
 
-    it("keeps the server's modified_date instead of stamping the device clock", () => {
-      // The legacy overwrote it on every pull, which poisons any delta-sync
-      // that compares the two.
+    it('stamps modified_date when WE write the row, not from the server', () => {
+      // Arpan, 2026-10-12: with a patchy connection the server timestamp says
+      // nothing about when this device learned of the change. Matches 25 of
+      // the legacy's 30 modified_date writes.
       seedProvider('p1', PROVIDER_ROLE_NURSE, { modified_date: '2020-01-01' });
 
-      expect(row('p1')?.modified_date).toBe('2020-01-01');
+      expect(row('p1')?.modified_date).not.toBe('2020-01-01');
+      expect(row('p1')?.modified_date).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/,
+      );
     });
 
     it('updates by explicit column set, never a whole-row replace', () => {

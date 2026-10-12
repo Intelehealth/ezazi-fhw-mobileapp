@@ -1,5 +1,7 @@
 import { and, eq, getTableColumns, sql } from 'drizzle-orm';
 
+import { localIsoTimestamp } from '@/core/utils/datetime';
+
 import { PROVIDER_ROLE_DOCTOR, PROVIDER_ROLE_NURSE, type Ward } from '../constants/literals';
 import { FACILITY, PROVIDER_WARD } from '../constants/provider';
 import { encounter, provider, providerAttribute, visit } from '../schema';
@@ -49,13 +51,14 @@ const latestFirst = sql`rowid desc`;
 // ── writes ────────────────────────────────────────────────────────────────
 
 /**
- * Pull-path bulk write — the only write this table has. Keeps the server's
- * `modified_date`: the legacy overwrote it with the device clock, which poisons
- * any delta-sync that compares the two.
+ * Pull-path bulk write — the only write this table has. `modified_date` is
+ * stamped when WE write the row, not taken from the server: with a patchy
+ * connection the server's timestamp says nothing about when this device
+ * learned of the change. 25 of the legacy's 30 writes do the same.
  */
 export function upsertMany(rows: NewProvider[], on: DbHandle): void {
   for (const row of rows) {
-    const values = { ...row, sync: SYNC_CLEAN };
+    const values = { ...row, modified_date: localIsoTimestamp(), sync: SYNC_CLEAN };
     on.insert(provider)
       .values(values)
       .onConflictDoUpdate({ target: provider.uuid, set: values })

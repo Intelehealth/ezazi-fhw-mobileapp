@@ -1,5 +1,7 @@
 import { eq } from 'drizzle-orm';
 
+import { localIsoTimestamp } from '@/core/utils/datetime';
+
 import { location } from '../schema';
 import type { Location } from '../schema';
 import { SYNC_CLEAN } from '../syncFlags';
@@ -18,16 +20,17 @@ export type NewLocation = typeof location.$inferInsert;
 // ── writes ────────────────────────────────────────────────────────────────
 
 /**
- * Pull-path bulk write, keyed on `locationuuid`. Two legacy details are fixed
- * rather than ported: `modified_date` came from the device clock at insert
- * time, which makes it useless for change detection, so the server's value is
- * kept; and `sync` was written as the string 'TRUE' against a column whose
- * default was 'false'. Here it is a boolean, always clean — nothing pushes
- * locations.
+ * Pull-path bulk write, keyed on `locationuuid`. `modified_date` is stamped
+ * when WE write the row, matching the legacy and the rest of this layer: the
+ * server's timestamp says nothing about when this device learned of the
+ * change, and `locationlist` carries no modified date on the wire anyway.
+ * One legacy detail IS fixed: `sync` was written as the string 'TRUE' against
+ * a column defaulting to 'false'. Here it is a boolean, always clean —
+ * nothing pushes locations.
  */
 export function replaceAllFromPull(rows: NewLocation[], on: DbHandle): void {
   for (const row of rows) {
-    const values = { ...row, sync: SYNC_CLEAN };
+    const values = { ...row, modified_date: localIsoTimestamp(), sync: SYNC_CLEAN };
     on.insert(location)
       .values(values)
       .onConflictDoUpdate({ target: location.locationuuid, set: values })

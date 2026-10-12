@@ -24,10 +24,15 @@ describe('location repository', () => {
 
   const rows = () => ctx.db.select().from(location).all();
 
-  it("keeps the server's modified_date rather than stamping the device clock", () => {
+  it('stamps modified_date when WE write the row, not from the server', () => {
+    // locationlist carries no modified date on the wire at all, so there is
+    // nothing to keep even if we wanted to.
     replaceAllFromPull([{ locationuuid: 'l1', name: 'Alpha', modified_date: '2020-01-01' }], db);
 
-    expect(findByUuid('l1', db)?.modified_date).toBe('2020-01-01');
+    expect(findByUuid('l1', db)?.modified_date).not.toBe('2020-01-01');
+    expect(findByUuid('l1', db)?.modified_date).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/,
+    );
   });
 
   it('writes every row clean — nothing pushes locations', () => {
