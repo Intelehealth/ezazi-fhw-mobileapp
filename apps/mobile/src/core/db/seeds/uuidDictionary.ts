@@ -4,7 +4,7 @@ import { uuidDictionary } from '../schema';
 // All entries from InteleHealthDatabaseHelper.uuidInsert() — exact UUIDs and names
 // from Android. INSERT-OR-IGNORE on the uuid primary key preserves the Android
 // "don't duplicate" semantics.
-const UUID_ENTRIES: { uuid: string; name: string }[] = [
+export const UUID_ENTRIES: { uuid: string; name: string }[] = [
   { uuid: '3edb0e09-9135-481e-b8f0-07a26fa9a5ce', name: 'CURRENTCOMPLAINT' },
   { uuid: 'e1761e85-9b50-48ae-8c4d-e6b7eeeba084', name: 'PHYSICAL_EXAMINATION' },
   { uuid: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', name: 'HEIGHT' },
@@ -99,7 +99,7 @@ const UUID_ENTRIES: { uuid: string; name: string }[] = [
   { uuid: '3d71ad42-7b6e-4687-b096-f0dd89e84647', name: 'Stage3_Hour2_1' },
   { uuid: '3b3960f4-c9d2-4d41-aed9-f376312fc33e', name: 'Stage3_Hour2_2' },
   { uuid: '0ca40a73-3581-47ae-9cb2-0c6cde17158e', name: 'Stage3_Hour3_1' },
-  { uuid: '746e8cc9-e8e8-4055-87a2-2687888cf7f8', name: 'Stage3_Hour4_1' },
+  { uuid: '746e8cc9-e8e8-4055-87a2-2687888c7f88', name: 'Stage3_Hour4_1' },
   { uuid: 'c5f95c0f-a499-4792-9ee0-ff138d8df425', name: 'DELIVERY_OUTCOME_STAGE3' },
 ];
 
