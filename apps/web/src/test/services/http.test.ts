@@ -41,6 +41,17 @@ describe('http', () => {
     clearQueryCache.mockClear();
     redirectTo.mockClear();
     window.history.pushState(null, '', '/');
+
+    /*
+     * Every client is looked up by its baseURL, so the four URLs must be
+     * distinct. They come from a developer's untracked .env, which a clean
+     * checkout (CI) doesn't have — there they would all be '' and the lookups
+     * would match the wrong client — so set them here instead of relying on it.
+     */
+    vi.stubEnv('VITE_AUTH_GATEWAY_URL', 'https://gateway.test');
+    vi.stubEnv('VITE_PORTAL_URL', 'https://portal.test');
+    vi.stubEnv('VITE_CONFIG_URL', 'https://config.test');
+    vi.stubEnv('VITE_OPENMRS_URL', 'https://openmrs.test/openmrs/ws/rest/v1');
   });
 
   afterEach(() => {
