@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import { PROVIDER_SPECIALITY } from '../constants/provider';
 import { drSpeciality, providerAttribute } from '../schema';
@@ -134,7 +134,7 @@ export function specialityExists(value: string, on: DbHandle): boolean {
   return row !== undefined;
 }
 
-/** Live specialities for one provider. Ordered, unlike anything in the legacy. */
+/** Live specialities for one provider, A-Z. The legacy had no ordering at all. */
 export function listSpecialitiesByProvider(
   providerUuid: string,
   on: DbHandle,
@@ -145,6 +145,6 @@ export function listSpecialitiesByProvider(
     .where(
       and(eq(drSpeciality.provideruuid, providerUuid), eq(drSpeciality.voided, VOIDED_NO)),
     )
-    .orderBy(desc(drSpeciality.value))
+    .orderBy(drSpeciality.value)
     .all();
 }

@@ -91,6 +91,17 @@ describe('patient repository', () => {
       expect(row('p1')).toMatchObject({ first_name: 'Asha Kumari', voided: 1 });
     });
 
+    it('stamps modified_date when WE write the row, not from the server', () => {
+      // Arpan, 2026-10-12. All three pull writers in this file agree now; this
+      // one kept the server's value until the inconsistency was spotted.
+      upsertPatients([{ uuid: 'p1', modified_date: '2020-01-01' }], db);
+
+      expect(row('p1')?.modified_date).not.toBe('2020-01-01');
+      expect(row('p1')?.modified_date).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/,
+      );
+    });
+
     it('writes pulled rows clean, so they are not pushed straight back', () => {
       upsertPatients([{ uuid: 'p1', first_name: 'Asha' }], db);
 

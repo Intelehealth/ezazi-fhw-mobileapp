@@ -10,7 +10,7 @@ import {
 } from '../../constants/visit';
 import {
   assignHolder,
-  findDirty,
+  markSynced,
   findValue,
   hasValue,
   insertLocal,
@@ -281,14 +281,30 @@ describe('visit attribute repository', () => {
       expect(listByVisit(VISIT, db).map((r) => r.uuid)).toEqual(['s1']);
     });
 
-    it('findDirty returns local rows and not pulled ones', () => {
-      upsertManyFromPull([pulled('s1', VISIT_HOLDER, 'a')], db);
-      const local = insertLocal(VISIT, VISIT_RISK, '3', db);
+    it('markSynced clears every attribute on the visit after a push', () => {
+      // The push sends ALL attributes of a dirty visit, so all of them are
+      // clean once the server accepts it. Without this they stay dirty and are
+      // re-sent on every cycle. (Arpan, 2026-10-12; SYNC_CONTRACT rule 7.)
+      insertLocal(VISIT, VISIT_RISK, '3', db);
+      insertLocal(VISIT, DECISION_PENDING, 'true', db);
+      expect(rows().every((r) => r.sync === SYNC_DIRTY)).toBe(true);
 
-      expect(findDirty(db).map((r) => r.uuid)).toEqual([local]);
+      markSynced(VISIT, db);
+
+      expect(rows().every((r) => r.sync === SYNC_CLEAN)).toBe(true);
     });
 
-    it('findDirty includes a voided row — it still has to reach the server', () => {
+    it('markSynced touches only that visit', () => {
+      insertLocal(VISIT, VISIT_RISK, '3', db);
+      insertLocal('v2', VISIT_RISK, '7', db);
+
+      markSynced(VISIT, db);
+
+      const other = rows().find((r) => r.visit_uuid === 'v2');
+      expect(other?.sync).toBe(SYNC_DIRTY);
+    });
+
+    it('markSynced clears a voided row too — it was pushed as well', () => {
       const uuid = insertLocal(VISIT, VISIT_RISK, '3', db);
       ctx.db
         .update(visitAttribute)
@@ -296,13 +312,9 @@ describe('visit attribute repository', () => {
         .where(eq(visitAttribute.uuid, uuid))
         .run();
 
-      expect(findDirty(db).map((r) => r.uuid)).toEqual([uuid]);
-    });
+      markSynced(VISIT, db);
 
-    it('findDirty excludes a type outside the pushable set', () => {
-      insertLocal(VISIT, 'not-pushable', 'x', db);
-
-      expect(findDirty(db)).toEqual([]);
+      expect(rows()[0].sync).toBe(SYNC_CLEAN);
     });
   });
 });

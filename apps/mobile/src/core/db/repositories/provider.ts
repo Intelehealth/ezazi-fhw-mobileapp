@@ -98,13 +98,20 @@ export function findNameByUuid(uuid: string, on: DbHandle): ProviderName | null 
 
 /**
  * Keyed on `useruuid`, which is NOT unique — the legacy scanned every match and
- * kept the last. This takes the first and caps at one row. See `findNameByUuid`
- * for the 'Test Doctor' fallback that is deliberately not reproduced.
+ * kept the last, with no ordering, so its answer was whatever SQLite returned
+ * last. Ordering by `uuid` here makes ours at least STABLE across calls, which
+ * the legacy's was not. See `findNameByUuid` for the 'Test Doctor' fallback
+ * that is deliberately not reproduced.
  */
 export function findNameByUserUuid(userUuid: string, on: DbHandle): ProviderName | null {
   return (
-    on.select(nameColumns).from(provider).where(eq(provider.useruuid, userUuid)).limit(1).get() ??
-    null
+    on
+      .select(nameColumns)
+      .from(provider)
+      .where(eq(provider.useruuid, userUuid))
+      .orderBy(provider.uuid)
+      .limit(1)
+      .get() ?? null
   );
 }
 

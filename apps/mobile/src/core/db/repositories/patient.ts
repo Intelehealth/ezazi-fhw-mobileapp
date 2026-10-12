@@ -67,12 +67,17 @@ export function updatePatient(uuid: string, input: PatientUpdate, on: DbHandle):
  * Pull-path bulk write. Explicit column set on conflict, never a whole-row
  * replace: SQLite REPLACE is DELETE+INSERT, so any column the server omits
  * would silently revert to its DDL default.
+ * `modified_date` is stamped when WE write the row, matching the other two
+ * pull writers below and 25 of the legacy's 30 writes — with a patchy
+ * connection the server's timestamp says nothing about when this device
+ * learned of the change. (Arpan, 2026-10-12.)
  */
 export function upsertPatients(rows: PatientUpsert[], on: DbHandle): void {
   for (const row of rows) {
+    const values = { ...row, modified_date: localIsoTimestamp(), sync: SYNC_CLEAN };
     on.insert(patient)
-      .values({ ...row, sync: SYNC_CLEAN })
-      .onConflictDoUpdate({ target: patient.uuid, set: { ...row, sync: SYNC_CLEAN } })
+      .values(values)
+      .onConflictDoUpdate({ target: patient.uuid, set: values })
       .run();
   }
 }

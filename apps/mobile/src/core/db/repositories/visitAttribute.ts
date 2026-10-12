@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { VISIT_READ_STATUS_VALUE } from '../constants/literals';
 import {
@@ -263,18 +263,21 @@ export function listByVisit(visitUuid: string, on: DbHandle): VisitAttribute[] {
 }
 
 /**
- * Rows the server has not seen. No voided filter — a voided attribute still
- * has to reach the server. Restricted to the five pushable types.
+ * Clears the dirty flag after the server has accepted the push.
+ *
+ * THE PUSH READS ATTRIBUTES THROUGH `visit.findDirty`, not from here. The push
+ * sends ALL attributes of a dirty visit — the legacy walks unsynced visits and
+ * fetches their attributes, so a clean visit is assumed to have no dirty ones
+ * (Arpan, 2026-10-12; SYNC_CONTRACT rule 7). This file briefly had a second,
+ * narrower `findDirty` of its own, which returned a DIFFERENT set; it was
+ * removed rather than left for the seam to pick wrongly.
+ *
+ * Without this, attributes that rode inside a pushed `visit.attributes[]` stay
+ * dirty and are re-sent on every subsequent cycle.
  */
-export function findDirty(on: DbHandle): VisitAttribute[] {
-  return on
-    .select()
-    .from(visitAttribute)
-    .where(
-      and(
-        eq(visitAttribute.sync, SYNC_DIRTY),
-        inArray(visitAttribute.visit_attribute_type_uuid, [...PULLED_VISIT_ATTRIBUTE_TYPES]),
-      ),
-    )
-    .all();
+export function markSynced(visitUuid: string, on: DbHandle): void {
+  on.update(visitAttribute)
+    .set({ sync: SYNC_CLEAN })
+    .where(eq(visitAttribute.visit_uuid, visitUuid))
+    .run();
 }

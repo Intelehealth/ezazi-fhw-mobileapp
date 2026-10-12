@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 
-import { utcIsoTimestamp } from '@/core/utils/datetime';
+import { localIsoTimestamp, utcIsoTimestamp } from '@/core/utils/datetime';
 
 import { IMAGE_TYPE_PROFILE } from '../constants/literals';
 import { COMPLEX_IMAGE_AD, COMPLEX_IMAGE_PE } from '../constants/obs';
@@ -63,7 +63,10 @@ export function upsertProfileImage(
     patientuuid: input.patientUuid,
     image_path: input.imagePath,
     image_type: IMAGE_TYPE_PROFILE,
-    obs_time_date: utcIsoTimestamp(),
+    // LOCAL, not UTC: this value is compared against the server's
+    // ProfileImageTimestamp to decide whether to re-download the photo, and the
+    // legacy wrote it with its local helper. (Arpan, 2026-10-12.)
+    obs_time_date: localIsoTimestamp(),
     voided: VOIDED_NO,
     sync: SYNC_DIRTY,
   };

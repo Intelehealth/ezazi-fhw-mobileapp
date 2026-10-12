@@ -21,8 +21,9 @@ export type NewRtcConnectionLog = typeof rtcConnectionLog.$inferInsert;
  * and its insert ran on two different handles, one of which it closed in
  * between, so the check raced. Here they share one handle and SQLite has a
  * single writer, so the guard actually holds. If appending every connection is
- * what was wanted, this is the one line to change. See ROADMAP.
+ * what was wanted, this is the one line to change.
  */
+/** An empty visit uuid is treated as no visit, so it cannot collide with another. */
 export function insertIfAbsent(row: NewRtcConnectionLog, on: DbHandle): boolean {
   if (row.visit_uuid && findByVisitUuid(row.visit_uuid, on) !== null) return false;
 

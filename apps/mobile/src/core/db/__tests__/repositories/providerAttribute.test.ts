@@ -243,6 +243,36 @@ describe('provider attribute repository', () => {
       expect(listByProvider(PROVIDER, db).map((r) => r.uuid)).toEqual(['a2', 'a1']);
     });
 
+    it('listSpecialitiesByProvider sorts A-Z', () => {
+      // The uuids deliberately sort opposite to the values, so an unordered or
+      // uuid-ordered query would flip this. It rendered Z-A until 2026-10-12.
+      upsertSpeciality(
+        {
+          uuid: 'aaa',
+          provideruuid: PROVIDER,
+          attributetypeuuid: PROVIDER_SPECIALITY,
+          value: 'Zebra',
+          voided: VOIDED_NO,
+        },
+        db,
+      );
+      upsertSpeciality(
+        {
+          uuid: 'zzz',
+          provideruuid: PROVIDER,
+          attributetypeuuid: PROVIDER_SPECIALITY,
+          value: 'Anaesthetist',
+          voided: VOIDED_NO,
+        },
+        db,
+      );
+
+      expect(listSpecialitiesByProvider(PROVIDER, db).map((r) => r.value)).toEqual([
+        'Anaesthetist',
+        'Zebra',
+      ]);
+    });
+
     it('listSpecialitiesByProvider is scoped to that provider', () => {
       upsertManyFromPull([pulled('s1', PROVIDER_SPECIALITY, 'Obstetrician')], db);
       upsertSpeciality(

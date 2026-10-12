@@ -134,10 +134,15 @@ describe('image repository', () => {
       expect(findProfileImage('nobody', db)).toBeNull();
     });
 
-    it('stamps a timestamp for change detection', () => {
+    it('stamps a LOCAL timestamp for change detection, as the legacy did', () => {
+      // Compared against the server's ProfileImageTimestamp to decide whether to
+      // re-download. The legacy used its local helper; we wrote UTC until
+      // 2026-10-12. Local carries a T, millis and an offset.
       upsertProfileImage({ patientUuid: PATIENT, imagePath: '/a.jpg' }, db);
 
-      expect(findProfileImageTimestamp(PATIENT, db)).toBeTruthy();
+      expect(findProfileImageTimestamp(PATIENT, db)).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/,
+      );
     });
   });
 

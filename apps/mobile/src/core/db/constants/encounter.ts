@@ -124,7 +124,8 @@ export const STAGE_1_2_TYPES = typesNamed(
 
 /**
  * Excluded when asking for the latest real clinical encounter on a visit.
- * Legacy inlines these three as literals in two different queries; keep one list.
+ * One list rather than three literals repeated at each call site. Note the
+ * timeline read excludes only the first TWO of these — it still shows SOS.
  */
 export const NON_CLINICAL_ENCOUNTER_TYPES = [
   ENCOUNTER_VISIT_COMPLETE,
