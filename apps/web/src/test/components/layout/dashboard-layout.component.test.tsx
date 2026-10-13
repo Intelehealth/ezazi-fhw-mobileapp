@@ -70,4 +70,32 @@ describe('DashboardLayoutComponent', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('My Profile')).not.toBeInTheDocument();
   });
+
+  it('shows the patient search by default and hides it when showPatientSearch is false', () => {
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <DashboardLayoutComponent userName="Demo Doctor" onLogout={vi.fn()}>
+          <p>dashboard content</p>
+        </DashboardLayoutComponent>
+      </MemoryRouter>
+    );
+    expect(
+      screen.getByPlaceholderText('Search by patient name or ID')
+    ).toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <DashboardLayoutComponent
+          userName="Demo Doctor"
+          onLogout={vi.fn()}
+          showPatientSearch={false}
+        >
+          <p>dashboard content</p>
+        </DashboardLayoutComponent>
+      </MemoryRouter>
+    );
+    expect(
+      screen.queryByPlaceholderText('Search by patient name or ID')
+    ).not.toBeInTheDocument();
+  });
 });
