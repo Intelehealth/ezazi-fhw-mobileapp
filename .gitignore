@@ -37,3 +37,6 @@ Thumbs.db
 # (.github/workflows/*-ci.yml) uses actions/setup-node with `cache: 'npm'` and
 # `npm ci`, both of which fail when no lock file is found in the repo.
 # package-lock.json
+
+# Claude Code instructions are kept local only
+CLAUDE.md
