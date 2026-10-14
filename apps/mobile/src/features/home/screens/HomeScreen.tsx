@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/core/session/auth.store';
+import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { useMonitorTickCount, useBackboneStatus } from '@/core/services/monitor';
 import { AppButton } from '@/core/ui/AppButton';
 import { Text } from '@/core/ui/Text';
@@ -10,12 +11,26 @@ import { colors, radii, spacing, typography } from '@/core/config/theme';
 /**
  * Placeholder Home — full implementation lands in the Home sprint.
  * Sprint 42 only needs Logout from here (EZ-943).
+ *
+ * Home also owns the **database bootstrap trigger** (ARCHITECTURE_RULES §6
+ * "DB lifecycle"), matching the native Android flow of creating the DB once the
+ * user is on Home. It mounts on both routes into the authenticated stack — cold
+ * start with a stored token, and fresh login — so this single effect covers
+ * both. The work is idempotent, and it renders nothing: schema init is two
+ * migrations, far too fast to be worth gating the screen on. A failure is
+ * logged and the next mount retries.
  */
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
   const monitorTicks = useMonitorTickCount();
   const backbone = useBackboneStatus();
+
+  const initialiseDb = useDbBootstrapStore((s) => s.initialise);
+
+  useEffect(() => {
+    void initialiseDb();
+  }, [initialiseDb]);
 
   return (
     <View style={styles.container}>

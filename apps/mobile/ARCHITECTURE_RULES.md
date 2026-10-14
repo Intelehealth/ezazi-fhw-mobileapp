@@ -73,12 +73,15 @@ Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.*
 | `i18next` · `react-i18next` · `intl-pluralrules` | `^23.15` · `^15.0` · `^2.0.1` | i18n. `intl-pluralrules` is a **required polyfill** — Hermes ships no `Intl.PluralRules`; dropping it breaks i18next at runtime. |
 | `dayjs` · `nepali-date-converter` | `^1.11` · `^3.4` | Calendar: AD + Nepali BS. Which one a client uses is a per-client config choice (§7); both ship in every build. |
 | `axios` | `^1.7` | Transport under `@ezazi/api-client`, which owns the client factory + interceptors. Direct use in mobile is deliberately limited to the raw refresh POST in `services/api/client.ts` (must bypass the interceptor to avoid recursing on 401) and type-only imports. **Build new API surface on `@ezazi/api-client`, not raw axios.** |
+| `@expo-google-fonts/lato` | `0.4.1` | The Lato webfont package. Pinned EXACT, and deliberately not (B) — it is not an Expo SDK module, so `npx expo install` does not manage its version. `App.tsx` gates the splash on `useFonts` until it loads, because `core/ui/Text.tsx` assumes the family is registered. |
 | `react-native-notify-kit` | `^10.8.0` | Background services (§11): Android foreground service, AlarmManager-backed trigger notifications, notification channels. Used by `core/services/monitor` and `core/services/batteryGuard`. **Android-only; New-Arch-only** (passes the §5 gate). Config plugin in `app.config.js` (`foregroundService.types: ['dataSync']`). Single-maintainer risk — see §10. |
 
 ### (B) SDK-managed — install via `npx expo install`, NEVER hardcode
-`expo-sqlite`, `@react-native-async-storage/async-storage`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`.
+`expo-sqlite`, `@react-native-async-storage/async-storage`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`, `expo-crypto`, `expo-font`.
 
 Also SDK-managed (added 2026-10-05 with the low-battery alert, §11): `expo-battery` — battery level + plug state for `core/services/batteryGuard`.
+
+Two more arrived on 2026-10-12 and are listed in (B) above: `expo-crypto` (`randomUUID()`, reached only through `core/db/uuid.ts`) and `expo-font` (required by `@expo-google-fonts/lato`; keep the direct entry rather than relying on `expo` hoisting it).
 
 ### (C) Tooling — must be installed
 `typescript`, `eslint`, `@typescript-eslint/*`, `eslint-plugin-react(-hooks)`, **`eslint-plugin-boundaries`** (feature isolation), `prettier`, `jest`, `jest-expo`, `@testing-library/react-native`, `drizzle-kit`, `babel-plugin-inline-import`, `@react-native-community/cli`, `turbo` (root).
@@ -86,7 +89,7 @@ Also SDK-managed (added 2026-10-05 with the low-battery alert, §11): `expo-batt
 ## 4. Component decisions (why + benefit)
 
 - **Offline DB → `expo-sqlite` + `drizzle-orm` (NOT WatermelonDB).** WMDB 0.28 is unmaintained with **no New-Architecture support** — cannot run on SDK 57. expo-sqlite is first-party/New-Arch; Drizzle adds typed queries + `useLiveQuery`. *Mobile-only* (the web app talks to the API directly).
-- **Sync → single-seam engine, hand-rolled and owned by us.** Locked: one module (`apps/mobile/src/db/sync`) owns EMR-Middleware pull/push; features never call sync endpoints directly. Semantics: UUID-keyed, `sync` dirty-flag, delta-by-timestamp+location, last-write-wins. **Still to be built** (§10).
+- **Sync → single-seam engine, hand-rolled and owned by us.** Locked: one module (`apps/mobile/src/core/db/sync`) owns EMR-Middleware pull/push; features never call sync endpoints directly. Semantics: UUID-keyed, `sync` dirty-flag, delta-by-timestamp+location, last-write-wins. **Still to be built** (§10).
 - **HTTP → `@ezazi/api-client` (shared package).** axios client + interceptors + `ApiResult`, shared with the web app so both hit the gateway/portal identically.
 - **State → `zustand`.** Lightest session/UI state; not Redux (server-cache model conflicts with local-DB-first).
 - **Server cache → `@tanstack/react-query` (optional).** Online-only non-persisted reads.
@@ -100,12 +103,37 @@ Before adding/bumping any native package: (1) check **reactnative.directory** fo
 
 ## 6. Data / schema & DB conventions (carried from Android)
 
+> **Writing anything under `src/core/db`, or calling it? Read [`DB_CONVENTIONS.md`](DB_CONVENTIONS.md) first.**
+> It covers the rules no tool enforces — repository signatures, transactions, the `sync` flag, what
+> must never be overwritten, and what already exists so you do not rebuild it. eslint checks import
+> boundaries, which is placement, not correctness.
+
 - **`uuid` is the primary key** in each clinical table (Java-UUID / RFC-4122; generate with `expo-crypto` `randomUUID()`). Exceptions: `tbl_location` keys on `locationuuid`; `tbl_user_credentials` uses a synthetic auto-increment PK.
-- **Keep `sync` and `voided` columns** — the server sync contract depends on the exact types. No WMDB `_status`/`_changed` on this stack.
+- **Keep `sync` and `voided` columns, stored as `integer`, never `text` — and mirror the API's own types.** `voided` is `integer(...)` exposed as a **number** (0/1), because the wire sends a JSON number; `sync` is `integer(..., { mode: 'boolean' })` exposed as a **boolean**, because the server's `syncd` is a JSON boolean. Both are INTEGER on disk; the TS shape matches the wire shape, so **neither direction needs a conversion**. Do not "harmonise" the two into one shape — that reintroduces a conversion and diverges from the source. The sync contract constrains the **wire** type, not the column type — `voided` rides the outgoing push body as a **JSON number** (`Ob.java:21-23`, `Encounter.java:35-37` in the legacy app, populated from the local row at `PatientsFrameJson.java:224/248`; confirmed against a live server capture). An integer column serialises to that identically. TEXT is what produced the legacy defects: seven distinct spellings on disk, and an `Integer.parseInt` on the raw column sitting directly on the push path (`ObsDAO.java:368`, uncaught — it aborts the whole push). Both failure classes are structurally impossible in an integer column. Declared `notNull()` with a default on **every** table — a NULL flag is invisible to every dirty predicate. No WMDB `_status`/`_changed` on this stack.
 - **`z.guid()`, never `z.uuid()`.** zod v4's `uuid()` **rejects** OpenMRS/Java UUIDs. Every UUID field in every schema uses `z.guid()`. (zod v4 also: issues are on `err.issues`; use `.prefault()` for input-typed defaults.)
 - **`openDatabaseSync('localrecords.db', { enableChangeListener: true })` is mandatory** — without it Drizzle's `useLiveQuery` never updates.
 - **`useLiveQuery` is component-only.** In the sync engine and in stores use `addDatabaseChangeListener` instead. Known bug: `useLiveQuery` can miss JOINed / `with:` changes — prefer per-table live queries.
-- **drizzle-kit: `generate` only — never `migrate` or `push`.** Migrations are generated into `apps/mobile/drizzle/` and applied on-device via `useMigrations`.
+- **drizzle-kit: `generate` only — never `migrate` or `push`.** Migrations are generated into `apps/mobile/drizzle/` and applied **on device by the post-auth bootstrap**, never by drizzle-kit.
+- **Every table is indexed** on its FK/lookup columns plus the `sync` dirty flag (23 indexes, all in migration `0000`; `0001` only drops `tbl_uuid_dictionary`). The one place they cost you is bulk insert: if the initial data load is slow, drop → insert → recreate inside the same transaction rather than deleting them outright.
+
+### DB lifecycle (locked)
+
+- **The database is created only after authentication.** No session token → it is not created, not opened, not touched. `core/db` therefore exposes a **lazy, memoised, invalidatable** handle: opening at module import time is a bug, because merely *importing* `db` would create `localrecords.db` for a logged-out user. Schema init and the initial data pull are driven from the **Home screen** (matching the native Android flow), via a store — screens may not import `core/db` directly.
+- **Schema init and data hydration are separate phases with opposite failure policies.** Schema (migrations, then the single `tbl_app_state` bookkeeping row) is idempotent and freely retryable. There are no static seeds — `tbl_uuid_dictionary` was the only seeded table and it was removed 2026-10-12; encounter type names live in `core/db/constants/encounter.ts`. **Initial hydration is atomic** — one transaction, so a failure or an app kill rolls the data back and keeps the schema. **Incremental sync is the opposite:** idempotent upsert-by-uuid, resumable, never rolled back. Do not let hydration's rollback logic leak into incremental sync.
+- **Logout destroys the local store**, in this order: cancel in-flight sync → close the connection → delete the database **via expo-sqlite's delete API** (never plain filesystem deletion: SQLite leaves `-wal`/`-shm` sidecars, and removing only the `.db` can leave a fresh database picking up a stale WAL) → delete any staged payload files, which hold clinical data → invalidate the memoised handle. A second provider on the same device therefore starts clean.
+- **SQLite has a single writer.** Async DB APIs do **not** make writes parallel — concurrent writers serialise at best and throw `SQLITE_BUSY` at worst. "Async" here means "does not block the JS thread", never "concurrent".
+- **Rows arriving from the server are written with `sync = true` (clean).** The column default is *dirty*, which is correct for locally-created rows, so pull-apply must set clean **explicitly** — otherwise the push engine re-uploads the entire initial pull. Map the server's `syncd` field deliberately; never write the deserialised value through. Note the wire name is **`syncd`**, not `sync`, and it is absent entirely from six of the nine pull lists.
+- **`tbl_user_credentials` is unused.** It exists only because it existed in the native Android app; its purpose is not documented and **nothing is designed around it**. Do not infer one.
+
+## 6b. Comment budget (hard limits)
+
+Comments explain **why**, never what the code already says. Over-long comments go stale and get ignored.
+
+- **JSDoc / block doc comments — max 5 lines.**
+- **Multi-line inline comments — max 2 lines.**
+- **Same-line (trailing) comments — 0–10 words.**
+
+If an explanation genuinely needs more room, it belongs in a doc, not in the source.
 
 ## 7. White-label boundary (what may / may not differ per client)
 
@@ -140,14 +168,15 @@ Ships as **eZAZI (India)** and **eLCG (Nepal)** from one codebase (`@ezazi/confi
 
 ## 10. Open decisions & status
 
-- **⏳ UNBUILT — the sync engine:** hand-rolled and owned by us (`apps/mobile/src/db/sync`). The single-seam design (§4) is **locked**; the implementation is the remaining critical-path work. Trigger backbone: foreground/on-write + FCM silent-push, with `expo-background-task` as a best-effort tier.
-- **⏳ REMAINING build-out** (Drizzle FK/dirty-flag indexes + `relations()`, **splitting `core/db/schema.ts` into `schema/`**, `useMigrations` boot wiring, LiveKit / Firebase / background-task services) — tracked in [`MOBILE_STACK.md`](MOBILE_STACK.md) §7. *(The feature-modular restructure itself is ✅ done — 2026-09-10.)*
-- **⏳ UNVALIDATED — Drizzle at runtime:** the app runs on-device, but the screens exercised so far use the API + secure storage. The DB opening/querying on a real device is confirmed the first time a DB-backed screen renders.
+- **⏳ UNBUILT — the sync engine:** hand-rolled and owned by us (`apps/mobile/src/core/db/sync`). The single-seam design (§4) is **locked**; the implementation is the remaining critical-path work. Trigger backbone: foreground/on-write + FCM silent-push, with `expo-background-task` as a best-effort tier.
+- **✅ DONE — the DB layer:** FK/dirty-flag indexes, `relations()`, the `schema/` split, 10 repositories behind `core/db/repositories/index.ts`, and 19 test specs. Migrations apply through `migrate()` inside `ensureSchema()`, **not** `useMigrations`. Rules that no tool could enforce are in [`DB_CONVENTIONS.md`](DB_CONVENTIONS.md); five of them are now eslint rules.
+- **⏳ REMAINING build-out** (LiveKit / Firebase / background-task services) — tracked in [`MOBILE_STACK.md`](MOBILE_STACK.md) §7. *(The feature-modular restructure itself is ✅ done — 2026-09-10.)*
+- **✅ VALIDATED — Drizzle at runtime:** confirmed on hardware 2026-10-12 on a fresh install — both migrations applied, 17 tables, 23 indexes, `tbl_app_state` seeded `pending`. No repository call has run on-device yet, because nothing consumes the layer: the tests exercise it against sql.js, not expo-sqlite.
 - **🟠 PARTIAL — shared-package adoption: `@ezazi/api-client` ✅ done, `@ezazi/config` + `@ezazi/types` ❌ not yet.**
   - **Done (2026-09-10):** `apps/mobile` now consumes `@ezazi/api-client`. The five files it had duplicated — `createApiClient`, `interceptors`, `ApiError`, `mapAxiosError`, `ApiResult` — were byte-identical copies and have been **deleted**; `src/services/api` is now the thin adapter the design always called for (`client.ts` supplies the secure-store token provider + refresh-on-401 dedupe; `logApiError` stays RN-only because LogBox hijacks `console.warn`; `responseHandler` + `*.api.ts` stay mobile-owned). The 35 unit tests covering the extracted code moved with it into `packages/api-client` as vitest specs — the package previously had **none**, so both apps were relying on untested shared transport code.
   - **Deliberate:** `src/services/api/index.ts` does **not** re-export the shared symbols. Import them from `@ezazi/api-client` directly — a local alias is exactly how the two apps drifted apart the first time.
   - **Still open:** nothing in `apps/mobile/src` imports `@ezazi/config` or `@ezazi/types` (verify: `grep -rn '@ezazi/' apps/mobile/src`). Mobile still runs its own `src/config/clients/{registry,types,default,nepal}`. `packages/config` is already generalized for this — `ClientBrandConfig<TAsset>` exists precisely so mobile can instantiate it as `ClientBrandConfig<ImageSourcePropType>` while web uses `ClientBrandConfig<string>`. Two live copies of the client registry put the §7 white-label boundary at risk of silent divergence, so this is the next one to close.
-- **🟠 PARTIAL — CI + testing:** `.github/workflows/mobile-ci.yml` runs `turbo run typecheck lint test` (Node 20) on PRs touching `apps/mobile`/`packages`. **Still missing:** coverage thresholds, `expo-doctor`, the `eslint-plugin-boundaries` rule in CI, and Drizzle schema/repository tests (the old WMDB tests were deleted at cutover).
+- **🟠 PARTIAL — CI + testing:** `.github/workflows/mobile-ci.yml` runs `turbo run typecheck lint test` (Node 20) on PRs touching `apps/mobile`/`packages`. **Still missing:** coverage thresholds and `expo-doctor`. *(The boundaries rule runs at `error` in the lint step, and the Drizzle schema/repository tests exist — 19 specs under `core/db/__tests__/`.)*
 <!-- Superseded 2026-10-08 — kept for history. notify-kit was adopted for the labour monitor and the
      low-battery alert (see the replacement entry below and §11), so "adopt only if…" no longer describes
      the repo. The single-maintainer risk it named still stands and is carried into the new entry.

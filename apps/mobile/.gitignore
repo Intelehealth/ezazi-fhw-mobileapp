@@ -186,5 +186,10 @@ android/
 .DS_Store
 Thumbs.db
 
-# Personal, machine-specific notes — never shared with the team
+# Local-only working docs and agent notes — never shared with the team.
+# Everything except CLAUDE.md now lives in .notes/ so a merge or a stray clean
+# cannot take them one by one. CLAUDE.md must stay here: Claude Code only
+# auto-loads it from the workspace root.
+.notes/
 RUNBOOK.md
+CLAUDE.md

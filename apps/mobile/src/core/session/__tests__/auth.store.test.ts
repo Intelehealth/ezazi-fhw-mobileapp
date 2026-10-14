@@ -1,3 +1,4 @@
+import { teardownDb } from '@/core/db/teardown';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { sessionApi } from '@/core/session/session.api';
 import { logApiError } from '@/core/api/errors/logApiError';
@@ -16,6 +17,7 @@ jest.mock('@/core/api/errors/logApiError', () => ({
 jest.mock('@/core/config/featureConfig.store', () => ({
   useFeatureConfigStore: { getState: () => ({ syncConfig: mockSyncConfig }) },
 }));
+jest.mock('@/core/db/teardown', () => ({ teardownDb: jest.fn() }));
 
 import { SPLASH_MIN_MS, useAuthStore } from '../auth.store';
 import { toBase64 } from '@/core/utils/base64';
@@ -192,6 +194,24 @@ describe('useAuthStore', () => {
         userUuid: null,
         role: null,
       });
+    });
+
+    it('deletes the database, so clinical data does not outlive the session', async () => {
+      // Without this the next user of the device inherits the previous one's rows.
+      (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: true, data: undefined });
+
+      await useAuthStore.getState().logout();
+
+      expect(teardownDb).toHaveBeenCalledTimes(1);
+    });
+
+    it('deletes the database even when the server logout call fails', async () => {
+      // Offline logout is the common case for a field worker.
+      (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: false, error: new Error('offline') });
+
+      await useAuthStore.getState().logout();
+
+      expect(teardownDb).toHaveBeenCalledTimes(1);
     });
 
     it('clears local state when the server logout call succeeds', async () => {

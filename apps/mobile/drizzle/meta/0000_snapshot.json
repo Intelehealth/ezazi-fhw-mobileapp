@@ -1,9 +1,63 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "71eb61fa-e5f0-4aba-bc04-21435067b103",
+  "id": "5b041faf-b056-4289-acd8-b42e94220ec1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "tbl_app_state": {
+      "name": "tbl_app_state",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hydration_state": {
+          "name": "hydration_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "hydration_attempts": {
+          "name": "hydration_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "staged_manifest": {
+          "name": "staged_manifest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "tbl_dr_speciality": {
       "name": "tbl_dr_speciality",
       "columns": {
@@ -37,13 +91,22 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_dr_speciality_provideruuid": {
+          "name": "idx_tbl_dr_speciality_provideruuid",
+          "columns": [
+            "provideruuid"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -96,19 +159,19 @@
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "privacynotice_value": {
           "name": "privacynotice_value",
@@ -118,7 +181,22 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_encounter_visituuid": {
+          "name": "idx_tbl_encounter_visituuid",
+          "columns": [
+            "visituuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_encounter_sync": {
+          "name": "idx_tbl_encounter_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -178,22 +256,51 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_image_records_patientuuid": {
+          "name": "idx_tbl_image_records_patientuuid",
+          "columns": [
+            "patientuuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_image_records_visituuid": {
+          "name": "idx_tbl_image_records_visituuid",
+          "columns": [
+            "visituuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_image_records_encounteruuid": {
+          "name": "idx_tbl_image_records_encounteruuid",
+          "columns": [
+            "encounteruuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_image_records_sync": {
+          "name": "idx_tbl_image_records_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -232,22 +339,30 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_location_sync": {
+          "name": "idx_tbl_location_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -307,11 +422,11 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "obsservermodifieddate": {
           "name": "obsservermodifieddate",
@@ -336,14 +451,36 @@
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_obs_encounteruuid": {
+          "name": "idx_tbl_obs_encounteruuid",
+          "columns": [
+            "encounteruuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_obs_conceptuuid": {
+          "name": "idx_tbl_obs_conceptuuid",
+          "columns": [
+            "conceptuuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_obs_sync": {
+          "name": "idx_tbl_obs_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -522,22 +659,30 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_patient_sync": {
+          "name": "idx_tbl_patient_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -583,22 +728,37 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_patient_attribute_patientuuid": {
+          "name": "idx_tbl_patient_attribute_patientuuid",
+          "columns": [
+            "patientuuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_patient_attribute_sync": {
+          "name": "idx_tbl_patient_attribute_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -630,22 +790,30 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_patient_attribute_master_sync": {
+          "name": "idx_tbl_patient_attribute_master_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -698,11 +866,11 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "modified_date": {
           "name": "modified_date",
@@ -713,14 +881,22 @@
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_provider_sync": {
+          "name": "idx_tbl_provider_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -759,13 +935,22 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_provider_attribute_provideruuid": {
+          "name": "idx_tbl_provider_attribute_provideruuid",
+          "columns": [
+            "provideruuid"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -796,7 +981,15 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_rtc_connection_log_visit_uuid": {
+          "name": "idx_tbl_rtc_connection_log_visit_uuid",
+          "columns": [
+            "visit_uuid"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -947,19 +1140,19 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'0'"
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'false'"
+          "default": false
         },
         "issubmitted": {
           "name": "issubmitted",
@@ -970,7 +1163,29 @@
           "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_visit_patientuuid": {
+          "name": "idx_tbl_visit_patientuuid",
+          "columns": [
+            "patientuuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_visit_locationuuid": {
+          "name": "idx_tbl_visit_locationuuid",
+          "columns": [
+            "locationuuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_visit_sync": {
+          "name": "idx_tbl_visit_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -1009,20 +1224,37 @@
         },
         "voided": {
           "name": "voided",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "sync": {
           "name": "sync",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_tbl_visit_attribute_visit_uuid": {
+          "name": "idx_tbl_visit_attribute_visit_uuid",
+          "columns": [
+            "visit_uuid"
+          ],
+          "isUnique": false
+        },
+        "idx_tbl_visit_attribute_sync": {
+          "name": "idx_tbl_visit_attribute_sync",
+          "columns": [
+            "sync"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

@@ -54,7 +54,7 @@ src/
 ├── core/                # mobile-only shared spine
 │   ├── api/             #   thin adapter over @ezazi/api-client (+ client, responseHandler)
 │   ├── config/          #   env, theme, clients/, published-config store + api
-│   ├── db/              #   expo-sqlite + Drizzle: schema.ts, seeds/
+│   ├── db/              #   expo-sqlite + Drizzle: schema/, repositories/, constants/
 │   ├── i18n/            #   locales + i18next setup
 │   ├── services/
 │   │   └── storage/     #   secure-store (JWT) + async-storage wrappers
@@ -73,7 +73,7 @@ Generated migrations live in `apps/mobile/drizzle/` (committed, applied on-devic
 
 ## Sprint 42 — Auth (EZ-920, 928, 932-934, 939-943)
 
-See `src/screens/auth/README.md` for per-ticket mapping.
+See `src/features/auth/README.md` for per-ticket mapping.
 
 ## Authoritative documents
 

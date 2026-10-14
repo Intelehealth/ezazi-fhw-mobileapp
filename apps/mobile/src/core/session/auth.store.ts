@@ -4,6 +4,8 @@ import { secureStorage } from '@/core/services/storage/secure-storage';
 import { sessionApi, type LoginResponse } from '@/core/session/session.api';
 import { logApiError } from '@/core/api/errors/logApiError';
 import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
+import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
+import { teardownDb } from '@/core/db/teardown';
 import { isJwtExpired } from '@/core/utils/jwt';
 import { logger } from '@/core/utils/logger';
 
@@ -111,6 +113,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Result intentionally unused — server may be offline, we still clear local state.
     await sessionApi.logout();
     await secureStorage.clear();
+    // Clinical data must not outlive the session: closes the connection,
+    // deletes the .db file and invalidates both memos. Never throws.
+    await teardownDb();
+    // Forget DB readiness, so the next login re-runs schema init.
+    useDbBootstrapStore.getState().reset();
     // 'needsLogin', not 'needsSetup' — this device has already been through
     // Setup once, so logging out should return to Login.
     set({ status: 'needsLogin', userUuid: null, role: null });

@@ -27,8 +27,8 @@ ezazi-monorepo/
 │       ├── app.config.js · eas.json · babel/metro/jest.config.js · App.tsx
 │       └── src/
 │           ├── core/                 # mobile-only shared spine
-│           │   ├── db/               #   expo-sqlite + Drizzle: schema, migrations, live queries
-│           │   │   ├── schema/ · migrations/
+│           │   ├── db/               #   expo-sqlite + Drizzle: schema, repositories, live queries
+│           │   │   ├── schema/ · repositories/ · constants/
 │           │   │   └── sync/         #   the SINGLE sync engine (owns EMR-Middleware pull/push)
 │           │   ├── services/         #   long-lived singletons via hooks:
 │           │   │   ├── livekit/ (useCall) · socket/ (useChat) · fcm/ · firebase/
@@ -125,13 +125,19 @@ Two related notes:
 
 **This is enforced by tooling, not by reading this doc.** `npm run lint` is the source of truth — if it passes, the import is legal.
 
-**Live now** — `eslint-plugin-boundaries` in [`.eslintrc.cjs`](.eslintrc.cjs) declares each `core/*` and `features/*/*` folder as a layer and enforces four policies against the **feature-modular layout**:
+**Live now** — `eslint-plugin-boundaries` in [`.eslintrc.cjs`](.eslintrc.cjs) declares each `core/*` and `features/*/*` folder as a layer and enforces these policies against the **feature-modular layout**:
 
-1. `screens`/`components` must **not** import `src/db` or `src/services/api` — presentation goes through a store or repository.
-2. `src/screens` is a **leaf** — only `src/navigation` may import a screen.
-3. `src/db` / `src/services` must **not** depend on UI (`components`, `screens`, `navigation`).
+1. A feature may import `core/*`, `@ezazi/*` and **its own folder only** — never a sibling feature's internals.
+2. `core/*` must **not** import `features/*`. Dependencies flow features → core, never back.
+3. Screens/components must **not** import `core/db`, `core/api` or another feature's `data/` — presentation goes through a store or repository.
+4. Screens are a **leaf** — only `src/navigation` may import one.
+5. `core/db`, `core/api`, `core/services` and `features/*/data` must **not** depend on UI.
 
-Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak past. **Known debt:** `features/auth/screens/SetupScreen.tsx` violates (1) — it calls `authApi.login()` directly — and carries a scoped `eslint-disable` with a TODO. The fix is a `login()` action on `core/session/auth.store.ts`; it was deliberately **not** done during the restructure because no screen has test coverage and the login path is the app's critical entry point.
+**`.eslintrc.cjs` also carries five `core/db` invariants** (raw uuid literals, `z.uuid()`, `db.close()`,
+direct `.transaction(`, `getDb` in a repository). Those are `no-restricted-syntax`, not boundaries —
+see [`DB_CONVENTIONS.md`](DB_CONVENTIONS.md) §8.
+
+Alias (`@/*`) and relative imports are both resolved, so `../../db` cannot sneak past. **That debt is now closed** (2026-10-12): `core/session/auth.store.ts` exposes a `login()` action and `SetupScreen.tsx` calls it through the store, so no screen reaches `sessionApi` directly any more and the scoped `eslint-disable` for it is gone.
 
 ⚠️ **A boundary rule is only live while its `boundaries/elements` globs still match real folders.** They are literal paths: move a folder without updating them and the guarding policy silently stops firing while eslint still exits 0. This happened during Phase 1 and was caught only by an explicit probe. **After any folder move, probe a known-bad import and confirm it errors.**
 
@@ -148,7 +154,8 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 | ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
 | 🔧 **Port with structural rewrite** | **Auth screens** and existing screens — keep flows/logic, rebuild to **RHF+zod**. *"Reuse" ≠ copy verbatim.* ✅ The feature-modular structure itself is **done** (restructure Phases 0–4, 2026-09-10). |
 | ✅ **Replaced (done)** | `apps/mobile/src/db` — WatermelonDB → **expo-sqlite + Drizzle** (15-table schema ported, migrations generated; landed with the SDK 57 migration) |
-| 🆕 **Build new** | `core/db/sync` — **the sync engine, hand-rolled by us; critical path** · `core/services` (LiveKit, RNFirebase, socket.io, background-task) · Drizzle **FK + dirty-flag (`sync`) indexes** and `relations()` for `with:` queries (`TODO` in `src/db/schema.ts`) · **`useMigrations`** boot wiring in `App.tsx` (once the DB gains its first consumer) · Drizzle schema/repository **tests** (the WMDB tests were removed at cutover) |
+| ✅ **DB layer (done)** | 10 repositories behind `core/db/repositories/index.ts`, `relations()` for `with:` queries, FK + dirty-flag (`sync`) indexes, and the test suite — 20 specs under `core/db/__tests__/`. Migrations run through `migrate()` inside `ensureSchema()`, **not** `useMigrations` in `App.tsx`. Verified on device 2026-10-12. |
+| 🆕 **Build new** | `core/db/sync` — **the sync engine, hand-rolled by us; critical path** · `core/services` (LiveKit, RNFirebase, socket.io, background-task) |
 
 ## 8. Legacy Android module → `apps/mobile` / `packages` mapping
 
