@@ -134,6 +134,11 @@ module.exports = {
             message:
               'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
           },
+          {
+            group: ['@ezazi/clinical-rules/*'],
+            message:
+              "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
+          },
         ],
       },
     ],

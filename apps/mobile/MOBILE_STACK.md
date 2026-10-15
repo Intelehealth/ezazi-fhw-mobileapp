@@ -8,7 +8,7 @@
 
 ## 1. Architecture pattern
 
-**Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
+**Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, clinical rules, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
 
 ## 2. Folder structure (in the monorepo)
 
@@ -18,6 +18,7 @@
 ezazi-monorepo/
 ├── packages/                         # shared across apps (mobile + web)
 │   ├── api-client/  (@ezazi/api-client)  # axios client, interceptors, ApiResult, endpoints
+│   ├── clinical-rules/ (@ezazi/clinical-rules) # pure clinical rules: cards, SOS, fields, ranges, validation; no DB, no uuids
 │   ├── config/      (@ezazi/config)      # multi-tenant client registry + env contracts
 │   └── types/       (@ezazi/types)       # shared domain types (patient, visit, obs, …)
 │
@@ -151,7 +152,7 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 
 | Action | What |
 |---|---|
-| ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
+| ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/clinical-rules`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
 | 🔧 **Port with structural rewrite** | **Auth screens** and existing screens — keep flows/logic, rebuild to **RHF+zod**. *"Reuse" ≠ copy verbatim.* ✅ The feature-modular structure itself is **done** (restructure Phases 0–4, 2026-09-10). |
 | ✅ **Replaced (done)** | `apps/mobile/src/db` — WatermelonDB → **expo-sqlite + Drizzle** (15-table schema ported, migrations generated; landed with the SDK 57 migration) |
 | ✅ **DB layer (done)** | 10 repositories behind `core/db/repositories/index.ts`, `relations()` for `with:` queries, FK + dirty-flag (`sync`) indexes, and the test suite — 20 specs under `core/db/__tests__/`. Migrations run through `migrate()` inside `ensureSchema()`, **not** `useMigrations` in `App.tsx`. Verified on device 2026-10-12. |

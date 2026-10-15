@@ -11,7 +11,7 @@
 
 ## 🔒 Scope — all changes happen inside `apps/mobile/`
 
-**Every change for the FHW mobile app is made within the `apps/mobile/` workspace.** Do not modify other workspaces (`apps/web`) as part of mobile work. The shared `packages/*` (`@ezazi/api-client`, `@ezazi/config`, `@ezazi/types`) are consumed by the mobile app but **owned cross-app** — they also affect the web app, so change them only deliberately and in coordination, never as an incidental side effect of a mobile task. When in doubt, keep the change local to `apps/mobile/`.
+**Every change for the FHW mobile app is made within the `apps/mobile/` workspace.** Do not modify other workspaces (`apps/web`) as part of mobile work. The shared `packages/*` (`@ezazi/api-client`, `@ezazi/clinical-rules`, `@ezazi/config`, `@ezazi/types`) are consumed by the mobile app but **owned cross-app** — they also affect the web app, so change them only deliberately and in coordination, never as an incidental side effect of a mobile task. When in doubt, keep the change local to `apps/mobile/`.
 
 ## 0. Verify on session start (rule)
 
@@ -19,7 +19,7 @@ Before dependency/architecture work in `apps/mobile`:
 - Read `apps/mobile/package.json` and compare against §3.
 - From the repo root: `npm run typecheck`, `npm run lint`, `npm run test` (Turborepo, filtered to the mobile workspace by CI). In `apps/mobile`: `npx expo install --fix` and `npx expo-doctor`.
 - Flag any **forbidden** package (§9 — WatermelonDB, Redux, Realm, PowerSync). *(WatermelonDB was fully removed in the SDK 57 migration — it must not come back.)*
-- Shared code comes from workspace packages `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — don't re-implement them app-locally.
+- Shared code comes from workspace packages `@ezazi/api-client`, `@ezazi/clinical-rules`, `@ezazi/config`, `@ezazi/types` — don't re-implement them app-locally.
 
 ---
 
@@ -51,7 +51,7 @@ Before dependency/architecture work in `apps/mobile`:
 | `apps/mobile/.env` | `EXPO_PUBLIC_*` config (no secrets) |
 | `apps/mobile/index.js` | App entry. Registers the monitor's foreground-service runner and the **one** app-wide notify-kit `onBackgroundEvent` handler — both must run at boot, outside the component tree, so the OS can re-invoke them after killing the process (§11). |
 
-**Shared packages (consumed by mobile *and* the web app):** `@ezazi/api-client` (HTTP client + `ApiResult` + endpoints), `@ezazi/config` (multi-tenant client registry + env contracts), `@ezazi/types` (domain types).
+**Shared packages (consumed by mobile *and* the web app):** `@ezazi/api-client` (HTTP client + `ApiResult` + endpoints), `@ezazi/clinical-rules` (pure clinical rules: card schedule, partogram fields, validation ranges — no DB, no uuids, no clock; see its README), `@ezazi/config` (multi-tenant client registry + env contracts), `@ezazi/types` (domain types).
 
 **Env vars (`EXPO_PUBLIC_*`)** — gate every API/service call: `AUTH_GATEWAY_URL`, `PORTAL_URL`, `WEBRTC_URL`, `CONFIG_URL`, `CLIENT_ID`, `APP_ENV`, `DEFAULT_COUNTRY/LOCALE/CALENDAR`, `FEATURE_FLAG_*` (presentational only — §7), `SENTRY_DSN`.
 
@@ -139,11 +139,21 @@ If an explanation genuinely needs more room, it belongs in a doc, not in the sou
 
 Ships as **eZAZI (India)** and **eLCG (Nepal)** from one codebase (`@ezazi/config` — **shared with the web app**, so the boundary holds across *both* apps).
 
-**MUST be identical across all clients (shared code / `@ezazi/config` / `@ezazi/types`, never a per-client branch):** clinical rules & concept UUIDs, DB schema, sync payload shape & endpoints, validation logic, domain algorithms (risk scores, partograph/LCG, delivery/postpartum).
+**MUST be identical across all clients (shared code / `@ezazi/clinical-rules` / `@ezazi/config` / `@ezazi/types`, never a per-client branch):** clinical rules & concept UUIDs, DB schema, sync payload shape & endpoints, validation logic (the checks themselves — range *values* are the one exception, §7a), domain algorithms (risk scores, partograph/LCG, delivery/postpartum).
 
 **MAY differ per client (via `@ezazi/config` client entries + `app.config.js` only):** app name/icon/splash/brand colors, default locale/language, calendar (BS/AD), dial-code + number length, server URLs per env, "powered by" mark, presentational/rollout flags **only**.
 
 **Rule:** a new client = one new `ClientConfig` entry + assets. Clinical meaning goes in shared code, never a client config.
+
+### 7a. Per-client validation ranges — the one clinical exception (decided 2026-10-14)
+
+Requirement: every client captures **the same fields**, but a client may need **different validation ranges** (e.g. the allowed pulse). This is the only clinical value allowed to differ, and only in this shape:
+
+- **Identical for every client:** fields, sections, options and their stored values, which card shows which field, card schedule, cross-field rules (e.g. diastolic < systolic), the validation functions themselves, and **alert thresholds** (WHO LCG — they drive `obs.comment` and the risk score). Only the numeric **min/max of a validation range** may differ.
+- **Where the values live:** only in `@ezazi/clinical-rules`, as named **range profiles**. `BASE_RANGES` holds the Android values; every profile, `default` included, lists **only the ranges it changes** and inherits the rest from `BASE_RANGES`. Never in `@ezazi/config`, never in an app, never fetched at runtime.
+- **How a client gets its profile:** the validation functions take the profile id as an input. Each app maps its client to a profile id in **one place**, and a test checks that every registered client maps to an existing profile. Mobile: `src/core/config/rangeProfile.ts` (`RANGE_PROFILE` is the build client's profile, picked automatically).
+- **Guard rails (enforced by the package's tests):** an override may change only `min`/`max` — never the unit, the decimals or the field; `min < max`; the range must fit the field's input limit.
+- **Change control:** a profile change is a clinical change — it needs clinical review, like any other rule in the package.
 
 ## 8. Version bump policy
 
@@ -157,7 +167,8 @@ Ships as **eZAZI (India)** and **eLCG (Nepal)** from one codebase (`@ezazi/confi
 - **DO NOT** let a feature call sync/API endpoints directly — go through repositories and the single sync module.
 - **DO NOT** store clinical data in Zustand; **DO NOT** hand-roll form state with `useState`.
 - **DO NOT** hardcode SDK-managed versions (§3B).
-- **DO NOT** put anything affecting clinical meaning in a per-client config (§7).
+- **DO NOT** put anything affecting clinical meaning in a per-client config (§7). Per-client validation range values are the single exception, and they live only in `@ezazi/clinical-rules` range profiles (§7a).
+- **DO NOT** write clinical rules or clinical values (card schedule, fields and options, validation ranges, alert thresholds) inside an app. They live in `@ezazi/clinical-rules`, which mobile and web both import — import from the package root only (eslint).
 - **DO NOT** make mobile changes outside `apps/mobile/` — `apps/web` is off-limits for mobile work; shared `packages/*` are changed deliberately/coordinated (they affect web), never incidentally (see **Scope** above).
 - **DO NOT** make a `packages/*` depend on an `apps/*` — dependencies flow apps → packages, never the reverse.
 - **DO NOT** downgrade to old architecture.
