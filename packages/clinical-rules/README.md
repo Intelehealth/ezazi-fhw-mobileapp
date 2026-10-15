@@ -119,7 +119,7 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
   - **Deviation, Android bug not ported** (decided 2026-10-15): once Supervisor Doctor's text ends in `.`, Android limits the box to 4 characters (`Dr. Rao` saves as `Dr.`).
   - Android capitalises only text typed at the very start; `filterFreeText` capitalises the first character of the whole text.
 
-**Concepts not yet in mobile's constants:** `URINE_ACETONE` (`968f9bc2-b33d-4daf-b59f-79d9a899e018`) and `SUPERVISOR_DOCTOR` (`7a9cb7bc-9ab9-4ff0-ae82-7a1bd2cca93e`). They must be added to `apps/mobile/src/core/db/constants/obs.ts` before mobile can save those two fields.
+**Concepts:** every field's `conceptKey` is the name of a constant in `apps/mobile/src/core/db/constants/obs.ts`; a mobile test fails if one is missing.
 
 **Deviation:** Android also uses the card's encounter type when choosing fields. A regular card carrying a legacy `"SOS"` type would show every field. Here, a regular card always uses `getCardLayout` and an SOS card `getSosLayout`. This only differs for legacy or malformed rows.
 

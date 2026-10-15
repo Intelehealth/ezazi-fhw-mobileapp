@@ -41,6 +41,8 @@ export const SYSTOLIC_BP = '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const DIASTOLIC_BP = '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const TEMPERATURE = '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 export const URINE_PROTEIN = '9d3168a7-538f-11e6-9cfe-86f436325720';
+// Not in UuidDictionary.java: the legacy wrote it inline (PartogramConstants.java:75, 287).
+export const URINE_ACETONE = '968f9bc2-b33d-4daf-b59f-79d9a899e018';
 
 // Timeline — labour progress, the partogram plot inputs.
 export const CONTRACTIONS_PER_10MIN = '9d316929-538f-11e6-9cfe-86f436325720';
@@ -56,6 +58,8 @@ export const IV_FLUIDS = '98c5881f-b214-4597-83d4-509666e9a7c9';
 // Timeline — shared decision making, and the missed-checkpoint marker.
 export const ASSESSMENT = '67a050c1-35e5-451c-a4ab-fff9d57b0db1';
 export const PLAN = '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+// Not in UuidDictionary.java: the legacy wrote it inline (PartogramConstants.java:84, 448).
+export const SUPERVISOR_DOCTOR = '7a9cb7bc-9ab9-4ff0-ae82-7a1bd2cca93e';
 export const MISSED_ENCOUNTER = '35c3afdd-bb96-4b61-afb9-22a5fc2d088e';
 
 // Referral out to another facility.
