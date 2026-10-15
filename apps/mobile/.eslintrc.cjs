@@ -40,6 +40,14 @@ const NO_GETDB_IN_REPOSITORIES = {
 
 const DB_RULES = [NO_ZOD_UUID, NO_DB_CLOSE, NO_DIRECT_TRANSACTION];
 
+// ARCHITECTURE_RULES §11. Composed into every no-restricted-syntax entry below: a second
+// 'no-restricted-syntax' key in `rules` silently replaced this rule (fixed 2026-10-14).
+const ONE_BACKGROUND_EVENT = {
+  selector: "CallExpression[callee.property.name='onBackgroundEvent']",
+  message:
+    'onBackgroundEvent may only be registered once, in index.js — a second registration replaces the first and silently kills the other alarm chains. Add an `else if` branch for your trigger id there (ARCHITECTURE_RULES §11).',
+};
+
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
   root: true,
@@ -136,14 +144,6 @@ module.exports = {
     // self-rescheduling alarm chain with no error. The single handler lives in
     // index.js (outside src/, so this rule never fires on it); a new service
     // adds a branch there instead of registering its own.
-    'no-restricted-syntax': [
-      'error',
-      {
-        selector: "CallExpression[callee.property.name='onBackgroundEvent']",
-        message:
-          'onBackgroundEvent may only be registered once, in index.js — a second registration replaces the first and silently kills the other alarm chains. Add an `else if` branch for your trigger id there (ARCHITECTURE_RULES §11).',
-      },
-    ],
 
     // ── Architecture boundaries (ARCHITECTURE_RULES §4 · MOBILE_STACK §3) ──
     // This rule is the enforcement that lets the docs stop describing which
@@ -220,7 +220,7 @@ module.exports = {
     ],
     // ── core/db invariants (DB_CONVENTIONS — D16a) ──
     // Defined at the top of this file and composed per-override below.
-    'no-restricted-syntax': ['error', ...DB_RULES],
+    'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES],
   },
   overrides: [
     {
@@ -228,7 +228,7 @@ module.exports = {
       // are the two places a uuid literal is allowed; tests use fixtures.
       files: ['src/**/*.ts', 'src/**/*.tsx'],
       excludedFiles: ['src/core/db/constants/**', 'src/core/db/seeds/**', 'src/**/__tests__/**'],
-      rules: { 'no-restricted-syntax': ['error', ...DB_RULES, NO_RAW_UUID] },
+      rules: { 'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID] },
     },
     {
       // A repository reaches the database ONLY through the handle it is given.
@@ -236,18 +236,34 @@ module.exports = {
       files: ['src/core/db/repositories/**/*.ts'],
       excludedFiles: ['src/**/__tests__/**'],
       rules: {
-        'no-restricted-syntax': ['error', ...DB_RULES, NO_RAW_UUID, NO_GETDB_IN_REPOSITORIES],
+        'no-restricted-syntax': [
+          'error',
+          ONE_BACKGROUND_EVENT,
+          ...DB_RULES,
+          NO_RAW_UUID,
+          NO_GETDB_IN_REPOSITORIES,
+        ],
       },
     },
     {
       // The one file allowed to close the database.
       files: ['src/core/db/teardown.ts'],
-      rules: { 'no-restricted-syntax': ['error', NO_ZOD_UUID, NO_DIRECT_TRANSACTION, NO_RAW_UUID] },
+      rules: {
+        'no-restricted-syntax': [
+          'error',
+          ONE_BACKGROUND_EVENT,
+          NO_ZOD_UUID,
+          NO_DIRECT_TRANSACTION,
+          NO_RAW_UUID,
+        ],
+      },
     },
     {
       // The one file allowed to open a transaction — it IS the guard.
       files: ['src/core/db/tx.ts'],
-      rules: { 'no-restricted-syntax': ['error', NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID] },
+      rules: {
+        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID],
+      },
     },
   ],
   ignorePatterns: [
