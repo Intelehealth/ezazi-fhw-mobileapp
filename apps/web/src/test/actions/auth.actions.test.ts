@@ -18,36 +18,60 @@ vi.mock('../../config/query-client', () => ({
 }));
 
 beforeEach(() => {
+  vi.mocked(storage.clearAuthToken).mockClear();
+  vi.mocked(storage.clearStoredUser).mockClear();
   vi.mocked(profileService.endSession).mockReset();
+  vi.mocked(profileService.endSession).mockResolvedValue({
+    ok: true,
+    data: undefined,
+  });
   vi.mocked(queryClient.clear).mockReset();
 });
 
 describe('logout', () => {
-  it('clears the stored session and dispatches loggedOut', () => {
+  it('ends the OpenMRS session, then clears the stored session, query cache and Redux auth state', async () => {
     const dispatch = vi.fn();
 
-    logout()(dispatch);
+    await logout()(dispatch);
 
+    expect(profileService.endSession).toHaveBeenCalledTimes(1);
+    expect(queryClient.clear).toHaveBeenCalledTimes(1);
     expect(storage.clearAuthToken).toHaveBeenCalledTimes(1);
     expect(storage.clearStoredUser).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith(loggedOut());
   });
 
-  it('ends the OpenMRS session and empties the query cache', () => {
-    logout()(vi.fn());
-
-    expect(profileService.endSession).toHaveBeenCalledTimes(1);
-    expect(queryClient.clear).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not wait for the OpenMRS session to end before logging out', () => {
+  it('waits for the OpenMRS session to end before clearing anything', async () => {
+    let finishEndingSession: () => void = () => undefined;
     vi.mocked(profileService.endSession).mockReturnValue(
-      new Promise(() => undefined)
+      new Promise(resolve => {
+        finishEndingSession = () => resolve({ ok: true, data: undefined });
+      })
     );
     const dispatch = vi.fn();
 
-    logout()(dispatch);
+    const loggingOut = logout()(dispatch);
+    await Promise.resolve();
+    expect(storage.clearAuthToken).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
 
+    finishEndingSession();
+    await loggingOut;
+    expect(dispatch).toHaveBeenCalledWith(loggedOut());
+  });
+
+  it('still signs out locally when OpenMRS cannot end the session', async () => {
+    const { ApiError } = await import('@ezazi/api-client');
+    vi.mocked(profileService.endSession).mockResolvedValue({
+      ok: false,
+      error: new ApiError('network', 'OpenMRS unreachable'),
+    });
+    const dispatch = vi.fn();
+
+    await logout()(dispatch);
+
+    expect(storage.clearAuthToken).toHaveBeenCalledTimes(1);
+    expect(queryClient.clear).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith(loggedOut());
   });
 });

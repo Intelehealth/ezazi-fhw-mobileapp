@@ -40,7 +40,7 @@ describe('DashboardLayoutComponent', () => {
     expect(screen.getByText('dashboard content')).toBeInTheDocument();
   });
 
-  it('calls onLogout when the sidebar Log-out row is clicked', () => {
+  it('calls onLogout when the sidebar Log-out is confirmed', () => {
     const onLogout = vi.fn();
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
@@ -51,6 +51,7 @@ describe('DashboardLayoutComponent', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 

@@ -73,12 +73,48 @@ describe('SidebarNavComponent', () => {
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onLogout when the Log-out row is clicked', () => {
+  it('asks for confirmation when Log-out is clicked, without logging out yet', () => {
+    const { onLogout } = renderSidebar();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+
+    expect(screen.getByRole('dialog', { name: 'Confirm' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Are you sure you want to logout?')
+    ).toBeInTheDocument();
+    expect(onLogout).not.toHaveBeenCalled();
+  });
+
+  it('calls onLogout and closes the dialog when "Yes" is pressed', () => {
     const { onLogout } = renderSidebar();
 
     fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
+
     expect(onLogout).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it.each([
+    ['"No"', () => fireEvent.click(screen.getByRole('button', { name: 'No' }))],
+    [
+      'the Close button',
+      () => fireEvent.click(screen.getByRole('button', { name: 'Close' })),
+    ],
+    ['Escape', () => fireEvent.keyDown(document, { key: 'Escape' })],
+  ])(
+    'stays logged in and closes the dialog when dismissed with %s',
+    (_how, dismiss) => {
+      const { onLogout } = renderSidebar();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+      dismiss();
+
+      expect(onLogout).not.toHaveBeenCalled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    }
+  );
 
   it('swaps to the small logo and an "Expand sidebar" label when collapsed', () => {
     renderSidebar('/dashboard', true);

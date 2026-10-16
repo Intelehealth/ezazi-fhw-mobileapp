@@ -9,16 +9,19 @@ import type { AppDispatch } from '../store/store';
  * one place logout logic lives, so every future authenticated page/menu
  * item dispatches this instead of each clearing storage + dispatching
  * loggedOut() separately.
+ *
+ * Ports AuthService.logOut() (intelehealth-doctor-webapp): `DELETE /session`
+ * on OpenMRS first, then the local sign-out — the stored token and user
+ * (the Angular `currentUser`/`user`/`provider`/`doctorName`/credential
+ * entries), the Redux auth state (its `currentUserSubject`) and, which the
+ * Angular app has no equivalent of, the query cache so no profile/patient
+ * data outlives the session. The login redirect is the protected route's own
+ * job once the auth state is cleared. Unlike the Angular source, which stays
+ * logged in if the DELETE fails, the local sign-out always happens: a user
+ * must be able to log out even while OpenMRS is slow or unreachable.
  */
-export const logout = () => (dispatch: AppDispatch) => {
-  /*
-   * Also ends the OpenMRS session and empties the query cache: the
-   * JSESSIONID cookie otherwise outlives logout (the next person on a shared
-   * machine would ride the previous user's OpenMRS identity), and cached
-   * profile/patient data would still be readable. Fire-and-forget — logging
-   * out must not wait on, or fail because of, OpenMRS being slow or down.
-   */
-  void profileService.endSession();
+export const logout = () => async (dispatch: AppDispatch) => {
+  await profileService.endSession();
   queryClient.clear();
   storage.clearAuthToken();
   storage.clearStoredUser();

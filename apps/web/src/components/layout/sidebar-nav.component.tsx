@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { ConfirmDialogComponent } from '../common/confirm-dialog.component';
 import { clientConfig } from '../../config/clients';
 import { useIsNurse } from '../../hooks/useIsNurse';
 import { SIDEBAR_NAV_ITEMS } from '../../routes/nav-items';
@@ -26,6 +28,7 @@ export function SidebarNavComponent({
   onLogout,
 }: SidebarNavComponentProps) {
   const location = useLocation();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   const isNurse = useIsNurse();
   const navItems = SIDEBAR_NAV_ITEMS.filter(
     item => !item.role || item.role === (isNurse ? 'nurse' : 'doctor')
@@ -114,7 +117,7 @@ export function SidebarNavComponent({
         <li className="mt-auto h-[52px] w-full border-t-2 border-[#EFE8FF]/48 pt-3">
           <button
             type="button"
-            onClick={onLogout}
+            onClick={() => setConfirmingLogout(true)}
             className={`group flex h-full w-full cursor-pointer items-center rounded-lg hover:bg-[#4B39B7] ${
               collapsed ? 'justify-center px-2' : 'px-5'
             }`}
@@ -129,6 +132,22 @@ export function SidebarNavComponent({
           </button>
         </li>
       </ul>
+
+      {/*
+       * main-container.component.ts's logout(): asks first, and only a "Yes"
+       * signs the user out (closing the dialog any other way stays put).
+       */}
+      {confirmingLogout && (
+        <ConfirmDialogComponent
+          message="Are you sure you want to logout?"
+          cancelText="No"
+          confirmText="Yes"
+          onClose={confirmed => {
+            setConfirmingLogout(false);
+            if (confirmed) onLogout();
+          }}
+        />
+      )}
     </div>
   );
 }
