@@ -2,8 +2,14 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 export type TokenProvider = () => Promise<string | null | undefined> | string | null | undefined;
 
-/** Return the new access token to retry the failed request once, or a falsy value to give up. */
-export type UnauthorizedHandler = () => Promise<string | null | undefined> | string | null | undefined;
+/**
+ * Return the new access token to retry the failed request once, or a falsy value to give up.
+ * `failedToken` is the bearer token the rejected request was sent with (when it had one), so a
+ * handler can tell "my token expired" from "another request already replaced it".
+ */
+export type UnauthorizedHandler = (
+  failedToken?: string,
+) => Promise<string | null | undefined> | string | null | undefined;
 
 /** Attaches `Authorization: Bearer <token>` to every request when a token is available. */
 export function attachAuthInterceptor(instance: AxiosInstance, getToken: TokenProvider): void {
@@ -38,7 +44,12 @@ export function attachUnauthorizedRetryInterceptor(
       const original = error.config as RetryableRequestConfig | undefined;
       if (error.response?.status === 401 && original && !original._retry) {
         original._retry = true;
-        const newToken = await onUnauthorized();
+        const authorization = original.headers?.get?.('Authorization');
+        const failedToken =
+          typeof authorization === 'string' && authorization.startsWith('Bearer ')
+            ? authorization.slice('Bearer '.length)
+            : undefined;
+        const newToken = await onUnauthorized(failedToken);
         if (newToken) {
           original.headers?.set?.('Authorization', `Bearer ${newToken}`);
           return instance(original);

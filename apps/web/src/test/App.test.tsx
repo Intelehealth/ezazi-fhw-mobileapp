@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Same reasoning as routes/app.routes.test.tsx: AppRoutes' router reads
@@ -32,5 +32,23 @@ describe('App', () => {
       await screen.findByRole('heading', { name: 'Login' })
     ).toBeInTheDocument();
     expect(document.querySelector('.Toastify')).not.toBeNull();
+  });
+
+  it('hosts the session-expired modal, shown only once the session hard-expires', async () => {
+    vi.resetModules();
+    window.history.pushState(null, '', '/auth/login');
+    const { default: App } = await import('../App');
+    const { sessionExpiry } = await import('../services/session-expiry');
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Login' });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    act(() => sessionExpiry.markExpired());
+    expect(
+      screen.getByRole('alertdialog', { name: 'Session expired' })
+    ).toBeInTheDocument();
+
+    act(() => sessionExpiry.reset());
   });
 });

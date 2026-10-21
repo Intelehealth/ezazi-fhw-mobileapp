@@ -56,4 +56,23 @@ describe('ModalOverlayComponent', () => {
 
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('has to be answered when no onClose is given: it does not even listen for Escape, and a backdrop click is harmless', () => {
+    const addListener = vi.spyOn(document, 'addEventListener');
+    const { container } = render(
+      <ModalOverlayComponent>
+        <p>panel</p>
+      </ModalOverlayComponent>
+    );
+
+    expect(addListener).not.toHaveBeenCalledWith(
+      'keydown',
+      expect.any(Function)
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.mouseDown(container.firstElementChild as HTMLElement);
+
+    expect(screen.getByText('panel')).toBeInTheDocument();
+    addListener.mockRestore();
+  });
 });

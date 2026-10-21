@@ -73,6 +73,20 @@ export interface AuthGatewayLoginResponse {
 }
 
 /**
+ * POST {AUTH_GATEWAY_URL}/auth/refresh's response — a rotated token pair
+ * (auth-gateway's `TokenPairPayload`). The old refresh token is invalidated
+ * by this call, and presenting it again revokes the whole login family.
+ */
+export interface RefreshTokenResponse {
+  tokenType: 'Bearer';
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+  refreshExpiresIn: number;
+  sessionId: string;
+}
+
+/**
  * POST {AUTH_GATEWAY_URL}/auth/requestOtp — mirrors auth-gateway's own
  * `RequestOtpSchema`/`RequestOtpResponse` (auth-gateway/src/modules/auth/auth.dto.ts)
  * field-for-field. `otpFor: 'username'` (forgot-username) identifies the

@@ -2,6 +2,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './styles/toast-theme.css';
 import './i18n';
 import { ToastContainer } from 'react-toastify';
+import { SessionExpiredModalComponent } from './components/auth/session-expired-modal.component';
 import { AppUIProvider } from './context/AppUIContext';
 // import { useAppConfig } from './hooks/queries/useAppConfig';
 import { AppRoutes } from './routes/app.routes';
@@ -17,6 +18,7 @@ function App() {
   return (
     <AppUIProvider>
       <AppRoutes />
+      <SessionExpiredModalComponent />
 
       {/*
         Props match intelehealth-hw-webapp-react's reference ToastContainer

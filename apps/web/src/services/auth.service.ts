@@ -4,7 +4,7 @@ import {
   success,
   type ApiResult,
 } from '@ezazi/api-client';
-import { authGatewayPublicClient, httpClient } from './http';
+import { authGatewayPublicClient } from './http';
 import type {
   AuthGatewayLoginResponse,
   LoginCredentials,
@@ -30,11 +30,39 @@ export const authService = {
     credentials: LoginCredentials
   ): Promise<ApiResult<AuthGatewayLoginResponse>> {
     try {
-      const { data } = await httpClient.post<AuthGatewayLoginResponse>(
-        '/auth/login',
-        credentials
-      );
+      /*
+       * The public client, not httpClient: a wrong password is a 401 here,
+       * and httpClient treats a 401 as "my session expired" (refresh, then
+       * the hard-expiry modal) — wrong for a login that has no session yet.
+       */
+      const { data } =
+        await authGatewayPublicClient.post<AuthGatewayLoginResponse>(
+          '/auth/login',
+          credentials
+        );
       return success(data);
+    } catch (error) {
+      return failure(mapAxiosError(error));
+    }
+  },
+
+  /**
+   * POST {AUTH_GATEWAY_URL}/auth/logout — revokes the refresh-token family so
+   * the session can't be extended after logout. Sent with the public client
+   * and an explicit bearer token: logout must never trigger a refresh of the
+   * very session it is ending. Best-effort — the caller ignores failure.
+   */
+  async logout(
+    accessToken: string,
+    refreshToken: string
+  ): Promise<ApiResult<void>> {
+    try {
+      await authGatewayPublicClient.post(
+        '/auth/logout',
+        { refreshToken },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      return success(undefined);
     } catch (error) {
       return failure(mapAxiosError(error));
     }
@@ -81,10 +109,11 @@ export const authService = {
     payload: ResetPasswordPayload
   ): Promise<ApiResult<ResetPasswordResponse>> {
     try {
-      const { data } = await authGatewayPublicClient.post<ResetPasswordResponse>(
-        `/auth/resetPassword/${userUuid}`,
-        payload
-      );
+      const { data } =
+        await authGatewayPublicClient.post<ResetPasswordResponse>(
+          `/auth/resetPassword/${userUuid}`,
+          payload
+        );
       return success(data);
     } catch (error) {
       return failure(mapAxiosError(error));

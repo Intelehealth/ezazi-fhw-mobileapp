@@ -1,7 +1,11 @@
 import { useEffect, type ReactNode } from 'react';
 
 interface ModalOverlayComponentProps {
-  onClose: () => void;
+  /**
+   * Omit for a dialog that must be answered (e.g. session expired): with no
+   * handler, Escape and a click on the backdrop do nothing.
+   */
+  onClose?: () => void;
   children: ReactNode;
 }
 
@@ -16,8 +20,10 @@ export function ModalOverlayComponent({
   children,
 }: ModalOverlayComponentProps) {
   useEffect(() => {
+    if (!onClose) return;
+    const close = onClose;
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') close();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
@@ -27,7 +33,7 @@ export function ModalOverlayComponent({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={event => {
-        if (event.target === event.currentTarget) onClose();
+        if (onClose && event.target === event.currentTarget) onClose();
       }}
     >
       {children}

@@ -35,17 +35,25 @@ const RESPONSE: AuthGatewayLoginResponse = {
 };
 
 describe('authService.login', () => {
-  it('POSTs the credentials and returns a success result on 2xx', async () => {
-    vi.mocked(httpClient.post).mockResolvedValue({ data: RESPONSE });
+  it('POSTs the credentials through the public client — a wrong password must not look like an expired session', async () => {
+    vi.mocked(authGatewayPublicClient.post).mockResolvedValue({
+      data: RESPONSE,
+    });
 
     const result = await authService.login(CREDENTIALS);
 
-    expect(httpClient.post).toHaveBeenCalledWith('/auth/login', CREDENTIALS);
+    expect(authGatewayPublicClient.post).toHaveBeenCalledWith(
+      '/auth/login',
+      CREDENTIALS
+    );
+    expect(httpClient.post).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: true, data: RESPONSE });
   });
 
   it('maps a rejected request into a failure result instead of throwing', async () => {
-    vi.mocked(httpClient.post).mockRejectedValue(new Error('network down'));
+    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(
+      new Error('network down')
+    );
 
     const result = await authService.login(CREDENTIALS);
 
@@ -56,16 +64,51 @@ describe('authService.login', () => {
   });
 });
 
+describe('authService.logout', () => {
+  it('POSTs the refresh token to /auth/logout with the given access token, through the public client', async () => {
+    vi.mocked(authGatewayPublicClient.post).mockResolvedValue({
+      data: undefined,
+    });
+
+    const result = await authService.logout('access-1', 'refresh-1');
+
+    expect(authGatewayPublicClient.post).toHaveBeenCalledWith(
+      '/auth/logout',
+      { refreshToken: 'refresh-1' },
+      { headers: { Authorization: 'Bearer access-1' } }
+    );
+    expect(httpClient.post).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: true, data: undefined });
+  });
+
+  it('maps a rejected request into a failure result instead of throwing', async () => {
+    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(
+      new Error('network down')
+    );
+
+    const result = await authService.logout('access-1', 'refresh-1');
+
+    expect(result.ok).toBe(false);
+  });
+});
+
 describe('authService.requestOtp', () => {
   it('POSTs to authGatewayPublicClient (not httpClient) and returns a success result on 2xx', async () => {
     vi.mocked(authGatewayPublicClient.post).mockResolvedValue({
       data: { message: 'If the account exists, an OTP has been sent.' },
     });
 
-    const payload = { otpFor: 'password' as const, phoneNumber: '9876543210', countryCode: '91' };
+    const payload = {
+      otpFor: 'password' as const,
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    };
     const result = await authService.requestOtp(payload);
 
-    expect(authGatewayPublicClient.post).toHaveBeenCalledWith('/auth/requestOtp', payload);
+    expect(authGatewayPublicClient.post).toHaveBeenCalledWith(
+      '/auth/requestOtp',
+      payload
+    );
     expect(httpClient.post).not.toHaveBeenCalled();
     expect(result).toEqual({
       ok: true,
@@ -74,9 +117,14 @@ describe('authService.requestOtp', () => {
   });
 
   it('maps a rejected request into a failure result instead of throwing', async () => {
-    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(new Error('network down'));
+    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(
+      new Error('network down')
+    );
 
-    const result = await authService.requestOtp({ otpFor: 'password', phoneNumber: '9876543210' });
+    const result = await authService.requestOtp({
+      otpFor: 'password',
+      phoneNumber: '9876543210',
+    });
 
     expect(result.ok).toBe(false);
   });
@@ -84,18 +132,32 @@ describe('authService.requestOtp', () => {
 
 describe('authService.verifyOtp', () => {
   it('POSTs to authGatewayPublicClient and returns userUuid + resetToken on 2xx', async () => {
-    const data = { verified: true as const, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 };
+    const data = {
+      verified: true as const,
+      userUuid: 'u-1',
+      resetToken: 'reset-tok',
+      expiresIn: 300,
+    };
     vi.mocked(authGatewayPublicClient.post).mockResolvedValue({ data });
 
-    const payload = { verifyFor: 'password' as const, phoneNumber: '9876543210', otp: '123456' };
+    const payload = {
+      verifyFor: 'password' as const,
+      phoneNumber: '9876543210',
+      otp: '123456',
+    };
     const result = await authService.verifyOtp(payload);
 
-    expect(authGatewayPublicClient.post).toHaveBeenCalledWith('/auth/verifyOtp', payload);
+    expect(authGatewayPublicClient.post).toHaveBeenCalledWith(
+      '/auth/verifyOtp',
+      payload
+    );
     expect(result).toEqual({ ok: true, data });
   });
 
   it('maps a rejected request (e.g. a 401 invalid/expired code) into a failure result', async () => {
-    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(new Error('Invalid or expired code'));
+    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(
+      new Error('Invalid or expired code')
+    );
 
     const result = await authService.verifyOtp({
       verifyFor: 'password',
@@ -120,7 +182,10 @@ describe('authService.resetPassword', () => {
       '/auth/resetPassword/u-1',
       payload
     );
-    expect(result).toEqual({ ok: true, data: { message: 'Password reset successful.' } });
+    expect(result).toEqual({
+      ok: true,
+      data: { message: 'Password reset successful.' },
+    });
   });
 
   it('maps a rejected request (e.g. a stale resetToken) into a failure result', async () => {
