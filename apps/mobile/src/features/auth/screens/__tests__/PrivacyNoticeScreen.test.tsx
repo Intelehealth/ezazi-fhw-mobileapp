@@ -1,14 +1,9 @@
 import '@/core/i18n';
-import { Platform, ToastAndroid } from 'react-native';
+import { Linking, Platform, ToastAndroid } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { PrivacyNoticeScreen } from '../PrivacyNoticeScreen';
-import { useAuthStore } from '@/core/session/auth.store';
 
 const mockGoBack = jest.fn();
-
-jest.mock('@/core/session/auth.store', () => ({
-  useAuthStore: jest.fn(),
-}));
 
 function renderScreen() {
   const navigation = { goBack: mockGoBack } as never;
@@ -17,16 +12,10 @@ function renderScreen() {
 }
 
 describe('PrivacyNoticeScreen', () => {
-  const setAuthenticated = jest.fn();
-
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(ToastAndroid, 'show').mockImplementation(() => {});
     Platform.OS = 'android';
-    (useAuthStore as unknown as jest.Mock).mockImplementation(
-      (selector: (s: { setAuthenticated: typeof setAuthenticated }) => unknown) =>
-        selector({ setAuthenticated }),
-    );
   });
 
   it('renders the title and consent checkbox, unchecked by default', () => {
@@ -46,25 +35,42 @@ describe('PrivacyNoticeScreen', () => {
     expect(checkbox.props.accessibilityState.checked).toBe(true);
   });
 
-  it('toasts a reminder and does not authenticate when Accept is tapped unchecked', () => {
+  it('keeps Accept disabled and does not leave the screen until the box is checked', () => {
     renderScreen();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Accept' }));
+    const accept = screen.getByRole('button', { name: 'Accept' });
+    expect(accept.props.accessibilityState?.disabled).toBe(true);
+    fireEvent.press(accept);
 
-    expect(ToastAndroid.show).toHaveBeenCalledWith(
-      'Please read out the Privacy Consent first.',
-      ToastAndroid.SHORT,
-    );
-    expect(setAuthenticated).not.toHaveBeenCalled();
+    expect(mockGoBack).not.toHaveBeenCalled();
   });
 
-  it('authenticates as a mock fhw when Accept is tapped after checking the box', () => {
+  it('keeps the original notice copy, with the Use lines as bullets', () => {
+    renderScreen();
+
+    expect(screen.getByText('Personal Information')).toBeTruthy();
+    expect(screen.getByText('Your information is')).toBeTruthy();
+    expect(screen.getByText('used for diagnosing and treating you.')).toBeTruthy();
+    expect(screen.getByText(/Data Privacy Officer at support@intelehealth.io/)).toBeTruthy();
+    expect(screen.getByText(/I \(Health Worker\) confirm that I have read out the privacy notice/)).toBeTruthy();
+  });
+
+  it('opens the privacy policy URL from the inline link', () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    renderScreen();
+
+    fireEvent.press(screen.getByText('https://www.intelehealth.org/privacy-policy'));
+
+    expect(openURL).toHaveBeenCalledWith('https://www.intelehealth.org/privacy-policy');
+  });
+
+  it('goes back on Accept after checking the box (until AddNewPatient exists)', () => {
     renderScreen();
 
     fireEvent.press(screen.getByRole('checkbox'));
     fireEvent.press(screen.getByRole('button', { name: 'Accept' }));
 
-    expect(setAuthenticated).toHaveBeenCalledWith('mock', 'fhw');
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 
   it('toasts a rejection and goes back when Reject is tapped after checking the box', () => {
@@ -80,11 +86,15 @@ describe('PrivacyNoticeScreen', () => {
     expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 
-  it('does nothing on Reject when the box is unchecked', () => {
+  it('toasts a read-first reminder and stays on Reject when the box is unchecked', () => {
     renderScreen();
 
     fireEvent.press(screen.getByRole('button', { name: 'Reject' }));
 
+    expect(ToastAndroid.show).toHaveBeenCalledWith(
+      'Please read out the Privacy Consent first.',
+      ToastAndroid.SHORT,
+    );
     expect(mockGoBack).not.toHaveBeenCalled();
   });
 });

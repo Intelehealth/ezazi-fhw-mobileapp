@@ -300,6 +300,18 @@ export const SetupScreen: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
+      {/* TEMPORARY — dev/QA shortcut to Privacy Notice; the real entry is Home → Add Patient. */}
+      <TouchableOpacity
+        style={styles.tempLoginRow}
+        accessibilityRole="link"
+        accessibilityLabel={t('setup.tempNavPrivacy')}
+        onPress={() => navigation.navigate('PrivacyNotice')}
+      >
+        <Text style={[styles.tempLoginText, { fontSize: fs('link') }]}>
+          {t('setup.tempNavPrivacy')}
+        </Text>
+      </TouchableOpacity>
+
       {/* ── API error banner — one slot, above the button, for both a failed
           submit and a failed LOCATION fetch (never both at once: submit
           can't run until a location is picked, which can't happen while the

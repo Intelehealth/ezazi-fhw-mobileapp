@@ -26,7 +26,7 @@ const entries = Object.entries(FILES).flatMap(([file, mod]) =>
 describe('uuid constants', () => {
   it('exports the full ported set', () => {
     // Deliberately brittle: a changed count means a constant was added or lost.
-    expect(entries).toHaveLength(101);
+    expect(entries).toHaveLength(103);
   });
 
   it('gives every uuid exactly one name, with no exceptions', () => {

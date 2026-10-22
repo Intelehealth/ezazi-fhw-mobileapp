@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/core/session/auth.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { useMonitorTickCount, useBackboneStatus } from '@/core/services/monitor';
@@ -20,7 +22,9 @@ import { colors, radii, spacing, typography } from '@/core/config/theme';
  * migrations, far too fast to be worth gating the screen on. A failure is
  * logged and the next mount retries.
  */
-export const HomeScreen: React.FC = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
   const monitorTicks = useMonitorTickCount();
@@ -47,6 +51,13 @@ export const HomeScreen: React.FC = () => {
       <View style={styles.btn}>
         <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />
       </View>
+
+      {/* Android flow: Add Patient → Privacy Notice consent → registration */}
+      <AppButton
+        label={t('home.addPatient')}
+        onPress={() => navigation.navigate('PrivacyNotice')}
+        style={styles.addPatientBtn}
+      />
     </View>
   );
 };
@@ -64,4 +75,5 @@ const styles = StyleSheet.create({
   },
   monitorText: { ...typography.caption, color: colors.textSecondary },
   btn: { marginTop: spacing.md },
+  addPatientBtn: { marginTop: 'auto' },
 });

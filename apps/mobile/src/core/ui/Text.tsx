@@ -20,5 +20,8 @@ export const Text: React.FC<TextProps> = ({ style, ...props }) => {
   const flat = StyleSheet.flatten(style);
   const fontFamily = isBoldWeight(flat?.fontWeight) ? 'Lato_700Bold' : 'Lato_400Regular';
 
-  return <RNText {...props} style={[{ fontFamily }, style]} />;
+  // A caller's own fontFamily wins. Otherwise the weight is carried by the font
+  // file alone — Android falls back to Roboto if fontWeight is also set.
+  if (flat?.fontFamily) return <RNText {...props} style={style} />;
+  return <RNText {...props} style={[style, { fontFamily, fontWeight: 'normal' }]} />;
 };

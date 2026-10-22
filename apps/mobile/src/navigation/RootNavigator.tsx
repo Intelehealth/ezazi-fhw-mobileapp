@@ -5,6 +5,7 @@ import { RootStackParamList } from './types';
 import { useAuthStore } from '@/core/session/auth.store';
 import { ApiProgressOverlay } from '@/core/ui/ApiProgressOverlay';
 import { LowBatteryDialog } from '@/core/ui/LowBatteryDialog';
+import { brandAppBar, noHeader } from './screenOptions';
 
 import { SplashScreen } from '@/features/auth/screens/SplashScreen';
 import { SetupScreen } from '@/features/auth/screens/SetupScreen';
@@ -27,7 +28,9 @@ export const RootNavigator: React.FC = () => {
     <>
     <NavigationContainer>
       <Stack.Navigator
-        screenOptions={{ headerShown: false }}
+        // Default: no header. A group opts in with screenOptions={brandAppBar};
+        // a single screen overrides its group with options={…}.
+        screenOptions={noHeader}
         // Setup vs Login is app logic (first-run vs returning-with-expired-
         // session), not screen order — both are always registered below so
         // in-stack navigation between them still works either way.
@@ -39,7 +42,9 @@ export const RootNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="PrivacyNotice" component={PrivacyNoticeScreen} />
+            {/* TEMPORARY — duplicate so SetupScreen's dev/QA shortcut can reach it
+                pre-login. The real registration is in the authenticated group. */}
+            <Stack.Screen name="PrivacyNotice" component={PrivacyNoticeScreen} options={brandAppBar} />
             <Stack.Screen
               name="ForgotPasswordRequest"
               component={ForgotPasswordRequestOtpScreen}
@@ -61,10 +66,12 @@ export const RootNavigator: React.FC = () => {
         )}
 
         {status === 'authenticated' && (
-          <>
+          <Stack.Group screenOptions={brandAppBar}>
             <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Timeline" component={TimelineScreen} />
-          </>
+            <Stack.Screen name="PrivacyNotice" component={PrivacyNoticeScreen} />
+            {/* Has its own PatientHeader — opts out of the app bar */}
+            <Stack.Screen name="Timeline" component={TimelineScreen} options={noHeader} />
+          </Stack.Group>
         )}
       </Stack.Navigator>
     </NavigationContainer>

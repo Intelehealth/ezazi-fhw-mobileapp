@@ -97,4 +97,12 @@ describe('SetupScreen', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('ForgotPasswordRequest', { origin: 'Setup' });
   });
+
+  it('navigates to PrivacyNotice from the temporary dev/QA link', () => {
+    render(<SetupScreen />);
+
+    fireEvent.press(screen.getByText('Go to Privacy Notice screen (temp)'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('PrivacyNotice');
+  });
 });
