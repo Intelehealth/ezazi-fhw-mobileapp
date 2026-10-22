@@ -13,6 +13,14 @@ jest.mock('@/core/session/auth.store', () => ({
   useAuthStore: jest.fn(),
 }));
 
+const mockNavigate = jest.fn();
+
+function renderScreen() {
+  const navigation = { navigate: mockNavigate } as never;
+  const route = { params: undefined } as never;
+  return render(<HomeScreen navigation={navigation} route={route} />);
+}
+
 describe('HomeScreen', () => {
   const logout = jest.fn();
 
@@ -24,17 +32,25 @@ describe('HomeScreen', () => {
   });
 
   it('renders the placeholder title and note', () => {
-    render(<HomeScreen />);
+    renderScreen();
 
     expect(screen.getByText('Home')).toBeTruthy();
     expect(screen.getByText('Logged in. Active cases will appear here.')).toBeTruthy();
   });
 
   it('calls logout() when the logout button is pressed', () => {
-    render(<HomeScreen />);
+    renderScreen();
 
     fireEvent.press(screen.getByRole('button', { name: 'Log out (EZ-943)' }));
 
     expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the Privacy Notice when Add Patient is pressed', () => {
+    renderScreen();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Add Patient' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('PrivacyNotice');
   });
 });

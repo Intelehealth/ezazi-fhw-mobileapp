@@ -130,6 +130,12 @@ const palette = {
   secondaryTextFigma: '#4A4665', // Figma "--Secondary-text" — LOCATION/USERNAME/PASSWORD field labels
   alertFigma: '#D4154A', // Figma "--Alert" — network-error banner circle + title (Ezazi Developer File, 2026-09-22)
   networkBannerBg: '#FEEAEF', // Figma network-error banner background (Ezazi Developer File, 2026-09-22)
+  primaryTextFigma: '#17133B', // Figma "Primary Text" variable (Ezazi Developer File, 2026-10-21)
+  borderFigma: '#DED9F0', // Figma "Border" variable — cards, checkbox, back button
+  buttonDisabledFigma: '#C5C2D0', // Figma Component 1 / "disbaled" button fill
+  buttonSecondaryBorderFigma: '#D5D7DA', // Figma Component 1 / "secondary button" stroke
+  buttonSecondaryTextFigma: '#414651', // Figma "Gray/700" — secondary button label
+  appBarBorder: '#F3F4F4', // BrandAppBar bottom hairline (Privacy Notice design)
 } as const;
 
 export const colors = {

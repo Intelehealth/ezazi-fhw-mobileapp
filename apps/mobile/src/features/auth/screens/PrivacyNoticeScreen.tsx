@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Linking,
   Platform,
-  ScrollView,
   StyleSheet,
   ToastAndroid,
   TouchableOpacity,
@@ -11,29 +10,25 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import { ScreenHeader } from '@/core/ui/ScreenHeader';
-import { commonStyles } from '@/core/ui/commonStyles';
+import { ScreenLayout } from '@/core/ui/ScreenLayout';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
-import { useAuthStore } from '@/core/session/auth.store';
 
 // config.json → privacyNoticeText
 const PRIVACY_URL = 'https://www.intelehealth.org/privacy-policy';
 
-const TABLET_MAX_W = 680;
-
-type Section = { heading?: string; body: string; link?: string; linkSuffix?: string };
+type Section = { heading?: string; body: string; bullets?: string[]; link?: string; linkSuffix?: string };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PrivacyNotice'>;
 
 export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
-  const { isTablet, cornerRadius, scale } = useResponsive();
-  const setAuthenticated = useAuthStore(s => s.setAuthenticated);
+  const { isTablet, scale } = useResponsive();
   const [checked, setChecked] = useState(false);
+  const consent = t('privacy.consent');
 
   const sections: Section[] = [
     {
@@ -43,6 +38,7 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
     {
       heading: t('privacy.sections.useHeading'),
       body: t('privacy.sections.useBody'),
+      bullets: [t('privacy.sections.useBulletTreat'), t('privacy.sections.useBulletReminders')],
     },
     {
       body: t('privacy.sections.disclosureBody'),
@@ -63,10 +59,11 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
     if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
   };
 
-  // Mirrors PrivacyNoticeActivity.java onClick() exactly
+  // Accept stays disabled until the consent box is ticked (design) —
+  // Reject keeps PrivacyNoticeActivity.java's read-first toast.
   const handleAccept = () => {
-    if (!checked) { toast(t('privacy.toastReadFirst')); return; }
-    setAuthenticated('mock', 'fhw'); // TODO: real POST /audit + navigate to AddNewPatient
+    // TODO: POST /audit + navigate to AddNewPatient once that screen exists.
+    navigation.goBack();
   };
 
   const handleReject = () => {
@@ -75,158 +72,203 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
     navigation.goBack();
   };
 
-  // ── Responsive values ──────────────────────────────────────────────────────
-  const WRAP_PAD = isTablet ? scale(16) : 12;
-  const CARD_PAD = isTablet ? scale(20) : 16;
-  const TEXT_SZ  = isTablet ? scale(16) : 12;
-  const LINE_H   = isTablet ? scale(26) : 19;
-  const SEC_GAP  = isTablet ? scale(20) : 16;
-  const CHECK_SZ = isTablet ? scale(24) : 22;
-  const BTN_GAP  = isTablet ? scale(14) : 12;
-  const BOT_PAD  = isTablet ? scale(32) : 24;
+  // ── Responsive values — tablet = design (600dp reference), phone scaled down ──
+  const TEXT_INSET  = isTablet ? scale(40) : 24; // sections stop short of the card's right edge
+  const BACK_SZ     = isTablet ? scale(40) : 36;
+  const BACK_ICON   = isTablet ? scale(20) : 18;
+  const TITLE_SZ    = isTablet ? scale(25) : 21;
+  const HEAD_SZ     = isTablet ? scale(15) : 13;
+  const BODY_SZ     = isTablet ? scale(14) : 12;
+  const BODY_LH     = isTablet ? scale(20) : 18;
+  const SEC_PAD     = isTablet ? scale(15) : 12;
+  const CHECK_SZ    = isTablet ? scale(24) : 20;
+  const CONSENT_SZ  = isTablet ? scale(15) : 13;
+  const BLOCK_GAP   = isTablet ? scale(26) : 20;
+  const BTN_GAP     = isTablet ? scale(24) : 16;
+
+  const bodyText = { fontSize: BODY_SZ, lineHeight: BODY_LH };
 
   return (
-    <View style={styles.root}>
-      <ScreenHeader
-        title={t('privacy.title')}
-        onBack={() => navigation.goBack()}
-      />
+    <ScreenLayout>
+      {/* ── Back button + title ── */}
+      <View style={styles.titleRow}>
+        <TouchableOpacity
+          style={[styles.backBtn, { width: BACK_SZ, height: BACK_SZ, borderRadius: isTablet ? scale(10) : 8 }]}
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.a11y.goBack')}
+          activeOpacity={0.7}
+        >
+          <AppIcon name="chevronLeft" size={BACK_ICON} color={colors.primary} />
+        </TouchableOpacity>
 
-      <View style={[styles.contentWrap, { padding: WRAP_PAD }]}>
+        <Text style={[styles.title, { fontSize: TITLE_SZ, lineHeight: Math.round(TITLE_SZ * 1.3) }]}>
+          {t('privacy.title')}
+        </Text>
+      </View>
 
-        {/* ── White scrollable card ── */}
-        <View style={[styles.card, { borderRadius: cornerRadius }, isTablet && styles.cardTablet]}>
-          <ScrollView
-            contentContainerStyle={{ padding: CARD_PAD }}
-            showsVerticalScrollIndicator={false}
+      {/* ── Notice sections, hairline-separated ── */}
+      <View style={{ marginTop: BLOCK_GAP - SEC_PAD, marginRight: TEXT_INSET }}>
+        {sections.map((sec, i) => (
+          <View
+            key={sec.body}
+            style={[
+              { paddingVertical: SEC_PAD },
+              i < sections.length - 1 && styles.sectionDivider,
+            ]}
           >
-            {sections.map((sec, i) => (
-              <View key={i} style={i > 0 ? { marginTop: SEC_GAP } : undefined}>
+            {sec.heading != null && (
+              <Text style={[styles.heading, { fontSize: HEAD_SZ, lineHeight: BODY_LH, marginBottom: 2 }]}>
+                {sec.heading}
+              </Text>
+            )}
 
-                {sec.heading != null && (
-                  <Text style={[styles.captionTxt, { fontSize: TEXT_SZ, lineHeight: LINE_H }]}>
-                    {'• '}{sec.heading}
+            <Text style={[styles.body, bodyText]}>
+              {sec.body}
+              {sec.link != null && (
+                <>
+                  <Text
+                    style={styles.link}
+                    onPress={() => Linking.openURL(sec.link!)}
+                    accessibilityRole="link"
+                  >
+                    {sec.link}
                   </Text>
-                )}
+                  {sec.linkSuffix}
+                </>
+              )}
+            </Text>
 
-                {sec.link != null ? (
-                  <Text style={[styles.captionTxt, { fontSize: TEXT_SZ, lineHeight: LINE_H }]}>
-                    {sec.body}
-                    <Text style={commonStyles.link} onPress={() => Linking.openURL(sec.link!)}>
-                      {sec.link}
-                    </Text>
-                    {sec.linkSuffix}
-                  </Text>
-                ) : (
-                  <Text style={[styles.captionTxt, { fontSize: TEXT_SZ, lineHeight: LINE_H }]}>
-                    {sec.body}
-                  </Text>
-                )}
-
+            {sec.bullets?.map(b => (
+              <View key={b} style={[styles.bulletRow, { marginTop: 4 }]}>
+                <Text style={[styles.bulletDot, bodyText]}>{'•'}</Text>
+                <Text style={[styles.body, bodyText, styles.flex1]}>{b}</Text>
               </View>
             ))}
-          </ScrollView>
-        </View>
-
-        {/* ── Fixed bottom: checkbox + Accept + Reject ── */}
-        <View style={[styles.bottomArea, { paddingBottom: BOT_PAD }, isTablet && styles.bottomTablet]}>
-
-          <TouchableOpacity
-            style={styles.checkRow}
-            onPress={() => setChecked(v => !v)}
-            activeOpacity={0.7}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked }}
-            accessibilityLabel={t('privacy.consent')}
-          >
-            <View style={[
-              styles.checkbox,
-              { width: CHECK_SZ, height: CHECK_SZ },
-              checked && styles.checkboxChecked,
-            ]}>
-              {checked && (
-                <AppIcon name="check" size={isTablet ? scale(15) : 13} color={colors.white} />
-              )}
-            </View>
-            <Text style={[styles.captionTxt, { fontSize: TEXT_SZ, lineHeight: LINE_H, flex: 1 }]}>
-              {t('privacy.consent')}
-            </Text>
-          </TouchableOpacity>
-
-          <AppButton
-            label={t('privacy.accept')}
-            onPress={handleAccept}
-          />
-
-          <AppButton
-            label={t('privacy.reject')}
-            onPress={handleReject}
-            variant="outline"
-            style={{ marginTop: BTN_GAP }}
-          />
-
-        </View>
+          </View>
+        ))}
       </View>
-    </View>
+
+      {/* ── Consent card ── */}
+      <TouchableOpacity
+        style={[
+          styles.consentCard,
+          {
+            marginTop: BLOCK_GAP - SEC_PAD,
+            padding: isTablet ? scale(16) : 12,
+            borderRadius: isTablet ? scale(12) : 10,
+          },
+        ]}
+        onPress={() => setChecked(v => !v)}
+        activeOpacity={0.7}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        accessibilityLabel={t('privacy.consent')}
+      >
+        <View style={[
+          styles.checkbox,
+          { width: CHECK_SZ, height: CHECK_SZ, borderRadius: isTablet ? scale(5) : 4 },
+          checked && styles.checkboxChecked,
+        ]}>
+          {checked && (
+            <AppIcon name="check" size={isTablet ? scale(16) : 14} color={colors.white} />
+          )}
+        </View>
+
+        {/* Android string verbatim; its leading "*" required marker is drawn red */}
+        <Text style={[styles.consentTxt, styles.flex1, { fontSize: CONSENT_SZ, lineHeight: Math.round(CONSENT_SZ * 1.4) }]}>
+          {consent.startsWith('*') && <Text style={styles.required}>*</Text>}
+          {consent.replace(/^\*/, '')}
+        </Text>
+      </TouchableOpacity>
+
+      {/* ── Accept + Reject ── */}
+      <AppButton
+        label={t('privacy.accept')}
+        onPress={handleAccept}
+        disabled={!checked}
+        disabledTone="brand"
+        style={{ marginTop: BLOCK_GAP }}
+      />
+
+      <AppButton
+        label={t('privacy.reject')}
+        onPress={handleReject}
+        variant="secondary"
+        style={{ marginTop: BTN_GAP }}
+      />
+    </ScreenLayout>
   );
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
 
-  root: {
-    flex:            1,
-    backgroundColor: colors.containerBg,
-  },
-
-  contentWrap: {
+  flex1: {
     flex: 1,
   },
 
-  // White rounded card — Android ScrollView + white_child_container_bg drawable
-  card: {
-    flex:            1,
-    backgroundColor: colors.white,
-    elevation:       2,
-    shadowColor:     colors.black,
-    shadowOffset:    { width: 0, height: 1 },
-    shadowOpacity:   0.1,
-    shadowRadius:    3,
-  },
-
-  cardTablet: {
-    alignSelf: 'center',
-    width:     '100%',
-    maxWidth:  TABLET_MAX_W,
-  },
-
-  // Theme.EZazi.Caption — gray_4, inter-word justification
-  captionTxt: {
-    color:     colors.gray_4,
-    textAlign: 'justify',
-  },
-
-  bottomArea: {
-    paddingTop: 12,
-  },
-
-  bottomTablet: {
-    alignSelf: 'center',
-    width:     '100%',
-    maxWidth:  TABLET_MAX_W,
-  },
-
-  checkRow: {
+  titleRow: {
     flexDirection: 'row',
-    alignItems:    'flex-start',
-    gap:           10,
-    marginBottom:  14,
+    alignItems:    'center',
+    gap:           12,
+  },
+
+  backBtn: {
+    borderWidth:     1,
+    borderColor:     colors.borderFigma,
+    backgroundColor: colors.white,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+
+  title: {
+    flex:       1,
+    color:      colors.primaryTextFigma,
+    fontWeight: '700',
+  },
+
+  sectionDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.colorContainer,
+  },
+
+  heading: {
+    color:      colors.primary,
+    fontWeight: '700',
+  },
+
+  body: {
+    color: colors.secondaryTextFigma,
+  },
+
+  bulletRow: {
+    flexDirection: 'row',
+    gap:           8,
+  },
+
+  bulletDot: {
+    color: colors.primary,
+  },
+
+  link: {
+    color:              colors.primary,
+    fontWeight:         '700',
+    textDecorationLine: 'underline',
+  },
+
+  consentCard: {
+    flexDirection:   'row',
+    alignItems:      'flex-start',
+    gap:             12,
+    borderWidth:     1,
+    borderColor:     colors.borderFigma,
+    backgroundColor: colors.white,
   },
 
   checkbox: {
-    borderRadius:    4,
     borderWidth:     1.5,
-    borderColor:     colors.gray_2,
+    borderColor:     colors.borderFigma,
     backgroundColor: colors.white,
     alignItems:      'center',
     justifyContent:  'center',
@@ -234,9 +276,17 @@ const styles = StyleSheet.create({
     flexShrink:      0,
   },
 
-  // colorAccent — MaterialCheckBox checked fill
   checkboxChecked: {
-    backgroundColor: colors.colorAccent,
-    borderColor:     colors.colorAccent,
+    backgroundColor: colors.primary,
+    borderColor:     colors.primary,
+  },
+
+  consentTxt: {
+    color:      colors.primaryTextFigma,
+    fontWeight: '700',
+  },
+
+  required: {
+    color: colors.error,
   },
 });

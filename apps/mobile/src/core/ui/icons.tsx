@@ -101,6 +101,9 @@ export const iconPaths = {
   // Checkbox tick (✓)
   check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
 
+  // PLACEHOLDER — hand-authored, no Figma export provided yet (BrandAppBar).
+  menu: 'M3 6h18v1.5H3V6zm0 5.25h18v1.5H3v-1.5zm0 5.25h18V18H3v-1.5z',
+
   // Filled heart — splash-screen divider accent
   heart:
     'M12,21.35l-1.45-1.32C5.4,15.36,2,12.28,2,8.5C2,5.42,4.42,3,7.5,3c1.74,0,3.41,0.81,4.5,2.09' +
