@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import type { ApiError } from '@ezazi/api-client';
+import { ApiError } from '@ezazi/api-client';
 import { profileService } from '../../services/profile.service';
 import { showToast } from '../../services/toast';
 import { getErrorMessage } from '../../utils/error-message';
@@ -34,12 +34,23 @@ export function useChangePassword() {
       );
     },
     onError: error => {
+      /*
+       * The change goes to OpenMRS and rides its session cookie, which times
+       * out on its own schedule — a 401/403 here usually means that, not a
+       * bad password (OpenMRS reports a wrong old password differently).
+       */
+      const sessionTimedOut =
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403);
+
       showToast(
         'Password Change Failed',
-        getErrorMessage(
-          error,
-          'Could not change your password. Please try again.'
-        ),
+        sessionTimedOut
+          ? 'Your OpenMRS session has timed out. Please log out and log in again, then retry.'
+          : getErrorMessage(
+              error,
+              'Could not change your password. Please try again.'
+            ),
         'error'
       );
     },

@@ -62,6 +62,14 @@ export const storage = {
     );
   },
 
+  /**
+   * Whether a `storage` event for `key` can mean the session changed in
+   * another tab (`null` is `localStorage.clear()`). Used by
+   * services/session-sync.ts.
+   */
+  isSessionKey: (key: string | null): boolean =>
+    key === null || key === AUTH_TOKEN_KEY || key === AUTH_USER_KEY,
+
   getStoredUser: (): string | null => localStorage.getItem(AUTH_USER_KEY),
   setStoredUser: (user: string): void => {
     localStorage.setItem(AUTH_USER_KEY, user);

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearSessionSnapshot,
+  hasFormDrafts,
   registerFormDraft,
   saveSessionSnapshot,
   takeFormDraft,
@@ -178,5 +179,22 @@ describe('session snapshot', () => {
 
     setItem.mockRestore();
     expect(takeReturnPath('u-1')).toBeNull();
+  });
+
+  it('reports whether the snapshot captured any form content', () => {
+    expect(hasFormDrafts()).toBe(false);
+
+    saveSessionSnapshot('u-1');
+    expect(hasFormDrafts()).toBe(false);
+
+    const unregister = registerFormDraft('profile', () => ({
+      givenName: 'Asha',
+    }));
+    saveSessionSnapshot('u-1');
+    unregister();
+    expect(hasFormDrafts()).toBe(true);
+
+    takeFormDraft('profile', 'u-1');
+    expect(hasFormDrafts()).toBe(false);
   });
 });

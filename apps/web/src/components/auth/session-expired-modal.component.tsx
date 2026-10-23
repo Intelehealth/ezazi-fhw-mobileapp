@@ -3,6 +3,7 @@ import { logoutAfterExpiry } from '../../actions/auth.actions';
 import warningIcon from '../../assets/svgs/warning-circle.svg';
 import { sessionExpiry } from '../../services/session-expiry';
 import { useAppDispatch } from '../../store/hooks';
+import { hasFormDrafts } from '../../utils/session-snapshot';
 import { ModalOverlayComponent } from '../common/modal-overlay.component';
 
 /**
@@ -52,8 +53,9 @@ export function SessionExpiredModalComponent() {
           id="session-expired-message"
           className="mt-2 text-center text-lg leading-[150%] text-[#7F7B92]"
         >
-          Your session has expired. Please log in again to continue — your
-          unsaved changes will be restored.
+          Your session has expired. Please log in again to continue.
+          {hasFormDrafts() &&
+            ' Your unsaved changes will be restored after you log in.'}
         </p>
         <button
           type="button"

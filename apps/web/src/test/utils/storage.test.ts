@@ -78,4 +78,17 @@ describe('storage', () => {
       expect(storage.getAuthTokenExpiresAt()).toBeNull();
     });
   });
+
+  describe('isSessionKey', () => {
+    it('is true for the token and user keys, and for a full clear (null key)', () => {
+      expect(storage.isSessionKey('ezazi_web_auth_token')).toBe(true);
+      expect(storage.isSessionKey('ezazi_web_auth_user')).toBe(true);
+      expect(storage.isSessionKey(null)).toBe(true);
+    });
+
+    it('is false for anything else', () => {
+      expect(storage.isSessionKey('ezazi_web_refresh_token')).toBe(false);
+      expect(storage.isSessionKey('i18nextLng')).toBe(false);
+    });
+  });
 });

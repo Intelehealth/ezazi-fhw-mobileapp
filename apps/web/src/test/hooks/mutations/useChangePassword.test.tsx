@@ -89,4 +89,63 @@ describe('useChangePassword', () => {
       'error'
     );
   });
+
+  it.each([401, 403])(
+    'explains that the OpenMRS session timed out on a %s, rather than blaming the password',
+    async status => {
+      vi.mocked(profileService.changePassword).mockResolvedValue({
+        ok: false,
+        error: new ApiError('unauthorized', 'Privileges required', { status }),
+      });
+
+      const { result } = renderHook(() => useChangePassword(), { wrapper });
+      act(() => {
+        result.current.mutate(VARS);
+      });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+      expect(showToast).toHaveBeenCalledWith(
+        'Password Change Failed',
+        'Your OpenMRS session has timed out. Please log out and log in again, then retry.',
+        'error'
+      );
+    }
+  );
+
+  it('still reports other failures with their own message', async () => {
+    vi.mocked(profileService.changePassword).mockResolvedValue({
+      ok: false,
+      error: new ApiError('api', 'Old password is incorrect', { status: 400 }),
+    });
+
+    const { result } = renderHook(() => useChangePassword(), { wrapper });
+    act(() => {
+      result.current.mutate(VARS);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Password Change Failed',
+      'Old password is incorrect',
+      'error'
+    );
+  });
+
+  it('handles an error that is not an ApiError', async () => {
+    vi.mocked(profileService.changePassword).mockRejectedValue(
+      new Error('boom')
+    );
+
+    const { result } = renderHook(() => useChangePassword(), { wrapper });
+    act(() => {
+      result.current.mutate(VARS);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(showToast).toHaveBeenCalledWith(
+      'Password Change Failed',
+      'boom',
+      'error'
+    );
+  });
 });

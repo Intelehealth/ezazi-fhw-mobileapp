@@ -51,4 +51,24 @@ describe('App', () => {
 
     act(() => sessionExpiry.reset());
   });
+
+  it('listens for session changes made in other tabs while mounted, and stops on unmount', async () => {
+    vi.resetModules();
+    window.history.pushState(null, '', '/auth/login');
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const { default: App } = await import('../App');
+
+    const { unmount } = render(<App />);
+    await screen.findByRole('heading', { name: 'Login' });
+
+    const registered = add.mock.calls.find(([type]) => type === 'storage');
+    expect(registered).toBeDefined();
+
+    unmount();
+    expect(remove).toHaveBeenCalledWith('storage', registered![1]);
+
+    add.mockRestore();
+    remove.mockRestore();
+  });
 });

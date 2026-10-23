@@ -47,28 +47,6 @@ export const authService = {
   },
 
   /**
-   * POST {AUTH_GATEWAY_URL}/auth/logout — revokes the refresh-token family so
-   * the session can't be extended after logout. Sent with the public client
-   * and an explicit bearer token: logout must never trigger a refresh of the
-   * very session it is ending. Best-effort — the caller ignores failure.
-   */
-  async logout(
-    accessToken: string,
-    refreshToken: string
-  ): Promise<ApiResult<void>> {
-    try {
-      await authGatewayPublicClient.post(
-        '/auth/logout',
-        { refreshToken },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      return success(undefined);
-    } catch (error) {
-      return failure(mapAxiosError(error));
-    }
-  },
-
-  /**
    * POST {AUTH_GATEWAY_URL}/auth/requestOtp — forgot-username and
    * password-reset OTP, phone or email (see RequestOtpPayload). Uses
    * authGatewayPublicClient, not httpClient: this runs before any session

@@ -105,6 +105,12 @@ export function takeReturnPath(userUuid: string): string | null {
   return returnTo;
 }
 
+/** Whether the saved snapshot holds any unsaved form content — what decides if "your changes will be restored" is true. */
+export function hasFormDrafts(): boolean {
+  const snapshot = readSnapshot();
+  return snapshot !== null && Object.keys(snapshot.drafts).length > 0;
+}
+
 export function clearSessionSnapshot(): void {
   writeSnapshot(null);
 }

@@ -64,34 +64,6 @@ describe('authService.login', () => {
   });
 });
 
-describe('authService.logout', () => {
-  it('POSTs the refresh token to /auth/logout with the given access token, through the public client', async () => {
-    vi.mocked(authGatewayPublicClient.post).mockResolvedValue({
-      data: undefined,
-    });
-
-    const result = await authService.logout('access-1', 'refresh-1');
-
-    expect(authGatewayPublicClient.post).toHaveBeenCalledWith(
-      '/auth/logout',
-      { refreshToken: 'refresh-1' },
-      { headers: { Authorization: 'Bearer access-1' } }
-    );
-    expect(httpClient.post).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: true, data: undefined });
-  });
-
-  it('maps a rejected request into a failure result instead of throwing', async () => {
-    vi.mocked(authGatewayPublicClient.post).mockRejectedValue(
-      new Error('network down')
-    );
-
-    const result = await authService.logout('access-1', 'refresh-1');
-
-    expect(result.ok).toBe(false);
-  });
-});
-
 describe('authService.requestOtp', () => {
   it('POSTs to authGatewayPublicClient (not httpClient) and returns a success result on 2xx', async () => {
     vi.mocked(authGatewayPublicClient.post).mockResolvedValue({
