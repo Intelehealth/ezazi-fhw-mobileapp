@@ -25,4 +25,7 @@ export const ALERT_CODE = deepFreeze({
   NONE: '',
 } as const);
 
+// MOTHER_DECEASED_FLAG obs on a mother death (Android `VisitOutcome.MotherDeceased.YES.name()`).
+export const MOTHER_DECEASED_YES = 'YES';
+
 export type AlertCode = (typeof ALERT_CODE)[keyof typeof ALERT_CODE];

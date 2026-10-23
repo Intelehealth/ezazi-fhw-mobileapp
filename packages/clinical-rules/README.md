@@ -152,6 +152,15 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
   - Not reproduced (malformed, never written; decided 2026-10-15): Gson's lenient reading of single-quoted or unquoted JSON, and keeping a number's exact text (`20.0` reads as `"20"`). `isNoResponse` also trims, where Android does not.
 - **Trimming:** text is trimmed like Java `String.trim()` (no Unicode spaces).
 
+### Building the obs to save
+
+- `buildNewCardObs(input, notes)`: the obs Android's `saveObs` writes for a new card, in field order. A filled value gets its alert code in `comment`; "No" or the infusion JSON for Oxytocin and IV Fluids; "No" or one obs per medicine; one obs per note. Empty values write nothing; non-value rows leave `comment` null, as Android.
+- `buildEditedCardObs(stored, input, notes)`: re-saving a card the write-new way (DB_CONVENTIONS, decided 2026-10-23). It returns obs to insert and obs uuids to void, with the same end result as Android's EDIT save read newest-first: a changed value is a new obs (a cleared one is saved empty), an unchanged value writes nothing, a Yes after "No" voids the stale "No", the same infusion JSON is never written twice, removed medicines are voided, and notes are only added.
+
+Each draft carries the field's `conceptKey`; the app resolves it to the concept uuid and adds the encounter, creator and time in one `transact`.
+
+**Deviation:** Android updates an edited obs in place (and voids by uuid); here every change is a new obs and the newest wins (DB_CONVENTIONS write-new).
+
 ## Validation ranges (per client)
 
 | Range | Android | Checked |
@@ -229,6 +238,28 @@ Options match ignoring case, as Java `equalsIgnoreCase`. Thresholds are the same
 - **Amniotic fluid is coded** (decided 2026-10-23, Kaveri): `M+++` and `B` are `'R'`, the others `'G'`. Android's rule is keyed on "Amniotic fluid meconium" but the field is named "Amniotic Fluid", so on Android it is always `'G'`.
 - **Text that is not a number is `'G'`.** Android throws `NumberFormatException`; the input limits make it unreachable in practice.
 
+## End Stage 1
+
+`STAGE1_OUTCOMES` lists Android's six choices in dialog order. `decideEndStage1(outcome, details, now)` returns what one choice writes (Android `ReferTypeHelper`, `VisitCompletionHelper`):
+
+- **Move to Stage 2** → `startStage2` with `getStageStart('stage2')`: Stage 2's first card, NORMAL marker, Decision Pending cleared.
+- **Refer to other Hospital, Self discharge, Shift to C-Section, Refer to ICU** → `completeVisit`: a VISIT_COMPLETE encounter dated two minutes back, with REFER_TYPE; "Refer to other Hospital" adds the hospital, doctor and note obs that were typed.
+- **Mother Death** → `completeVisit` with MOTHER_DECEASED_FLAG `YES` then the reason, or `reasonRequired` when the reason is empty.
+
+The app also sets the visit end date and marks the visit read, as Android does.
+
+**Deviation:** REFER_TYPE stores the English label whatever the phone's language (decided 2026-10-23, Kaveri); Android stores the label in the UI language.
+
+## Visit risk score
+
+`computeVisitRisk(latest, cervixReadings, stage3Started, now)` is Android's `VisitAlertProcessor` score (whitelabel-master `b3ddd15`):
+
+- `latest` is the newest obs of each `RISK_FIELD_IDS` field across the visit (the app's latest-per-concept read); each `R` scores 1 (`RISK_SCORE.redObs`), anything else 0.
+- Systolic and Diastolic together score at most 1.
+- Until Stage 3 starts, add 2 (`RISK_SCORE.cervixStalled`) when the latest Cervix value has lasted its limit (9 cm 2 h, 8 cm 2.5 h, 7 cm 3 h, 6 cm 5 h, 5 cm 6 h), counted from the first card of the unbroken run of that value. `cervixReadings` are the visit's Cervix obs that have a value and an alert code, each with its card's time.
+
+`formatVisitRisk(score)` gives the `VISIT_RISK` text as Java writes a double (`3.0`). Android recomputes and stores it after every partogram save. The older weighted formula (`RiskWeightConfig`, Y = 0.5) is dead code in Android and is not ported. The patient-list order built on the score belongs to the Home screen and is not ported yet.
+
 ## How an app uses it (mobile)
 
 The app owns storage, notifications and timing. For each active visit on each monitor tick:
@@ -247,8 +278,7 @@ The web app only reads, for example `getUpcomingStep` for "next card due" and `g
 - Stage 4 (postpartum) cards and fields (SOS labels for Stage 4 are ready);
 - the delivery form;
 - Stage 4 validation;
-- the risk score;
-- edit-mode save rules (re-saving a card: duplicate-infusion check, voiding a stale `"No"` or removed medicines, Yes → No on Oxytocin / IV);
+- the patient-list order built on the risk score (Home screen);
 - Assessment / Plan note rules (non-empty, add-only, timestamped when added) and the free-text filter on medicine inputs;
 - administering a doctor's prescription (`*_PRESCRIBED`) into a card;
 - the prolonged-labour warning (Stage 1 ≥ 12 h / 10 h, Stage 2 ≥ 3 h / 2 h, by parity);

@@ -13,13 +13,17 @@ export {
   NO_RESPONSE_VALUE,
   IV_FLUID_OTHER_VALUE,
   ALERT_CODE,
+  MOTHER_DECEASED_YES,
+  STAGE1_OUTCOME,
+  OUTCOME_CONCEPT_KEY,
+  outcomeLabelKey,
   fieldLabelKey,
   optionLabelKey,
   sectionLabelKey,
   infusionInputLabelKey,
   validationMessageKey,
 } from './constants';
-export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId, AlertCode } from './constants';
+export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId, AlertCode, Stage1OutcomeId, OutcomeConceptKey } from './constants';
 
 export {
   STAGE1_SCHEDULE,
@@ -134,6 +138,19 @@ export type {
 } from './ranges/types';
 
 export { getAlertCode } from './alerts/alertCode';
+export { RISK_FIELD_IDS, computeVisitRisk, formatVisitRisk } from './alerts/riskScore';
+export type { RiskObs, CervixReading } from './alerts/riskScore';
+export { RISK_SCORE } from './ranges/riskScore';
+
+export { STAGE1_OUTCOMES, VISIT_COMPLETE_BACKDATE_MINUTES } from './outcomes/stage1Outcomes';
+export type { OutcomeDefinition } from './outcomes/stage1Outcomes';
+export { decideEndStage1 } from './outcomes/decideEndStage1';
+export type { OutcomeDetails, OutcomeObs, EndStage1Decision } from './outcomes/decideEndStage1';
+
+export { buildNewCardObs } from './save/newCardObs';
+export type { ObsDraft, CardNotes } from './save/newCardObs';
+export { buildEditedCardObs } from './save/editedCardObs';
+export type { StoredObs, CardEdit } from './save/editedCardObs';
 
 export { encodeInfusion, decodeInfusion } from './storage/infusionJson';
 export type { InfusionEntry } from './storage/infusionJson';

@@ -8,4 +8,5 @@ export * from './infusionInputs';
 export * from './sections';
 export * from './stages';
 export * from './storedValues';
+export * from './outcomes';
 export * from './i18nKeys';
