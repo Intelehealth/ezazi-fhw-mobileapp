@@ -81,6 +81,8 @@ Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.*
 
 Also SDK-managed (added 2026-10-05 with the low-battery alert, §11): `expo-battery` — battery level + plug state for `core/services/batteryGuard`.
 
+Also SDK-managed (added 2026-10-23 for the observation capture screen): `react-native-pager-view` 8.0.2, the version Expo SDK 57 bundles — swipe between the capture screen's tabs (Figma swipe rule). New Architecture only, so it passes the §5 gate.
+
 Two more arrived on 2026-10-12 and are listed in (B) above: `expo-crypto` (`randomUUID()`, reached only through `core/db/uuid.ts`) and `expo-font` (required by `@expo-google-fonts/lato`; keep the direct entry rather than relying on `expo` hoisting it).
 
 ### (C) Tooling — must be installed
