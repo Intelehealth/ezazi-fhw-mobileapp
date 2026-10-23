@@ -16,6 +16,8 @@ export type DbPhase = 'idle' | 'preparing' | 'hydrating' | 'ready' | 'failed';
 
 interface DbBootstrapState {
   phase: DbPhase;
+  /** The fake patient's visit, set only when the dev seed ran (EXPO_PUBLIC_DEV_SEED). */
+  devVisitUuid: string | null;
   /** Idempotent — safe to call from a screen effect on every mount. */
   initialise: (providerUuid?: string | null) => Promise<void>;
   /** Logout teardown — forget readiness so the next login rebuilds from scratch. */
@@ -23,11 +25,12 @@ interface DbBootstrapState {
 }
 
 /** A failed dev seed is logged and never blocks the real database from being ready. */
-function seedQuietly(providerUuid: string): void {
+function seedQuietly(providerUuid: string): string | null {
   try {
-    runDevSeed(providerUuid);
+    return runDevSeed(providerUuid);
   } catch (error: unknown) {
     logger.error('[db] dev seed failed', error);
+    return null;
   }
 }
 
@@ -45,6 +48,7 @@ function seedQuietly(providerUuid: string): void {
  */
 export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
   phase: 'idle',
+  devVisitUuid: null,
 
   initialise: async (providerUuid) => {
     // Already running, or already done — nothing to do. zustand's set is
@@ -56,8 +60,8 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
 
     try {
       await ensureSchema();
-      if (env.DEV_SEED && providerUuid) seedQuietly(providerUuid);
-      set({ phase: 'ready' });
+      const devVisitUuid = env.DEV_SEED && providerUuid ? seedQuietly(providerUuid) : null;
+      set({ phase: 'ready', devVisitUuid });
     } catch (error: unknown) {
       // Console-only. Nothing surfaces this to the user by design.
       logger.error('[db] schema init failed', error);
@@ -70,6 +74,6 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
     // reachable on its own, and clearing `phase` is the half teardown cannot
     // do — without it the next login sees 'ready' and skips init entirely.
     resetSchemaInit();
-    set({ phase: 'idle' });
+    set({ phase: 'idle', devVisitUuid: null });
   },
 }));

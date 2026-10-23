@@ -9,19 +9,24 @@ import { StageProgressBar } from '../components/StageProgressBar';
 import { TimelineCheckpointCard } from '../components/TimelineCheckpointCard';
 import { TimelineActionBar } from '../components/TimelineActionBar';
 import { MOCK_CHECKPOINTS, MOCK_PATIENT } from '../domain/timeline.mock';
+import { useTimelineViewModel } from '../stores/useTimelineViewModel';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Timeline'>;
 
 /**
  * Labour-monitoring timeline — patient header, stage stepper, the
- * observation checklist, and the quick-action bar. Falls back to sample
- * data (see timeline.mock.ts) when opened without route params, so it's
- * previewable before the real patient/checkpoint repository exists.
+ * observation checklist, and the quick-action bar. With a `visitUuid` it shows
+ * that visit from the database (useTimelineViewModel); without one it previews
+ * the sample data in timeline.mock.ts.
  */
 export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
-  const patient = route.params?.patient ?? MOCK_PATIENT;
-  const checkpoints = route.params?.checkpoints ?? MOCK_CHECKPOINTS;
-  const activeStage = route.params?.activeStage ?? 'stage1';
+  const visitUuid = route.params?.visitUuid;
+  const viewModel = useTimelineViewModel(visitUuid);
+  if (visitUuid && !viewModel?.patient) return <View style={styles.screen} />;
+
+  const patient = viewModel?.patient ?? route.params?.patient ?? MOCK_PATIENT;
+  const checkpoints = viewModel?.checkpoints ?? route.params?.checkpoints ?? MOCK_CHECKPOINTS;
+  const activeStage = viewModel?.activeStage ?? route.params?.activeStage ?? 'stage1';
 
   return (
     <View style={styles.screen}>

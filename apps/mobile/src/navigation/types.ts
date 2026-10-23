@@ -25,6 +25,8 @@ export type RootStackParamList = {
   // (no patient/checkpoint repository exists yet; see MOBILE_STACK.md §9).
   Timeline:
     | {
+        /** The visit to show from the database; without it the screen previews sample data. */
+        visitUuid?: string;
         patient?: PatientSummary;
         checkpoints?: TimelineCheckpoint[];
         activeStage?: LabourStage;

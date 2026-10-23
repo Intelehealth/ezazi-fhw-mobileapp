@@ -250,7 +250,8 @@
     "title": "Home",
     "note": "Logged in. Active cases will appear here.",
     "logout": "Log out (EZ-943)",
-    "addPatient": "Add Patient"
+    "addPatient": "Add Patient",
+    "devTimeline": "Open test patient timeline (dev)"
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"
@@ -285,7 +286,8 @@
       "completed": "Completed",
       "missed": "Missed",
       "dueNow": "Due Now",
-      "upcoming": "Upcoming"
+      "upcoming": "Upcoming",
+      "sosCaptured": "SOS"
     },
     "checkpoint": {
       "completedBody": "You have captured the observations",
@@ -293,7 +295,8 @@
       "missedBody": "You have missed the collection of observation",
       "dueNowBody": "Tap to capture observations",
       "upcomingBody": "Will be available at {{time}} (in {{minutes}} min)",
-      "recordNow": "Record Now"
+      "recordNow": "Record Now",
+      "sosCapturedBody": "SOS observation captured"
     },
     "actions": {
       "sos": "SOS",
@@ -310,7 +313,8 @@
       "chat": "Open chat",
       "videoCall": "Start video call",
       "rx": "Open prescription"
-    }
+    },
+    "gravidaShort": "G{{gravida}}"
   },
   "partogram": {
     "field": {

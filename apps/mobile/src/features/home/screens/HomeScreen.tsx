@@ -32,6 +32,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const providerUuid = useAuthStore((s) => s.userUuid);
   const initialiseDb = useDbBootstrapStore((s) => s.initialise);
+  const devVisitUuid = useDbBootstrapStore((s) => s.devVisitUuid);
 
   useEffect(() => {
     void initialiseDb(providerUuid);
@@ -52,6 +53,17 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.btn}>
         <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />
       </View>
+
+      {/* Development builds with EXPO_PUBLIC_DEV_SEED only: the fake patient's timeline. */}
+      {devVisitUuid && (
+        <View style={styles.btn}>
+          <AppButton
+            label={t('home.devTimeline')}
+            onPress={() => navigation.navigate('Timeline', { visitUuid: devVisitUuid })}
+            variant="secondary"
+          />
+        </View>
+      )}
 
       {/* Android flow: Add Patient → Privacy Notice consent → registration */}
       <AppButton

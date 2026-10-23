@@ -1,7 +1,9 @@
 import { transact } from '../tx';
 import { seedDevPatient } from './devPatient';
+import { DEV_VISIT_UUID } from './devPatient.data';
 
-/** Development builds only: writes the fake labour patient in one transaction. */
-export function runDevSeed(providerUuid: string): boolean {
-  return transact((tx) => seedDevPatient({ providerUuid, now: Date.now() }, tx));
+/** Development builds only: writes the fake labour patient once; returns its visit uuid. */
+export function runDevSeed(providerUuid: string): string {
+  transact((tx) => seedDevPatient({ providerUuid, now: Date.now() }, tx));
+  return DEV_VISIT_UUID;
 }

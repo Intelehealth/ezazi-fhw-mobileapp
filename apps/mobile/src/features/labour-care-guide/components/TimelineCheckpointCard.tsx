@@ -22,6 +22,7 @@ const STATUS_ACCENT: Record<CheckpointStatus, string> = {
   missed: colors.error,
   dueNow: colors.primary,
   upcoming: colors.border,
+  sosCaptured: colors.error,
 };
 
 function formatTime(iso: string): string {
@@ -88,6 +89,12 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
               </Text>
             )}
           </View>
+        )}
+
+        {checkpoint.status === 'sosCaptured' && (
+          <Text style={[styles.body, { fontSize: fs('timelineCardBody') }]}>
+            {t('timeline.checkpoint.sosCapturedBody')}
+          </Text>
         )}
 
         {checkpoint.status === 'missed' && (

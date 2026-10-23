@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { addDatabaseChangeListener, openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { getTableName, type Table } from 'drizzle-orm';
 
 import { schemaRelations } from './relations';
 import { schema } from './schema';
@@ -42,6 +43,15 @@ export function getDb(): ReturnType<typeof createOrm> {
 export function getRawDb(): SQLiteDatabase {
   if (!rawHandle) getDb();
   return rawHandle as SQLiteDatabase;
+}
+
+/** Calls `listener` after any write to one of `tables`; returns the unsubscribe. For reads outside `useLiveQuery`. */
+export function onTablesChanged(tables: readonly Table[], listener: () => void): () => void {
+  const names = new Set(tables.map((table) => getTableName(table)));
+  const subscription = addDatabaseChangeListener((event) => {
+    if (names.has(event.tableName)) listener();
+  });
+  return () => subscription.remove();
 }
 
 /** Whether the database has actually been opened in this process. */
