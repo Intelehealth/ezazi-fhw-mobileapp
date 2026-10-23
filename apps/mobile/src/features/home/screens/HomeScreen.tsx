@@ -30,11 +30,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const monitorTicks = useMonitorTickCount();
   const backbone = useBackboneStatus();
 
+  const providerUuid = useAuthStore((s) => s.userUuid);
   const initialiseDb = useDbBootstrapStore((s) => s.initialise);
 
   useEffect(() => {
-    void initialiseDb();
-  }, [initialiseDb]);
+    void initialiseDb(providerUuid);
+  }, [initialiseDb, providerUuid]);
 
   return (
     <View style={styles.container}>

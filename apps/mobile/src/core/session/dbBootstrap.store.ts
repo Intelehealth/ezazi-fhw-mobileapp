@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
+import { env } from '@/core/config/env';
 import { ensureSchema, resetSchemaInit } from '@/core/db/init';
+import { runDevSeed } from '@/core/db/seeds';
 import { logger } from '@/core/utils/logger';
 
 /**
@@ -15,9 +17,18 @@ export type DbPhase = 'idle' | 'preparing' | 'hydrating' | 'ready' | 'failed';
 interface DbBootstrapState {
   phase: DbPhase;
   /** Idempotent — safe to call from a screen effect on every mount. */
-  initialise: () => Promise<void>;
+  initialise: (providerUuid?: string | null) => Promise<void>;
   /** Logout teardown — forget readiness so the next login rebuilds from scratch. */
   reset: () => void;
+}
+
+/** A failed dev seed is logged and never blocks the real database from being ready. */
+function seedQuietly(providerUuid: string): void {
+  try {
+    runDevSeed(providerUuid);
+  } catch (error: unknown) {
+    logger.error('[db] dev seed failed', error);
+  }
 }
 
 /**
@@ -35,7 +46,7 @@ interface DbBootstrapState {
 export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
   phase: 'idle',
 
-  initialise: async () => {
+  initialise: async (providerUuid) => {
     // Already running, or already done — nothing to do. zustand's set is
     // synchronous, so a second caller in the same tick sees 'preparing'.
     const { phase } = get();
@@ -45,6 +56,7 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
 
     try {
       await ensureSchema();
+      if (env.DEV_SEED && providerUuid) seedQuietly(providerUuid);
       set({ phase: 'ready' });
     } catch (error: unknown) {
       // Console-only. Nothing surfaces this to the user by design.

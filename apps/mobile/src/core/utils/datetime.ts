@@ -16,8 +16,8 @@ dayjs.extend(utc);
  * `ZZ` is the no-colon offset that matches Java's `Z`.
  * Changing this changes what the server receives.
  */
-export function localIsoTimestamp(): string {
-  return dayjs().format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
+export function localIsoTimestamp(at?: number): string {
+  return dayjs(at).format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
 }
 
 /**
@@ -28,6 +28,6 @@ export function localIsoTimestamp(): string {
  * every pulled one whatever the real time. Which entity gets which is the
  * legacy's split, preserved: patient and visit local, encounter and obs UTC.
  */
-export function utcIsoTimestamp(): string {
-  return dayjs().utc().format('YYYY-MM-DD HH:mm:ss');
+export function utcIsoTimestamp(at?: number): string {
+  return dayjs(at).utc().format('YYYY-MM-DD HH:mm:ss');
 }

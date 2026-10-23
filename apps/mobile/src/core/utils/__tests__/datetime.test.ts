@@ -51,6 +51,11 @@ describe('utcIsoTimestamp', () => {
     expect([utcIsoTimestamp(), pulled].sort()).toEqual([pulled, utcIsoTimestamp()]);
   });
 
+  it('formats a given instant instead of now when one is passed', () => {
+    expect(utcIsoTimestamp(Date.UTC(2026, 9, 23, 7, 5, 9))).toBe('2026-10-23 07:05:09');
+    expect(localIsoTimestamp(Date.UTC(2026, 9, 23, 7, 5, 9))).toMatch(/^2026-10-2\d/);
+  });
+
   it('is UTC, not local time', () => {
     const now = new Date();
     const [, hours] = /\d{4}-\d{2}-\d{2} (\d{2}):/.exec(utcIsoTimestamp()) ?? [];

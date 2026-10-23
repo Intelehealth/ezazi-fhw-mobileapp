@@ -28,6 +28,9 @@ export const env = {
 
   SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
 
+  // Fake labour patient for local testing; never on in a release build.
+  DEV_SEED: __DEV__ && process.env.EXPO_PUBLIC_DEV_SEED === 'true',
+
   APP_VERSION: Constants.expoConfig?.version ?? '0.0.0',
 } as const;
 

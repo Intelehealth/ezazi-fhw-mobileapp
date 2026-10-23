@@ -26,6 +26,9 @@ export type Ward = typeof WARD_LABOR | typeof WARD_POST_NATAL;
  */
 export const VISIT_READ_STATUS_VALUE = '$';
 
+/** `tbl_obs.value` of the MISSED_ENCOUNTER marker, as Android's `checkObsAndCreateMissedObs` writes it. */
+export const MISSED_ENCOUNTER_VALUE = '-';
+
 /**
  * `tbl_image_records.image_type`. The only value the legacy ever wrote or
  * filtered on — the table holds patient profile pictures and nothing else.

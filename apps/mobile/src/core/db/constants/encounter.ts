@@ -106,6 +106,15 @@ export function encounterTypeName(typeUuid: string): string | null {
   return ENCOUNTER_TYPE_NAMES[typeUuid] ?? null;
 }
 
+const ENCOUNTER_TYPE_UUIDS: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(ENCOUNTER_TYPE_NAMES).map(([uuid, name]) => [name, uuid]),
+);
+
+/** The uuid for one encounter type name (e.g. a card name), or null. Inverse of `encounterTypeName`. */
+export function encounterTypeUuid(name: string): string | null {
+  return ENCOUNTER_TYPE_UUIDS[name] ?? null;
+}
+
 const typesNamed = (matches: (name: string) => boolean): readonly string[] =>
   Object.entries(ENCOUNTER_TYPE_NAMES)
     .filter(([, name]) => matches(name))
