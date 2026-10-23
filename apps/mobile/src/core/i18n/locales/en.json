@@ -311,5 +311,196 @@
       "videoCall": "Start video call",
       "rx": "Open prescription"
     }
+  },
+  "partogram": {
+    "field": {
+      "companion": "Companion",
+      "painRelief": "Pain relief",
+      "oralFluid": "Oral fluid",
+      "posture": "Posture",
+      "baselineFhr": "Baseline FHR (bpm)",
+      "fhrDeceleration": "FHR deceleration",
+      "amnioticFluid": "Amniotic fluid",
+      "fetalPosition": "Fetal position",
+      "caput": "Caput",
+      "moulding": "Moulding",
+      "pulse": "Pulse",
+      "systolicBp": "Systolic BP (mmHg)",
+      "diastolicBp": "Diastolic BP (mmHg)",
+      "temperature": "Temperature (°F)",
+      "urineProtein": "Urine protein",
+      "urineAcetone": "Urine acetone",
+      "contractionsPer10Min": "Contractions / 10 min",
+      "contractionDuration": "Duration (seconds)",
+      "cervix": "Cervix (cm)",
+      "descent": "Descent",
+      "oxytocin": "Oxytocin administered?",
+      "medicine": "Medicine administered?",
+      "ivFluids": "IV fluids administered?",
+      "assessment": "Assessment",
+      "plan": "Plan",
+      "supervisorDoctor": "Supervisor / Doctor"
+    },
+    "option": {
+      "companion": {
+        "yes": "Yes",
+        "no": "No",
+        "womanDeclines": "Woman declines"
+      },
+      "painRelief": {
+        "yes": "Yes",
+        "no": "No",
+        "womanDeclines": "Woman declines"
+      },
+      "oralFluid": {
+        "yes": "Yes",
+        "no": "No",
+        "womanDeclines": "Woman declines"
+      },
+      "posture": {
+        "supine": "Supine",
+        "mobile": "Mobile"
+      },
+      "fhrDeceleration": {
+        "no": "No",
+        "early": "Early",
+        "late": "Late",
+        "variable": "Variable"
+      },
+      "amnioticFluid": {
+        "intact": "I (Intact)",
+        "clear": "C (Clear fluid)",
+        "meconium1": "M+ (Meconium stained fluid-Nonsignificant)",
+        "meconium2": "M++ (Meconium stained fluid-Medium)",
+        "meconium3": "M+++ (Meconium stained fluid-Thick)",
+        "bloodStained": "B (Blood stained)"
+      },
+      "fetalPosition": {
+        "anterior": "A (Occiput anterior)",
+        "posterior": "P (Occiput posterior)",
+        "transverse": "T (Occiput transverse)"
+      },
+      "caput": {
+        "none": "0 (None)",
+        "plus1": "+",
+        "plus2": "++",
+        "plus3": "+++ (Marked)"
+      },
+      "moulding": {
+        "none": "0 (None)",
+        "plus1": "+ (Sutures apposed)",
+        "plus2": "++ (Sutures overlapped but reducible)",
+        "plus3": "+++ (Sutures overlapped but not reducible)"
+      },
+      "urineProtein": {
+        "negative": "No Proteinuria (P-)",
+        "trace": "Trace of Proteinuria (P Trace)",
+        "p1": "P1+",
+        "p2": "P2+",
+        "p3": "P3+",
+        "p4": "P4+"
+      },
+      "urineAcetone": {
+        "negative": "No Acetonuria (A-)",
+        "trace": "Trace of Acetonuria (A Trace)",
+        "a1": "A1+",
+        "a2": "A2+",
+        "a3": "A3+",
+        "a4": "A4+"
+      },
+      "cervix": {
+        "5": "5",
+        "6": "6",
+        "7": "7",
+        "8": "8",
+        "9": "9",
+        "10": "10",
+        "pushing": "Pushing"
+      },
+      "descent": {
+        "0": "0",
+        "1": "1",
+        "2": "2",
+        "3": "3",
+        "4": "4",
+        "5": "5"
+      },
+      "infusionStatus": {
+        "started": "Started",
+        "continued": "Continued",
+        "stopped": "Stopped"
+      },
+      "ivFluidType": {
+        "ringerLactate": "Ringer Lactate",
+        "normalSaline": "Normal Saline",
+        "dextrose5": "Dextrose 5% (D5)",
+        "other": "Other IV Fluid*"
+      }
+    },
+    "section": {
+      "supportiveCare": "Supportive care",
+      "baby": "Baby",
+      "woman": "Woman",
+      "labourProgress": "Labour progress",
+      "medication": "Medication",
+      "sharedDecisionMaking": "Shared decision"
+    },
+    "infusion": {
+      "oxytocinStrength": "Strength (U/L)",
+      "infusionRate": "IV infusion rate (drops/minute)",
+      "infusionStatus": "IV infusion status",
+      "ivFluidType": "Type of IV fluid"
+    },
+    "outcome": {
+      "moveToStage2": "Move to Stage 2",
+      "referOtherHospital": "Refer to other Hospital",
+      "selfDischarge": "Self discharge against Medical Advice",
+      "shiftToCSection": "Shift to C-Section",
+      "referToIcu": "Refer to high dependency unit / ICU",
+      "motherDeath": "Mother Death"
+    },
+    "validation": {
+      "baselineFhr": {
+        "outOfRange": "Please enter Baseline FHR in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "pulse": {
+        "outOfRange": "Please enter Pulse in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "systolicBp": {
+        "outOfRange": "Please enter Systolic BP in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "diastolicBp": {
+        "outOfRange": "Please enter Diastolic BP in between {{min}} and {{max}}.\nDiastolic BP should be less than Systolic BP",
+        "notBelowSystolic": "Diastolic BP must be less than Systolic BP",
+        "enterSystolicFirst": "Enter Systolic BP before Diastolic BP",
+        "notANumber": "Please enter a number"
+      },
+      "temperature": {
+        "outOfRange": "Please enter Temperature between {{min}} and {{max}} °F",
+        "notANumber": "Please enter a number"
+      },
+      "contractionDuration": {
+        "outOfRange": "Please enter Duration of contraction in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "oxytocin": {
+        "infusionIncomplete": "Please enter all Oxytocin required field\n\nOR\n\nSelect \"No\" to continue."
+      },
+      "ivFluids": {
+        "infusionIncomplete": "Please enter all IV Fluids required field\n\nOR\n\nSelect \"No\" to continue."
+      },
+      "medicine": {
+        "medicineMissing": "Please add at least 1 medicine\n\nOR\n\nSelect \"No\" to continue."
+      },
+      "oxytocinStrength": {
+        "outOfRange": "Strength must be in range of {{min}} to {{max}}"
+      },
+      "infusionRate": {
+        "outOfRange": "Infusion Rate must be in range of {{min}} to {{max}}"
+      }
+    }
   }
 }
