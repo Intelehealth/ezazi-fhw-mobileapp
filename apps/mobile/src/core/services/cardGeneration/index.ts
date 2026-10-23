@@ -1,5 +1,7 @@
+import { env } from '@/core/config/env';
 import { getDb } from '@/core/db';
 import { ensureSchema } from '@/core/db/init';
+import { DEV_CREATOR_UUID } from '@/core/db/seeds';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { logger } from '@/core/utils/logger';
 
@@ -11,11 +13,13 @@ export type { ScanIdentity, ScanResult } from './scan';
 let inFlight: Promise<ScanResult | null> | null = null;
 
 async function scanWithSession(now: number): Promise<ScanResult | null> {
-  const [accessToken, providerUuid, creatorUuid] = await Promise.all([
+  const [accessToken, providerUuid, storedCreator] = await Promise.all([
     secureStorage.get('accessToken'),
     secureStorage.get('userUuid'),
     secureStorage.get('creatorUuid'),
   ]);
+  // Temporary, dev seed builds only: a session from before the creator uuid was stored.
+  const creatorUuid = storedCreator ?? (env.DEV_SEED ? DEV_CREATOR_UUID : null);
   // No session, no database (ARCHITECTURE_RULES §6): a tick after logout touches nothing.
   if (!accessToken || !providerUuid || !creatorUuid) return null;
 

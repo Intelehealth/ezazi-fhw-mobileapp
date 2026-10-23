@@ -54,6 +54,9 @@ export const DEV_PATIENT = {
 
 export const DEV_VISIT_UUID = 'b7d4f2a0-5c1e-4f3a-9a6b-2d8e7c0f1a02';
 
+/** Stand-in obs creator while a dev session has no stored user uuid (log in again to get the real one). */
+export const DEV_CREATOR_UUID = 'b7d4f2a0-5c1e-4f3a-9a6b-2d8e7c0f1a03';
+
 export const DEV_ADMITTED_MINUTES_AGO = 125;
 
 export const DEV_ADMISSION_VALUES: readonly DevObs[] = [
