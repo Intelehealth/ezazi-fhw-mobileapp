@@ -12,13 +12,14 @@ export {
   PRIVACY_NOTICE_VALUE,
   NO_RESPONSE_VALUE,
   IV_FLUID_OTHER_VALUE,
+  ALERT_CODE,
   fieldLabelKey,
   optionLabelKey,
   sectionLabelKey,
   infusionInputLabelKey,
   validationMessageKey,
 } from './constants';
-export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId } from './constants';
+export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId, AlertCode } from './constants';
 
 export {
   STAGE1_SCHEDULE,
@@ -79,6 +80,7 @@ export type {
 } from './fields/types';
 
 export { BASE_RANGES } from './ranges/baseRanges';
+export { ALERT_THRESHOLDS } from './ranges/alertThresholds';
 export { INPUT_LIMITS, INFUSION_INPUT_LIMITS } from './ranges/inputLimits';
 export type { LimitedInputId, LimitedInfusionInputId } from './ranges/inputLimits';
 export {
@@ -100,7 +102,12 @@ export type {
   IntegerLimits,
   DecimalLimits,
   TextLimits,
+  AlertThresholdId,
+  AlertThreshold,
+  AlertThresholdTable,
 } from './ranges/types';
+
+export { getAlertCode } from './alerts/alertCode';
 
 export { encodeInfusion, decodeInfusion } from './storage/infusionJson';
 export type { InfusionEntry } from './storage/infusionJson';

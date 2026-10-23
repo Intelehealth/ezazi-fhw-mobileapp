@@ -15,6 +15,12 @@ const option = (field: FieldId, value: string, slug: string, androidLabel: strin
   androidLabel,
 });
 
+/** An option `PartogramAlertEngine.getAlertNameUpdated` marks red. */
+const alertOption = (field: FieldId, value: string, slug: string, androidLabel: string): OptionDefinition => ({
+  ...option(field, value, slug, androidLabel),
+  alert: true,
+});
+
 /** One field: its concept key and label key come from its id, never retyped. */
 function field<Id extends FieldId>(id: Id, data: Omit<FieldDefinition, 'id' | 'conceptKey' | 'labelKey'>) {
   return { id, conceptKey: FIELD_CONCEPT_KEY[id], labelKey: fieldLabelKey(id), ...data };
@@ -22,7 +28,7 @@ function field<Id extends FieldId>(id: Id, data: Omit<FieldDefinition, 'id' | 'c
 
 const YES_NO_DECLINES = (field: FieldId): readonly OptionDefinition[] => [
   option(field, 'Y', 'yes', 'Yes'),
-  option(field, 'N', 'no', 'No'),
+  alertOption(field, 'N', 'no', 'No'),
   option(field, 'D', 'womanDeclines', 'Woman Declines'),
 ];
 
@@ -61,7 +67,7 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
     androidLabel: 'Posture',
     input: {
       kind: 'select',
-      options: [option(FIELD_ID.POSTURE, 'SP', 'supine', 'Supine'), option(FIELD_ID.POSTURE, 'MO', 'mobile', 'Mobile')],
+      options: [alertOption(FIELD_ID.POSTURE, 'SP', 'supine', 'Supine'), option(FIELD_ID.POSTURE, 'MO', 'mobile', 'Mobile')],
     },
     storage: 'value',
     frequency: BOTH_STAGES_HOURLY,
@@ -85,7 +91,7 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
       options: [
         option(FIELD_ID.FHR_DECELERATION, 'N', 'no', 'No'),
         option(FIELD_ID.FHR_DECELERATION, 'E', 'early', 'Early'),
-        option(FIELD_ID.FHR_DECELERATION, 'L', 'late', 'Late'),
+        alertOption(FIELD_ID.FHR_DECELERATION, 'L', 'late', 'Late'),
         option(FIELD_ID.FHR_DECELERATION, 'V', 'variable', 'Variable'),
       ],
     },
@@ -103,8 +109,9 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
         option(FIELD_ID.AMNIOTIC_FLUID, 'C', 'clear', 'C (Clear fluid)'),
         option(FIELD_ID.AMNIOTIC_FLUID, 'M+', 'meconium1', 'M+ (Meconium stained fluid-Nonsignificant)'),
         option(FIELD_ID.AMNIOTIC_FLUID, 'M++', 'meconium2', 'M++ (Meconium stained fluid-Medium)'),
-        option(FIELD_ID.AMNIOTIC_FLUID, 'M+++', 'meconium3', 'M+++ (Meconium stained fluid-Thick)'),
-        option(FIELD_ID.AMNIOTIC_FLUID, 'B', 'bloodStained', 'B (Blood stained)'),
+        // Deviation 2026-10-23 (Kaveri): Android never alerts here (name mismatch); see README.
+        alertOption(FIELD_ID.AMNIOTIC_FLUID, 'M+++', 'meconium3', 'M+++ (Meconium stained fluid-Thick)'),
+        alertOption(FIELD_ID.AMNIOTIC_FLUID, 'B', 'bloodStained', 'B (Blood stained)'),
       ],
     },
     storage: 'value',
@@ -118,8 +125,8 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
       kind: 'select',
       options: [
         option(FIELD_ID.FETAL_POSITION, 'A', 'anterior', 'A (Occiput anterior)'),
-        option(FIELD_ID.FETAL_POSITION, 'P', 'posterior', 'P (Occiput posterior)'),
-        option(FIELD_ID.FETAL_POSITION, 'T', 'transverse', 'T (Occiput transverse)'),
+        alertOption(FIELD_ID.FETAL_POSITION, 'P', 'posterior', 'P (Occiput posterior)'),
+        alertOption(FIELD_ID.FETAL_POSITION, 'T', 'transverse', 'T (Occiput transverse)'),
       ],
     },
     storage: 'value',
@@ -135,7 +142,7 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
         option(FIELD_ID.CAPUT, '0', 'none', '0 (None)'),
         option(FIELD_ID.CAPUT, '+', 'plus1', '+'),
         option(FIELD_ID.CAPUT, '++', 'plus2', '++'),
-        option(FIELD_ID.CAPUT, '+++', 'plus3', '+++ (Marked)'),
+        alertOption(FIELD_ID.CAPUT, '+++', 'plus3', '+++ (Marked)'),
       ],
     },
     storage: 'value',
@@ -151,7 +158,7 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
         option(FIELD_ID.MOULDING, '0', 'none', '0 (None)'),
         option(FIELD_ID.MOULDING, '+', 'plus1', '+ (Sutures apposed)'),
         option(FIELD_ID.MOULDING, '++', 'plus2', '++ (Sutures overlapped but reducible)'),
-        option(FIELD_ID.MOULDING, '+++', 'plus3', '+++ (Sutures overlapped but not reducible)'),
+        alertOption(FIELD_ID.MOULDING, '+++', 'plus3', '+++ (Sutures overlapped but not reducible)'),
       ],
     },
     storage: 'value',
@@ -201,9 +208,9 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
         option(FIELD_ID.URINE_PROTEIN, 'Negative', 'negative', 'No Proteinuria (P-)'),
         option(FIELD_ID.URINE_PROTEIN, 'Trace', 'trace', 'Trace of Proteinuria (P Trace)'),
         option(FIELD_ID.URINE_PROTEIN, 'P1+', 'p1', 'P1+'),
-        option(FIELD_ID.URINE_PROTEIN, 'P2+', 'p2', 'P2+'),
-        option(FIELD_ID.URINE_PROTEIN, 'P3+', 'p3', 'P3+'),
-        option(FIELD_ID.URINE_PROTEIN, 'P4+', 'p4', 'P4+'),
+        alertOption(FIELD_ID.URINE_PROTEIN, 'P2+', 'p2', 'P2+'),
+        alertOption(FIELD_ID.URINE_PROTEIN, 'P3+', 'p3', 'P3+'),
+        alertOption(FIELD_ID.URINE_PROTEIN, 'P4+', 'p4', 'P4+'),
       ],
     },
     storage: 'value',
@@ -219,9 +226,9 @@ export const STAGE1_AND_2_FIELDS = deepFreeze([
         option(FIELD_ID.URINE_ACETONE, 'Negative', 'negative', 'No Acetonuria (A-)'),
         option(FIELD_ID.URINE_ACETONE, 'Trace', 'trace', 'Trace of Acetonuria (A Trace)'),
         option(FIELD_ID.URINE_ACETONE, 'A1+', 'a1', 'A1+'),
-        option(FIELD_ID.URINE_ACETONE, 'A2+', 'a2', 'A2+'),
-        option(FIELD_ID.URINE_ACETONE, 'A3+', 'a3', 'A3+'),
-        option(FIELD_ID.URINE_ACETONE, 'A4+', 'a4', 'A4+'),
+        alertOption(FIELD_ID.URINE_ACETONE, 'A2+', 'a2', 'A2+'),
+        alertOption(FIELD_ID.URINE_ACETONE, 'A3+', 'a3', 'A3+'),
+        alertOption(FIELD_ID.URINE_ACETONE, 'A4+', 'a4', 'A4+'),
       ],
     },
     storage: 'value',

@@ -127,7 +127,7 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
 
 | `storage` | Fields | Android writes | `comment` |
 |---|---|---|---|
-| `value` | 21 fields (selects, numbers, Supervisor Doctor) | One obs with the option value / typed value. Skipped when empty on a new card; **on an edited card a cleared value is saved as an empty value** | Alert code (`'G'` / `'R'`, `''` when empty). DB_CONVENTIONS lists `'R'` / `'Y'` / `''` only: `'G'` awaits Arpan (`.notes` A1) |
+| `value` | 21 fields (selects, numbers, Supervisor Doctor) | One obs with the option value / typed value. Skipped when empty on a new card; **on an edited card a cleared value is saved as an empty value** | Alert code (`'G'` / `'R'`, `''` when empty), as Android's `getAlertNameUpdated`. Decided 2026-10-23; DB_CONVENTIONS updated to match |
 | `infusion` | Oxytocin, IV Fluids | `"No"` (`NO_RESPONSE_VALUE`) when No; otherwise one obs with Gson JSON (`encodeInfusion`) | none |
 | `medicineList` | Medicine | `"No"` when No; otherwise one obs per medicine, `Form \| Name \| … ` (`encodeMedicine`) | `''` |
 | `noteList` | Assessment, Plan | One obs per note, the note text | none |
@@ -188,6 +188,20 @@ A medicine needs `MEDICINE_REQUIRED_FIELDS` before it can be added (Android `New
 
 **Deviation:** Android crashes on text that is not a number in a number box; here it is `notANumber`. The input limits make it unreachable in practice.
 
+## Alert codes (Stage 1 and Stage 2)
+
+`getAlertCode(fieldId, value)` gives the `obs.comment` code for one value field, as Android's `PartogramAlertEngine.getAlertNameUpdated` (whitelabel-master `b3ddd15`):
+
+- `ALERT_CODE.NONE` (`''`) when the value is empty;
+- `ALERT_CODE.RED` (`'R'`) for an option marked `alert` in the field data, or a number past its `ALERT_THRESHOLDS` entry (Android's exact `<`, `<=`, `>`, `>=`);
+- `ALERT_CODE.GREEN` (`'G'`) for any other value, including fields Android never codes red (Cervix, Descent, Supervisor Doctor).
+
+Options match ignoring case, as Java `equalsIgnoreCase`. Thresholds are the same for every client; they are not part of a range profile. Infusion, medicine and note rows are never coded: the app leaves their `comment` null, as Android does.
+
+**Deviations from Android:**
+- **Amniotic fluid is coded** (decided 2026-10-23, Kaveri): `M+++` and `B` are `'R'`, the others `'G'`. Android's rule is keyed on "Amniotic fluid meconium" but the field is named "Amniotic Fluid", so on Android it is always `'G'`.
+- **Text that is not a number is `'G'`.** Android throws `NumberFormatException`; the input limits make it unreachable in practice.
+
 ## How an app uses it (mobile)
 
 The app owns storage, notifications and timing. For each active visit on each monitor tick:
@@ -207,7 +221,7 @@ The web app only reads, for example `getUpcomingStep` for "next card due" and `g
 - the delivery form;
 - card status (completed / missed / due now / upcoming);
 - Stage 4 validation;
-- alert codes and the risk score;
+- the risk score;
 - the medicine sub-form option lists (Android resource arrays);
 - edit-mode save rules (re-saving a card: duplicate-infusion check, voiding a stale `"No"` or removed medicines, Yes → No on Oxytocin / IV);
 - Assessment / Plan note rules (non-empty, add-only, timestamped when added) and the free-text filter on medicine inputs;
