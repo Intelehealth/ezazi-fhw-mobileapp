@@ -181,6 +181,8 @@ describe('SOS labels', () => {
     expect(parseCardStageHour('Stage1_Hour15_2')).toEqual({ stage: 'stage1', hour: 15 });
     expect(parseCardStageHour('Stage3_Hour4_1')).toEqual({ stage: 'stage4', hour: 4 });
     expect(parseCardStageHour('DELIVERY_OUTCOME_STAGE3')).toBeNull();
+    expect(parseCardStageHour('Stage4_Hour1_1')).toBeNull(); // digit 4 is no stage
+    expect(getSosCardStage('Stage9_Hour1_SOS1')).toBeNull();
     expect(parseCardStageHour('LCG_SOS')).toBeNull();
   });
 });

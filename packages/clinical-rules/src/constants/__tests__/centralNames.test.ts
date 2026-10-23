@@ -44,14 +44,16 @@ describe('names live in constants/ only', () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
-  it('no id or concept key is retyped as a string outside constants/', () => {
+  it('no id or concept key is retyped outside constants/, as a string or an object key', () => {
     const found: string[] = [];
     for (const file of files) {
       const path = relative(SRC, file);
       const text = code(file);
       for (const name of NAMES) {
         if (ALLOWED[path]?.includes(name)) continue;
-        if (new RegExp(`(['"\`])${name}\\1`).test(text)) found.push(`${path}: '${name}'`);
+        const quoted = new RegExp(`(['"\`])${name}\\1`);
+        const asKey = new RegExp(`(^|[\\s{,])${name}\\??\\s*:`, 'm');
+        if (quoted.test(text) || asKey.test(text)) found.push(`${path}: '${name}'`);
       }
     }
     expect(found).toEqual([]);

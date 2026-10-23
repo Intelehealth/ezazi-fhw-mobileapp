@@ -2,13 +2,14 @@ import { formatSosName } from '../cards/cardName';
 import { CARD_NAME_PART, NORMAL_CARD_MARKER, STAGE, STAGE_DIGIT } from '../constants';
 import { JAVA_INT } from '../internal/javaNumbers';
 import type { EncounterKind, SosLabel, SosStage } from './types';
+import { deepFreeze } from '../internal/deepFreeze';
 
 /**
  * The SOS label stored in `SOS_STAGE_HOUR`. Built and read with the name parts in
  * `constants/stages.ts`; Stage 4 keeps Android's digit 3.
  */
 
-const STAGE_OF_DIGIT: Readonly<Record<number, SosStage>> = Object.freeze(
+const STAGE_OF_DIGIT: Readonly<Record<number, SosStage>> = deepFreeze(
   Object.fromEntries((Object.keys(STAGE_DIGIT) as SosStage[]).map((stage) => [STAGE_DIGIT[stage], stage])),
 );
 

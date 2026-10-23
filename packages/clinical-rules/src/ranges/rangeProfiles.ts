@@ -17,12 +17,12 @@ export const RANGE_PROFILES: Readonly<Record<RangeProfileId, RangeOverrides>> = 
 function applyOverrides(overrides: RangeOverrides): RangeTable {
   const table = {} as Record<RangeId, ValidationRange>;
   for (const id of Object.keys(BASE_RANGES) as RangeId[]) {
-    table[id] = Object.freeze({ ...BASE_RANGES[id], ...overrides[id] });
+    table[id] = deepFreeze({ ...BASE_RANGES[id], ...overrides[id] });
   }
-  return Object.freeze(table);
+  return deepFreeze(table);
 }
 
-const RESOLVED: Readonly<Record<RangeProfileId, RangeTable>> = Object.freeze({
+const RESOLVED: Readonly<Record<RangeProfileId, RangeTable>> = deepFreeze({
   default: applyOverrides(RANGE_PROFILES.default),
   nepal: applyOverrides(RANGE_PROFILES.nepal),
 });

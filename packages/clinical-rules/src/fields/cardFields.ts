@@ -7,6 +7,7 @@ import { STAGE1_AND_2_FIELDS } from './stage1And2Fields';
 import type { Stage1And2FieldId } from './stage1And2Fields';
 import type { SectionId } from '../constants';
 import type { CardLayout, CardSection, FieldDefinition, OptionDefinition } from './types';
+import { deepFreeze } from '../internal/deepFreeze';
 
 /**
  * Which fields a card shows: `PartogramDataCaptureActivity.prepareDataFor*` and
@@ -14,7 +15,7 @@ import type { CardLayout, CardSection, FieldDefinition, OptionDefinition } from 
  */
 
 /** Android `checkFiveHourField`: named "five hour", really the four-hourly exam cards. */
-export const EXAM_CARD_NAMES: readonly string[] = Object.freeze([
+export const EXAM_CARD_NAMES: readonly string[] = deepFreeze([
   formatCardName(STAGE.STAGE1, 1, 1),
   formatCardName(STAGE.STAGE1, 5, 1),
   formatCardName(STAGE.STAGE1, 9, 1),

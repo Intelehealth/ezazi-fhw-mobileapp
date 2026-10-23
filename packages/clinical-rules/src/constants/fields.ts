@@ -1,8 +1,10 @@
+import { deepFreeze } from '../internal/deepFreeze';
+
 /**
  * Field ids: THE single source. Every other file references these constants;
  * never retype an id as a string. Order is Android's display order.
  */
-export const FIELD_ID = {
+export const FIELD_ID = deepFreeze({
   COMPANION: 'companion',
   PAIN_RELIEF: 'painRelief',
   ORAL_FLUID: 'oralFluid',
@@ -29,7 +31,7 @@ export const FIELD_ID = {
   ASSESSMENT: 'assessment',
   PLAN: 'plan',
   SUPERVISOR_DOCTOR: 'supervisorDoctor',
-} as const;
+} as const);
 
 export type FieldId = (typeof FIELD_ID)[keyof typeof FIELD_ID];
 
@@ -37,7 +39,7 @@ export type FieldId = (typeof FIELD_ID)[keyof typeof FIELD_ID];
  * The app concept constant each field is stored under (mobile `core/db/constants/obs.ts`).
  * Names, never uuids: each app resolves the uuid.
  */
-export const FIELD_CONCEPT_KEY = {
+export const FIELD_CONCEPT_KEY = deepFreeze({
   [FIELD_ID.COMPANION]: 'COMPANION',
   [FIELD_ID.PAIN_RELIEF]: 'PAIN_RELIEF',
   [FIELD_ID.ORAL_FLUID]: 'ORAL_FLUID',
@@ -64,6 +66,6 @@ export const FIELD_CONCEPT_KEY = {
   [FIELD_ID.ASSESSMENT]: 'ASSESSMENT',
   [FIELD_ID.PLAN]: 'PLAN',
   [FIELD_ID.SUPERVISOR_DOCTOR]: 'SUPERVISOR_DOCTOR',
-} as const satisfies Record<FieldId, string>;
+} as const satisfies Record<FieldId, string>);
 
 export type ConceptKey = (typeof FIELD_CONCEPT_KEY)[FieldId];

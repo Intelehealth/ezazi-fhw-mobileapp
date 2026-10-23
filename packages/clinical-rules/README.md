@@ -114,7 +114,7 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
 - **Stage-specific options:** Cervix is `10…5` in Stage 1 and `P` (Pushing) / `10` in Stage 2 (`getFieldOptions(field, stage)`).
 - **Oxytocin and IV Fluids inputs:**
   - status options, IV fluid types ("Other IV Fluid*" is a text box stored as type `Other` + `otherType`) and sub-input labels: `INFUSION_*`; their limits are in `INFUSION_INPUT_LIMITS`;
-  - both open with Yes/No, defaulting to No.
+  - both open with Yes/No, defaulting to No. **Medicine does too**, so a Save writes `"No"` for all three once their section is shown; an empty card may be saved.
 - **Free text** (Supervisor Doctor, IV "Other"): Android keeps only ASCII letters, digits, punctuation and space, and upper-cases the first letter: `filterFreeText`.
   - **Deviation, Android bug not ported** (decided 2026-10-15): once Supervisor Doctor's text ends in `.`, Android limits the box to 4 characters (`Dr. Rao` saves as `Dr.`).
   - Android capitalises only text typed at the very start; `filterFreeText` capitalises the first character of the whole text.
@@ -127,7 +127,7 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
 
 | `storage` | Fields | Android writes | `comment` |
 |---|---|---|---|
-| `value` | 21 fields (selects, numbers, Supervisor Doctor) | One obs with the option value / typed value. Skipped when empty on a new card; **on an edited card a cleared value is saved as an empty value** | Alert code (`'G'` / `'R'`, `''` when empty) |
+| `value` | 21 fields (selects, numbers, Supervisor Doctor) | One obs with the option value / typed value. Skipped when empty on a new card; **on an edited card a cleared value is saved as an empty value** | Alert code (`'G'` / `'R'`, `''` when empty). DB_CONVENTIONS lists `'R'` / `'Y'` / `''` only: `'G'` awaits Arpan (`.notes` A1) |
 | `infusion` | Oxytocin, IV Fluids | `"No"` (`NO_RESPONSE_VALUE`) when No; otherwise one obs with Gson JSON (`encodeInfusion`) | none |
 | `medicineList` | Medicine | `"No"` when No; otherwise one obs per medicine, `Form \| Name \| … ` (`encodeMedicine`) | `''` |
 | `noteList` | Assessment, Plan | One obs per note, the note text | none |
@@ -208,7 +208,12 @@ The web app only reads, for example `getUpcomingStep` for "next card due" and `g
 - card status (completed / missed / due now / upcoming);
 - Stage 4 validation;
 - alert codes and the risk score;
-- the medicine sub-form option lists (Android resource arrays).
+- the medicine sub-form option lists (Android resource arrays);
+- edit-mode save rules (re-saving a card: duplicate-infusion check, voiding a stale `"No"` or removed medicines, Yes → No on Oxytocin / IV);
+- Assessment / Plan note rules (non-empty, add-only, timestamped when added) and the free-text filter on medicine inputs;
+- administering a doctor's prescription (`*_PRESCRIBED`) into a card;
+- the prolonged-labour warning (Stage 1 ≥ 12 h / 10 h, Stage 2 ≥ 3 h / 2 h, by parity);
+- the range hint shown on the first keystroke (UI: use `getRangeFor`).
 
 ## Commands
 

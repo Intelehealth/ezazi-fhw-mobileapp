@@ -1,4 +1,4 @@
-import type { FieldId, InfusionInputId } from '../constants';
+import type { FIELD_ID, FieldId, InfusionInputId } from '../constants';
 import type { ValidationRange } from '../ranges/types';
 import type { InfusionEntry } from '../storage/infusionJson';
 import type { MedicineEntry } from '../storage/medicineText';
@@ -28,9 +28,9 @@ export interface MedicineAnswer {
 /** What a card holds when the nurse taps Save: only the fields that card shows. */
 export interface CardInput {
   readonly values: Readonly<Partial<Record<FieldId, string | null>>>; // as typed
-  readonly oxytocin?: InfusionAnswer;
-  readonly ivFluids?: InfusionAnswer;
-  readonly medicine?: MedicineAnswer;
+  readonly [FIELD_ID.OXYTOCIN]?: InfusionAnswer;
+  readonly [FIELD_ID.IV_FLUIDS]?: InfusionAnswer;
+  readonly [FIELD_ID.MEDICINE]?: MedicineAnswer;
 }
 
 export interface ValidationError {

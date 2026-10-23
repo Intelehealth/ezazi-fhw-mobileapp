@@ -1,4 +1,5 @@
 import { javaTrim } from '../internal/javaTrim';
+import { deepFreeze } from '../internal/deepFreeze';
 
 /**
  * One Medicine obs value: Android `Medicine.toDBFormat()`, one obs per medicine:
@@ -20,7 +21,7 @@ export interface MedicineEntry {
 }
 
 /** `Medicine.isValidMedicine`: the parts a medicine must have before it can be saved. */
-export const MEDICINE_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = Object.freeze([
+export const MEDICINE_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = deepFreeze([
   'name',
   'strength',
   'dosage',
