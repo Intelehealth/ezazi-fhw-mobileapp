@@ -69,7 +69,7 @@ Recorded from the code comments written at the time. Devices: an emulator and a 
 
 ## Known gaps
 
-- The new-card notification (Android's "Alert!" / "Time to collect the History data!" with the `al_1` sound) is not added yet.
+- New cards post Android's "Alert!" / "Time to collect the History data!" on channel `labour-new-card-v1` with the `al_1` sound (`plugins/withAlertSound.js` bundles it). Android also skips the sound during a phone call; here the system's own call handling applies.
 - A user logged in before the creator uuid was stored (2026-10-23) must log in again before cards are generated.
 - Notification text ("eZAZI monitor active", "Monitor check") is hardcoded English, not i18n.
 - `startWithRetry()` has no attempt limit.

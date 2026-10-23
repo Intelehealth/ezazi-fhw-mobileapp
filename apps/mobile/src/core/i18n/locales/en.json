@@ -506,5 +506,10 @@
         "outOfRange": "Infusion Rate must be in range of {{min}} to {{max}}"
       }
     }
+  },
+  "cardAlert": {
+    "channelName": "New observation cards",
+    "title": "Alert!",
+    "body": "Time to collect the History data!"
   }
 }

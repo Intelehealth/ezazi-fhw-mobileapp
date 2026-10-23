@@ -1,12 +1,14 @@
 import { secureStorage } from '@/core/services/storage/secure-storage';
 
 import { runCardScan } from '..';
+import { alertNewCards } from '../newCardAlert';
 import { scanAllVisits } from '../scan';
 
 jest.mock('@/core/services/storage/secure-storage', () => ({ secureStorage: { get: jest.fn() } }));
 jest.mock('@/core/db', () => ({ getDb: jest.fn(() => 'db-handle') }));
 jest.mock('@/core/db/init', () => ({ ensureSchema: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../scan', () => ({ scanAllVisits: jest.fn() }));
+jest.mock('../newCardAlert', () => ({ alertNewCards: jest.fn().mockResolvedValue(undefined) }));
 
 const RESULT = { cardsCreated: 1, decisionPendingSet: 0, missedMarkers: 0, preSyncDue: 0 };
 const session = (values: Record<string, string | null>) =>
@@ -41,5 +43,20 @@ describe('runCardScan', () => {
 
     await runCardScan();
     expect(scanAllVisits).toHaveBeenCalledTimes(2);
+  });
+
+  it('alerts only when a card was created, and a failed alert does not fail the scan', async () => {
+    session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
+
+    await runCardScan();
+    expect(alertNewCards).toHaveBeenCalledTimes(1);
+
+    (scanAllVisits as jest.Mock).mockReturnValue({ ...RESULT, cardsCreated: 0 });
+    await runCardScan();
+    expect(alertNewCards).toHaveBeenCalledTimes(1);
+
+    (scanAllVisits as jest.Mock).mockReturnValue(RESULT);
+    (alertNewCards as jest.Mock).mockRejectedValueOnce(new Error('no channel'));
+    await expect(runCardScan()).resolves.toEqual(RESULT);
   });
 });

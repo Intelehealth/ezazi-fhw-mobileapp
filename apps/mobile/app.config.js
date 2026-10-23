@@ -108,6 +108,8 @@ module.exports = {
           },
         },
       ],
+      // Android's new-card alert sound (al_1) into res/raw, for the notification channel.
+      './plugins/withAlertSound',
     ],
     extra: {},
   },

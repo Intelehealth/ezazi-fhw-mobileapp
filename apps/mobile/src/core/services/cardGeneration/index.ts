@@ -3,6 +3,7 @@ import { ensureSchema } from '@/core/db/init';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { logger } from '@/core/utils/logger';
 
+import { alertNewCards } from './newCardAlert';
 import { scanAllVisits, type ScanResult } from './scan';
 
 export type { ScanIdentity, ScanResult } from './scan';
@@ -21,6 +22,10 @@ async function scanWithSession(now: number): Promise<ScanResult | null> {
   await ensureSchema();
   const result = scanAllVisits({ providerUuid, creatorUuid }, now, getDb());
   logger.debug('[cardGeneration] scan', result);
+  if (result.cardsCreated > 0) {
+    // The cards are already saved; a failed alert must not fail the scan.
+    await alertNewCards().catch((error: unknown) => logger.error('[cardGeneration] new-card alert failed', error));
+  }
   return result;
 }
 
