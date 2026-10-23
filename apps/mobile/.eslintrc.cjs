@@ -143,13 +143,6 @@ module.exports = {
       },
     ],
 
-    // ── Background services: one onBackgroundEvent, app-wide (ARCHITECTURE_RULES §11) ──
-    // notify-kit keeps only ONE onBackgroundEvent handler per app — registering
-    // a second silently replaces the first, which kills the other service's
-    // self-rescheduling alarm chain with no error. The single handler lives in
-    // index.js (outside src/, so this rule never fires on it); a new service
-    // adds a branch there instead of registering its own.
-
     // ── Architecture boundaries (ARCHITECTURE_RULES §4 · MOBILE_STACK §3) ──
     // This rule is the enforcement that lets the docs stop describing which
     // layer may import which. `default: 'allow'` keeps it to the high-value
