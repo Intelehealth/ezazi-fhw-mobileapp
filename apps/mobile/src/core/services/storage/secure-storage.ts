@@ -9,6 +9,8 @@ const KEYS = {
   accessToken: 'auth.access_token',
   refreshToken: 'auth.refresh_token',
   userUuid: 'auth.user_uuid',
+  // The auth user's uuid: the obs creator, as Android's SessionManager.getCreatorID.
+  creatorUuid: 'auth.creator_uuid',
 } as const;
 
 export type SecureKey = keyof typeof KEYS;

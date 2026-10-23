@@ -17,6 +17,8 @@ jest.mock('../foregroundService', () => ({
   registerMonitorForegroundServiceHandler: jest.fn(),
 }));
 
+jest.mock('@/core/services/cardGeneration', () => ({ runCardScan: jest.fn().mockResolvedValue(null) }));
+
 jest.mock('../backboneTrigger', () => ({
   startBackboneAlerts: jest.fn().mockResolvedValue(undefined),
   stopBackboneAlerts: jest.fn().mockResolvedValue(undefined),

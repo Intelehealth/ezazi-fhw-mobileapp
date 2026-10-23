@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import notifee, { EventType } from 'react-native-notify-kit';
+import { runCardScan } from '@/core/services/cardGeneration';
 import { logger } from '@/core/utils/logger';
 import { getTickCount, startMonitorService, stopMonitorService, subscribeTickCount } from './foregroundService';
 import { getBackboneStatus, handleTriggerDelivered, startBackboneAlerts, stopBackboneAlerts } from './backboneTrigger';
@@ -80,6 +81,8 @@ export function useMonitorService(enabled: boolean): void {
       // Disabled (e.g. logout) while startup was still in flight: the start
       // steps that already ran must be undone too.
       if (cancelled) void stopAll();
+      // Catch-up: a card that fell due while the app was closed appears at once.
+      else void runCardScan().catch((error: unknown) => logger.error('[monitor] catch-up card scan failed', error));
     });
 
     // index.js's onBackgroundEvent only catches a delivery while the app is

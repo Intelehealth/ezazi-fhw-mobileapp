@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee from 'react-native-notify-kit';
+import { runCardScan } from '@/core/services/cardGeneration';
 import { handleTriggerDelivered } from '../backboneTrigger';
 import { MONITOR_TRIGGER_NOTIFICATION_ID, MONITOR_TRIGGER_RUNNING_FLAG_KEY } from '../constants';
 
@@ -17,6 +18,8 @@ jest.mock('react-native-notify-kit', () => ({
   AndroidImportance: { MIN: 1 },
   TriggerType: { TIMESTAMP: 0 },
 }));
+
+jest.mock('@/core/services/cardGeneration', () => ({ runCardScan: jest.fn().mockResolvedValue(null) }));
 
 describe('handleTriggerDelivered', () => {
   beforeEach(async () => {
@@ -56,6 +59,24 @@ describe('handleTriggerDelivered', () => {
 
     await handleTriggerDelivered();
 
+    expect(notifee.createTriggerNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs the card scan after re-arming, and not once stopped', async () => {
+    await AsyncStorage.setItem(MONITOR_TRIGGER_RUNNING_FLAG_KEY, 'true');
+    await handleTriggerDelivered();
+    expect(runCardScan).toHaveBeenCalledTimes(1);
+
+    await AsyncStorage.setItem(MONITOR_TRIGGER_RUNNING_FLAG_KEY, 'false');
+    await handleTriggerDelivered();
+    expect(runCardScan).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the chain alive when the card scan fails', async () => {
+    await AsyncStorage.setItem(MONITOR_TRIGGER_RUNNING_FLAG_KEY, 'true');
+    (runCardScan as jest.Mock).mockRejectedValueOnce(new Error('db busy'));
+
+    await expect(handleTriggerDelivered()).resolves.toBeUndefined();
     expect(notifee.createTriggerNotification).toHaveBeenCalledTimes(1);
   });
 });

@@ -141,6 +141,7 @@ describe('useAuthStore', () => {
       expect(secureStorage.set).toHaveBeenCalledWith('accessToken', 'access-1');
       expect(secureStorage.set).toHaveBeenCalledWith('refreshToken', 'refresh-1');
       expect(secureStorage.set).toHaveBeenCalledWith('userUuid', 'provider-1');
+      expect(secureStorage.set).toHaveBeenCalledWith('creatorUuid', 'user-1');
       expect(useAuthStore.getState()).toMatchObject({
         status: 'authenticated',
         userUuid: 'provider-1',

@@ -9,8 +9,14 @@ Keep a reliable clock running while a labour is being monitored, including when 
 the screen is locked or the device is in Doze. The clinical checks (Stage 1/2 observation intervals) will
 run on this clock.
 
+<!-- Superseded 2026-10-23 (Kaveri): the card engine now runs on the backbone tick. Original text:
 **What it does today:** it only ticks and records the ticks. It does **not** evaluate anything clinical
 yet — `@ezazi/clinical-rules` is not imported, and no labour data is read.
+-->
+**What it does today:** every backbone tick, after re-arming, runs the card engine
+(`core/services/cardGeneration`, `runCardScan`): for each open visit the logged-in provider holds it
+creates the next Stage 1/2 card, sets Decision Pending at the stage limit and writes due missed markers,
+all decided by `@ezazi/clinical-rules`. A catch-up scan runs once after startup. No session, no scan.
 
 ## Two layers
 
@@ -57,13 +63,14 @@ Recorded from the code comments written at the time. Devices: an emulator and a 
 | Setting | Now (test) | Production |
 |---|---|---|
 | `MONITOR_TICK_INTERVAL_MS` | 5 s | Foreground freshness only — choose with the UI. |
-| `MONITOR_TRIGGER_INTERVAL_MINUTES` | 1 min, self-rescheduling `TimestampTrigger` | 15/30 min (Stage 2/1). These clear `IntervalTrigger`'s 15-min floor, so a plain `IntervalTrigger` can replace the re-arm chain. |
+| `MONITOR_TRIGGER_INTERVAL_MINUTES` | 1 min, self-rescheduling `TimestampTrigger` | **1 min, kept** (decided 2026-10-23): Android scans every minute because each visit is at its own point in its schedule, and pre-sync is due one minute before a card. <!-- Superseded 2026-10-23 (Kaveri), was: 15/30 min (Stage 2/1). These clear `IntervalTrigger`'s 15-min floor, so a plain `IntervalTrigger` can replace the re-arm chain. --> |
 | Debug badge on `HomeScreen` | Shown | Remove (or `__DEV__` only). |
 | `logger.debug` per tick | On | Already a no-op when `APP_ENV=production`. |
 
 ## Known gaps
 
-- No clinical evaluation yet — wire `@ezazi/clinical-rules` on the backbone tick.
+- The new-card notification (Android's "Alert!" / "Time to collect the History data!" with the `al_1` sound) is not added yet.
+- A user logged in before the creator uuid was stored (2026-10-23) must log in again before cards are generated.
 - Notification text ("eZAZI monitor active", "Monitor check") is hardcoded English, not i18n.
 - `startWithRetry()` has no attempt limit.
 - The alarm loop (flag → schedule → deliver → re-arm) is duplicated in `batteryGuard`; a shared helper would remove that.

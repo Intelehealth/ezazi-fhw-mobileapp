@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { AlarmType, AndroidImportance, TriggerType } from 'react-native-notify-kit';
+import { runCardScan } from '@/core/services/cardGeneration';
 import { logger } from '@/core/utils/logger';
 import {
   MONITOR_TRIGGER_CHANNEL_ID,
@@ -95,6 +96,12 @@ export async function handleTriggerDelivered(): Promise<void> {
   const stillRunning = (await AsyncStorage.getItem(MONITOR_TRIGGER_RUNNING_FLAG_KEY)) === 'true';
   if (stillRunning) {
     await scheduleNextTrigger();
+    // After the re-arm, so a slow or failing scan can never break the alarm chain.
+    try {
+      await runCardScan();
+    } catch (error) {
+      logger.error('[MonitorTrigger] card scan failed', error);
+    }
   }
 }
 
