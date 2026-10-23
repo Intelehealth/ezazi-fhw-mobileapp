@@ -80,9 +80,18 @@ reaches OpenMRS. `closeVisit` sets `enddate` and `SYNC_DIRTY` together; anything
 SQLite's `INSERT OR REPLACE` is DELETE+INSERT, so any column the server omitted reverts to its DDL
 default. That is the legacy bug that un-voids a server-voided visit on **every re-sync**.
 
+<!-- Superseded 2026-10-23 (Kaveri): Android's live alert engine (getAlertNameUpdated on
+whitelabel-master) writes only 'R' and 'G'; the 'Y' codes exist only in its unused older function.
+Original text kept for reference:
 **Never overwrite `tbl_obs.comment`.** It is not a note. It holds an alert code — `'R'` severe,
 `'Y'` warning, `''` — and is the **sole input to the risk score**. The legacy's
 `markedAsVoidedObsToDb` stomps it, destroying whatever alert was there.
+-->
+**Never overwrite `tbl_obs.comment`.** It is not a note. It holds an alert code — `'R'` past the
+alert threshold, `'G'` within it, `''` when the field is empty — and is the **sole input to the risk
+score**. Codes and the risk score are computed in `@ezazi/clinical-rules`, as Android's
+`getAlertNameUpdated` and `VisitAlertProcessor` do. The legacy's `markedAsVoidedObsToDb` stomps it,
+destroying whatever alert was there.
 
 **No hard deletes. Anywhere.** Deletion is the `voided` flag. No repository gets a `delete()`.
 

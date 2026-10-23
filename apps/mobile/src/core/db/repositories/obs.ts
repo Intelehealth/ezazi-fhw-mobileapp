@@ -13,6 +13,7 @@ import {
 import {
   ADMISSION_CONCEPTS,
   BIRTH_OUTCOME,
+  CERVIX_PLOT_X,
   COMPLEX_IMAGE_AD,
   COMPLEX_IMAGE_PE,
   ENCOUNTER_TYPE,
@@ -526,25 +527,6 @@ export function listByEncounterAndConcepts(
     .all();
 }
 
-/**
- * The weighted alert score: 'R' scores 2, 'Y' scores 1, anything else 0.
- * A SUM, not the count its legacy name promises. No voided filter, so a voided
- * obs still contributes — preserved deliberately.
- */
-export function getEncounterAlertScore(encounterUuid: string, on: DbHandle): number {
-  const row = on
-    .select({
-      total: sql<
-        number | null
-      >`sum(case when ${obs.comment} = 'R' then 2 when ${obs.comment} = 'Y' then 1 else 0 end)`,
-    })
-    .from(obs)
-    .where(eq(obs.encounteruuid, encounterUuid))
-    .get();
-
-  return row?.total ?? 0;
-}
-
 /** One check for both legacy variants; they differed only in the concept uuid. */
 export function existsByEncounterConceptValue(
   encounterUuid: string,
@@ -748,4 +730,33 @@ export function getLatestObsByVisitAndConcepts(
   }
 
   return [...latest.values()];
+}
+
+/** One stored Cervix value with its card's time, for the package's `computeVisitRisk`. */
+export interface CervixRow {
+  value: string;
+  encounterTime: string;
+}
+
+/**
+ * A visit's Cervix values, oldest card first (Android `getCervixObsByVisit`): obs and encounter
+ * not voided, alert code and value not blank. The risk score itself lives in `@ezazi/clinical-rules`.
+ */
+export function listCervixReadingsByVisit(visitUuid: string, on: DbHandle): CervixRow[] {
+  return on
+    .select({ value: obs.value, comment: obs.comment, encounterTime: encounter.encounter_time })
+    .from(obs)
+    .innerJoin(encounter, eq(obs.encounteruuid, encounter.uuid))
+    .where(
+      and(
+        eq(encounter.visituuid, visitUuid),
+        eq(obs.voided, VOIDED_NO),
+        eq(encounter.voided, VOIDED_NO),
+        eq(obs.conceptuuid, CERVIX_PLOT_X),
+      ),
+    )
+    .orderBy(encounter.encounter_time)
+    .all()
+    .filter((row) => filled(row.comment) && filled(row.value))
+    .map((row) => ({ value: row.value ?? '', encounterTime: row.encounterTime ?? '' }));
 }

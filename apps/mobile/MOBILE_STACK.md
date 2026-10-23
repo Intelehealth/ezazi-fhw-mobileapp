@@ -94,11 +94,16 @@ Two related notes:
 
 ## 3. Layer responsibilities
 
+<!-- Superseded 2026-10-23 (Kaveri): clinical logic moved to the shared @ezazi/clinical-rules
+package (ARCHITECTURE.md, commit 3083a9e), so web and mobile use one copy. Original Domain row:
+| Domain | `features/*/domain` + `@ezazi/types` | Entities, zod schemas, real logic (partograph, risk scores, LCG) | Grow thick |
+-->
+
 | Layer | Where | Does | Must NOT |
 |---|---|---|---|
 | Presentation | `features/*/screens`, `components` | Render, dispatch to stores/hooks | Contain business logic, DB, or network |
 | State | `features/*/stores` + DB live queries | Session/UI state; expose domain data | Duplicate DB rows |
-| Domain | `features/*/domain` + `@ezazi/types` | Entities, zod schemas, real logic (partograph, risk scores, LCG) | Grow thick |
+| Domain | `features/*/domain` + `@ezazi/types` | Entities, zod schemas, mapping between screens and stored data. Clinical logic (partograph, alerts, risk scores, LCG) lives only in `@ezazi/clinical-rules` | Grow thick; re-implement a clinical rule |
 | Data | `features/*/data`, `core/db`, `@ezazi/api-client` | Repositories over DB ⊕ API; the sync engine | Let features bypass it |
 | Services | `core/services` | Long-lived singletons via hooks | Live in the component tree |
 

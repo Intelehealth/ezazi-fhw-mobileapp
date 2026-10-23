@@ -10,6 +10,7 @@ import {
 import {
   ADMISSION_CONCEPTS,
   BIRTH_OUTCOME,
+  CERVIX_PLOT_X,
   COMPLEX_IMAGE_AD,
   ENCOUNTER_TYPE,
   MISSED_ENCOUNTER,
@@ -24,7 +25,6 @@ import {
   findObsUuid,
   getAdmissionValues,
   getBirthOutcomeValue,
-  getEncounterAlertScore,
   getEncounterTypeValue,
   getLatestObsByVisitAndConcepts,
   getOutcomeConceptValues,
@@ -35,6 +35,7 @@ import {
   hasRealObs,
   hasStage3ObsForVisit,
   insert,
+  listCervixReadingsByVisit,
   insertEncounterType,
   insertMany,
   insertMissedEncounterMarker,
@@ -512,26 +513,26 @@ describe('obs repository', () => {
     });
   });
 
-  describe('the alert score', () => {
-    it('weights R as 2 and Y as 1, and ignores everything else', () => {
-      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A, comment: 'R' }, db);
-      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_B, comment: 'Y' }, db);
-      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A, comment: '' }, db);
-      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_B }, db);
+  describe('cervix readings for the risk score', () => {
+    it('returns the visit\'s Cervix values oldest card first, skipping blank codes and voided rows', () => {
+      seedEncounter('late', { encounter_time: '2026-10-23 10:00:00' });
+      seedEncounter('early', { encounter_time: '2026-10-23 08:00:00' });
+      seedEncounter('gone', { encounter_time: '2026-10-23 09:00:00', voided: VOIDED_YES });
+      insert({ encounteruuid: 'late', conceptuuid: CERVIX_PLOT_X, value: '7', comment: 'G' }, db);
+      insert({ encounteruuid: 'early', conceptuuid: CERVIX_PLOT_X, value: '6', comment: 'G' }, db);
+      insert({ encounteruuid: 'early', conceptuuid: CERVIX_PLOT_X, value: '5', comment: '' }, db);
+      insert({ encounteruuid: 'gone', conceptuuid: CERVIX_PLOT_X, value: '9', comment: 'G' }, db);
+      const voided = insert({ encounteruuid: 'late', conceptuuid: CERVIX_PLOT_X, value: '8', comment: 'G' }, db);
+      markVoided([voided], db);
 
-      expect(getEncounterAlertScore(ENC, db)).toBe(3);
+      expect(listCervixReadingsByVisit(VISIT, db)).toEqual([
+        { value: '6', encounterTime: '2026-10-23 08:00:00' },
+        { value: '7', encounterTime: '2026-10-23 10:00:00' },
+      ]);
     });
 
-    it('counts a voided obs — no voided filter, preserved deliberately', () => {
-      const uuid = insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A, comment: 'R' }, db);
-      markVoided([uuid], db);
-
-      expect(getEncounterAlertScore(ENC, db)).toBe(2);
-    });
-
-    it('returns 0 for an encounter with no obs at all', () => {
-      // SUM over zero rows is NULL in SQLite, not 0.
-      expect(getEncounterAlertScore('nothing-here', db)).toBe(0);
+    it('returns nothing for a visit with no Cervix values', () => {
+      expect(listCervixReadingsByVisit('nothing-here', db)).toEqual([]);
     });
   });
 
