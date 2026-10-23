@@ -40,6 +40,7 @@ import {
   insertMany,
   insertMissedEncounterMarker,
   listByEncounter,
+  listByEncounterNewestFirst,
   listByEncounterAndConcepts,
   listByEncounterExcludingDoctors,
   listCommentsByEncounter,
@@ -510,6 +511,17 @@ describe('obs repository', () => {
 
       markVoided([uuid], db);
       expect(hasOutOfTimeObs(ENC, db)).toBe(false);
+    });
+  });
+
+  describe('same-second rows', () => {
+    it('lists a card newest first, and falls back to insert order within the same second', () => {
+      const same = '2026-10-23 10:00:00';
+      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A, value: 'first', created_date: same }, db);
+      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A, value: 'second', created_date: same }, db);
+      insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A, value: 'older', created_date: '2026-10-23 09:59:59' }, db);
+
+      expect(listByEncounterNewestFirst(ENC, db).map((row) => row.value)).toEqual(['second', 'first', 'older']);
     });
   });
 

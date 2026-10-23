@@ -9,6 +9,7 @@ import type { CardInput } from '../validation/types';
 import type { CardNotes, ObsDraft } from './newCardObs';
 
 /** One non-voided obs already on the card. `createdAt` is the stored UTC text; newer sorts later. */
+// Pass rows newest first: rows with the same `createdAt` (same second) keep that order.
 export interface StoredObs {
   readonly uuid: string;
   readonly fieldId: FieldId;
@@ -24,7 +25,8 @@ export interface CardEdit {
 
 const EMPTY_JSON = encodeInfusion({});
 
-// Stored UTC text sorts as time; plain comparison keeps it locale-free.
+// Stored UTC text sorts as time; plain comparison keeps it locale-free. The sort is stable,
+// so rows from the same second stay in the caller's newest-first order.
 const newestFirst = (rows: readonly StoredObs[]) =>
   [...rows].sort((a, b) => (a.createdAt === b.createdAt ? 0 : a.createdAt < b.createdAt ? 1 : -1));
 

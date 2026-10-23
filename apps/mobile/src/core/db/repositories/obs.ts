@@ -267,6 +267,19 @@ export function listByEncounter(encounterUuid: string, on: DbHandle): Obs[] {
 }
 
 /**
+ * A card's live obs, newest first. Rows saved in the same second (created_date has no
+ * millis, Android's format) fall back to insert order, so the newer write still wins.
+ */
+export function listByEncounterNewestFirst(encounterUuid: string, on: DbHandle): Obs[] {
+  return on
+    .select()
+    .from(obs)
+    .where(and(eq(obs.encounteruuid, encounterUuid), notVoided))
+    .orderBy(desc(obs.created_date), desc(sql`rowid`))
+    .all();
+}
+
+/**
  * Nurse/HW-authored rows only. NOT EXISTS rather than the legacy's
  * `creatoruuid NOT IN (SELECT useruuid ...)`, which returns NOTHING AT ALL as
  * soon as one doctor row has a null `useruuid`. Side effect of the fix: an obs
@@ -717,7 +730,7 @@ export function getLatestObsByVisitAndConcepts(
           ))
         )
       END
-    ORDER BY e.encounter_time DESC, o.created_date DESC
+    ORDER BY e.encounter_time DESC, o.created_date DESC, o.rowid DESC
   `);
 
   const latest = new Map<string, RiskObs>();
