@@ -64,6 +64,20 @@ Ported from the Android app in production (`elcg-fhw-mobileapp` @ `ezazi_sprint_
 | A card type missing from the device's uuid table is silently skipped | Always returns the card | Mobile resolves names from constants, which hold all 58 cards |
 | Times are formatted in the device language, so a Marathi, Bengali or Assamese phone may write native digits (`२०२६-…`) | Always English digits (`2026-…`); native digits are still read | Decided 2026-10-15: data in the DB is English only |
 
+## Card status on the timeline
+
+`getCardStatus(card, visit)` gives each card's `state` (`pending` / `submitted` / `missed`), its `access` (`write` / `edit` / `read` / `none`), whether the edit icon shows, and whether the card engine must write the missed marker. It follows Android's `TimelineAdapter.onBindViewHolder` (whitelabel-master `b3ddd15`):
+
+- Only the newest card (SOS cards included) is open, and not during Decision Pending: empty it is `pending` / `write`; filled it is `submitted` / `edit`.
+- Every other card is `submitted` / `read` when it has real obs (anything but the card marker, SOS label and missed marker), otherwise `missed`, and gets the missed marker once.
+- A completed visit, or a provider who does not hold the visit, opens nothing and shows no edit icon.
+
+The app passes plain facts (newest or not, has real obs, has the marker, Decision Pending, visit complete, visit holder). "Upcoming" is not a stored card: show it with `getUpcomingStep`.
+
+**Deviations from Android:**
+- **The missed marker is written by the card engine, for every stage** (decided 2026-10-23, Kaveri). Android writes it while drawing the timeline.
+- **Android's `isNewEncounterCreated` screen flag is not ported.** It makes the newest filled card read-only until the timeline screen is reopened after a timer-created card; here the newest filled card stays editable.
+
 ## SOS cards (Stages 1, 2 and 4, one shared rule)
 
 From `TimelineVisitSummaryActivity.collectEmergencyData` (1440–1544), the SOS button (1590–1596, 1691), `EncounterDAO.getSosEncounterByVisitUUIDLimit1`, `ObsDAO.getLatestSosObsByEncounterUuid`, `EncounterTypeResolver.kt` and `TimelineAdapter.nextIntent` (357–367). Tested against a port of that code.
@@ -188,6 +202,19 @@ A medicine needs `MEDICINE_REQUIRED_FIELDS` before it can be added (Android `New
 
 **Deviation:** Android crashes on text that is not a number in a number box; here it is `notANumber`. The input limits make it unreachable in practice.
 
+## Add Medicine form
+
+The form shows all ten parts Android's `NewMedicineFragment` has (decided 2026-10-23); the six in `MEDICINE_REQUIRED_FIELDS` must be filled before a medicine can be added.
+
+- `MEDICINE_CATALOGUE`: the 39 `assets/medicines.json` entries. The name dropdown lists `catalogueLabel(entry)` ("Tablet Paracetamol 650 mg"); `findCatalogueMedicine(text)` returns the picked entry so the app fills form, name, strength, dose unit and route. A name typed by hand returns null.
+- `MEDICINE_FORM_OPTIONS`, `MEDICINE_STRENGTH_OPTIONS`, `MEDICINE_DOSE_UNIT_OPTIONS`, `MEDICINE_ROUTE_OPTIONS`, `MEDICINE_FREQUENCY_OPTIONS`, `MEDICINE_DURATION_UNIT_OPTIONS`: Android's `arrays_ezazi.xml` lists, copied exactly, duplicates and spellings included. Each value is both shown and stored, and a value may also be typed.
+
+## Controls and steppers
+
+`getFieldControl(fieldId)` says which control a field is entered with, so both apps show the same choice (Figma "Observation flow", decided 2026-10-23): `segmented` for up to four options, `chips` for Cervix and Descent, `picker` for six options, `stepper` for numbers, and `infusion`, `medicineList`, `noteList`, `text` for the rest. The control never changes what is stored.
+
+`getStepperSpec(id, profile)` gives a stepper's `min`, `max`, `base`, `step` and `fractionDigits`. Android had no steppers, so nothing new is invented: min and max are the client's validation range (or the keystroke limit where Android has no range, Contractions 0–9), the base the first + fills is the lowest valid value that is not an alert (FHR 110, Pulse 60, Systolic 80, Temperature 95, Contractions 3, Duration 20), and `STEPPER_STEPS` is 1, 0.1 for temperature and 5 for the infusion rate.
+
 ## Alert codes (Stage 1 and Stage 2)
 
 `getAlertCode(fieldId, value)` gives the `obs.comment` code for one value field, as Android's `PartogramAlertEngine.getAlertNameUpdated` (whitelabel-master `b3ddd15`):
@@ -219,10 +246,8 @@ The web app only reads, for example `getUpcomingStep` for "next card due" and `g
 
 - Stage 4 (postpartum) cards and fields (SOS labels for Stage 4 are ready);
 - the delivery form;
-- card status (completed / missed / due now / upcoming);
 - Stage 4 validation;
 - the risk score;
-- the medicine sub-form option lists (Android resource arrays);
 - edit-mode save rules (re-saving a card: duplicate-infusion check, voiding a stale `"No"` or removed medicines, Yes → No on Oxytocin / IV);
 - Assessment / Plan note rules (non-empty, add-only, timestamped when added) and the free-text filter on medicine inputs;
 - administering a doctor's prescription (`*_PRESCRIBED`) into a card;

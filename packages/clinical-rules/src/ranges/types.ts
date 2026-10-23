@@ -70,3 +70,9 @@ export interface AlertThreshold {
 }
 
 export type AlertThresholdTable = Readonly<Record<AlertThresholdId, AlertThreshold>>;
+
+/** Every number entered with a stepper: the alert fields plus the two infusion numbers. */
+export type StepperId =
+  | AlertThresholdId
+  | typeof INFUSION_INPUT_ID.STRENGTH
+  | typeof INFUSION_INPUT_ID.INFUSION_RATE;

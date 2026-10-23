@@ -36,6 +36,14 @@ export type { UniformStageSchedule } from './cards/schedule';
 export { decideNextStep, getUpcomingStep } from './cards/decideNextStep';
 export { getStageStart } from './cards/stageStart';
 export { formatCardName, formatSosName } from './cards/cardName';
+export { getCardStatus } from './cards/cardStatus';
+export type {
+  CardState,
+  CardAccess,
+  CardStatus,
+  TimelineCardFacts,
+  TimelineVisitFacts,
+} from './cards/cardStatus';
 export type {
   MonitoringStage,
   CardMarker,
@@ -66,6 +74,22 @@ export {
   INFUSION_INPUT_LABELS,
   OTHER_TYPE_TEXT,
 } from './fields/infusionInputs';
+export {
+  MEDICINE_CATALOGUE,
+  catalogueLabel,
+  findCatalogueMedicine,
+  MEDICINE_FORM_OPTIONS,
+  MEDICINE_STRENGTH_OPTIONS,
+  MEDICINE_DOSE_UNIT_OPTIONS,
+  MEDICINE_ROUTE_OPTIONS,
+  MEDICINE_FREQUENCY_OPTIONS,
+  MEDICINE_DURATION_UNIT_OPTIONS,
+} from './fields/medicineInputs';
+export type { CatalogueMedicine } from './fields/medicineInputs';
+export { FIELD_CONTROLS, getFieldControl } from './fields/fieldControls';
+export type { FieldControl } from './fields/fieldControls';
+export { getStepperSpec } from './fields/stepper';
+export type { StepperSpec } from './fields/stepper';
 export { filterFreeText } from './fields/textInput';
 export type {
   FieldFrequency,
@@ -81,6 +105,7 @@ export type {
 
 export { BASE_RANGES } from './ranges/baseRanges';
 export { ALERT_THRESHOLDS } from './ranges/alertThresholds';
+export { STEPPER_STEPS } from './ranges/stepperSteps';
 export { INPUT_LIMITS, INFUSION_INPUT_LIMITS } from './ranges/inputLimits';
 export type { LimitedInputId, LimitedInfusionInputId } from './ranges/inputLimits';
 export {
@@ -105,6 +130,7 @@ export type {
   AlertThresholdId,
   AlertThreshold,
   AlertThresholdTable,
+  StepperId,
 } from './ranges/types';
 
 export { getAlertCode } from './alerts/alertCode';
