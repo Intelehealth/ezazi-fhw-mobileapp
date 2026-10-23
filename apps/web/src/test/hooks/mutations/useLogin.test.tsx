@@ -1,15 +1,16 @@
 import { act, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureStore } from '@reduxjs/toolkit';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { success } from '@ezazi/api-client';
 import { rootReducer } from '../../../reducers';
 import { useLogin } from '../../../hooks/mutations/useLogin';
 import { authService } from '../../../services/auth.service';
 import { profileService } from '../../../services/profile.service';
+import { sessionExpiry } from '../../../services/session-expiry';
 import { showToast } from '../../../services/toast';
 import type { AuthGatewayLoginResponse } from '../../../types/auth.types';
 
@@ -23,6 +24,11 @@ vi.mock('../../../services/profile.service', () => ({
 
 vi.mock('../../../services/toast', () => ({ showToast: vi.fn() }));
 
+/** Shows where the router currently is, so a test can see where login navigated to. */
+function LocationProbe() {
+  return <p data-testid="location">{useLocation().pathname}</p>;
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: { mutations: { retry: false } },
@@ -31,7 +37,10 @@ function wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <MemoryRouter>{children}</MemoryRouter>
+        <MemoryRouter>
+          <LocationProbe />
+          {children}
+        </MemoryRouter>
       </Provider>
     </QueryClientProvider>
   );
@@ -224,5 +233,78 @@ describe('useLogin', () => {
       "Couldn't find you, credentials provided are wrong.",
       'error'
     );
+  });
+
+  describe('session expiry', () => {
+    const SNAPSHOT_KEY = 'ezazi_web_session_snapshot';
+
+    function saveSnapshotFor(userUuid: string) {
+      sessionStorage.setItem(
+        SNAPSHOT_KEY,
+        JSON.stringify({
+          userUuid,
+          returnTo: '/dashboard/profile',
+          drafts: {},
+        })
+      );
+    }
+
+    async function loginAs() {
+      vi.mocked(authService.login).mockResolvedValue(
+        success(gatewayResponse())
+      );
+      const { result } = renderHook(() => useLogin(), { wrapper });
+      act(() => result.current.mutate(CREDENTIALS));
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    }
+
+    beforeEach(() => {
+      sessionStorage.clear();
+      localStorage.clear();
+      sessionExpiry.reset();
+    });
+
+    it('stores the refresh token and when the access token expires, for the silent refresh', async () => {
+      await loginAs();
+
+      expect(localStorage.getItem('ezazi_web_refresh_token')).toBe(
+        'refresh-123'
+      );
+      expect(
+        Number(localStorage.getItem('ezazi_web_auth_token_expires_at'))
+      ).toBeGreaterThan(Date.now());
+    });
+
+    it('sends the same user back to the page they were on when the session expired', async () => {
+      saveSnapshotFor('u-1');
+
+      await loginAs();
+
+      await waitFor(() =>
+        expect(screen.getByTestId('location')).toHaveTextContent(
+          '/dashboard/profile'
+        )
+      );
+    });
+
+    it("does not send a different user to the previous user's page, and discards that snapshot", async () => {
+      saveSnapshotFor('someone-else');
+
+      await loginAs();
+
+      await waitFor(() =>
+        expect(screen.getByTestId('location')).toHaveTextContent('/dashboard')
+      );
+      expect(screen.getByTestId('location')).not.toHaveTextContent('profile');
+      expect(sessionStorage.getItem(SNAPSHOT_KEY)).toBeNull();
+    });
+
+    it('clears a raised session-expired state on a successful login', async () => {
+      sessionExpiry.markExpired();
+
+      await loginAs();
+
+      expect(sessionExpiry.isExpired()).toBe(false);
+    });
   });
 });

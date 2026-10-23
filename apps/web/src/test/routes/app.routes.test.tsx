@@ -43,6 +43,11 @@ vi.mock('../../hooks/queries/useProviderProfile', () => ({
   }),
 }));
 
+/* The change-password form's mutation needs a QueryClient; its own suite covers it. */
+vi.mock('../../hooks/mutations/useChangePassword', () => ({
+  useChangePassword: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 vi.mock('../../hooks/mutations/useLogin', () => ({
   useLogin: () => ({ mutate: vi.fn(), isPending: false, error: null }),
 }));
@@ -115,6 +120,15 @@ describe('AppRoutes', () => {
     await renderAtPath('/dashboard');
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+  });
+
+  it('renders the change-password page at /dashboard/change-password', async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: DOCTOR']);
+
+    await renderAtPath('/dashboard/change-password');
+
+    expect(await screen.findByText('Change password')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Enter old password')).toBeInTheDocument();
   });
 
   it('renders the nurse profile screen at /dashboard/hw-profile', async () => {

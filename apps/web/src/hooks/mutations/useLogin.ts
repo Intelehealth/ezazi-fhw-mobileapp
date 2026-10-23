@@ -5,6 +5,7 @@ import { loginSuccess } from '../../reducers/auth.reducer';
 import { resolvePostLoginPath } from '../../routes/paths';
 import { authService } from '../../services/auth.service';
 import { profileService } from '../../services/profile.service';
+import { sessionExpiry } from '../../services/session-expiry';
 import { showToast } from '../../services/toast';
 import { useAppDispatch } from '../../store/hooks';
 import type {
@@ -12,11 +13,15 @@ import type {
   AuthUser,
   LoginCredentials,
 } from '../../types/auth.types';
+import { takeReturnPath } from '../../utils/session-snapshot';
 import { storage } from '../../utils/storage';
 import { NURSE_ROLE } from '../useIsNurse';
 
 interface LoginResult {
   token: string;
+  refreshToken: string;
+  /** Access-token lifetime in seconds. */
+  expiresIn: number;
   user: AuthUser;
 }
 
@@ -86,7 +91,12 @@ async function performLogin(
     );
   }
 
-  return { token: result.data.accessToken, user: toAuthUser(result.data) };
+  return {
+    token: result.data.accessToken,
+    refreshToken: result.data.refreshToken,
+    expiresIn: result.data.expiresIn,
+    user: toAuthUser(result.data),
+  };
 }
 
 /**
@@ -100,8 +110,8 @@ export function useLogin() {
 
   return useMutation<LoginResult, Error | ApiError, LoginCredentials>({
     mutationFn: performLogin,
-    onSuccess: ({ token, user }) => {
-      storage.setAuthToken(token);
+    onSuccess: ({ token, refreshToken, expiresIn, user }) => {
+      storage.setSessionTokens({ accessToken: token, refreshToken, expiresIn });
       storage.setStoredUser(JSON.stringify(user));
       dispatch(loginSuccess({ token, user }));
       showToast(
@@ -110,8 +120,18 @@ export function useLogin() {
         'success'
       );
 
+      /* A fresh login ends any hard-expiry state left over from the last session. */
+      sessionExpiry.reset();
+
+      /*
+       * After a session expired mid-task, the same user goes back to the page
+       * they were on (their unsaved forms restore themselves there — see
+       * hooks/useFormDraft.ts); anyone else, or a normal login, lands on the
+       * role's default page.
+       */
+      const returnTo = takeReturnPath(user.uuid);
       const isNurse = user.roles.includes(NURSE_ROLE);
-      navigate(resolvePostLoginPath(isNurse));
+      navigate(returnTo ?? resolvePostLoginPath(isNurse));
     },
     // Copy matches login.component.ts's toastr.error(msg, "Login Failed!")
     // (ezazi_dev_master) for the wrong-credentials case; a real 401 surfaces

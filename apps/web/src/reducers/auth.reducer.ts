@@ -19,9 +19,13 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.isAuthenticated = true;
     },
+    /* A silent refresh replaced the access token; nothing else about the session changed. */
+    tokenRefreshed: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+    },
     loggedOut: () => initialState,
   },
 });
 
-export const { loginSuccess, loggedOut } = authSlice.actions;
+export const { loginSuccess, tokenRefreshed, loggedOut } = authSlice.actions;
 export const authReducer = authSlice.reducer;

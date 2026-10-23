@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import editIcon from '../../../assets/svgs/edit.svg';
 import { DatePickerComponent } from '../../../components/common/date-picker.component';
 import { PhoneNumberFieldComponent } from '../../../components/common/phone-number-field.component';
+import { useFormDraft } from '../../../hooks/useFormDraft';
 import { useProviderAttributeAvailability } from '../../../hooks/useProviderAttributeAvailability';
 import { useProviderProfile } from '../../../hooks/queries/useProviderProfile';
 import type { ProviderProfileData } from '../../../hooks/queries/useProviderProfile';
@@ -96,6 +97,17 @@ function ProfileEditor({ data }: { data: ProviderProfileData }) {
     resolver: zodResolver(profileSchema),
     mode: 'onChange',
     defaultValues: data.profile,
+  });
+
+  /*
+   * If the session hard-expires mid-edit, the typed values are kept and put
+   * back (in edit mode) after the user logs in again.
+   */
+  useFormDraft('profile', {
+    enabled: editMode,
+    getValues,
+    reset,
+    onRestore: () => setEditMode(true),
   });
 
   const { emailTaken, phoneTaken, checkAvailability, clearTaken } =

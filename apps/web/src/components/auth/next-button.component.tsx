@@ -13,6 +13,13 @@ interface NextButtonComponentProps {
    * false there instead of adding a second near-identical component.
    */
   showIcon?: boolean;
+  /**
+   * Keeps an invalid (outlined) button clickable. Every auth screen disables
+   * it while invalid, but change-password.component.html's button only
+   * *looks* disabled (`.disabled-btn`) and still submits — clicking it is how
+   * that form's field errors are revealed.
+   */
+  submittableWhenInvalid?: boolean;
 }
 
 /**
@@ -27,15 +34,16 @@ export function NextButtonComponent({
   isLoading,
   children = 'Next',
   showIcon = true,
+  submittableWhenInvalid = false,
 }: NextButtonComponentProps) {
   const className = isValid
     ? 'flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#2E1E91] text-lg text-white disabled:cursor-not-allowed'
-    : 'flex h-14 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border-[3px] border-[#2E1E91] bg-white text-lg font-bold text-[#2E1E91]';
+    : `flex h-14 w-full ${submittableWhenInvalid ? 'cursor-pointer' : 'cursor-not-allowed'} items-center justify-center gap-2 rounded-lg border-[3px] border-[#2E1E91] bg-white text-lg font-bold text-[#2E1E91]`;
 
   return (
     <button
       type="submit"
-      disabled={!isValid || isLoading}
+      disabled={(!isValid && !submittableWhenInvalid) || isLoading}
       className={className}
     >
       {children}

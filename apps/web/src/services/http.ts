@@ -1,12 +1,7 @@
 import { createApiClient } from '@ezazi/api-client';
 import type { AxiosInstance } from 'axios';
 import { env } from '../config/env';
-import { queryClient } from '../config/query-client';
-import { loggedOut } from '../reducers/auth.reducer';
-import { ROUTES } from '../routes/paths';
-import { store } from '../store/store';
-import { redirectTo } from '../utils/navigation';
-import { storage } from '../utils/storage';
+import { getValidAccessToken, refreshAccessToken } from './session.service';
 
 /**
  * Thin wrapper around @ezazi/api-client's createApiClient — replaces the
@@ -18,39 +13,20 @@ import { storage } from '../utils/storage';
  * Token storage: localStorage, via utils/storage.ts (see that file for the
  * cookie-vs-localStorage assumption).
  *
- * onUnauthorized: apps/web has no refresh-token flow yet — the auth-gateway
- * contract for one hasn't been confirmed for this product (unlike
- * apps/mobile's, see apps/mobile/src/services/api/client.ts). A 401 clears
- * the stored session (storage, Redux, query cache) and sends the browser to
- * /auth/login rather than retrying.
+ * Session expiry (services/session.service.ts): requests go out with a
+ * token that is refreshed ahead of its expiry (getValidAccessToken). A 401
+ * that still slips through is answered with ONE shared silent refresh
+ * (refreshAccessToken) and the rejected request — and every other one that
+ * 401'd meanwhile — is re-sent with the new token. Only when the refresh
+ * token itself is rejected does the session hard-expire and the
+ * session-expired modal take over; nothing is cleared or redirected here.
  */
-function handleUnauthorized(): null {
-  storage.clearAuthToken();
-  storage.clearStoredUser();
-  store.dispatch(loggedOut());
-  queryClient.clear();
-
-  /*
-   * The router is a browser (path-based) router served under BASE_PATH, so
-   * the redirect has to be a real path — setting `location.hash` is ignored
-   * by it. A full navigation also drops every in-memory leftover of the
-   * expired session.
-   */
-  const authBasePath = `${env.BASE_PATH}${ROUTES.AUTH.BASE}`;
-  if (
-    typeof window !== 'undefined' &&
-    !window.location.pathname.startsWith(authBasePath)
-  ) {
-    redirectTo(`${authBasePath}/${ROUTES.AUTH.LOGIN}`);
-  }
-  return null;
-}
 
 /** Authenticated client — auth-gateway/portal calls that need a bearer token. */
 export const httpClient: AxiosInstance = createApiClient({
   baseURL: env.AUTH_GATEWAY_URL,
-  getAuthToken: () => storage.getAuthToken(),
-  onUnauthorized: () => handleUnauthorized(),
+  getAuthToken: () => getValidAccessToken(),
+  onUnauthorized: failedToken => refreshAccessToken(failedToken),
 });
 
 /** Unauthenticated client — public endpoints such as app config. */

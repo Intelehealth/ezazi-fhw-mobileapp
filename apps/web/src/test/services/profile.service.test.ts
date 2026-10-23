@@ -129,6 +129,30 @@ describe('profileService.getProviderAttributeTypes', () => {
   });
 });
 
+describe('profileService.changePassword', () => {
+  it('POSTs the old and new password to /password', async () => {
+    vi.mocked(openMrsHttpClient.post).mockResolvedValue({ data: {} });
+
+    const result = await profileService.changePassword('Old@1234', 'New@1234');
+
+    expect(openMrsHttpClient.post).toHaveBeenCalledWith('/password', {
+      oldPassword: 'Old@1234',
+      newPassword: 'New@1234',
+    });
+    expect(result).toEqual({ ok: true, data: undefined });
+  });
+
+  it('maps a rejected request into a failure result instead of throwing', async () => {
+    vi.mocked(openMrsHttpClient.post).mockRejectedValue(
+      new Error('network down')
+    );
+
+    const result = await profileService.changePassword('Old@1234', 'New@1234');
+
+    expect(result.ok).toBe(false);
+  });
+});
+
 describe('profileService.endSession', () => {
   it('DELETEs /session', async () => {
     vi.mocked(openMrsHttpClient.delete).mockResolvedValue({ data: {} });

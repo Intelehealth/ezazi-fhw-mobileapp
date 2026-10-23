@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { ModalOverlayComponent } from '../common/modal-overlay.component';
 import { useOpenPatientVisit } from '../../hooks/mutations/useOpenPatientVisit';
 import type { OpenMrsPatientSearchResult } from '../../types/patient.types';
 
@@ -21,21 +21,8 @@ export function SearchedPatientsModalComponent({
 }: SearchedPatientsModalComponentProps) {
   const openVisit = useOpenPatientVisit(onClose);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onMouseDown={event => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <ModalOverlayComponent onClose={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -108,6 +95,6 @@ export function SearchedPatientsModalComponent({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlayComponent>
   );
 }

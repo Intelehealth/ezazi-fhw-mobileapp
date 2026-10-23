@@ -58,6 +58,19 @@ describe('AppHeaderComponent', () => {
     expect(screen.getByText('Hello, Demo Nurse 👋')).toBeInTheDocument();
   });
 
+  it('hides the patient search when showPatientSearch is false, keeping the greeting', () => {
+    render(
+      <MemoryRouter>
+        <AppHeaderComponent userName="Demo Doctor" showPatientSearch={false} />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.queryByPlaceholderText('Search by patient name or ID')
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Hello, Demo Doctor 👋')).toBeInTheDocument();
+  });
+
   it('links the avatar/greeting to the profile page', () => {
     render(
       <MemoryRouter>

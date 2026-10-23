@@ -14,33 +14,19 @@ vi.mock('@ezazi/api-client', () => ({
   createApiClient: (...args: unknown[]) => createApiClient(...args),
 }));
 
-const dispatch = vi.hoisted(() => vi.fn());
-vi.mock('../../store/store', () => ({ store: { dispatch } }));
-
-const clearQueryCache = vi.hoisted(() => vi.fn());
-vi.mock('../../config/query-client', () => ({
-  queryClient: { clear: clearQueryCache },
-}));
-
-const redirectTo = vi.hoisted(() => vi.fn());
-vi.mock('../../utils/navigation', () => ({ redirectTo }));
-
-vi.mock('../../utils/storage', () => ({
-  storage: {
-    getAuthToken: vi.fn(() => 'stored-token'),
-    clearAuthToken: vi.fn(),
-    clearStoredUser: vi.fn(),
-  },
+const getValidAccessToken = vi.hoisted(() => vi.fn());
+const refreshAccessToken = vi.hoisted(() => vi.fn());
+vi.mock('../../services/session.service', () => ({
+  getValidAccessToken,
+  refreshAccessToken,
 }));
 
 describe('http', () => {
   beforeEach(() => {
     vi.resetModules();
     createApiClient.mockClear();
-    dispatch.mockClear();
-    clearQueryCache.mockClear();
-    redirectTo.mockClear();
-    window.history.pushState(null, '', '/');
+    getValidAccessToken.mockReset();
+    refreshAccessToken.mockReset();
 
     /*
      * Every client is looked up by its baseURL, so the four URLs must be
@@ -55,11 +41,10 @@ describe('http', () => {
   });
 
   afterEach(() => {
-    window.history.pushState(null, '', '/');
     vi.unstubAllEnvs();
   });
 
-  it('builds the authenticated client against AUTH_GATEWAY_URL with a token provider and 401 handler', async () => {
+  it('builds the authenticated client against AUTH_GATEWAY_URL with the session service as its token provider and 401 handler', async () => {
     const { env } = await import('../../config/env');
     await import('../../services/http');
 
@@ -69,11 +54,20 @@ describe('http', () => {
     expect(authCall).toBeDefined();
 
     const options = authCall![0] as {
-      getAuthToken: () => string | null;
-      onUnauthorized: () => void;
+      getAuthToken: () => Promise<string | null>;
+      onUnauthorized: (failedToken?: string) => Promise<string | null>;
     };
-    expect(options.getAuthToken()).toBe('stored-token');
-    expect(typeof options.onUnauthorized).toBe('function');
+
+    /* Requests are sent with the (pre-emptively refreshed) valid token... */
+    getValidAccessToken.mockResolvedValue('fresh-token');
+    await expect(options.getAuthToken()).resolves.toBe('fresh-token');
+
+    /* ...and a 401 is answered by the shared silent refresh, told which token failed. */
+    refreshAccessToken.mockResolvedValue('replacement-token');
+    await expect(options.onUnauthorized('stale-token')).resolves.toBe(
+      'replacement-token'
+    );
+    expect(refreshAccessToken).toHaveBeenCalledWith('stale-token');
   });
 
   it('builds the public client against CONFIG_URL with no token provider or 401 handler', async () => {
@@ -88,53 +82,6 @@ describe('http', () => {
     const options = publicCall![0] as Record<string, unknown>;
     expect(options.getAuthToken).toBeUndefined();
     expect(options.onUnauthorized).toBeUndefined();
-  });
-
-  it('on 401, clears the stored session, Redux state and query cache, then redirects to the login path', async () => {
-    const { storage } = await import('../../utils/storage');
-    const { loggedOut } = await import('../../reducers/auth.reducer');
-    await import('../../services/http');
-
-    const options = createApiClient.mock.calls[0][0] as {
-      onUnauthorized: () => void;
-    };
-    window.history.pushState(null, '', '/dashboard/profile');
-
-    options.onUnauthorized();
-
-    expect(storage.clearAuthToken).toHaveBeenCalled();
-    expect(storage.clearStoredUser).toHaveBeenCalled();
-    expect(dispatch).toHaveBeenCalledWith(loggedOut());
-    expect(clearQueryCache).toHaveBeenCalledTimes(1);
-    expect(redirectTo).toHaveBeenCalledWith('/auth/login');
-  });
-
-  it('on 401, prefixes the login path with VITE_BASE_PATH', async () => {
-    vi.stubEnv('VITE_BASE_PATH', '/intelehealth');
-    await import('../../services/http');
-
-    const options = createApiClient.mock.calls[0][0] as {
-      onUnauthorized: () => void;
-    };
-    window.history.pushState(null, '', '/intelehealth/dashboard');
-
-    options.onUnauthorized();
-
-    expect(redirectTo).toHaveBeenCalledWith('/intelehealth/auth/login');
-  });
-
-  it('on 401, does not redirect if already somewhere under the auth routes', async () => {
-    await import('../../services/http');
-
-    const options = createApiClient.mock.calls[0][0] as {
-      onUnauthorized: () => void;
-    };
-    window.history.pushState(null, '', '/auth/forgot-password');
-
-    options.onUnauthorized();
-
-    expect(redirectTo).not.toHaveBeenCalled();
-    expect(dispatch).toHaveBeenCalled();
   });
 
   it('builds the OpenMRS client against OPENMRS_URL with no Bearer auth, riding a session cookie instead', async () => {
