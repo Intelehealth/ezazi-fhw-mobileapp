@@ -13,6 +13,10 @@ const TABLET_MIN_WIDTH = 600;
 const TABLET_SCALE_REFERENCE_WIDTH = 600;
 const TABLET_MAX_SCALE = 1.4;
 
+// The tablet Figma frames are 800 units wide: the 8.7" reference tablet's width in
+// physical pixels, which is 600dp. So one Figma unit is 0.75dp there.
+const FIGMA_TABLET_FRAME_WIDTH = 800;
+
 /**
  * Central responsive helper.
  * fs('button') → 14 on phone / 20+ on tablet (values from theme.fontSizes,
@@ -42,5 +46,10 @@ export function useResponsive() {
   const scale = (tabletValue: number): number =>
     isTablet ? Math.round(tabletValue * tabletScale) : tabletValue;
 
-  return { width, height, isTablet, fs, cornerRadius, scale };
+  // A size read straight off a tablet Figma frame, in Figma units: converted to dp
+  // and scaled like scale(). Tablet branch only, as scale(): `isTablet ? fromFigma(50) : 40`.
+  const fromFigma = (figmaUnits: number): number =>
+    scale((figmaUnits * TABLET_SCALE_REFERENCE_WIDTH) / FIGMA_TABLET_FRAME_WIDTH);
+
+  return { width, height, isTablet, fs, cornerRadius, scale, fromFigma };
 }

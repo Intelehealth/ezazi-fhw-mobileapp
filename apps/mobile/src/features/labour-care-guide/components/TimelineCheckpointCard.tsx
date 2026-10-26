@@ -3,8 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
 import { AppButton } from '@/core/ui/AppButton';
-import { AppIcon } from '@/core/ui/icons';
-import { colors, dimens, radii, spacing } from '@/core/config/theme';
+import { AppIcon, LockKeyholeBadgeIcon } from '@/core/ui/icons';
+import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { CheckpointStatus, TimelineCheckpoint } from '../domain/timeline.types';
 
@@ -17,16 +17,62 @@ interface TimelineCheckpointCardProps {
   onRecordNow: () => void;
 }
 
-const STATUS_ACCENT: Record<CheckpointStatus, string> = {
-  completed: colors.success,
-  missed: colors.error,
-  dueNow: colors.primary,
-  upcoming: colors.border,
-  sosCaptured: colors.error,
+interface StatusLook {
+  cardBg: string;
+  cardBorder: string;
+  chipBg: string;
+  chipText: string;
+  dotBorder: string;
+  dotFill: string;
+}
+
+// Figma 251:364, one look per card state.
+const STATUS_LOOK: Record<CheckpointStatus, StatusLook> = {
+  completed: {
+    cardBg: colors.timelineCompletedBg,
+    cardBorder: colors.timelineCompletedBorder,
+    chipBg: colors.timelineCompletedChipBg,
+    chipText: colors.timelineCompletedChipText,
+    dotBorder: colors.timelineAccent,
+    dotFill: colors.timelineAccent,
+  },
+  missed: {
+    cardBg: colors.white,
+    cardBorder: colors.timelineMissedBorder,
+    chipBg: colors.timelineMissedChipBg,
+    chipText: colors.timelineMissedChipText,
+    dotBorder: colors.timelineMissedDot,
+    dotFill: colors.white,
+  },
+  dueNow: {
+    cardBg: colors.timelineDueBg,
+    cardBorder: colors.timelineDueBorder,
+    chipBg: colors.timelineDueChipBg,
+    chipText: colors.timelineAccent,
+    dotBorder: colors.timelineDueDot,
+    dotFill: colors.white,
+  },
+  upcoming: {
+    cardBg: colors.white,
+    cardBorder: colors.timelineUpcomingBorder,
+    chipBg: colors.timelineUpcomingChipBg,
+    chipText: colors.secondaryTextFigma,
+    dotBorder: colors.timelineUpcomingDot,
+    dotFill: colors.timelineUpcomingDotFill,
+  },
+  sosCaptured: {
+    cardBg: colors.timelineSosBg,
+    cardBorder: colors.timelineMissedBorder,
+    chipBg: colors.timelineMissedChipBg,
+    chipText: colors.timelineMissedChipText,
+    dotBorder: colors.timelineMissedDot,
+    dotFill: colors.white,
+  },
 };
 
+// "9:30 AM": Figma writes the day period in capitals whatever the device locale does.
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toUpperCase();
 }
 
 function formatDate(iso: string): string {
@@ -37,7 +83,11 @@ function minutesUntil(iso: string): number {
   return Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 60_000));
 }
 
-/** One row of the labour-monitoring timeline: date/time rail, status dot, and a state-specific card. */
+/**
+ * One row of the labour-monitoring timeline: date/time, the rail with its status dot, and a
+ * state-specific card. Tablet sizes are Figma units (fromFigma); the dot and the date sit
+ * level with the card's middle, as in the frame.
+ */
 export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
   checkpoint,
   isFirst,
@@ -45,84 +95,126 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
   onRecordNow,
 }) => {
   const { t } = useTranslation();
-  const { isTablet, fs, scale } = useResponsive();
-  const accent = STATUS_ACCENT[checkpoint.status];
-  const dotSize = isTablet ? dimens.timelineDotSize.tablet : dimens.timelineDotSize.phone;
+  const { isTablet, fs, fromFigma } = useResponsive();
+  const look = STATUS_LOOK[checkpoint.status];
+
+  const dotSize = isTablet ? fromFigma(42) : dimens.timelineDotSize.phone;
+  const bodySize = isTablet ? fromFigma(16) : fs('timelineCardBody');
+  const bodyStyle = [styles.body, { fontSize: bodySize }];
+  const sizes = isTablet
+    ? {
+        dateColumn: { width: fromFigma(96) },
+        date: { fontSize: fromFigma(16) },
+        time: { fontSize: fromFigma(24), marginTop: fromFigma(3) },
+        rail: { width: dotSize, marginHorizontal: fromFigma(30) },
+        card: {
+          paddingHorizontal: fromFigma(19),
+          paddingVertical: fromFigma(18),
+          marginVertical: fromFigma(10),
+          borderRadius: fromFigma(16),
+        },
+        chip: { height: fromFigma(32), paddingHorizontal: fromFigma(11), borderRadius: fromFigma(8) },
+        chipText: { fontSize: fromFigma(16) },
+        bodyGap: { marginTop: fromFigma(16) },
+        buttonGap: { marginTop: fromFigma(16) },
+        lockBadge: fromFigma(40),
+        checkIcon: fromFigma(28),
+      }
+    : {
+        dateColumn: { width: 76 },
+        date: { fontSize: fs('timelineDate') },
+        time: { fontSize: fs('timelineTime'), marginTop: spacing.xs / 2 },
+        rail: { width: dotSize, marginHorizontal: spacing.sm },
+        card: { padding: spacing.md, marginVertical: spacing.sm, borderRadius: 12 },
+        chip: { height: 22, paddingHorizontal: spacing.sm, borderRadius: 6 },
+        chipText: { fontSize: fs('timelineCardLabel') },
+        bodyGap: { marginTop: spacing.sm },
+        buttonGap: { marginTop: spacing.md },
+        lockBadge: 30,
+        checkIcon: Math.round(dotSize * 0.6),
+      };
 
   return (
     <View style={styles.row}>
-      <View style={styles.dateTimeColumn}>
-        <Text style={[styles.date, { fontSize: fs('timelineDate') }]}>{formatDate(checkpoint.scheduledAt)}</Text>
-        <Text style={[styles.time, { fontSize: fs('timelineTime') }]}>{formatTime(checkpoint.scheduledAt)}</Text>
+      <View style={sizes.dateColumn}>
+        <Text style={[styles.date, sizes.date]}>{formatDate(checkpoint.scheduledAt)}</Text>
+        <Text style={[styles.time, sizes.time]}>{formatTime(checkpoint.scheduledAt)}</Text>
       </View>
 
-      <View style={[styles.rail, { width: dotSize }]}>
+      <View style={[styles.rail, sizes.rail]}>
         <View style={[styles.railLine, isFirst && styles.railLineHidden]} />
-        {checkpoint.status === 'completed' ? (
-          <View style={[styles.dotFilled, { width: dotSize, height: dotSize, borderRadius: dotSize / 2 }]}>
-            <AppIcon name="check" size={dotSize * 0.55} color={colors.onPrimary} />
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.dotOutline,
-              { width: dotSize, height: dotSize, borderRadius: dotSize / 2, borderColor: accent },
-            ]}
-          />
-        )}
+        <View
+          style={[
+            styles.dot,
+            {
+              width: dotSize,
+              height: dotSize,
+              borderRadius: dotSize / 2,
+              borderColor: look.dotBorder,
+              backgroundColor: look.dotFill,
+            },
+          ]}
+        >
+          {checkpoint.status === 'completed' && (
+            <AppIcon name="check" size={sizes.checkIcon} color={colors.onPrimary} />
+          )}
+        </View>
         <View style={[styles.railLine, isLast && styles.railLineHidden]} />
       </View>
 
-      <View style={[styles.card, { borderColor: accent }]}>
-        <Text style={[styles.badge, { color: accent, fontSize: fs('timelineCardLabel') }]}>
-          {t(`timeline.status.${checkpoint.status}`).toUpperCase()}
-        </Text>
+      <View style={[styles.card, sizes.card, { backgroundColor: look.cardBg, borderColor: look.cardBorder }]}>
+        <View style={styles.topLine}>
+          <View style={styles.flex1}>
+            <View style={[styles.chip, sizes.chip, { backgroundColor: look.chipBg }]}>
+              <Text style={[styles.chipText, sizes.chipText, { color: look.chipText }]}>
+                {t(`timeline.status.${checkpoint.status}`).toUpperCase()}
+              </Text>
+            </View>
 
-        {checkpoint.status === 'completed' && (
-          <View style={styles.completedBodyRow}>
-            <Text style={[styles.body, { fontSize: fs('timelineCardBody') }]}>
-              {t('timeline.checkpoint.completedBody')}
-            </Text>
-            {checkpoint.recordedAt && (
-              <Text style={[styles.recordedAt, { fontSize: fs('timelineDate') }]}>
-                {t('timeline.checkpoint.completedRecordedAt', { time: formatTime(checkpoint.recordedAt) })}
+            {checkpoint.status === 'completed' && (
+              <View style={[styles.completedBodyRow, sizes.bodyGap]}>
+                <Text style={bodyStyle}>{t('timeline.checkpoint.completedBody')}</Text>
+                {checkpoint.recordedAt && (
+                  <Text style={bodyStyle}>
+                    {t('timeline.checkpoint.completedRecordedAt', { time: formatTime(checkpoint.recordedAt) })}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {checkpoint.status === 'sosCaptured' && (
+              <Text style={[bodyStyle, sizes.bodyGap]}>{t('timeline.checkpoint.sosCapturedBody')}</Text>
+            )}
+
+            {checkpoint.status === 'missed' && (
+              <Text style={[bodyStyle, sizes.bodyGap]}>{t('timeline.checkpoint.missedBody')}</Text>
+            )}
+
+            {checkpoint.status === 'dueNow' && (
+              <Text style={[bodyStyle, sizes.bodyGap]}>{t('timeline.checkpoint.dueNowBody')}</Text>
+            )}
+
+            {checkpoint.status === 'upcoming' && (
+              <Text style={[bodyStyle, styles.upcomingBody, sizes.bodyGap]}>
+                {t('timeline.checkpoint.upcomingBody', {
+                  time: formatTime(checkpoint.scheduledAt),
+                  minutes: minutesUntil(checkpoint.scheduledAt),
+                })}
               </Text>
             )}
           </View>
-        )}
 
-        {checkpoint.status === 'sosCaptured' && (
-          <Text style={[styles.body, { fontSize: fs('timelineCardBody') }]}>
-            {t('timeline.checkpoint.sosCapturedBody')}
-          </Text>
-        )}
-
-        {checkpoint.status === 'missed' && (
-          <Text style={[styles.body, { fontSize: fs('timelineCardBody') }]}>{t('timeline.checkpoint.missedBody')}</Text>
-        )}
+          {checkpoint.status === 'upcoming' && <LockKeyholeBadgeIcon size={sizes.lockBadge} />}
+        </View>
 
         {checkpoint.status === 'dueNow' && (
-          <>
-            <Text style={[styles.body, { fontSize: fs('timelineCardBody') }]}>{t('timeline.checkpoint.dueNowBody')}</Text>
-            <AppButton
-              label={t('timeline.checkpoint.recordNow')}
-              onPress={onRecordNow}
-              showArrow
-              style={styles.recordButton}
-            />
-          </>
-        )}
-
-        {checkpoint.status === 'upcoming' && (
-          <View style={styles.upcomingRow}>
-            <Text style={[styles.body, styles.bodyMuted, { fontSize: fs('timelineCardBody') }]}>
-              {t('timeline.checkpoint.upcomingBody', {
-                time: formatTime(checkpoint.scheduledAt),
-                minutes: minutesUntil(checkpoint.scheduledAt),
-              })}
-            </Text>
-            <AppIcon name="lock" size={isTablet ? scale(20) : 18} color={colors.textDisabled} />
-          </View>
+          <AppButton
+            label={t('timeline.checkpoint.recordNow')}
+            onPress={onRecordNow}
+            size="compact"
+            showChevron
+            style={sizes.buttonGap}
+          />
         )}
       </View>
     </View>
@@ -132,65 +224,56 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  dateTimeColumn: {
-    width: 76,
+  flex1: {
+    flex: 1,
   },
   date: {
-    color: colors.textSecondary,
+    color: colors.secondaryTextFigma,
   },
   time: {
-    color: colors.textPrimary,
+    color: colors.primaryTextDarkFigma,
     fontWeight: '700',
-    marginTop: spacing.xs / 2,
   },
   rail: {
-    // `row`'s alignItems: 'flex-start' (for the date/time column) would
-    // otherwise shrink this to its content height, breaking the line's
-    // connection to the next row's dot — this opts back into the default
-    // stretch so the rail always matches the card's actual height.
+    // Stretch to the row's height so the line runs on into the next row's rail.
     alignSelf: 'stretch',
     alignItems: 'center',
   },
   railLine: {
     flex: 1,
     width: 2,
-    minHeight: spacing.lg,
-    backgroundColor: colors.border,
+    backgroundColor: colors.timelineRail,
   },
   railLineHidden: {
     backgroundColor: 'transparent',
   },
-  dotFilled: {
-    backgroundColor: colors.primary,
+  dot: {
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotOutline: {
-    backgroundColor: colors.white,
-    borderWidth: 2,
-  },
   card: {
     flex: 1,
-    marginLeft: spacing.sm,
-    marginBottom: spacing.md,
     borderWidth: 1,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    backgroundColor: colors.white,
   },
-  badge: {
+  topLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  chip: {
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+  },
+  chipText: {
     fontWeight: '700',
-    letterSpacing: 0.4,
-    marginBottom: spacing.xs,
+    letterSpacing: 0.5,
   },
   body: {
-    color: colors.textSecondary,
+    color: colors.timelineBody,
     flexShrink: 1,
-  },
-  bodyMuted: {
-    color: colors.textDisabled,
   },
   completedBodyRow: {
     flexDirection: 'row',
@@ -198,16 +281,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: spacing.sm,
   },
-  recordedAt: {
-    color: colors.textDisabled,
-  },
-  recordButton: {
-    marginTop: spacing.sm,
-  },
-  upcomingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.sm,
+  upcomingBody: {
+    color: colors.secondaryTextFigma,
   },
 });

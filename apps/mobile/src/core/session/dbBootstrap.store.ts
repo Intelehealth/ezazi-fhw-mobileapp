@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { env } from '@/core/config/env';
 import { ensureSchema, resetSchemaInit } from '@/core/db/init';
-import { runDevSeed } from '@/core/db/seeds';
+import { runDevSeed, runDevVisitStart } from '@/core/db/seeds';
 import { logger } from '@/core/utils/logger';
 
 /**
@@ -20,6 +20,8 @@ interface DbBootstrapState {
   devVisitUuid: string | null;
   /** Idempotent — safe to call from a screen effect on every mount. */
   initialise: (providerUuid?: string | null) => Promise<void>;
+  /** Dev seed builds only: starts Stage 1 (once) on the live test visit; its uuid, or null on failure. */
+  startDevVisit: (providerUuid: string) => Promise<string | null>;
   /** Logout teardown — forget readiness so the next login rebuilds from scratch. */
   reset: () => void;
 }
@@ -66,6 +68,17 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
       // Console-only. Nothing surfaces this to the user by design.
       logger.error('[db] schema init failed', error);
       set({ phase: 'failed' });
+    }
+  },
+
+  startDevVisit: async (providerUuid) => {
+    if (!env.DEV_SEED) return null;
+    try {
+      await ensureSchema();
+      return runDevVisitStart(providerUuid);
+    } catch (error: unknown) {
+      logger.error('[db] dev visit start failed', error);
+      return null;
     }
   },
 

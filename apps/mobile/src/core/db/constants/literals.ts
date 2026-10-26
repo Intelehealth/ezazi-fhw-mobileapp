@@ -26,6 +26,9 @@ export type Ward = typeof WARD_LABOR | typeof WARD_POST_NATAL;
  */
 export const VISIT_READ_STATUS_VALUE = '$';
 
+/** `tbl_visit_attribute.value` for VISIT_DR_SPECIALITY on a new visit (Android `AppConstants.OBSTETRICIAN_GYNECOLOGIST`). */
+export const VISIT_SPECIALITY_OBGYN = 'Obstetrician & Gynecologist';
+
 /** `tbl_obs.value` of the MISSED_ENCOUNTER marker, as Android's `checkObsAndCreateMissedObs` writes it. */
 export const MISSED_ENCOUNTER_VALUE = '-';
 

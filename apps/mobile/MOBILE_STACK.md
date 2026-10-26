@@ -79,6 +79,13 @@ they do not become ad-hoc calls mid-move. Tracked in [`RESTRUCTURE_PLAN.md`](RES
 | labour monitor | `core/services/monitor/` | Long-lived and app-wide: started from `App.tsx` once authenticated, and re-invoked by the OS via `index.js`. Belongs to no single feature — `features/labour-care-guide` will *read* its results, not own it. |
 | low-battery alert | `core/services/batteryGuard/` | Same lifecycle as the monitor. Its dialog (`core/ui/LowBatteryDialog`) is rendered once, from `RootNavigator`, so it can appear over any screen. |
 
+**Added 2026-10-26 — icons (Kaveri, Stage 1 plan):**
+
+| Today | Home | Why |
+|---|---|---|
+| `core/ui/icons.tsx` | `core/ui/icons/` (import from `@/core/ui/icons`) | One file per exported Figma icon, named `<Figma icon name>Icon` (e.g. `PillIcon`), never after where it is used; `AppIcon` + `iconPaths.ts` keep the 24×24 registry. |
+| login/splash waves, splash hills | `core/ui/illustrations/backgroundShapes.ts` | Background shapes, not icons. |
+
 Two related notes:
 
 - **`config/clients/*` moves to `core/config/clients/` as-is.** Replacing that local mirror with

@@ -33,6 +33,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const providerUuid = useAuthStore((s) => s.userUuid);
   const initialiseDb = useDbBootstrapStore((s) => s.initialise);
   const devVisitUuid = useDbBootstrapStore((s) => s.devVisitUuid);
+  const startDevVisit = useDbBootstrapStore((s) => s.startDevVisit);
+
+  const openLiveDevVisit = async () => {
+    if (!providerUuid) return;
+    const visitUuid = await startDevVisit(providerUuid);
+    if (visitUuid) navigation.navigate('Timeline', { visitUuid });
+  };
 
   useEffect(() => {
     void initialiseDb(providerUuid);
@@ -62,6 +69,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             onPress={() => navigation.navigate('Timeline', { visitUuid: devVisitUuid })}
             variant="secondary"
           />
+        </View>
+      )}
+      {/* Same builds: the live test visit's first card, as Android writes it; the card engine runs it from there. */}
+      {devVisitUuid && (
+        <View style={styles.btn}>
+          <AppButton label={t('home.devStartVisit')} onPress={() => void openLiveDevVisit()} variant="secondary" />
         </View>
       )}
 

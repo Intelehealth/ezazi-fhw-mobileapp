@@ -6,7 +6,7 @@
  * Shared across clients (both eZAZI and Nepal render the same splash
  * illustration; only theme colors and the client wordmark differ). Follows
  * the same "raw path data, screen renders <Svg><Path/></Svg>" convention as
- * the wave/icon registry in core/ui/icons.tsx.
+ * the icon registry (core/ui/icons/) and core/ui/illustrations/backgroundShapes.ts.
  */
 export const splashIllustration = {
   viewBox: '0 0 299 419',

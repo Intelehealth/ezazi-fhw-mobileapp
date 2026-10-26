@@ -22,16 +22,22 @@ import { Text } from './Text';
  * disabledTone 'brand'  → Figma "disbaled" button (#C5C2D0 fill, white text);
  *                         'neutral' (default) keeps the Android gray disabled look
  * showArrow             → legacy iconGravity=end arrow pinned to the right edge
+ * size 'compact'        → Figma in-card button (Timeline "Record Now"): 50 units tall on the
+ *                         tablet frame, smaller label
+ * showChevron           → chevron (›) right after the label, centred with it (Figma "Record Now")
  */
 
 type AppButtonVariant = 'primary' | 'outline' | 'secondary' | 'destructive';
 type AppButtonDisabledTone = 'neutral' | 'brand';
+type AppButtonSize = 'regular' | 'compact';
 
 interface AppButtonProps {
   label: string;
   onPress: () => void;
   variant?: AppButtonVariant;
   showArrow?: boolean;
+  showChevron?: boolean;
+  size?: AppButtonSize;
   disabled?: boolean;
   disabledTone?: AppButtonDisabledTone;
   /** Placement only (margins) — never colors or sizing. */
@@ -43,15 +49,22 @@ export const AppButton: React.FC<AppButtonProps> = ({
   onPress,
   variant = 'primary',
   showArrow = false,
+  showChevron = false,
+  size = 'regular',
   disabled = false,
   disabledTone = 'neutral',
   style,
 }) => {
-  const { isTablet, fs, cornerRadius, scale } = useResponsive();
+  const { isTablet, fs, cornerRadius, scale, fromFigma } = useResponsive();
+  const compact = size === 'compact';
   // Flat per phone/tablet, NOT run through scale() — a touch target doesn't
   // need to grow with screen width the way text/icons do, and doing so blew
   // the button up to ~85dp on the 11" A11+ (64 * ~1.33), visibly oversized.
-  const height = isTablet ? dimens.buttonHeight.tablet : dimens.buttonHeight.phone;
+  // Compact follows its Figma frame instead, like the rest of the Timeline.
+  const regularHeight = isTablet ? dimens.buttonHeight.tablet : dimens.buttonHeight.phone;
+  const height = compact ? (isTablet ? fromFigma(50) : dimens.compactButtonHeight) : regularHeight;
+  const labelSize = compact ? (isTablet ? fromFigma(18) : fs('compactButton')) : fs('button');
+  const labelColor = disabled ? colors.disabledText : colors.onPrimary;
 
   return (
     <TouchableOpacity
@@ -74,18 +87,20 @@ export const AppButton: React.FC<AppButtonProps> = ({
           variant === 'outline' && styles.labelOutline,
           variant === 'secondary' && styles.labelSecondary,
           disabled && (disabledTone === 'brand' ? styles.labelDisabledBrand : styles.labelDisabled),
-          { fontSize: fs('button') },
+          { fontSize: labelSize },
         ]}
       >
         {label}
       </Text>
+
+      {showChevron && <AppIcon name="chevronRight" size={labelSize + 4} color={labelColor} />}
 
       {showArrow && (
         <View style={styles.arrowWrap}>
           <AppIcon
             name="arrowNext"
             size={isTablet ? scale(28) : 24}
-            color={disabled ? colors.disabledText : colors.onPrimary}
+            color={labelColor}
           />
         </View>
       )}
@@ -98,6 +113,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
   },
 
   primary: {

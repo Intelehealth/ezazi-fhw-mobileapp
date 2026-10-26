@@ -136,6 +136,37 @@ const palette = {
   buttonSecondaryBorderFigma: '#D5D7DA', // Figma Component 1 / "secondary button" stroke
   buttonSecondaryTextFigma: '#414651', // Figma "Gray/700" — secondary button label
   appBarBorder: '#F3F4F4', // BrandAppBar bottom hairline (Privacy Notice design)
+
+  // ── Timeline, Figma Observation flow "First Iteration" (251:364), 2026-10-26 ──
+  // Header values are Figma variables; the rest were read off the frame's render.
+  primaryTextDarkFigma: '#171334', // patient name, close icon
+  headerDividerFigma: '#F1EFFA', // header bottom border, action-bar top border
+  headerPillBg: '#F8F7FE', // View LCG / Postpartum Report
+  timelineBg: '#FCFCFC',
+  timelineAccent: '#460092', // completed dot, Due Now chip text
+  timelineRail: '#EAE4F2',
+  timelineBody: '#6F6381', // card body text
+  timelineCompletedBg: '#F1FAF5',
+  timelineCompletedBorder: '#DCF3E9',
+  timelineCompletedChipBg: '#CEFFEC',
+  timelineCompletedChipText: '#00A04B',
+  timelineMissedBorder: '#FF71A3',
+  timelineMissedDot: '#F50060',
+  timelineMissedChipBg: '#FFE7EF',
+  timelineMissedChipText: '#F0004A',
+  timelineDueBg: '#F9F6FE',
+  timelineDueBorder: '#9D7CC8',
+  timelineDueDot: '#885FBC',
+  timelineDueChipBg: '#EFE1FF',
+  timelineUpcomingBorder: '#ECE3F5',
+  timelineUpcomingDot: '#E8DEF3',
+  timelineUpcomingDotFill: '#F6F2F9',
+  timelineUpcomingChipBg: '#EFEFEF',
+  timelineSosBg: '#FFF5F8', // SOS card: the missed palette on a pink fill (2026-10-15, SOS colour-wise distinct)
+  timelineActionBorder: '#EAE4F2',
+  timelineActionText: '#1E023B',
+  timelineSos: '#F0004A',
+
 } as const;
 
 export const colors = {
@@ -182,6 +213,7 @@ export const dimens = {
   screenHPad: 28, // forgot_password_screen_padding
   inputHeight: 60, // input_height (text fields only — see buttonHeight for AppButton)
   buttonHeight: { phone: 60, tablet: 64 }, // AppButton — flat per phone/tablet, not run through useResponsive().scale()
+  compactButtonHeight: 40, // AppButton size 'compact' on phone; tablet follows its Figma frame
   otpCellHeight: { phone: 52, tablet: 64 }, // OtpInput — single-digit boxes, scaled via useResponsive().scale() on tablet
   // input_box_corner_radius — inputs and buttons, via useResponsive().cornerRadius
   cornerRadius: { phone: 8, tablet: 12 },
@@ -226,6 +258,7 @@ export const fontSizes = {
   timelineCardLabel: { phone: 11, tablet: 13 }, // "COMPLETED" / "MISSED" / "DUE NOW" / "UPCOMING" badge
   timelineCardBody: { phone: 13, tablet: 15 }, // checkpoint card description line
   timelineActionLabel: { phone: 11, tablet: 13 }, // SOS / Chat / Video Call / Rx captions
+  compactButton: { phone: 14, tablet: 14 }, // AppButton size 'compact' ("Record Now")
 } as const;
 
 export const typography = {

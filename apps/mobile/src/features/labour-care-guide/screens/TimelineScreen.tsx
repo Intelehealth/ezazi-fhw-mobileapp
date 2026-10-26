@@ -1,8 +1,11 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { logger } from '@/core/utils/logger';
 import { colors, spacing } from '@/core/config/theme';
+import { Text } from '@/core/ui/Text';
+import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { RootStackParamList } from '@/navigation/types';
 import { PatientHeader } from '../components/PatientHeader';
 import { StageProgressBar } from '../components/StageProgressBar';
@@ -20,6 +23,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Timeline'>;
  * the sample data in timeline.mock.ts.
  */
 export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { t } = useTranslation();
+  const { isTablet, fromFigma } = useResponsive();
   const visitUuid = route.params?.visitUuid;
   const viewModel = useTimelineViewModel(visitUuid);
   if (visitUuid && !viewModel?.patient) return <View style={styles.screen} />;
@@ -37,15 +42,27 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         onClose={() => navigation.goBack()}
       />
 
-      <View style={styles.stageBarWrap}>
+      <View
+        style={[
+          styles.stageBarWrap,
+          isTablet && { paddingHorizontal: fromFigma(40), paddingTop: fromFigma(26), paddingBottom: fromFigma(28) },
+        ]}
+      >
         <StageProgressBar activeStage={activeStage} />
       </View>
 
       <ScrollView
         style={styles.flex1}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          isTablet && { paddingHorizontal: fromFigma(40), paddingTop: fromFigma(36), paddingBottom: fromFigma(24) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Figma 251:408: the active stage's name over its cards. */}
+        <Text style={[styles.stageHeading, isTablet && { fontSize: fromFigma(32), marginBottom: fromFigma(14) }]}>
+          {t('timeline.stageHeading', { label: t(`timeline.stages.${activeStage}`) }).toUpperCase()}
+        </Text>
         {checkpoints.map((checkpoint, index) => (
           <TimelineCheckpointCard
             key={checkpoint.id}
@@ -71,18 +88,28 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.timelineBg,
   },
   flex1: {
     flex: 1,
   },
   stageBarWrap: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.lg,
     backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.headerDividerFigma,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  stageHeading: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primaryTextDarkFigma,
+    marginBottom: spacing.sm,
   },
 });

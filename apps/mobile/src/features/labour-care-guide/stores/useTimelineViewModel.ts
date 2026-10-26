@@ -59,7 +59,10 @@ export function useTimelineViewModel(visitUuid: string | undefined): TimelineVie
             name: fullName(patient),
             ezId: patient.openmrsId ?? '',
             ageYears: ageInYears(patient.dateOfBirth, now) ?? 0,
-            gravidaLabel: patient.gravida ? t('timeline.gravidaShort', { gravida: patient.gravida }) : '',
+            // The slot always shows; its value comes from registration later (field still to be confirmed).
+            gravidaLabel: patient.gravida
+              ? t('timeline.gravidaShort', { gravida: patient.gravida })
+              : t('timeline.gravidaMissing'),
           }
         : null,
       checkpoints: buildCheckpoints(snapshot.cards, snapshot.visit, now),

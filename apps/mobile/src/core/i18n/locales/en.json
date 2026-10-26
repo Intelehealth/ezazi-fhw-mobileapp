@@ -251,7 +251,8 @@
     "note": "Logged in. Active cases will appear here.",
     "logout": "Log out (EZ-943)",
     "addPatient": "Add Patient",
-    "devTimeline": "Open test patient timeline (dev)"
+    "devTimeline": "Open test patient timeline (dev)",
+    "devStartVisit": "Start live test patient visit (dev)"
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"
@@ -277,8 +278,8 @@
     "stages": {
       "stage1": "Stage 1",
       "stage2": "Stage 2",
-      "delivery": "Delivery",
-      "earlyPostpartum": "Early Postpartum"
+      "delivery": "Delivery Outcome",
+      "earlyPostpartum": "Very Early PP"
     },
     "stageStep": "{{index}}. {{label}}",
     "stageHeading": "{{label}}",
@@ -314,7 +315,8 @@
       "videoCall": "Start video call",
       "rx": "Open prescription"
     },
-    "gravidaShort": "G{{gravida}}"
+    "gravidaShort": "G{{gravida}}",
+    "gravidaMissing": "G-"
   },
   "partogram": {
     "field": {
