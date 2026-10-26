@@ -1,5 +1,3 @@
-import { env } from '@/core/config/env';
-import { DEV_CREATOR_UUID } from '@/core/db/seeds';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 
 import { runCardScan } from '..';
@@ -63,17 +61,5 @@ describe('runCardScan', () => {
     await expect(runCardScan()).resolves.toEqual(RESULT);
   });
 
-  it('stands in a dummy creator only in dev seed builds, for a session from before it was stored', async () => {
-    session({ accessToken: 't', userUuid: 'provider-1' });
-    await expect(runCardScan()).resolves.toBeNull();
-
-    (env as { DEV_SEED: boolean }).DEV_SEED = true;
-    await runCardScan(2000);
-    expect(scanAllVisits).toHaveBeenCalledWith({ providerUuid: 'provider-1', creatorUuid: DEV_CREATOR_UUID }, 2000, 'db-handle');
-
-    session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
-    await runCardScan(3000);
-    expect(scanAllVisits).toHaveBeenLastCalledWith({ providerUuid: 'provider-1', creatorUuid: 'user-1' }, 3000, 'db-handle');
-    (env as { DEV_SEED: boolean }).DEV_SEED = false;
-  });
+  // The dev stand-in creator is covered where it lives: core/session/__tests__/writerIdentity.test.ts.
 });

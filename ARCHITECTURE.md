@@ -28,6 +28,9 @@ ezazi-monorepo/
 ## Rules that span the monorepo
 
 - **Dependencies flow apps → packages, never the reverse.** A `packages/*` must not import from an `apps/*`.
+<!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
+- **Shared contracts live in `packages/*`.** The mobile and web apps agree on the API contract (`@ezazi/api-client`), client config (`@ezazi/config`), and domain types (`@ezazi/types`) by sharing them — so they can't drift. This keeps the **white-label boundary** (clinical semantics identical across eZAZI/eLCG) consistent across *both* apps.
+-->
 - **Shared contracts live in `packages/*`.** The mobile and web apps agree on the API contract (`@ezazi/api-client`), clinical rules (`@ezazi/clinical-rules`), client config (`@ezazi/config`), and domain types (`@ezazi/types`) by sharing them — so they can't drift. This keeps the **white-label boundary** (clinical semantics identical across eZAZI/eLCG) consistent across *both* apps.
 - **Clinical logic lives only in `@ezazi/clinical-rules`.** Card schedule, partogram fields, validation ranges and (later) alerts are written once there, and both apps import them from the package root — never re-implemented in an app. The package is pure: no database, no network, no React/React Native/DOM, no uuid literals, no clock (callers pass `now`), and it never reads `@ezazi/config`. Root eslint enforces this.
 - **Per-client validation ranges are the one clinical value that may differ** — as named range profiles inside `@ezazi/clinical-rules`, never in client config. Everything else clinical is identical for every client. Rules: `apps/mobile/ARCHITECTURE_RULES.md` §7a.

@@ -105,9 +105,9 @@ From `TimelineVisitSummaryActivity.collectEmergencyData` (1440–1544), the SOS 
 - **Write order (mobile).** The encounter first, then the obs with that encounter's uuid, in one `transact` (parent before child, `DB_CONVENTIONS.md` §2). Android writes the two separately.
 - **SOS cards and the timer.** An SOS card is ignored by the timer (excluded from "latest card") and shows every field of its stage (`getSosLayout`).
 
-**Decided (2026-10-15), keep Android:** when an SOS is created, the card that was newest on the timeline (normal or SOS) is no longer the newest, so it can no longer be filled. If it has no captured values it is marked **Missed** (`MISSED_ENCOUNTER` obs); a card with data stays **Submitted**. Either way it is not editable after that. This belongs to the card-status rule (not built yet).
+**Decided (2026-10-15), keep Android:** when an SOS is created, the card that was newest on the timeline (normal or SOS) is no longer the newest, so it can no longer be filled. If it has no captured values it is marked **Missed** (`MISSED_ENCOUNTER` obs); a card with data stays **Submitted**. Either way it is not editable after that. `getCardStatus` decides this; the mobile card engine writes the Missed marker.
 
-**Kept for parity, to be checked:** the provider is copied from the previous card rather than taken from the logged-in nurse (`.notes/OPEN_QUESTIONS.md` SOS3).
+**Kept for parity, to be checked:** the provider is copied from the previous card rather than taken from the logged-in nurse (open question SOS3, `apps/mobile/.notes/OPEN_QUESTIONS.md`, local notes).
 
 **Malformed labels, not reproduced** (decided 2026-10-15; no writer produces them): a trailing `_` (`Stage1_Hour3_SOS2_`), a card name whose last part is not a number (`Stage1_Hour3_x`), a stage digit missing (`Stage_Hour1_SOS1`) and an index too large for a Java `int`.
 

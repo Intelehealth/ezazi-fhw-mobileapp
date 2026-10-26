@@ -61,21 +61,21 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />
       </View>
 
-      {/* Development builds with EXPO_PUBLIC_DEV_SEED only: the fake patient's timeline. */}
+      {/* Development builds with EXPO_PUBLIC_DEV_SEED only: the fake patient's timeline, and the
+          live test visit (its first card as Android writes it; the card engine runs it from there). */}
       {devVisitUuid && (
-        <View style={styles.btn}>
-          <AppButton
-            label={t('home.devTimeline')}
-            onPress={() => navigation.navigate('Timeline', { visitUuid: devVisitUuid })}
-            variant="secondary"
-          />
-        </View>
-      )}
-      {/* Same builds: the live test visit's first card, as Android writes it; the card engine runs it from there. */}
-      {devVisitUuid && (
-        <View style={styles.btn}>
-          <AppButton label={t('home.devStartVisit')} onPress={() => void openLiveDevVisit()} variant="secondary" />
-        </View>
+        <>
+          <View style={styles.btn}>
+            <AppButton
+              label={t('home.devTimeline')}
+              onPress={() => navigation.navigate('Timeline', { visitUuid: devVisitUuid })}
+              variant="secondary"
+            />
+          </View>
+          <View style={styles.btn}>
+            <AppButton label={t('home.devStartVisit')} onPress={() => void openLiveDevVisit()} variant="secondary" />
+          </View>
+        </>
       )}
 
       {/* Android flow: Add Patient → Privacy Notice consent → registration */}

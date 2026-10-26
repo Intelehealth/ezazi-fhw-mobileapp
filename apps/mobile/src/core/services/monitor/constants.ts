@@ -12,10 +12,9 @@ export const MONITOR_TICK_INTERVAL_MS = 5_000;
 // RN's own setInterval/setTimeout fire on Android's Choreographer frame
 // callbacks (JavaTimerManager.kt), which the OS stops delivering once there's
 // no visible window to vsync against — no flag or wake lock changes that.
-// 1 minute here is a *test* cadence for fast feedback via a self-rescheduling
-// TimestampTrigger; IntervalTrigger's own floor is 15 minutes, which is
-// exactly Stage 1/2's production interval class (30/15-min) — so production
-// use switches to a plain IntervalTrigger, no manual rescheduling needed.
+// 1 minute in production too, via a self-rescheduling TimestampTrigger: the card
+// engine scans every minute like Android's, since each visit is at its own point
+// in its schedule (decided 2026-10-23; monitor README).
 // `-v2`: Android fixes a channel's importance at creation and ignores later
 // changes, so making this channel IMPORTANCE_MIN needed a new id.
 export const MONITOR_TRIGGER_CHANNEL_ID = 'labour-monitor-trigger-v2';

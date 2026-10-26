@@ -63,14 +63,17 @@ Recorded from the code comments written at the time. Devices: an emulator and a 
 | Setting | Now (test) | Production |
 |---|---|---|
 | `MONITOR_TICK_INTERVAL_MS` | 5 s | Foreground freshness only — choose with the UI. |
-| `MONITOR_TRIGGER_INTERVAL_MINUTES` | 1 min, self-rescheduling `TimestampTrigger` | **1 min, kept** (decided 2026-10-23): Android scans every minute because each visit is at its own point in its schedule, and pre-sync is due one minute before a card. <!-- Superseded 2026-10-23 (Kaveri), was: 15/30 min (Stage 2/1). These clear `IntervalTrigger`'s 15-min floor, so a plain `IntervalTrigger` can replace the re-arm chain. --> |
+| `MONITOR_TRIGGER_INTERVAL_MINUTES` | 1 min, self-rescheduling `TimestampTrigger` | **1 min, kept** (decided 2026-10-23): Android scans every minute because each visit is at its own point in its schedule, and pre-sync is due one minute before a card. |
 | Debug badge on `HomeScreen` | Shown | Remove (or `__DEV__` only). |
 | `logger.debug` per tick | On | Already a no-op when `APP_ENV=production`. |
+
+<!-- Superseded 2026-10-23 (Kaveri): production trigger cadence was "15/30 min (Stage 2/1). These clear
+`IntervalTrigger`'s 15-min floor, so a plain `IntervalTrigger` can replace the re-arm chain." -->
 
 ## Known gaps
 
 - New cards post Android's "Alert!" / "Time to collect the History data!" on channel `labour-new-card-v1` with the `al_1` sound (`plugins/withAlertSound.js` bundles it). Android also skips the sound during a phone call; here the system's own call handling applies.
-- A user logged in before the creator uuid was stored (2026-10-23) must log in again before cards are generated.
+- In release builds, a user logged in before the creator uuid was stored (2026-10-23) must log in again before cards are generated (dev seed builds use a stand-in creator).
 - Notification text ("eZAZI monitor active", "Monitor check") is hardcoded English, not i18n.
 - `startWithRetry()` has no attempt limit.
 - The alarm loop (flag → schedule → deliver → re-arm) is duplicated in `batteryGuard`; a shared helper would remove that.

@@ -6,23 +6,19 @@ import {
   formatSosName,
 } from '@ezazi/clinical-rules';
 
-import { localIsoTimestamp, utcIsoTimestamp } from '@/core/utils/datetime';
+import { utcIsoTimestamp } from '@/core/utils/datetime';
 
 import { ENCOUNTER_ADMISSION, LCG_SOS, encounterTypeUuid } from '../constants/encounter';
 import { MISSED_ENCOUNTER_VALUE, VISIT_READ_STATUS_VALUE } from '../constants/literals';
 import { ENCOUNTER_TYPE, MISSED_ENCOUNTER, SOS_STAGE_HOUR } from '../constants/obs';
-import {
-  DECISION_PENDING,
-  VISIT_HOLDER,
-  VISIT_READ_STATUS,
-  VISIT_TELEMEDICINE,
-} from '../constants/visit';
-import { encounterRepo, obsRepo, patientRepo, visitAttributeRepo, visitRepo } from '../repositories';
+import { DECISION_PENDING, VISIT_HOLDER, VISIT_READ_STATUS } from '../constants/visit';
+import { encounterRepo, obsRepo, visitRepo } from '../repositories';
 import type { NewEncounter } from '../repositories/encounter';
 import type { ObsUpsert } from '../repositories/obs';
 import { VOIDED_NO } from '../syncFlags';
 import type { DbHandle } from '../tx';
 import { newUuid } from '../uuid';
+import { writeDevPatientVisit, type DevSeedInput } from './devPatientVisit';
 import {
   DEV_ADMISSION_VALUES,
   DEV_ADMITTED_MINUTES_AGO,
@@ -34,11 +30,6 @@ import {
   type DevObs,
 } from './devPatient.data';
 
-export interface DevSeedInput {
-  providerUuid: string;
-  now: number;
-}
-
 /**
  * Writes the fake patient once; false when already present. Every row goes through
  * the pull-path writers, so it lands sync-clean and the sync engine never pushes it.
@@ -49,49 +40,18 @@ export function seedDevPatient(input: DevSeedInput, on: DbHandle): boolean {
   const at = (minutesAgo: number) => input.now - minutesAgo * MS_PER_MINUTE;
   const admittedAt = at(DEV_ADMITTED_MINUTES_AGO);
 
-  patientRepo.upsertPatients(
-    [
-      {
-        uuid: DEV_PATIENT.uuid,
-        openmrs_id: DEV_PATIENT.openmrsId,
-        first_name: DEV_PATIENT.firstName,
-        last_name: DEV_PATIENT.lastName,
-        date_of_birth: DEV_PATIENT.dateOfBirth,
-        gender: DEV_PATIENT.gender,
-        creatoruuid: input.providerUuid,
-        dateCreated: localIsoTimestamp(admittedAt),
-        voided: VOIDED_NO,
-      },
-    ],
-    on,
-  );
-
-  visitRepo.upsertManyFromServer(
-    [
-      {
-        uuid: DEV_VISIT_UUID,
-        patientuuid: DEV_PATIENT.uuid,
-        startdate: localIsoTimestamp(admittedAt),
-        visit_type_uuid: VISIT_TELEMEDICINE,
-        creator: input.providerUuid,
-        voided: VOIDED_NO,
-      },
-    ],
-    on,
-  );
-
-  visitAttributeRepo.upsertManyFromPull(
-    [
-      [VISIT_HOLDER, input.providerUuid],
-      [VISIT_READ_STATUS, VISIT_READ_STATUS_VALUE],
-      [DECISION_PENDING, DECISION_PENDING_CLEARED],
-    ].map(([typeUuid, value]) => ({
-      uuid: newUuid(),
-      visit_uuid: DEV_VISIT_UUID,
-      visit_attribute_type_uuid: typeUuid,
-      value,
-      voided: VOIDED_NO,
-    })),
+  writeDevPatientVisit(
+    {
+      patient: DEV_PATIENT,
+      visitUuid: DEV_VISIT_UUID,
+      providerUuid: input.providerUuid,
+      at: admittedAt,
+      attributes: [
+        [VISIT_HOLDER, input.providerUuid],
+        [VISIT_READ_STATUS, VISIT_READ_STATUS_VALUE],
+        [DECISION_PENDING, DECISION_PENDING_CLEARED],
+      ],
+    },
     on,
   );
 

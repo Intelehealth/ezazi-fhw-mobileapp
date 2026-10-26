@@ -1,5 +1,3 @@
-import type { LabourStage, PatientSummary, TimelineCheckpoint } from '@/features/labour-care-guide/domain/timeline.types';
-
 /**
  * Navigation type definitions — central source of truth.
  * Add new screens here so route names are type-safe.
@@ -21,17 +19,8 @@ export type RootStackParamList = {
 
   // App stack
   Home: undefined;
-  // All optional — TimelineScreen falls back to sample data when omitted
-  // (no patient/checkpoint repository exists yet; see MOBILE_STACK.md §9).
-  Timeline:
-    | {
-        /** The visit to show from the database; without it the screen previews sample data. */
-        visitUuid?: string;
-        patient?: PatientSummary;
-        checkpoints?: TimelineCheckpoint[];
-        activeStage?: LabourStage;
-      }
-    | undefined;
+  /** The visit whose labour timeline is shown, read from the database. */
+  Timeline: { visitUuid: string };
 };
 
 declare global {

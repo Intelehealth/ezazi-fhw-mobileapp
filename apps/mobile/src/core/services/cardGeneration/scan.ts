@@ -1,17 +1,11 @@
 import { DECISION_PENDING_SET, decideNextStep, getCardStatus } from '@ezazi/clinical-rules';
 
-import { encounterTypeName, encounterTypeUuid } from '@/core/db/constants/encounter';
+import { encounterTypeName } from '@/core/db/constants/encounter';
 import { DECISION_PENDING } from '@/core/db/constants/visit';
 import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
-import { SYNC_DIRTY, VOIDED_NO } from '@/core/db/syncFlags';
 import { transact, type DbHandle } from '@/core/db/tx';
 import { newUuid } from '@/core/db/uuid';
-
-/** Who the scan writes as: the visit holder (provider) and the obs creator (user). */
-export interface ScanIdentity {
-  providerUuid: string;
-  creatorUuid: string;
-}
+import type { WriterIdentity } from '@/core/session/writerIdentity';
 
 export interface ScanResult {
   cardsCreated: number;
@@ -22,8 +16,8 @@ export interface ScanResult {
 
 const emptyResult = (): ScanResult => ({ cardsCreated: 0, decisionPendingSet: 0, missedMarkers: 0, preSyncDue: 0 });
 
-// Android writes the missed marker while drawing the timeline; here the engine does (D-a, 2026-10-23).
-function writeMissedMarkers(visitUuid: string, identity: ScanIdentity, on: DbHandle): number {
+// Android writes the missed marker while drawing the timeline; here the engine does (decided 2026-10-23).
+function writeMissedMarkers(visitUuid: string, identity: WriterIdentity, on: DbHandle): number {
   const cards = encounterRepo.findTimelineByVisit(visitUuid, on);
   const decisionPending = visitAttributeRepo.findValue(visitUuid, DECISION_PENDING, on) === DECISION_PENDING_SET;
   let written = 0;
@@ -45,7 +39,7 @@ function writeMissedMarkers(visitUuid: string, identity: ScanIdentity, on: DbHan
 }
 
 /** One visit, one transaction: the next card or Decision Pending, then any missed markers now due. */
-export function scanVisit(visitUuid: string, identity: ScanIdentity, now: number, on: DbHandle): ScanResult {
+export function scanVisit(visitUuid: string, identity: WriterIdentity, now: number, on: DbHandle): ScanResult {
   return transact((tx) => {
     const result = emptyResult();
     const latest = encounterRepo.findLatestClinicalByVisit(visitUuid, tx);
@@ -54,22 +48,16 @@ export function scanVisit(visitUuid: string, identity: ScanIdentity, now: number
     if (latest && name && latest.encounter_time) {
       const step = decideNextStep({ name, encounterTime: latest.encounter_time }, now);
       if (step.kind === 'createCard') {
-        const typeUuid = encounterTypeUuid(step.card.name);
-        if (!typeUuid) throw new Error(`No encounter type for card ${step.card.name}`);
         const uuid = newUuid();
-        encounterRepo.insertManyReplacing(
-          [
-            {
-              uuid,
-              visituuid: visitUuid,
-              encounter_time: step.encounterTime,
-              provider_uuid: identity.providerUuid,
-              encounter_type_uuid: typeUuid,
-              privacynotice_value: step.privacyNoticeValue,
-              voided: VOIDED_NO,
-              sync: SYNC_DIRTY,
-            },
-          ],
+        encounterRepo.insertCard(
+          {
+            uuid,
+            visitUuid,
+            cardName: step.card.name,
+            encounterTime: step.encounterTime,
+            providerUuid: identity.providerUuid,
+            privacyNoticeValue: step.privacyNoticeValue,
+          },
           tx,
         );
         obsRepo.insertEncounterType(
@@ -93,7 +81,7 @@ export function scanVisit(visitUuid: string, identity: ScanIdentity, now: number
 }
 
 /** Every open visit the provider holds, as Android's minute scan (`CardGenerationEngine`). */
-export function scanAllVisits(identity: ScanIdentity, now: number, on: DbHandle): ScanResult {
+export function scanAllVisits(identity: WriterIdentity, now: number, on: DbHandle): ScanResult {
   return visitRepo.findActiveVisitsByProvider(identity.providerUuid, on).reduce((total, visit) => {
     const one = scanVisit(visit.uuid, identity, now, on);
     return {

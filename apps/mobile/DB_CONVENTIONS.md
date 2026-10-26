@@ -90,8 +90,8 @@ Original text kept for reference:
 **Never overwrite `tbl_obs.comment`.** It is not a note. It holds an alert code — `'R'` past the
 alert threshold, `'G'` within it, `''` when the field is empty — and is the **sole input to the risk
 score**. Codes and the risk score are computed in `@ezazi/clinical-rules`, as Android's
-`getAlertNameUpdated` and `VisitAlertProcessor` do. The legacy's `markedAsVoidedObsToDb` stomps it,
-destroying whatever alert was there.
+`getAlertNameUpdated` and `VisitAlertProcessor` do. Infusion, medicine and note obs are never coded
+(`comment` NULL). The legacy's `markedAsVoidedObsToDb` stomps it, destroying whatever alert was there.
 
 **No hard deletes. Anywhere.** Deletion is the `voided` flag. No repository gets a `delete()`.
 

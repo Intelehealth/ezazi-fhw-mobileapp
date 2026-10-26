@@ -12,34 +12,27 @@ import { PatientHeader } from '../components/PatientHeader';
 import { StageProgressBar } from '../components/StageProgressBar';
 import { TimelineCheckpointCard } from '../components/TimelineCheckpointCard';
 import { TimelineActionBar } from '../components/TimelineActionBar';
-import { MOCK_CHECKPOINTS, MOCK_PATIENT } from '../domain/timeline.mock';
 import { useTimelineViewModel } from '../stores/useTimelineViewModel';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Timeline'>;
 
 /**
- * Labour-monitoring timeline — patient header, stage stepper, the
- * observation checklist, and the quick-action bar. With a `visitUuid` it shows
- * that visit from the database (useTimelineViewModel); without one it previews
- * the sample data in timeline.mock.ts.
+ * Labour-monitoring timeline — patient header, stage stepper, the observation checklist, and
+ * the quick-action bar — for one visit, from the database (useTimelineViewModel).
  */
 export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { isTablet, fromFigma } = useResponsive();
-  const visitUuid = route.params?.visitUuid;
-  const viewModel = useTimelineViewModel(visitUuid);
+  const viewModel = useTimelineViewModel(route.params.visitUuid);
   const [sosConfirmVisible, setSosConfirmVisible] = useState(false);
-  if (visitUuid && !viewModel?.patient) return <View style={styles.screen} />;
+  if (!viewModel?.patient) return <View style={styles.screen} />;
+  const { patient, checkpoints, activeStage } = viewModel;
 
   const confirmSos = () => {
     setSosConfirmVisible(false);
-    // Figma: Capture SOS then opens the SOS form; the capture screen is Phase 2.
-    void viewModel?.captureSos();
+    // Figma: Capture SOS then opens the SOS form; the capture screen is not built yet.
+    void viewModel.captureSos();
   };
-
-  const patient = viewModel?.patient ?? route.params?.patient ?? MOCK_PATIENT;
-  const checkpoints = viewModel?.checkpoints ?? route.params?.checkpoints ?? MOCK_CHECKPOINTS;
-  const activeStage = viewModel?.activeStage ?? route.params?.activeStage ?? 'stage1';
 
   return (
     <View style={styles.screen}>

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Platform, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
-import { AppIcon } from '@/core/ui/icons';
+import { AppIcon, type IconName } from '@/core/ui/icons';
 import { colors, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { PatientSummary } from '../domain/timeline.types';
@@ -13,6 +14,14 @@ interface PatientHeaderProps {
   onViewPostpartumReport: () => void;
   onClose: () => void;
 }
+
+type ShortcutKey = 'viewLcg' | 'postpartumReport';
+
+// Labels and accessibility text come from `timeline.<key>` / `timeline.a11y.<key>`.
+const SHORTCUTS: readonly { key: ShortcutKey; icon: IconName }[] = [
+  { key: 'viewLcg', icon: 'document' },
+  { key: 'postpartumReport', icon: 'report' },
+];
 
 /**
  * Patient identity strip + LCG/Postpartum Report shortcuts + close button.
@@ -28,10 +37,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const { t } = useTranslation();
   const { isTablet, fs, fromFigma } = useResponsive();
 
-  // Same status-bar offset ScreenHeader uses — there's no established
-  // useSafeAreaInsets() usage in this codebase yet (see TimelineActionBar
-  // for where one is finally introduced, at the bottom bar).
-  const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0;
+  // The app draws edge to edge, so the header starts below the status bar's inset.
+  const statusBarH = useSafeAreaInsets().top;
+  const onPress: Record<ShortcutKey, () => void> = { viewLcg: onViewLcg, postpartumReport: onViewPostpartumReport };
   const pillIconSize = isTablet ? fromFigma(24) : 16;
   const pillStyle = isTablet
     ? { height: fromFigma(50), paddingHorizontal: fromFigma(12), gap: fromFigma(9), borderRadius: fromFigma(15) }
@@ -40,31 +48,21 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
   const shortcuts = (
     <View style={[styles.actionRow, isTablet ? { gap: fromFigma(14) } : styles.actionRowPhone]}>
-      <TouchableOpacity
-        onPress={onViewLcg}
-        accessibilityRole="button"
-        accessibilityLabel={t('timeline.a11y.viewLcg')}
-        style={[styles.pill, pillStyle]}
-        activeOpacity={0.8}
-      >
-        <AppIcon name="document" size={pillIconSize} color={colors.primary} />
-        <Text style={[styles.pillLabel, { fontSize: pillLabelSize }]} numberOfLines={1}>
-          {t('timeline.viewLcg')}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={onViewPostpartumReport}
-        accessibilityRole="button"
-        accessibilityLabel={t('timeline.a11y.postpartumReport')}
-        style={[styles.pill, pillStyle]}
-        activeOpacity={0.8}
-      >
-        <AppIcon name="report" size={pillIconSize} color={colors.primary} />
-        <Text style={[styles.pillLabel, { fontSize: pillLabelSize }]} numberOfLines={1}>
-          {t('timeline.postpartumReport')}
-        </Text>
-      </TouchableOpacity>
+      {SHORTCUTS.map(({ key, icon }) => (
+        <TouchableOpacity
+          key={key}
+          onPress={onPress[key]}
+          accessibilityRole="button"
+          accessibilityLabel={t(`timeline.a11y.${key}`)}
+          style={[styles.pill, pillStyle]}
+          activeOpacity={0.8}
+        >
+          <AppIcon name={icon} size={pillIconSize} color={colors.primary} />
+          <Text style={[styles.pillLabel, { fontSize: pillLabelSize }]} numberOfLines={1}>
+            {t(`timeline.${key}`)}
+          </Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 
@@ -89,7 +87,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
             ]}
             numberOfLines={1}
           >
-            {patient.ezId} · {t('timeline.ageGravida', { age: patient.ageYears, gravida: patient.gravidaLabel })}
+            {t('timeline.identityLine', { ezId: patient.ezId, age: patient.ageYears, gravida: patient.gravidaLabel })}
           </Text>
         </View>
 

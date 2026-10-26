@@ -6,7 +6,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { AppIcon } from './icons';
 import { Text } from './Text';
@@ -30,6 +30,14 @@ import { Text } from './Text';
 type AppButtonVariant = 'primary' | 'outline' | 'secondary' | 'destructive';
 type AppButtonDisabledTone = 'neutral' | 'brand';
 type AppButtonSize = 'regular' | 'compact';
+
+// One label colour per variant, shared by the label, the chevron and the arrow.
+const LABEL_COLOR: Record<AppButtonVariant, string> = {
+  primary: colors.onPrimary,
+  destructive: colors.onPrimary,
+  outline: colors.primary,
+  secondary: colors.buttonSecondaryTextFigma,
+};
 
 interface AppButtonProps {
   label: string;
@@ -64,7 +72,8 @@ export const AppButton: React.FC<AppButtonProps> = ({
   const regularHeight = isTablet ? dimens.buttonHeight.tablet : dimens.buttonHeight.phone;
   const height = compact ? (isTablet ? fromFigma(50) : dimens.compactButtonHeight) : regularHeight;
   const labelSize = compact ? (isTablet ? fromFigma(18) : fs('compactButton')) : fs('button');
-  const labelColor = disabled ? colors.disabledText : colors.onPrimary;
+  const disabledColor = disabledTone === 'brand' ? colors.onPrimary : colors.disabledText;
+  const labelColor = disabled ? disabledColor : LABEL_COLOR[variant];
 
   return (
     <TouchableOpacity
@@ -82,13 +91,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
       activeOpacity={0.85}
     >
       <Text
-        style={[
-          styles.label,
-          variant === 'outline' && styles.labelOutline,
-          variant === 'secondary' && styles.labelSecondary,
-          disabled && (disabledTone === 'brand' ? styles.labelDisabledBrand : styles.labelDisabled),
-          { fontSize: labelSize },
-        ]}
+        style={[styles.label, { color: labelColor, fontSize: labelSize }]}
       >
         {label}
       </Text>
@@ -113,7 +116,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
 
   primary: {
@@ -151,25 +154,8 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.onPrimary,
     fontWeight: '700',
     letterSpacing: 0.5,
-  },
-
-  labelOutline: {
-    color: colors.primary,
-  },
-
-  labelSecondary: {
-    color: colors.buttonSecondaryTextFigma,
-  },
-
-  labelDisabled: {
-    color: colors.disabledText,
-  },
-
-  labelDisabledBrand: {
-    color: colors.onPrimary,
   },
 
   arrowWrap: {

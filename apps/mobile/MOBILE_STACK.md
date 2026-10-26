@@ -8,6 +8,9 @@
 
 ## 1. Architecture pattern
 
+<!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
+**Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
+-->
 **Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, clinical rules, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
 
 ## 2. Folder structure (in the monorepo)
@@ -30,13 +33,17 @@ ezazi-monorepo/
 │           ├── core/                 # mobile-only shared spine
 │           │   ├── db/               #   expo-sqlite + Drizzle: schema, repositories, live queries
 │           │   │   ├── schema/ · repositories/ · constants/
+│           │   │   ├── seeds/        #   dev-only fake patients (EXPO_PUBLIC_DEV_SEED); never pushed
 │           │   │   └── sync/         #   the SINGLE sync engine (owns EMR-Middleware pull/push)
 │           │   ├── services/         #   long-lived singletons via hooks:
 │           │   │   ├── livekit/ (useCall) · socket/ (useChat) · fcm/ · firebase/
 │           │   │   ├── monitor/      #   labour monitor: foreground service + AlarmManager backbone (ARCHITECTURE_RULES §11)
+│           │   │   ├── cardGeneration/ # minute card scan + new-card alert, run by the monitor (ARCHITECTURE_RULES §11)
 │           │   │   ├── batteryGuard/ #   low-battery dialog + notifications (ARCHITECTURE_RULES §11)
 │           │   │   └── storage/      #   secure-store (JWT) + async-storage wrappers
 │           │   ├── ui/               #   RN design-system primitives (AppButton, …) + screen shells (§3.1)
+│           │   │   ├── icons/        #   one component per Figma icon + the 24×24 AppIcon registry (§2.1)
+│           │   │   ├── illustrations/ #  vector illustrations and background shapes
 │           │   │   ├── hooks/        #   UI/layout hooks (useResponsive)
 │           │   │   └── ThemeContext.tsx  # the design system's own provider
 │           │   ├── config/           #   env · theme · clients/ · app-wide remote config
@@ -51,6 +58,10 @@ ezazi-monorepo/
 │           ├── navigation/           # auth-gated root + per-feature navigators
 │           └── types/                # ambient declarations only (process.d.ts)
 ```
+
+<!-- Superseded 2026-10-22 (Kaveri): `ui/` also holds the screen body shells (§3.1), added with the shared app bar (commit e0c1511). Original tree line kept for reference:
+│           │   ├── ui/               #   RN design-system primitives (AppButton, …)
+-->
 
 ### 2.1 Settled placements (Phase 0, 2026-09-10)
 
@@ -79,7 +90,7 @@ they do not become ad-hoc calls mid-move. Tracked in [`RESTRUCTURE_PLAN.md`](RES
 | labour monitor | `core/services/monitor/` | Long-lived and app-wide: started from `App.tsx` once authenticated, and re-invoked by the OS via `index.js`. Belongs to no single feature — `features/labour-care-guide` will *read* its results, not own it. |
 | low-battery alert | `core/services/batteryGuard/` | Same lifecycle as the monitor. Its dialog (`core/ui/LowBatteryDialog`) is rendered once, from `RootNavigator`, so it can appear over any screen. |
 
-**Added 2026-10-26 — icons (Kaveri, Stage 1 plan):**
+**Added 2026-10-26 — icons (Kaveri, Stage 1 observation work):**
 
 | Today | Home | Why |
 |---|---|---|
@@ -209,6 +220,10 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 | ✅ **DB layer (done)** | 10 repositories behind `core/db/repositories/index.ts`, `relations()` for `with:` queries, FK + dirty-flag (`sync`) indexes, and the test suite — 20 specs under `core/db/__tests__/`. Migrations run through `migrate()` inside `ensureSchema()`, **not** `useMigrations` in `App.tsx`. Verified on device 2026-10-12. |
 | 🆕 **Build new** | `core/db/sync` — **the sync engine, hand-rolled by us; critical path** · `core/services` (LiveKit, RNFirebase, socket.io, background-task) |
 
+<!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
+| ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
+-->
+
 ## 8. Legacy Android module → `apps/mobile` / `packages` mapping
 
 | Legacy Android (`org.intelehealth.ezazi`) | New home |
@@ -234,6 +249,10 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 2. Put shared types in `@ezazi/types`; feature-local types + zod schemas in `domain/`. Clinical semantics stay shared (ARCHITECTURE_RULES §7).
 3. New persistence: add Drizzle tables/migrations in `core/db/schema`; expose a `useLiveQuery` read.
 4. Write the **repository** in `data/` (DB ⊕ `@ezazi/api-client`). Never call sync/API from screens or stores.
+<!-- Superseded 2026-10-22 (Kaveri): screens now use the §3.1 body shells and the navigator's header presets (shared app bar, commit e0c1511). Original steps 5 and 6 kept for reference:
+5. Build screens; **RHF+zod** for forms; subscribe to live queries / Zustand.
+6. Register screens in the feature's navigator; wire into the root navigator.
+-->
 5. Build screens inside the right body shell (§3.1); **RHF+zod** for forms; subscribe to live queries / Zustand.
 6. Register screens in the feature's navigator; wire into the root navigator. App bar: inherit the group's header preset, or override with `options={brandAppBar | noHeader}` (§3.1).
 7. Tests: repository, critical live query, sync reconciliation.

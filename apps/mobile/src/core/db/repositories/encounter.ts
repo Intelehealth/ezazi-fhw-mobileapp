@@ -7,6 +7,7 @@ import {
   ENCOUNTER_ADMISSION,
   ENCOUNTER_VISIT_COMPLETE,
   encounterTypeName,
+  encounterTypeUuid,
   LCG_SOS,
   NON_CLINICAL_ENCOUNTER_TYPES,
   STAGE3_HOUR1_1,
@@ -145,6 +146,40 @@ export function insertVisitComplete(
       voided: VOIDED_NO,
       sync: SYNC_DIRTY,
     },
+    on,
+  );
+}
+
+/**
+ * Creates a timeline card (`Stage1_Hour1_1`, …), unsynced: its type from the card name, which
+ * must be known. Caller supplies the uuid and time; the card's NORMAL marker obs is its own call.
+ */
+export function insertCard(
+  input: {
+    uuid: string;
+    visitUuid: string;
+    cardName: string;
+    encounterTime: string;
+    providerUuid: string | null;
+    privacyNoticeValue: string | null;
+  },
+  on: DbHandle,
+): void {
+  const typeUuid = encounterTypeUuid(input.cardName);
+  if (!typeUuid) throw new Error(`No encounter type for card ${input.cardName}`);
+  insertManyReplacing(
+    [
+      {
+        uuid: input.uuid,
+        visituuid: input.visitUuid,
+        encounter_time: input.encounterTime,
+        provider_uuid: input.providerUuid,
+        encounter_type_uuid: typeUuid,
+        privacynotice_value: input.privacyNoticeValue,
+        voided: VOIDED_NO,
+        sync: SYNC_DIRTY,
+      },
+    ],
     on,
   );
 }

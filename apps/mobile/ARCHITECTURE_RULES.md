@@ -11,6 +11,9 @@
 
 ## 🔒 Scope — all changes happen inside `apps/mobile/`
 
+<!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
+**Every change for the FHW mobile app is made within the `apps/mobile/` workspace.** Do not modify other workspaces (`apps/web`) as part of mobile work. The shared `packages/*` (`@ezazi/api-client`, `@ezazi/config`, `@ezazi/types`) are consumed by the mobile app but **owned cross-app** — they also affect the web app, so change them only deliberately and in coordination, never as an incidental side effect of a mobile task. When in doubt, keep the change local to `apps/mobile/`.
+-->
 **Every change for the FHW mobile app is made within the `apps/mobile/` workspace.** Do not modify other workspaces (`apps/web`) as part of mobile work. The shared `packages/*` (`@ezazi/api-client`, `@ezazi/clinical-rules`, `@ezazi/config`, `@ezazi/types`) are consumed by the mobile app but **owned cross-app** — they also affect the web app, so change them only deliberately and in coordination, never as an incidental side effect of a mobile task. When in doubt, keep the change local to `apps/mobile/`.
 
 ## 0. Verify on session start (rule)
@@ -19,6 +22,9 @@ Before dependency/architecture work in `apps/mobile`:
 - Read `apps/mobile/package.json` and compare against §3.
 - From the repo root: `npm run typecheck`, `npm run lint`, `npm run test` (Turborepo, filtered to the mobile workspace by CI). In `apps/mobile`: `npx expo install --fix` and `npx expo-doctor`.
 - Flag any **forbidden** package (§9 — WatermelonDB, Redux, Realm, PowerSync). *(WatermelonDB was fully removed in the SDK 57 migration — it must not come back.)*
+<!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
+- Shared code comes from workspace packages `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — don't re-implement them app-locally.
+-->
 - Shared code comes from workspace packages `@ezazi/api-client`, `@ezazi/clinical-rules`, `@ezazi/config`, `@ezazi/types` — don't re-implement them app-locally.
 
 ---
@@ -51,6 +57,9 @@ Before dependency/architecture work in `apps/mobile`:
 | `apps/mobile/.env` | `EXPO_PUBLIC_*` config (no secrets) |
 | `apps/mobile/index.js` | App entry. Registers the monitor's foreground-service runner and the **one** app-wide notify-kit `onBackgroundEvent` handler — both must run at boot, outside the component tree, so the OS can re-invoke them after killing the process (§11). |
 
+<!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
+**Shared packages (consumed by mobile *and* the web app):** `@ezazi/api-client` (HTTP client + `ApiResult` + endpoints), `@ezazi/config` (multi-tenant client registry + env contracts), `@ezazi/types` (domain types).
+-->
 **Shared packages (consumed by mobile *and* the web app):** `@ezazi/api-client` (HTTP client + `ApiResult` + endpoints), `@ezazi/clinical-rules` (pure clinical rules: card schedule, partogram fields, validation ranges — no DB, no uuids, no clock; see its README), `@ezazi/config` (multi-tenant client registry + env contracts), `@ezazi/types` (domain types).
 
 **Env vars (`EXPO_PUBLIC_*`)** — gate every API/service call: `AUTH_GATEWAY_URL`, `PORTAL_URL`, `WEBRTC_URL`, `CONFIG_URL`, `CLIENT_ID`, `APP_ENV`, `DEFAULT_COUNTRY/LOCALE/CALENDAR`, `FEATURE_FLAG_*` (presentational only — §7), `SENTRY_DSN`.
@@ -81,7 +90,7 @@ Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.*
 
 Also SDK-managed (added 2026-10-05 with the low-battery alert, §11): `expo-battery` — battery level + plug state for `core/services/batteryGuard`.
 
-Also SDK-managed (added 2026-10-23 for the observation capture screen): `react-native-pager-view` 8.0.2, the version Expo SDK 57 bundles — swipe between the capture screen's tabs (Figma swipe rule). New Architecture only, so it passes the §5 gate.
+Also SDK-managed (added 2026-10-23 for the observation capture screen): `react-native-pager-view` 8.0.2, the version Expo SDK 57 bundles — swipe between the capture screen's tabs (Figma swipe rule). New Architecture only, so it passes the §5 gate. Added ahead of the capture screen, which is not built yet.
 
 Two more arrived on 2026-10-12 and are listed in (B) above: `expo-crypto` (`randomUUID()`, reached only through `core/db/uuid.ts`) and `expo-font` (required by `@expo-google-fonts/lato`; keep the direct entry rather than relying on `expo` hoisting it).
 
@@ -141,6 +150,9 @@ If an explanation genuinely needs more room, it belongs in a doc, not in the sou
 
 Ships as **eZAZI (India)** and **eLCG (Nepal)** from one codebase (`@ezazi/config` — **shared with the web app**, so the boundary holds across *both* apps).
 
+<!-- Superseded 2026-10-15 (Kaveri): names `@ezazi/clinical-rules` and the one clinical exception, per-client validation range values (decided 2026-10-14, §7a). Original text kept for reference:
+**MUST be identical across all clients (shared code / `@ezazi/config` / `@ezazi/types`, never a per-client branch):** clinical rules & concept UUIDs, DB schema, sync payload shape & endpoints, validation logic, domain algorithms (risk scores, partograph/LCG, delivery/postpartum).
+-->
 **MUST be identical across all clients (shared code / `@ezazi/clinical-rules` / `@ezazi/config` / `@ezazi/types`, never a per-client branch):** clinical rules & concept UUIDs, DB schema, sync payload shape & endpoints, validation logic (the checks themselves — range *values* are the one exception, §7a), domain algorithms (risk scores, partograph/LCG, delivery/postpartum).
 
 **MAY differ per client (via `@ezazi/config` client entries + `app.config.js` only):** app name/icon/splash/brand colors, default locale/language, calendar (BS/AD), dial-code + number length, server URLs per env, "powered by" mark, presentational/rollout flags **only**.
@@ -169,6 +181,9 @@ Requirement: every client captures **the same fields**, but a client may need **
 - **DO NOT** let a feature call sync/API endpoints directly — go through repositories and the single sync module.
 - **DO NOT** store clinical data in Zustand; **DO NOT** hand-roll form state with `useState`.
 - **DO NOT** hardcode SDK-managed versions (§3B).
+<!-- Superseded 2026-10-15 (Kaveri): adds the §7a exception, per-client validation range values kept only in `@ezazi/clinical-rules`. Original text kept for reference:
+- **DO NOT** put anything affecting clinical meaning in a per-client config (§7).
+-->
 - **DO NOT** put anything affecting clinical meaning in a per-client config (§7). Per-client validation range values are the single exception, and they live only in `@ezazi/clinical-rules` range profiles (§7a).
 - **DO NOT** write clinical rules or clinical values (card schedule, fields and options, validation ranges, alert thresholds) inside an app. They live in `@ezazi/clinical-rules`, which mobile and web both import — import from the package root only (eslint).
 - **DO NOT** make mobile changes outside `apps/mobile/` — `apps/web` is off-limits for mobile work; shared `packages/*` are changed deliberately/coordinated (they affect web), never incidentally (see **Scope** above).
@@ -220,7 +235,14 @@ Requirement: every client captures **the same fields**, but a client may need **
 8. **`startForegroundService()` can be refused** (`ForegroundServiceStartNotAllowedException`) when Android does not consider the app visible — e.g. a cold start behind the lock screen. Starting must retry, never fail silently.
 9. **Stop everything on logout**, including any `ongoing` notification, which the user cannot swipe away.
 
-**Current state:** test cadences are still in use (5 s heartbeat, 1-minute alarms). Production intervals and the clinical evaluation (`@ezazi/clinical-rules`) are not wired yet — see the monitor README.
+**Card engine** (`core/services/cardGeneration/`, added 2026-10-23; Android's `CardGenerationEngine`):
+
+10. **Scan every minute, after the re-arm.** The backbone delivery re-arms first, then calls `runCardScan`, so a failed scan never ends the alarm chain. One more scan runs right after login as a catch-up.
+11. **No session, no scan.** `runCardScan` returns without opening the database when there is no access token or writer identity (§6).
+12. **One scan at a time, one transaction per visit.** An overlapping call shares the running scan's result; each visit's new card, Decision Pending flag and missed markers are written together.
+13. **New-card alert on its own channel** (`labour-new-card-v1`, sound `al_1`, bundled by `plugins/withAlertSound.js`). Rule 6 applies: a change of sound or importance needs a new channel id.
+
+**Current state:** the 1-minute alarm is the production cadence (decided 2026-10-23). The 5 s heartbeat is foreground-only and for dev visibility — see the monitor README.
 
 ---
 _Structure & the "why": [`MOBILE_STACK.md`](MOBILE_STACK.md) · Monorepo: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)._

@@ -22,6 +22,7 @@ import {
   findUuidByVisitAndType,
   findVisitCompleteUuid,
   insertAdmission,
+  insertCard,
   insertDeliveryOutcomeStage3,
   insertManyReplacing,
   insertSos,
@@ -152,6 +153,30 @@ describe('encounter repository', () => {
         encounter_type_uuid: ENCOUNTER_ADMISSION,
         sync: SYNC_DIRTY,
       });
+    });
+
+    it('creates a timeline card from its name, unsynced, and refuses an unknown name', () => {
+      const card = {
+        uuid: 'k1',
+        visitUuid: VISIT,
+        cardName: 'Stage1_Hour1_1',
+        encounterTime: '2026-10-26 10:00:00',
+        providerUuid: 'prov-1',
+        privacyNoticeValue: null,
+      };
+      insertCard(card, db);
+
+      expect(row('k1')).toMatchObject({
+        visituuid: VISIT,
+        encounter_type_uuid: STAGE1_HOUR1_1,
+        encounter_time: '2026-10-26 10:00:00',
+        provider_uuid: 'prov-1',
+        privacynotice_value: null,
+        voided: 0,
+        sync: SYNC_DIRTY,
+      });
+      expect(() => insertCard({ ...card, uuid: 'k2', cardName: 'Stage9_Hour1_1' }, db)).toThrow('Stage9_Hour1_1');
+      expect(row('k2')).toBeUndefined();
     });
 
     it('marks a visit complete', () => {

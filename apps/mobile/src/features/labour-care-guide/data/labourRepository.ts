@@ -24,20 +24,15 @@ import type {
   StoredObs,
 } from '@ezazi/clinical-rules';
 
-import { encounterTypeName, encounterTypeUuid } from '@/core/db/constants/encounter';
+import { encounterTypeName } from '@/core/db/constants/encounter';
 import * as obsConcepts from '@/core/db/constants/obs';
 import { DECISION_PENDING, VISIT_RISK } from '@/core/db/constants/visit';
 import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
 import { SYNC_DIRTY, VOIDED_NO } from '@/core/db/syncFlags';
 import { transact, type DbHandle } from '@/core/db/tx';
 import { newUuid } from '@/core/db/uuid';
+import type { WriterIdentity } from '@/core/session/writerIdentity';
 import { localIsoTimestamp } from '@/core/utils/datetime';
-
-/** Who writes: the visit holder (provider) and the obs creator (user). */
-export interface Writer {
-  providerUuid: string;
-  creatorUuid: string;
-}
 
 const CONCEPTS = obsConcepts as unknown as Readonly<Record<ConceptKey | OutcomeConceptKey, string>>;
 
@@ -50,7 +45,7 @@ const obsRow = (
   conceptKey: ConceptKey | OutcomeConceptKey,
   value: string,
   comment: string | null,
-  writer: Writer,
+  writer: WriterIdentity,
 ) => ({
   encounteruuid: encounterUuid,
   conceptuuid: CONCEPTS[conceptKey],
@@ -84,7 +79,7 @@ export interface SaveCardInput {
   encounterUuid: string;
   card: CardInput;
   notes?: CardNotes;
-  writer: Writer;
+  writer: WriterIdentity;
   now: number;
 }
 
@@ -120,7 +115,7 @@ export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number
 export type SosResult = { kind: 'created'; encounterUuid: string } | { kind: 'blocked'; reason: SosBlockReason };
 
 /** Creates an SOS card (`decideSos`): the LCG_SOS encounter and its SOS_STAGE_HOUR label, together. */
-export function captureSos(visitUuid: string, writer: Writer, now: number, on: DbHandle): SosResult {
+export function captureSos(visitUuid: string, writer: WriterIdentity, now: number, on: DbHandle): SosResult {
   return transact((tx) => {
     const latest = encounterRepo.findLatestClinicalByVisit(visitUuid, tx);
     const latestName = latest?.encounter_type_uuid ? encounterTypeName(latest.encounter_type_uuid) : null;
@@ -175,7 +170,7 @@ export function endStage1(
   visitUuid: string,
   outcome: Stage1OutcomeId,
   details: OutcomeDetails,
-  writer: Writer,
+  writer: WriterIdentity,
   now: number,
   on: DbHandle,
 ): EndStage1Decision {
@@ -185,22 +180,16 @@ export function endStage1(
   transact((tx) => {
     if (decision.kind === 'startStage2') {
       const { start } = decision;
-      const typeUuid = encounterTypeUuid(start.card.name);
-      if (!typeUuid) throw new Error(`No encounter type for card ${start.card.name}`);
       const uuid = newUuid();
-      encounterRepo.insertManyReplacing(
-        [
-          {
-            uuid,
-            visituuid: visitUuid,
-            encounter_time: start.encounterTime,
-            provider_uuid: writer.providerUuid,
-            encounter_type_uuid: typeUuid,
-            privacynotice_value: start.privacyNoticeValue,
-            voided: VOIDED_NO,
-            sync: SYNC_DIRTY,
-          },
-        ],
+      encounterRepo.insertCard(
+        {
+          uuid,
+          visitUuid,
+          cardName: start.card.name,
+          encounterTime: start.encounterTime,
+          providerUuid: writer.providerUuid,
+          privacyNoticeValue: start.privacyNoticeValue,
+        },
         tx,
       );
       if (start.marker) {

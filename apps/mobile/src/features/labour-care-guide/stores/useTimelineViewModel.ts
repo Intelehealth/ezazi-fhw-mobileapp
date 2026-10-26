@@ -28,7 +28,7 @@ export interface TimelineViewModel {
  * The timeline's ViewModel (MVVM): reads the visit once the database is ready, re-reads on
  * any write to its tables, and re-derives card states every minute. Null until the first read.
  */
-export function useTimelineViewModel(visitUuid: string | undefined): TimelineViewModel | null {
+export function useTimelineViewModel(visitUuid: string): TimelineViewModel | null {
   const { t } = useTranslation();
   const providerUuid = useAuthStore((state) => state.userUuid);
   const dbReady = useDbBootstrapStore((state) => state.phase === 'ready');
@@ -36,7 +36,7 @@ export function useTimelineViewModel(visitUuid: string | undefined): TimelineVie
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!visitUuid || !dbReady) return undefined;
+    if (!dbReady) return undefined;
     const load = () => {
       try {
         setSnapshot(readTimeline(visitUuid, providerUuid, getDb()));
@@ -55,7 +55,7 @@ export function useTimelineViewModel(visitUuid: string | undefined): TimelineVie
 
   // The write lands in the tables watched above, so the timeline re-reads on its own.
   const captureSos = useCallback(async (): Promise<SosResult | null> => {
-    if (!visitUuid || !dbReady) return null;
+    if (!dbReady) return null;
     const writer = await readWriterIdentity();
     if (!writer) return null;
     try {

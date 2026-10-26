@@ -7,7 +7,7 @@ import { logger } from '@/core/utils/logger';
 import { alertNewCards } from './newCardAlert';
 import { scanAllVisits, type ScanResult } from './scan';
 
-export type { ScanIdentity, ScanResult } from './scan';
+export type { ScanResult } from './scan';
 
 let inFlight: Promise<ScanResult | null> | null = null;
 

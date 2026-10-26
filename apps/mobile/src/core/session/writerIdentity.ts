@@ -1,5 +1,5 @@
 import { env } from '@/core/config/env';
-import { DEV_CREATOR_UUID } from '@/core/db/seeds';
+import { DEV_CREATOR_UUID } from '@/core/db/seeds/devStandIns';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 
 /** Who a local write is made as: the visit holder (provider) and the obs creator (user), as Android. */

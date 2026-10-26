@@ -1,5 +1,5 @@
 import { env } from '@/core/config/env';
-import { DEV_CREATOR_UUID } from '@/core/db/seeds';
+import { DEV_CREATOR_UUID } from '@/core/db/seeds/devStandIns';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 
 import { readWriterIdentity } from '../writerIdentity';

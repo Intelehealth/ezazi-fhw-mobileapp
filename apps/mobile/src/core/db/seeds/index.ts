@@ -4,8 +4,6 @@ import { DEV_VISIT_UUID } from './devPatient.data';
 import { seedDevLiveVisit, startDevStage1 } from './devVisitStart';
 import { DEV_LIVE_VISIT_UUID } from './devVisitStart.data';
 
-export { DEV_CREATOR_UUID } from './devPatient.data';
-
 /**
  * Development builds only: writes the fake labour patient, and the live test patient's visit
  * (no card yet), once; returns the fake patient's visit uuid.
