@@ -55,6 +55,7 @@
     "passwordPlaceholder": "Password",
     "forgotPassword": "Forgot password?",
     "tempNavLogin": "Go to Login screen (temp)",
+    "tempNavPrivacy": "Go to Privacy Notice screen (temp)",
     "submit": "Setup",
     "toastSuccess": "Login successful",
     "errors": {
@@ -227,7 +228,9 @@
       "personalInfoHeading": "Personal Information",
       "personalInfoBody": "Health Worker will collect personal information and health information from you for your medical records.",
       "useHeading": "Use",
-      "useBody": "Your information is\n-  used for diagnosing and treating you.\n-  used to send you reminders, prescription information, and other related communication.",
+      "useBody": "Your information is",
+      "useBulletTreat": "used for diagnosing and treating you.",
+      "useBulletReminders": "used to send you reminders, prescription information, and other related communication.",
       "disclosureBody": "Your personal information will be anonymized for use in research, disease monitoring, and analysis to help us improve our products and services. We may disclose your personal information in certain specific circumstances given here ",
       "disclosureLinkSuffix": ".",
       "protectionHeading": "Protection Measures",
@@ -236,10 +239,18 @@
       "accessBody": "You have the right to ask for a copy of any personal information we hold about you, as well as to ask for it to be corrected if you think it is wrong. If you'd like us to delete or modify your personal data that you have provided to us, please contact the Data Privacy Officer at support@intelehealth.io and we will respond in a reasonable time.\n\nOn clicking \"Accept\", I consent to the collection and use of my personal data, including health information, and to give access to the above-mentioned entities."
     }
   },
+  "appBar": {
+    "lastRefreshed": "Last Refreshed",
+    "bsSuffix": "BS",
+    "a11y": {
+      "menu": "Open menu"
+    }
+  },
   "home": {
     "title": "Home",
     "note": "Logged in. Active cases will appear here.",
-    "logout": "Log out (EZ-943)"
+    "logout": "Log out (EZ-943)",
+    "addPatient": "Add Patient"
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"

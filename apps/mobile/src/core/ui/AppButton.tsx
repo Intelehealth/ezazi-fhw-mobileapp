@@ -18,10 +18,14 @@ import { Text } from './Text';
  * variant 'primary'     → Theme.EZazi.Button        (purple fill, white text)
  * variant 'outline'     → Theme.EZazi.Button.White  (white fill, gray stroke, purple text)
  * variant 'destructive' → red fill, white text — logout/delete/reject actions
+ * variant 'secondary'   → Figma "secondary button" (white fill, #D5D7DA stroke, gray-700 text)
+ * disabledTone 'brand'  → Figma "disbaled" button (#C5C2D0 fill, white text);
+ *                         'neutral' (default) keeps the Android gray disabled look
  * showArrow             → legacy iconGravity=end arrow pinned to the right edge
  */
 
-type AppButtonVariant = 'primary' | 'outline' | 'destructive';
+type AppButtonVariant = 'primary' | 'outline' | 'secondary' | 'destructive';
+type AppButtonDisabledTone = 'neutral' | 'brand';
 
 interface AppButtonProps {
   label: string;
@@ -29,6 +33,7 @@ interface AppButtonProps {
   variant?: AppButtonVariant;
   showArrow?: boolean;
   disabled?: boolean;
+  disabledTone?: AppButtonDisabledTone;
   /** Placement only (margins) — never colors or sizing. */
   style?: StyleProp<ViewStyle>;
 }
@@ -39,6 +44,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   variant = 'primary',
   showArrow = false,
   disabled = false,
+  disabledTone = 'neutral',
   style,
 }) => {
   const { isTablet, fs, cornerRadius, scale } = useResponsive();
@@ -53,7 +59,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
         styles.base,
         { height, borderRadius: cornerRadius },
         styles[variant],
-        disabled && styles.disabled,
+        disabled && (disabledTone === 'brand' ? styles.disabledBrand : styles.disabled),
         style,
       ]}
       onPress={onPress}
@@ -66,7 +72,8 @@ export const AppButton: React.FC<AppButtonProps> = ({
         style={[
           styles.label,
           variant === 'outline' && styles.labelOutline,
-          disabled && styles.labelDisabled,
+          variant === 'secondary' && styles.labelSecondary,
+          disabled && (disabledTone === 'brand' ? styles.labelDisabledBrand : styles.labelDisabled),
           { fontSize: fs('button') },
         ]}
       >
@@ -104,6 +111,13 @@ const styles = StyleSheet.create({
     borderColor: colors.gray_2,
   },
 
+  // Figma Component 1 / "secondary button"
+  secondary: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.buttonSecondaryBorderFigma,
+  },
+
   destructive: {
     backgroundColor: colors.error,
   },
@@ -111,6 +125,12 @@ const styles = StyleSheet.create({
   // Android-style disabled button: gray fill, gray label
   disabled: {
     backgroundColor: colors.disabledBg,
+    borderWidth: 0,
+  },
+
+  // Figma Component 1 / "disbaled" — lavender fill, white label
+  disabledBrand: {
+    backgroundColor: colors.buttonDisabledFigma,
     borderWidth: 0,
   },
 
@@ -124,8 +144,16 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
+  labelSecondary: {
+    color: colors.buttonSecondaryTextFigma,
+  },
+
   labelDisabled: {
     color: colors.disabledText,
+  },
+
+  labelDisabledBrand: {
+    color: colors.onPrimary,
   },
 
   arrowWrap: {

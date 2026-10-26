@@ -8,7 +8,7 @@
 
 ## 1. Architecture pattern
 
-**Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
+**Feature-modular + layered** (pragmatic MVVM / Clean-lite) inside `apps/mobile`, on top of **shared monorepo packages**. Organize by feature; layer inside each feature. Cross-app contracts (HTTP client, clinical rules, client config, domain types) live in `packages/*` and are shared with the doctor **web** app — not re-implemented per app.
 
 ## 2. Folder structure (in the monorepo)
 
@@ -18,6 +18,7 @@
 ezazi-monorepo/
 ├── packages/                         # shared across apps (mobile + web)
 │   ├── api-client/  (@ezazi/api-client)  # axios client, interceptors, ApiResult, endpoints
+│   ├── clinical-rules/ (@ezazi/clinical-rules) # pure clinical rules: cards, SOS, fields, ranges, validation; no DB, no uuids
 │   ├── config/      (@ezazi/config)      # multi-tenant client registry + env contracts
 │   └── types/       (@ezazi/types)       # shared domain types (patient, visit, obs, …)
 │
@@ -35,7 +36,7 @@ ezazi-monorepo/
 │           │   │   ├── monitor/      #   labour monitor: foreground service + AlarmManager backbone (ARCHITECTURE_RULES §11)
 │           │   │   ├── batteryGuard/ #   low-battery dialog + notifications (ARCHITECTURE_RULES §11)
 │           │   │   └── storage/      #   secure-store (JWT) + async-storage wrappers
-│           │   ├── ui/               #   RN design-system primitives (AppButton, …)
+│           │   ├── ui/               #   RN design-system primitives (AppButton, …) + screen shells (§3.1)
 │           │   │   ├── hooks/        #   UI/layout hooks (useResponsive)
 │           │   │   └── ThemeContext.tsx  # the design system's own provider
 │           │   ├── config/           #   env · theme · clients/ · app-wide remote config
@@ -103,6 +104,45 @@ Two related notes:
 
 **Flow:** Screen → Zustand store / Drizzle `useLiveQuery` (ViewModel) → repository in `features/*/data` → `core/db` and/or `@ezazi/api-client` → the sync engine reconciles in the background. Navigation is reactive off auth state.
 
+### 3.1 App bar & screen shells — the RN "BaseActivity" (rule, 2026-10-21)
+
+Android shares a toolbar by having activities extend `BaseActivity`. In React Navigation the standard equivalent is the **navigator's `header` option**: set once on a navigator or group, every screen in it gets the app bar, and a screen that doesn't want it opts out with one line. Screens never render the app bar themselves.
+
+**Header presets** — `src/navigation/screenOptions.tsx` (the only two):
+
+| Preset | Gives |
+|---|---|
+| `brandAppBar` | `core/ui/BrandAppBar` (Ezazi logo · "Last Refreshed" · hamburger menu) |
+| `noHeader` | no header — the root navigator's default |
+
+**How to apply** (`src/navigation/RootNavigator.tsx`):
+
+```tsx
+<Stack.Navigator screenOptions={noHeader}>                    {/* default: no header */}
+  <Stack.Screen name="Login" component={LoginScreen} />       {/* inherits noHeader */}
+  <Stack.Screen name="PrivacyNotice" component={PrivacyNoticeScreen} options={brandAppBar} /> {/* opts in */}
+
+  <Stack.Group screenOptions={brandAppBar}>                   {/* post-login: app bar by default */}
+    <Stack.Screen name="Home" component={HomeScreen} />       {/* inherits brandAppBar */}
+    <Stack.Screen name="Timeline" component={TimelineScreen} options={noHeader} /> {/* opts out */}
+  </Stack.Group>
+</Stack.Navigator>
+```
+
+Rules:
+
+- **The app bar is mounted by the navigator only.** Never import `BrandAppBar` in a screen, and never build a screen-local top bar, logo row or "Last Refreshed" label.
+- **Defaults live on the group, exceptions on the screen.** A group's `screenOptions` is whatever most of its screens need; a screen that differs sets `options={brandAppBar}` / `options={noHeader}` where it is registered. A header that must toggle at runtime (e.g. full-screen mode) uses `navigation.setOptions({ headerShown })`.
+- **App-bar data comes from stores, not props.** "Last Refreshed" reads `core/session/syncStatus.store` (the sync engine calls `markRefreshed()`); the menu will call `navigation.openDrawer()` once the drawer navigator exists — put the `header` option on that drawer navigator then.
+- **App-bar changes go in `core/ui/BrandAppBar` only**, so every screen picks them up at once.
+
+**Screen body shells** (`core/ui/`, body only — no app bar inside):
+
+| Shell | Use for | Owns |
+|---|---|---|
+| `ScreenLayout` | Standard content screens (e.g. Privacy Notice) | white background, gutters, scrolling (`scroll={false}` for lists / own scroller) |
+| `FormScreenLayout` | Auth form screens with their own branded header (Setup, Login, Forgot Password) | the passed `header`, keyboard avoiding, scrolling |
+
 ## 4. State taxonomy (get this right on day one)
 
 | State kind | Home | Rule |
@@ -151,7 +191,7 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 
 | Action | What |
 |---|---|
-| ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
+| ✅ **Already extracted (shared)** | `@ezazi/api-client`, `@ezazi/clinical-rules`, `@ezazi/config`, `@ezazi/types` — consume, don't duplicate |
 | 🔧 **Port with structural rewrite** | **Auth screens** and existing screens — keep flows/logic, rebuild to **RHF+zod**. *"Reuse" ≠ copy verbatim.* ✅ The feature-modular structure itself is **done** (restructure Phases 0–4, 2026-09-10). |
 | ✅ **Replaced (done)** | `apps/mobile/src/db` — WatermelonDB → **expo-sqlite + Drizzle** (15-table schema ported, migrations generated; landed with the SDK 57 migration) |
 | ✅ **DB layer (done)** | 10 repositories behind `core/db/repositories/index.ts`, `relations()` for `with:` queries, FK + dirty-flag (`sync`) indexes, and the test suite — 20 specs under `core/db/__tests__/`. Migrations run through `migrate()` inside `ensureSchema()`, **not** `useMigrations` in `App.tsx`. Verified on device 2026-10-12. |
@@ -182,8 +222,8 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 2. Put shared types in `@ezazi/types`; feature-local types + zod schemas in `domain/`. Clinical semantics stay shared (ARCHITECTURE_RULES §7).
 3. New persistence: add Drizzle tables/migrations in `core/db/schema`; expose a `useLiveQuery` read.
 4. Write the **repository** in `data/` (DB ⊕ `@ezazi/api-client`). Never call sync/API from screens or stores.
-5. Build screens; **RHF+zod** for forms; subscribe to live queries / Zustand.
-6. Register screens in the feature's navigator; wire into the root navigator.
+5. Build screens inside the right body shell (§3.1); **RHF+zod** for forms; subscribe to live queries / Zustand.
+6. Register screens in the feature's navigator; wire into the root navigator. App bar: inherit the group's header preset, or override with `options={brandAppBar | noHeader}` (§3.1).
 7. Tests: repository, critical live query, sync reconciliation.
 8. Respect boundaries: import only `core/*`, `@ezazi/*`, and this feature.
 9. From root: `turbo run typecheck lint test`; in `apps/mobile`: `npx expo-doctor`.

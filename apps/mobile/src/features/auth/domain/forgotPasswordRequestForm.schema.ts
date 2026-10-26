@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { clientConfig } from '@/core/config/clients';
+import { PROVIDER_ROLE_NURSE } from '@/core/db/constants/literals';
 
 type Translate = (key: string) => string;
 
 export const PHONE_REGEX = new RegExp(`^\\d{${clientConfig.phone.numberLength}}$`);
 
 /** Role value (in the requestOtp response's `roles`) that marks a health-worker account. */
-export const HEALTH_WORKER_ROLE = 'Organizational: Nurse';
+export const HEALTH_WORKER_ROLE = PROVIDER_ROLE_NURSE;
 
 const NAMESPACE = 'forgotPassword.request.errors';
 

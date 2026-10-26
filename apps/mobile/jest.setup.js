@@ -28,3 +28,9 @@ jest.mock('expo-crypto', () => ({
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+
+// Screens read insets via useSafeAreaInsets() (core/ui/ScreenLayout), which
+// throws without a SafeAreaProvider — use the library's official zero-inset mock.
+jest.mock('react-native-safe-area-context', () =>
+  require('react-native-safe-area-context/jest/mock').default,
+);

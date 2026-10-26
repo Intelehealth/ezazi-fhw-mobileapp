@@ -68,6 +68,20 @@ describe('RootNavigator', () => {
     expect(screen.queryByText('SetupScreen')).toBeNull();
   });
 
+  it('shows no app bar on the auth screens (navigator default is noHeader)', () => {
+    setStatus('needsLogin');
+    render(<RootNavigator />);
+
+    expect(screen.queryByTestId('brand-app-bar')).toBeNull();
+  });
+
+  it('shows the app bar on authenticated screens by default (group opts in)', () => {
+    setStatus('authenticated');
+    render(<RootNavigator />);
+
+    expect(screen.getByTestId('brand-app-bar')).toBeTruthy();
+  });
+
   it('shows only Home when authenticated', () => {
     setStatus('authenticated');
     render(<RootNavigator />);
