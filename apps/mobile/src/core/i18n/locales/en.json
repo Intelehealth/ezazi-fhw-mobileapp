@@ -287,17 +287,26 @@
       "completed": "Completed",
       "missed": "Missed",
       "dueNow": "Due Now",
-      "upcoming": "Upcoming",
-      "sosCaptured": "SOS"
+      "upcoming": "Upcoming"
     },
+    "sosBadge": "SOS",
     "checkpoint": {
       "completedBody": "You have captured the observations",
       "completedRecordedAt": "Recorded at {{time}}",
-      "missedBody": "You have missed the collection of observation",
-      "dueNowBody": "Tap to capture observations",
+      "missedBody": "You have missed the collection of observations",
+      "dueNowBody": "Tap here to capture the observations",
       "upcomingBody": "Will be available at {{time}} (in {{minutes}} min)",
       "recordNow": "Record Now",
-      "sosCapturedBody": "SOS observation captured"
+      "sosCompletedBody": "You have submitted an SOS observation data",
+      "sosMissedBody": "You have missed the collection of SOS observations",
+      "sosDueNowBody": "Tap here to capture the SOS observations"
+    },
+    "sosDialog": {
+      "title": "Capture SOS observation?",
+      "message": "This will open the SOS observation form so you can record the patient's current condition.",
+      "note": "Continue only if an SOS assessment is needed.",
+      "cancel": "Cancel",
+      "confirm": "Capture SOS"
     },
     "actions": {
       "sos": "SOS",
@@ -513,5 +522,10 @@
     "channelName": "New observation cards",
     "title": "Alert!",
     "body": "Time to collect the History data!"
+  },
+  "dialog": {
+    "a11y": {
+      "close": "Close dialog"
+    }
   }
 }

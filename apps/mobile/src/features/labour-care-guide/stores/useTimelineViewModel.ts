@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getDb, onTablesChanged } from '@/core/db';
 import { encounter, obs, visit, visitAttribute } from '@/core/db/schema';
 import { useAuthStore } from '@/core/session/auth.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
+import { readWriterIdentity } from '@/core/session/writerIdentity';
 import { logger } from '@/core/utils/logger';
 
+import { captureSos as writeSosCard, type SosResult } from '../data/labourRepository';
 import { readTimeline, type TimelineSnapshot } from '../data/timelineReader';
 import { activeStageOf, ageInYears, buildCheckpoints, fullName } from '../domain/timelineModel';
 import type { LabourStage, PatientSummary, TimelineCheckpoint } from '../domain/timeline.types';
@@ -18,6 +20,8 @@ export interface TimelineViewModel {
   patient: PatientSummary | null;
   checkpoints: TimelineCheckpoint[];
   activeStage: LabourStage;
+  /** The SOS button, after its confirm: Android's SOS card (encounter + SOS_STAGE_HOUR obs), or why not. */
+  captureSos: () => Promise<SosResult | null>;
 }
 
 /**
@@ -49,6 +53,21 @@ export function useTimelineViewModel(visitUuid: string | undefined): TimelineVie
     return () => clearInterval(timer);
   }, []);
 
+  // The write lands in the tables watched above, so the timeline re-reads on its own.
+  const captureSos = useCallback(async (): Promise<SosResult | null> => {
+    if (!visitUuid || !dbReady) return null;
+    const writer = await readWriterIdentity();
+    if (!writer) return null;
+    try {
+      const result = writeSosCard(visitUuid, writer, Date.now(), getDb());
+      if (result.kind === 'blocked') logger.info('[timeline] SOS not created', result.reason);
+      return result;
+    } catch (error: unknown) {
+      logger.error('[timeline] SOS write failed', error);
+      return null;
+    }
+  }, [visitUuid, dbReady]);
+
   return useMemo(() => {
     if (!snapshot) return null;
     const { patient } = snapshot;
@@ -67,6 +86,7 @@ export function useTimelineViewModel(visitUuid: string | undefined): TimelineVie
         : null,
       checkpoints: buildCheckpoints(snapshot.cards, snapshot.visit, now),
       activeStage: activeStageOf(snapshot.currentCardName),
+      captureSos,
     };
-  }, [snapshot, now, t]);
+  }, [snapshot, now, t, captureSos]);
 }

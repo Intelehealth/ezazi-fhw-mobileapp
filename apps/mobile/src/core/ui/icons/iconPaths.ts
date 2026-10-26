@@ -78,6 +78,16 @@ export const iconPaths = {
   // PLACEHOLDER — hand-authored, no Figma export provided yet.
   close: 'M6.4 4.98L4.98 6.4 10.59 12l-5.61 5.6 1.42 1.42L12 13.41l5.6 5.61 1.42-1.42L13.41 12l5.61-5.6-1.42-1.42L12 10.59z',
 
+  // ConfirmDialog note banner — Figma "Outline / Essentional, UI / Info Circle".
+  // PLACEHOLDER — Material "info_outline", no Figma export provided yet.
+  infoCircle:
+    'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+
+  // ConfirmDialog warning tone (Save & Exit) — Figma "Outline / Essentional, UI / Danger Circle".
+  // PLACEHOLDER — Material "error_outline", no Figma export provided yet.
+  dangerCircle:
+    'M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+
   // Timeline header — "View LCG".
   // PLACEHOLDER — hand-authored, no Figma export provided yet.
   document: {

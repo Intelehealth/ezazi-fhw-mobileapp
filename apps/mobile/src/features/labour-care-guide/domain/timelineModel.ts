@@ -38,8 +38,8 @@ const toIso = (utc: string | null): string | null => {
   return ms === null ? null : new Date(ms).toISOString();
 };
 
-const statusOf = (state: CardState, isSos: boolean): CheckpointStatus => {
-  if (state === 'submitted') return isSos ? 'sosCaptured' : 'completed';
+const statusOf = (state: CardState): CheckpointStatus => {
+  if (state === 'submitted') return 'completed';
   return state === 'pending' ? 'dueNow' : 'missed';
 };
 
@@ -62,7 +62,8 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
       encounterUuid: row.encounterUuid,
       cardName: row.cardName ?? undefined,
       scheduledAt,
-      status: statusOf(status.state, row.isSos),
+      status: statusOf(status.state),
+      isSos: row.isSos,
       recordedAt: status.state === 'submitted' ? toIso(row.recordedAt) ?? undefined : undefined,
       access: status.access,
       showEditIcon: status.showEditIcon,

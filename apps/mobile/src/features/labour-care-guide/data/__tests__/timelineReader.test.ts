@@ -34,9 +34,11 @@ describe('readTimeline', () => {
   it('shows the fake patient as completed, completed, missed, SOS, due and upcoming', () => {
     const snapshot = readTimeline(DEV_VISIT_UUID, PROVIDER, db);
 
-    expect(buildCheckpoints(snapshot.cards, snapshot.visit, NOW).map((c) => c.status)).toEqual([
-      'completed', 'completed', 'missed', 'sosCaptured', 'dueNow', 'upcoming',
+    const checkpoints = buildCheckpoints(snapshot.cards, snapshot.visit, NOW);
+    expect(checkpoints.map((c) => c.status)).toEqual([
+      'completed', 'completed', 'missed', 'completed', 'dueNow', 'upcoming',
     ]);
+    expect(checkpoints.map((c) => Boolean(c.isSos))).toEqual([false, false, false, true, false, false]);
     expect(snapshot.currentCardName).toBe('Stage1_Hour2_2');
   });
 

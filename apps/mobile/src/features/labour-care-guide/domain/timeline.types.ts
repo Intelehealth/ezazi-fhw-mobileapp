@@ -11,13 +11,15 @@ export const LABOUR_STAGES: readonly LabourStage[] = [
 ];
 
 /** A checkpoint's state relative to "now" — drives the card's color/content/interactivity. */
-export type CheckpointStatus = 'completed' | 'missed' | 'dueNow' | 'upcoming' | 'sosCaptured';
+export type CheckpointStatus = 'completed' | 'missed' | 'dueNow' | 'upcoming';
 
 export interface TimelineCheckpoint {
   id: string;
   /** When this observation was scheduled to be captured. */
   scheduledAt: string;
   status: CheckpointStatus;
+  /** An SOS card (LCG_SOS): same states as any card, its own badge and wording (Android `getSosContentRes`). */
+  isSos?: boolean;
   /** Only set when status === 'completed'. */
   recordedAt?: string;
   /** The stored card (absent on the projected upcoming card). */

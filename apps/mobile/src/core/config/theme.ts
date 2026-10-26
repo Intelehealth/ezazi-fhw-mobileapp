@@ -162,11 +162,23 @@ const palette = {
   timelineUpcomingDot: '#E8DEF3',
   timelineUpcomingDotFill: '#F6F2F9',
   timelineUpcomingChipBg: '#EFEFEF',
-  timelineSosBg: '#FFF5F8', // SOS card: the missed palette on a pink fill (2026-10-15, SOS colour-wise distinct)
   timelineActionBorder: '#EAE4F2',
   timelineActionText: '#1E023B',
   timelineSos: '#F0004A',
 
+  // ── ConfirmDialog, Figma "Modal" frames (Capture SOS, Save & Exit), 2026-10-26 ──
+  // Read off the frames' renders; the modal frames were not readable through Figma (rate limit).
+  dialogDangerBg: '#FFEAF0',
+  dialogWarningBg: '#FFF0E5',
+  // The badge's four 1px rings, innermost first: near-white greys fading outwards.
+  dialogRing1: '#F7F7F8',
+  dialogRing2: '#F8F9F9',
+  dialogRing3: '#FAFAFA',
+  dialogRing4: '#FCFCFC',
+  dialogWarningIcon: '#F2771A',
+  dialogNoteBg: '#F5F1FF',
+  dialogNoteBorder: '#CDBDF5',
+  dialogCloseIcon: '#A4A1B5',
 } as const;
 
 export const colors = {

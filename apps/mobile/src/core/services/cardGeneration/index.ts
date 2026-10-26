@@ -1,8 +1,7 @@
-import { env } from '@/core/config/env';
 import { getDb } from '@/core/db';
 import { ensureSchema } from '@/core/db/init';
-import { DEV_CREATOR_UUID } from '@/core/db/seeds';
 import { secureStorage } from '@/core/services/storage/secure-storage';
+import { readWriterIdentity } from '@/core/session/writerIdentity';
 import { logger } from '@/core/utils/logger';
 
 import { alertNewCards } from './newCardAlert';
@@ -13,18 +12,12 @@ export type { ScanIdentity, ScanResult } from './scan';
 let inFlight: Promise<ScanResult | null> | null = null;
 
 async function scanWithSession(now: number): Promise<ScanResult | null> {
-  const [accessToken, providerUuid, storedCreator] = await Promise.all([
-    secureStorage.get('accessToken'),
-    secureStorage.get('userUuid'),
-    secureStorage.get('creatorUuid'),
-  ]);
-  // Temporary, dev seed builds only: a session from before the creator uuid was stored.
-  const creatorUuid = storedCreator ?? (env.DEV_SEED ? DEV_CREATOR_UUID : null);
+  const [accessToken, identity] = await Promise.all([secureStorage.get('accessToken'), readWriterIdentity()]);
   // No session, no database (ARCHITECTURE_RULES §6): a tick after logout touches nothing.
-  if (!accessToken || !providerUuid || !creatorUuid) return null;
+  if (!accessToken || !identity) return null;
 
   await ensureSchema();
-  const result = scanAllVisits({ providerUuid, creatorUuid }, now, getDb());
+  const result = scanAllVisits(identity, now, getDb());
   logger.debug('[cardGeneration] scan', result);
   if (result.cardsCreated > 0) {
     // The cards are already saved; a failed alert must not fail the scan.

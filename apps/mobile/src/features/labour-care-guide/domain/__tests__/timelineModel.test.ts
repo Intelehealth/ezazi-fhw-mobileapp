@@ -32,12 +32,25 @@ describe('buildCheckpoints', () => {
     expect(checkpoints.map((c) => [c.cardName ?? 'SOS', c.status, c.access])).toEqual([
       ['Stage1_Hour1_1', 'completed', 'read'],
       ['Stage1_Hour1_2', 'missed', 'none'],
-      ['SOS', 'sosCaptured', 'read'],
+      ['SOS', 'completed', 'read'],
       ['Stage1_Hour2_1', 'dueNow', 'write'],
       ['Stage1_Hour2_2', 'upcoming', 'none'],
     ]);
     expect(checkpoints[0].recordedAt).toBe(new Date(NOW - 118 * 60_000).toISOString());
     expect(checkpoints[4].scheduledAt).toBe(new Date(NOW + 10 * 60_000).toISOString());
+  });
+
+  it('makes a just-created SOS the card to fill, as Android: the unfilled card before it is missed', () => {
+    const checkpoints = buildCheckpoints([...rows, card(null, 1)], OPEN, NOW);
+
+    expect(checkpoints.map((c) => [c.cardName ?? 'SOS', c.status, Boolean(c.isSos)])).toEqual([
+      ['Stage1_Hour1_1', 'completed', false],
+      ['Stage1_Hour1_2', 'missed', false],
+      ['SOS', 'completed', true],
+      ['Stage1_Hour2_1', 'missed', false],
+      ['SOS', 'dueNow', true],
+      ['Stage1_Hour2_2', 'upcoming', false],
+    ]);
   });
 
   it('projects no upcoming card once it is due (the engine is about to create it)', () => {

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
 import { AppButton } from '@/core/ui/AppButton';
-import { AppIcon, LockKeyholeBadgeIcon } from '@/core/ui/icons';
+import { AppIcon, DangerTriangleIcon, LockKeyholeBadgeIcon } from '@/core/ui/icons';
 import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { CheckpointStatus, TimelineCheckpoint } from '../domain/timeline.types';
@@ -60,14 +60,21 @@ const STATUS_LOOK: Record<CheckpointStatus, StatusLook> = {
     dotBorder: colors.timelineUpcomingDot,
     dotFill: colors.timelineUpcomingDotFill,
   },
-  sosCaptured: {
-    cardBg: colors.timelineSosBg,
-    cardBorder: colors.timelineMissedBorder,
-    chipBg: colors.timelineMissedChipBg,
-    chipText: colors.timelineMissedChipText,
-    dotBorder: colors.timelineMissedDot,
-    dotFill: colors.white,
-  },
+};
+
+// An SOS card keeps its state's chip; the card and dot turn pink (Figma timeline, SOS card).
+const SOS_LOOK: Pick<StatusLook, 'cardBg' | 'cardBorder' | 'dotBorder' | 'dotFill'> = {
+  cardBg: colors.white,
+  cardBorder: colors.timelineMissedBorder,
+  dotBorder: colors.timelineMissedDot,
+  dotFill: colors.white,
+};
+
+// Android `getSosContentRes` / `getNormalContentRes`: the body line per state.
+const BODY_KEY: Record<'completed' | 'missed' | 'dueNow', { normal: string; sos: string }> = {
+  completed: { normal: 'timeline.checkpoint.completedBody', sos: 'timeline.checkpoint.sosCompletedBody' },
+  missed: { normal: 'timeline.checkpoint.missedBody', sos: 'timeline.checkpoint.sosMissedBody' },
+  dueNow: { normal: 'timeline.checkpoint.dueNowBody', sos: 'timeline.checkpoint.sosDueNowBody' },
 };
 
 // "9:30 AM": Figma writes the day period in capitals whatever the device locale does.
@@ -96,7 +103,8 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const { isTablet, fs, fromFigma } = useResponsive();
-  const look = STATUS_LOOK[checkpoint.status];
+  const isSos = Boolean(checkpoint.isSos);
+  const look = isSos ? { ...STATUS_LOOK[checkpoint.status], ...SOS_LOOK } : STATUS_LOOK[checkpoint.status];
 
   const dotSize = isTablet ? fromFigma(42) : dimens.timelineDotSize.phone;
   const bodySize = isTablet ? fromFigma(16) : fs('timelineCardBody');
@@ -114,6 +122,9 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
           borderRadius: fromFigma(16),
         },
         chip: { height: fromFigma(32), paddingHorizontal: fromFigma(11), borderRadius: fromFigma(8) },
+        sosBadge: { height: fromFigma(40), paddingHorizontal: fromFigma(12), gap: fromFigma(8), borderRadius: fromFigma(8) },
+        sosIcon: fromFigma(24),
+        sosText: { fontSize: fromFigma(20) },
         chipText: { fontSize: fromFigma(16) },
         bodyGap: { marginTop: fromFigma(16) },
         buttonGap: { marginTop: fromFigma(16) },
@@ -127,6 +138,9 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
         rail: { width: dotSize, marginHorizontal: spacing.sm },
         card: { padding: spacing.md, marginVertical: spacing.sm, borderRadius: 12 },
         chip: { height: 22, paddingHorizontal: spacing.sm, borderRadius: 6 },
+        sosBadge: { height: 26, paddingHorizontal: spacing.sm, gap: spacing.xs, borderRadius: 6 },
+        sosIcon: 14,
+        sosText: { fontSize: fs('timelineCardLabel') },
         chipText: { fontSize: fs('timelineCardLabel') },
         bodyGap: { marginTop: spacing.sm },
         buttonGap: { marginTop: spacing.md },
@@ -155,7 +169,7 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
             },
           ]}
         >
-          {checkpoint.status === 'completed' && (
+          {checkpoint.status === 'completed' && !isSos && (
             <AppIcon name="check" size={sizes.checkIcon} color={colors.onPrimary} />
           )}
         </View>
@@ -165,15 +179,23 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
       <View style={[styles.card, sizes.card, { backgroundColor: look.cardBg, borderColor: look.cardBorder }]}>
         <View style={styles.topLine}>
           <View style={styles.flex1}>
-            <View style={[styles.chip, sizes.chip, { backgroundColor: look.chipBg }]}>
-              <Text style={[styles.chipText, sizes.chipText, { color: look.chipText }]}>
-                {t(`timeline.status.${checkpoint.status}`).toUpperCase()}
-              </Text>
+            <View style={styles.chipRow}>
+              {isSos && (
+                <View style={[styles.sosBadge, sizes.sosBadge]}>
+                  <DangerTriangleIcon size={sizes.sosIcon} color={colors.onPrimary} />
+                  <Text style={[styles.sosText, sizes.sosText]}>{t('timeline.sosBadge')}</Text>
+                </View>
+              )}
+              <View style={[styles.chip, sizes.chip, { backgroundColor: look.chipBg }]}>
+                <Text style={[styles.chipText, sizes.chipText, { color: look.chipText }]}>
+                  {t(`timeline.status.${checkpoint.status}`).toUpperCase()}
+                </Text>
+              </View>
             </View>
 
             {checkpoint.status === 'completed' && (
               <View style={[styles.completedBodyRow, sizes.bodyGap]}>
-                <Text style={bodyStyle}>{t('timeline.checkpoint.completedBody')}</Text>
+                <Text style={bodyStyle}>{t(BODY_KEY.completed[isSos ? 'sos' : 'normal'])}</Text>
                 {checkpoint.recordedAt && (
                   <Text style={bodyStyle}>
                     {t('timeline.checkpoint.completedRecordedAt', { time: formatTime(checkpoint.recordedAt) })}
@@ -182,16 +204,8 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
               </View>
             )}
 
-            {checkpoint.status === 'sosCaptured' && (
-              <Text style={[bodyStyle, sizes.bodyGap]}>{t('timeline.checkpoint.sosCapturedBody')}</Text>
-            )}
-
-            {checkpoint.status === 'missed' && (
-              <Text style={[bodyStyle, sizes.bodyGap]}>{t('timeline.checkpoint.missedBody')}</Text>
-            )}
-
-            {checkpoint.status === 'dueNow' && (
-              <Text style={[bodyStyle, sizes.bodyGap]}>{t('timeline.checkpoint.dueNowBody')}</Text>
+            {(checkpoint.status === 'missed' || checkpoint.status === 'dueNow') && (
+              <Text style={[bodyStyle, sizes.bodyGap]}>{t(BODY_KEY[checkpoint.status][isSos ? 'sos' : 'normal'])}</Text>
             )}
 
             {checkpoint.status === 'upcoming' && (
@@ -263,9 +277,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   chip: {
-    alignSelf: 'flex-start',
     justifyContent: 'center',
+  },
+  sosBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.timelineSos,
+  },
+  sosText: {
+    fontWeight: '700',
+    color: colors.onPrimary,
   },
   chipText: {
     fontWeight: '700',

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/core/utils/logger';
 import { colors, spacing } from '@/core/config/theme';
+import { ConfirmDialog } from '@/core/ui/ConfirmDialog';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { RootStackParamList } from '@/navigation/types';
@@ -27,7 +28,14 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
   const { isTablet, fromFigma } = useResponsive();
   const visitUuid = route.params?.visitUuid;
   const viewModel = useTimelineViewModel(visitUuid);
+  const [sosConfirmVisible, setSosConfirmVisible] = useState(false);
   if (visitUuid && !viewModel?.patient) return <View style={styles.screen} />;
+
+  const confirmSos = () => {
+    setSosConfirmVisible(false);
+    // Figma: Capture SOS then opens the SOS form; the capture screen is Phase 2.
+    void viewModel?.captureSos();
+  };
 
   const patient = viewModel?.patient ?? route.params?.patient ?? MOCK_PATIENT;
   const checkpoints = viewModel?.checkpoints ?? route.params?.checkpoints ?? MOCK_CHECKPOINTS;
@@ -75,11 +83,23 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
       </ScrollView>
 
       <TimelineActionBar
-        onSos={() => logger.debug('[timeline] SOS tapped')}
+        onSos={() => setSosConfirmVisible(true)}
         onChat={() => logger.debug('[timeline] Chat tapped')}
         onVideoCall={() => logger.debug('[timeline] Video call tapped')}
         onRx={() => logger.debug('[timeline] Rx tapped')}
         onEndStage={() => logger.debug('[timeline] End stage tapped')}
+      />
+
+      <ConfirmDialog
+        visible={sosConfirmVisible}
+        tone="danger"
+        title={t('timeline.sosDialog.title')}
+        message={t('timeline.sosDialog.message')}
+        note={t('timeline.sosDialog.note')}
+        cancelLabel={t('timeline.sosDialog.cancel')}
+        confirmLabel={t('timeline.sosDialog.confirm')}
+        onCancel={() => setSosConfirmVisible(false)}
+        onConfirm={confirmSos}
       />
     </View>
   );
