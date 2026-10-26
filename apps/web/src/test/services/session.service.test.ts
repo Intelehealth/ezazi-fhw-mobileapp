@@ -11,10 +11,15 @@ import { saveSessionSnapshot } from '../../utils/session-snapshot';
 import { storage } from '../../utils/storage';
 
 const post = vi.hoisted(() => vi.fn());
+/* The options the refresh client was built with (it is created once, at import). */
+const clientOptions = vi.hoisted(() => [] as Array<{ timeout?: number }>);
 
 vi.mock('@ezazi/api-client', async importOriginal => ({
   ...(await importOriginal<typeof import('@ezazi/api-client')>()),
-  createApiClient: () => ({ post }),
+  createApiClient: (options: { timeout?: number }) => {
+    clientOptions.push(options);
+    return { post };
+  },
 }));
 
 const storeState = vi.hoisted(() => ({
@@ -326,6 +331,18 @@ describe('getValidAccessToken', () => {
 describe('cross-tab lock without the Web Locks API (plain-http origins)', () => {
   const LOCK_KEY = 'ezazi_web_token_refresh_lock';
 
+  /*
+   * The suite's beforeEach fakes only Date, and vi.useFakeTimers() is a no-op
+   * while fake timers are already installed — so setTimeout would stay real
+   * and advancing the clock would skip the lock's poll ticks instead of
+   * running them. Reinstall with timers faked too.
+   */
+  function fakeClockAndTimers() {
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(NOW);
+  }
+
   beforeEach(() => {
     vi.stubGlobal('navigator', {});
     signIn();
@@ -347,8 +364,7 @@ describe('cross-tab lock without the Web Locks API (plain-http origins)', () => 
 
   it("waits for another tab's claim to be released before refreshing", async () => {
     localStorage.setItem(LOCK_KEY, `other-tab:${Date.now()}`);
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
+    fakeClockAndTimers();
 
     const refreshing = refreshAccessToken('access-1');
     await vi.advanceTimersByTimeAsync(200);
@@ -369,13 +385,61 @@ describe('cross-tab lock without the Web Locks API (plain-http origins)', () => 
     expect(post).toHaveBeenCalledTimes(1);
   });
 
-  it('gives up waiting after a few seconds and refreshes anyway rather than strand the user', async () => {
+  it('gives the refresh call an explicit timeout that a lock claim outlives', () => {
+    expect(clientOptions).toHaveLength(1);
+    expect(clientOptions[0].timeout).toBe(15_000);
+  });
+
+  it("keeps waiting while another tab's refresh is still in flight on a slow network", async () => {
     localStorage.setItem(LOCK_KEY, `other-tab:${NOW}`);
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
+    fakeClockAndTimers();
 
     const refreshing = refreshAccessToken('access-1');
-    await vi.advanceTimersByTimeAsync(5_100);
+    /* Past the old 5 s wait and 10 s TTL, but within the 15 s refresh timeout. */
+    await vi.advanceTimersByTimeAsync(14_000);
+    expect(post).not.toHaveBeenCalled();
+
+    /* The other tab's slow refresh lands: it stores the new pair and releases the lock. */
+    storage.setSessionTokens({
+      accessToken: 'access-from-other-tab',
+      refreshToken: 'refresh-from-other-tab',
+      expiresIn: 900,
+    });
+    localStorage.removeItem(LOCK_KEY);
+    await vi.advanceTimersByTimeAsync(200);
+
+    /* The old refresh token is never re-sent, so the family is not revoked. */
+    await expect(refreshing).resolves.toBe('access-from-other-tab');
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('gives up waiting once the claim has outlived any refresh, and refreshes anyway rather than strand the user', async () => {
+    localStorage.setItem(LOCK_KEY, `other-tab:${NOW}`);
+    fakeClockAndTimers();
+
+    const refreshing = refreshAccessToken('access-1');
+    await vi.advanceTimersByTimeAsync(19_000);
+    expect(post).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1_200);
+
+    await expect(refreshing).resolves.toBe('access-2');
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
+  it('backs off when another tab overwrites its claim before the read-back', async () => {
+    fakeClockAndTimers();
+
+    const refreshing = refreshAccessToken('access-1');
+    expect(localStorage.getItem(LOCK_KEY)).not.toMatch(/^other-tab:/);
+
+    /* A tab that saw the lock free at the same moment writes its claim over ours. */
+    localStorage.setItem(LOCK_KEY, `other-tab:${Date.now()}`);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(post).not.toHaveBeenCalled();
+
+    localStorage.removeItem(LOCK_KEY);
+    await vi.advanceTimersByTimeAsync(200);
 
     await expect(refreshing).resolves.toBe('access-2');
     expect(post).toHaveBeenCalledTimes(1);

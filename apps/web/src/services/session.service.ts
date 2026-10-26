@@ -14,17 +14,33 @@ import { sessionExpiry } from './session-expiry';
  * Uses its own bare client — no auth or retry interceptors — so a failing
  * refresh can never recurse into another refresh, and it needs no import of
  * services/http.ts (which depends on this file for its interceptors).
+ *
+ * The timeout is explicit because the fallback lock's timings below are
+ * derived from it. It is deliberately not short: a refresh the gateway
+ * completed but the client stopped waiting for leaves the old refresh token
+ * in storage, and presenting that one again revokes the whole login family.
  */
-const refreshClient = createApiClient({ baseURL: env.AUTH_GATEWAY_URL });
+const REFRESH_TIMEOUT_MS = 15_000;
+const refreshClient = createApiClient({
+  baseURL: env.AUTH_GATEWAY_URL,
+  timeout: REFRESH_TIMEOUT_MS,
+});
 
 /** Refresh slightly early so a request never leaves with a token that expires in flight. */
 const EXPIRY_SKEW_MS = 30_000;
 
 const REFRESH_LOCK_NAME = 'ezazi-web-token-refresh';
 
-/* Fallback lock (see withStorageLock): how long a holder may keep it, and how long a waiter will wait. */
-const STORAGE_LOCK_TTL_MS = 10_000;
-const STORAGE_LOCK_WAIT_MS = 5_000;
+/*
+ * Fallback lock (see withStorageLock). A holder keeps the lock for at most
+ * one refresh call plus some local bookkeeping, so its claim must outlive
+ * REFRESH_TIMEOUT_MS: if it expired sooner, a waiting tab would go ahead
+ * while the holder's refresh was still in flight, re-send the same refresh
+ * token and get the family revoked. Waiters wait for as long as a claim can
+ * live, so they only give up on a claim that has expired (a crashed tab).
+ */
+const STORAGE_LOCK_TTL_MS = REFRESH_TIMEOUT_MS + 5_000;
+const STORAGE_LOCK_WAIT_MS = STORAGE_LOCK_TTL_MS;
 const STORAGE_LOCK_POLL_MS = 50;
 
 /*
@@ -51,18 +67,22 @@ function withRefreshLock<T>(task: () => Promise<T>): Promise<T> {
 const STORAGE_LOCK_KEY = 'ezazi_web_token_refresh_lock';
 
 /*
- * A cooperative mutex in localStorage for browsers without Web Locks: take
- * the lock by writing "<owner>:<time>", wait while someone else's unexpired
- * claim is there, and confirm after writing that the claim is still ours.
- * Not airtight (localStorage has no compare-and-set, so two tabs writing in
- * the same instant can both think they won) but it closes the common race of
- * several tabs waking up together, and a stale claim expires on its own so a
- * crashed tab can never block refreshes for long. If the wait runs out the
- * refresh goes ahead anyway rather than leave the user without a session.
+ * A cooperative mutex in localStorage for browsers without Web Locks: wait
+ * while someone else's unexpired claim is there, write our own
+ * "<owner>:<time>" claim, then let one poll interval pass and read it back.
+ * localStorage has no compare-and-set, so two tabs can both see the lock free
+ * and both write. The read-back settles that: the last write wins, and the
+ * tab whose claim was overwritten goes back to waiting. It is still
+ * best-effort (two writes landing after both read-backs could both pass),
+ * but a stale claim expires on its own so a crashed tab can never block
+ * refreshes for long. If the wait runs out the refresh goes ahead anyway
+ * rather than leave the user without a session.
  */
 async function withStorageLock<T>(task: () => Promise<T>): Promise<T> {
   const owner = Math.random().toString(36).slice(2);
   const deadline = Date.now() + STORAGE_LOCK_WAIT_MS;
+  const pause = () =>
+    new Promise(resolve => setTimeout(resolve, STORAGE_LOCK_POLL_MS));
   const claimedByAnother = () => {
     const [holder, since] = (
       localStorage.getItem(STORAGE_LOCK_KEY) ?? ''
@@ -73,18 +93,22 @@ async function withStorageLock<T>(task: () => Promise<T>): Promise<T> {
       Date.now() - Number(since) < STORAGE_LOCK_TTL_MS
     );
   };
+  const claimIsOurs = () =>
+    localStorage.getItem(STORAGE_LOCK_KEY)?.startsWith(`${owner}:`) ?? false;
 
-  while (claimedByAnother() && Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, STORAGE_LOCK_POLL_MS));
+  for (;;) {
+    while (claimedByAnother() && Date.now() < deadline) await pause();
+
+    localStorage.setItem(STORAGE_LOCK_KEY, `${owner}:${Date.now()}`);
+    /* Give a tab that raced us the chance to overwrite, then confirm the claim is still ours. */
+    await pause();
+    if (claimIsOurs() || Date.now() >= deadline) break;
   }
 
-  localStorage.setItem(STORAGE_LOCK_KEY, `${owner}:${Date.now()}`);
   try {
     return await task();
   } finally {
-    if (localStorage.getItem(STORAGE_LOCK_KEY)?.startsWith(`${owner}:`)) {
-      localStorage.removeItem(STORAGE_LOCK_KEY);
-    }
+    if (claimIsOurs()) localStorage.removeItem(STORAGE_LOCK_KEY);
   }
 }
 
