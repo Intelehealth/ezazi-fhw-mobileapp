@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MS_PER_MINUTE } from '@ezazi/clinical-rules';
 
 import { getDb, onTablesChanged } from '@/core/db';
 import { encounter, obs, visit, visitAttribute } from '@/core/db/schema';
@@ -12,7 +13,7 @@ import { readTimeline, type TimelineSnapshot } from '../data/timelineReader';
 import { activeStageOf, buildCheckpoints } from '../domain/timelineModel';
 import type { LabourStage, TimelineCheckpoint } from '../domain/timeline.types';
 
-const CLOCK_TICK_MS = 60_000;
+const CLOCK_TICK_MS = MS_PER_MINUTE;
 const WATCHED_TABLES = [encounter, obs, visit, visitAttribute];
 
 export interface TimelineViewModel {

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { AlarmType, AndroidImportance, TriggerType } from 'react-native-notify-kit';
 import { runCardScan } from '@/core/services/cardGeneration';
+import { minutesFromNow } from '@/core/utils/datetime';
 import { logger } from '@/core/utils/logger';
 import {
   MONITOR_TRIGGER_CHANNEL_ID,
@@ -39,7 +40,7 @@ async function ensureTriggerChannel(): Promise<void> {
 }
 
 async function scheduleNextTrigger(): Promise<void> {
-  const timestamp = Date.now() + MONITOR_TRIGGER_INTERVAL_MINUTES * 60_000;
+  const timestamp = minutesFromNow(MONITOR_TRIGGER_INTERVAL_MINUTES);
   await notifee.createTriggerNotification(
     {
       id: MONITOR_TRIGGER_NOTIFICATION_ID,

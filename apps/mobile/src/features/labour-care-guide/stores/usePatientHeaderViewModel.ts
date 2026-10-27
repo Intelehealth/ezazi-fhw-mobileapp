@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { getDb, onTablesChanged } from '@/core/db';
 import { obs, patient } from '@/core/db/schema';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
+import { ageInYears } from '@/core/utils/datetime';
 import { logger } from '@/core/utils/logger';
 
 import { readPatient } from '../data/timelineReader';
-import { ageInYears, fullName, type PatientRow } from '../domain/timelineModel';
+import { fullName, type PatientRow } from '../domain/timelineModel';
 import type { PatientSummary } from '../domain/timeline.types';
 
 // Gravida is an Admission obs, so a new obs row can change the line.

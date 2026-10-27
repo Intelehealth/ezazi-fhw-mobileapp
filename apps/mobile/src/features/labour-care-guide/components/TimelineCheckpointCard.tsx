@@ -7,6 +7,7 @@ import { AppIcon, DangerTriangleIcon, LockKeyholeBadgeIcon } from '@/core/ui/ico
 import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { formatClockTime, formatDate } from '@/core/utils/calendar';
+import { minutesUntil } from '@/core/utils/datetime';
 import type { CheckpointStatus, TimelineCheckpoint } from '../domain/timeline.types';
 
 interface TimelineCheckpointCardProps {
@@ -77,10 +78,6 @@ const BODY_KEY: Record<'completed' | 'missed' | 'dueNow', { normal: string; sos:
   missed: { normal: 'timeline.checkpoint.missedBody', sos: 'timeline.checkpoint.sosMissedBody' },
   dueNow: { normal: 'timeline.checkpoint.dueNowBody', sos: 'timeline.checkpoint.sosDueNowBody' },
 };
-
-function minutesUntil(iso: string): number {
-  return Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 60_000));
-}
 
 /**
  * One row of the labour-monitoring timeline: date/time, the rail with its status dot, and a

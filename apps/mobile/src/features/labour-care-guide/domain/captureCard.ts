@@ -1,4 +1,6 @@
-import { findCard, getSosCardStage, parseUtcTimestamp } from '@ezazi/clinical-rules';
+import { findCard, getSosCardStage } from '@ezazi/clinical-rules';
+
+import { utcTimestampToIso } from '@/core/utils/datetime';
 
 import type { LabourStage } from './timeline.types';
 import { labourStageOf } from './timelineModel';
@@ -25,7 +27,7 @@ export interface CaptureCardHeader {
  */
 export function toCaptureHeader(row: CaptureCardRow): CaptureCardHeader | null {
   const stage = row.isSos ? getSosCardStage(row.sosLabel) : row.cardName ? findCard(row.cardName)?.stage : null;
-  const ms = parseUtcTimestamp(row.encounterTime);
-  if (!stage || ms === null) return null;
-  return { isSos: row.isSos, stage: labourStageOf(stage), scheduledAt: new Date(ms).toISOString() };
+  const scheduledAt = utcTimestampToIso(row.encounterTime);
+  if (!stage || !scheduledAt) return null;
+  return { isSos: row.isSos, stage: labourStageOf(stage), scheduledAt };
 }

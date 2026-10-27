@@ -8,12 +8,11 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from './Text';
 import { colors } from '@/core/config/theme';
 import { clientConfig } from '@/core/config/clients';
-import { formatDate, isBsDefault } from '@/core/utils/calendar';
+import { format24HourTime, formatDate, isBsDefault } from '@/core/utils/calendar';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useSyncStatusStore } from '@/core/session/syncStatus.store';
 
@@ -33,7 +32,7 @@ interface BrandAppBarProps {
 
 /** "15 Bhadra 2083 BS 01:19" (Nepal) / "15 Aug 2026 01:19" (AD clients). */
 const formatLastRefreshed = (date: Date, bsSuffix: string): string =>
-  `${formatDate(date)}${isBsDefault() ? ` ${bsSuffix}` : ''} ${dayjs(date).format('HH:mm')}`;
+  `${formatDate(date)}${isBsDefault() ? ` ${bsSuffix}` : ''} ${format24HourTime(date)}`;
 
 export const BrandAppBar: React.FC<BrandAppBarProps> = ({ onMenuPress }) => {
   const { t } = useTranslation();

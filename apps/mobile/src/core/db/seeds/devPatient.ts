@@ -1,5 +1,6 @@
 import {
   DECISION_PENDING_CLEARED,
+  MS_PER_MINUTE,
   NORMAL_CARD_MARKER,
   PRIVACY_NOTICE_VALUE,
   STAGE,
@@ -26,7 +27,6 @@ import {
   DEV_PATIENT,
   DEV_SOS,
   DEV_VISIT_UUID,
-  MS_PER_MINUTE,
   type DevObs,
 } from './devPatient.data';
 

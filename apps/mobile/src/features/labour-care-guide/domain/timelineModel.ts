@@ -1,5 +1,7 @@
-import { STAGE, findCard, getCardStatus, getUpcomingStep, parseUtcTimestamp } from '@ezazi/clinical-rules';
+import { STAGE, findCard, getCardStatus, getUpcomingStep } from '@ezazi/clinical-rules';
 import type { CardState, StageId, TimelineVisitFacts } from '@ezazi/clinical-rules';
+
+import { epochToIso, utcTimestampToIso } from '@/core/utils/datetime';
 
 import type { CheckpointStatus, LabourStage, TimelineCheckpoint } from './timeline.types';
 
@@ -38,11 +40,6 @@ export function labourStageOf(stage: StageId): LabourStage {
   return STAGE_ON_SCREEN[stage];
 }
 
-const toIso = (utc: string | null): string | null => {
-  const ms = utc ? parseUtcTimestamp(utc) : null;
-  return ms === null ? null : new Date(ms).toISOString();
-};
-
 const statusOf = (state: CardState): CheckpointStatus => {
   if (state === 'submitted') return 'completed';
   return state === 'pending' ? 'dueNow' : 'missed';
@@ -56,7 +53,7 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
   const checkpoints: TimelineCheckpoint[] = [];
 
   rows.forEach((row, index) => {
-    const scheduledAt = toIso(row.encounterTime);
+    const scheduledAt = utcTimestampToIso(row.encounterTime);
     if (!scheduledAt) return;
     const status = getCardStatus(
       { isNewest: index === rows.length - 1, hasRealObs: row.hasRealObs, hasMissedMarker: row.hasMissedMarker },
@@ -69,7 +66,7 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
       scheduledAt,
       status: statusOf(status.state),
       isSos: row.isSos,
-      recordedAt: status.state === 'submitted' ? toIso(row.recordedAt) ?? undefined : undefined,
+      recordedAt: status.state === 'submitted' ? utcTimestampToIso(row.recordedAt) ?? undefined : undefined,
       access: status.access,
       showEditIcon: status.showEditIcon,
     });
@@ -82,7 +79,7 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
       checkpoints.push({
         id: UPCOMING_CHECKPOINT_ID,
         cardName: upcoming.card.name,
-        scheduledAt: new Date(upcoming.dueAt).toISOString(),
+        scheduledAt: epochToIso(upcoming.dueAt),
         status: 'upcoming',
         access: 'none',
         showEditIcon: false,
@@ -97,17 +94,6 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
 export function activeStageOf(currentCardName: string | null): LabourStage {
   const stage = currentCardName ? findCard(currentCardName)?.stage : undefined;
   return stage ? labourStageOf(stage) : 'stage1';
-}
-
-/** Whole years between a `yyyy-MM-dd` birth date and `now`, or null when unknown. */
-export function ageInYears(dateOfBirth: string | null, now: number): number | null {
-  const match = dateOfBirth ? /^(\d{4})-(\d{2})-(\d{2})/.exec(dateOfBirth) : null;
-  if (!match) return null;
-  const today = new Date(now);
-  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
-  const hadBirthday =
-    today.getUTCMonth() + 1 > month || (today.getUTCMonth() + 1 === month && today.getUTCDate() >= day);
-  return today.getUTCFullYear() - year - (hadBirthday ? 0 : 1);
 }
 
 /** First, middle and last name joined, skipping blanks. */

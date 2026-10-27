@@ -28,6 +28,9 @@ export const formatDate = (date: Date | string, system?: CalendarSystem): string
 export const formatClockTime = (date: Date | string): string =>
   new Date(date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toUpperCase();
 
+/** "21:05": the 24-hour clock time for display. */
+export const format24HourTime = (date: Date | string): string => dayjs(date).format('HH:mm');
+
 /** Convert a BS date string ("YYYY-MM-DD") to a JS Date in Gregorian. */
 export const bsStringToAd = (bsString: string): Date => {
   const [y, m, d] = bsString.split('-').map(Number);

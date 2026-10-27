@@ -17,8 +17,6 @@ import {
  * Fictional data only — never a real patient, never real credentials.
  */
 
-export const MS_PER_MINUTE = 60_000;
-
 const { RED, GREEN } = ALERT_CODE;
 
 export interface DevObs {

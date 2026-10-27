@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Battery from 'expo-battery';
 import notifee, { AlarmType, AndroidImportance, TriggerType } from 'react-native-notify-kit';
 import { i18n } from '@/core/i18n';
+import { minutesFromNow } from '@/core/utils/datetime';
 import { logger } from '@/core/utils/logger';
 import { useBatteryGuardStore } from './batteryGuard.store';
 import {
@@ -68,7 +69,7 @@ async function ensureChannels(): Promise<void> {
 }
 
 async function scheduleNextCheck(): Promise<void> {
-  const timestamp = Date.now() + CHECK_INTERVAL_MINUTES * 60_000;
+  const timestamp = minutesFromNow(CHECK_INTERVAL_MINUTES);
   await notifee.createTriggerNotification(
     {
       id: TRIGGER_NOTIFICATION_ID,

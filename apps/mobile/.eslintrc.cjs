@@ -49,6 +49,37 @@ const ONE_BACKGROUND_EVENT = {
 };
 
 /** @type {import("eslint").Linter.Config} */
+// Rejected dependencies; composed into the no-restricted-imports rule and its date-utils override.
+const REJECTED_IMPORTS = [
+  {
+    group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
+    message:
+      'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
+  },
+  {
+    group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
+    message:
+      "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
+  },
+  {
+    group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
+    message:
+      'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
+  },
+  {
+    group: ['@ezazi/clinical-rules/*'],
+    message:
+      "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
+  },
+];
+
+// Every date operation goes through core/utils: datetime (storage, conversion, arithmetic), calendar (display) (Kaveri, 2026-10-28).
+const DATE_LIBRARIES = {
+  group: ['dayjs', 'dayjs/*', 'nepali-date-converter'],
+  message:
+    "Use '@/core/utils/datetime' (storage, conversion, arithmetic) or '@/core/utils/calendar' (display) — the only places date libraries are used. Add a helper there if one is missing.",
+};
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -115,33 +146,7 @@ module.exports = {
     // These four were evaluated and rejected. WatermelonDB in particular was
     // fully removed in the SDK 57 migration (no New-Architecture support) and
     // must not come back. Prose in a doc stops nobody; this does.
-    'no-restricted-imports': [
-      'error',
-      {
-        patterns: [
-          {
-            group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
-            message:
-              'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
-          },
-          {
-            group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
-            message:
-              "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
-          },
-          {
-            group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
-            message:
-              'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
-          },
-          {
-            group: ['@ezazi/clinical-rules/*'],
-            message:
-              "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
-          },
-        ],
-      },
-    ],
+    'no-restricted-imports': ['error', { patterns: [...REJECTED_IMPORTS, DATE_LIBRARIES] }],
 
     // ── Architecture boundaries (ARCHITECTURE_RULES §4 · MOBILE_STACK §3) ──
     // This rule is the enforcement that lets the docs stop describing which
@@ -262,6 +267,11 @@ module.exports = {
       rules: {
         'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID],
       },
+    },
+    {
+      // The two files allowed to use the date libraries.
+      files: ['src/core/utils/datetime.ts', 'src/core/utils/calendar.ts'],
+      rules: { 'no-restricted-imports': ['error', { patterns: REJECTED_IMPORTS }] },
     },
   ],
   ignorePatterns: [
