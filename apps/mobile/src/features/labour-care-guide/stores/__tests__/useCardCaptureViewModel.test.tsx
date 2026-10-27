@@ -34,6 +34,7 @@ describe('useCardCaptureViewModel', () => {
 
     expect(readCaptureCard).toHaveBeenCalledWith('card-1', 'db-handle');
     expect(result.current?.header).toEqual({ isSos: false, stage: 'stage1', scheduledAt: '2026-10-27T04:00:00.000Z' });
+    expect(result.current?.layout?.sections.map((section) => section.section.id)).toContain('baby');
   });
 
   it('stays null for a card that cannot be read', () => {

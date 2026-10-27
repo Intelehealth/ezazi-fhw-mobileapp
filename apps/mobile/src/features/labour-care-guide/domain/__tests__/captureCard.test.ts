@@ -1,4 +1,4 @@
-import { toCaptureHeader, type CaptureCardRow } from '../captureCard';
+import { toCaptureHeader, toCaptureLayout, type CaptureCardRow } from '../captureCard';
 
 const CARD: CaptureCardRow = {
   encounterUuid: 'card-1',
@@ -30,5 +30,22 @@ describe('toCaptureHeader', () => {
   it('gives no header for an unknown card or an unreadable time', () => {
     expect(toCaptureHeader({ ...CARD, cardName: 'EMERGENCY' })).toBeNull();
     expect(toCaptureHeader({ ...CARD, encounterTime: '' })).toBeNull();
+  });
+});
+
+describe('toCaptureLayout', () => {
+  it('gives a regular card the fields Android shows on it', () => {
+    expect(toCaptureLayout(CARD)?.sections.map((section) => section.section.id)).toContain('baby');
+  });
+
+  it('gives an SOS card every field of its stage', () => {
+    const sos = toCaptureLayout({ ...CARD, cardName: null, isSos: true, sosLabel: 'Stage2_Hour1_SOS1' });
+    expect(sos?.stage).toBe('stage2');
+    expect(sos?.sections).toHaveLength(6);
+  });
+
+  it('gives no layout for a Stage 3 SOS or an unknown card (not in the package yet)', () => {
+    expect(toCaptureLayout({ ...CARD, cardName: null, isSos: true, sosLabel: 'Stage3_Hour2_SOS1' })).toBeNull();
+    expect(toCaptureLayout({ ...CARD, cardName: 'EMERGENCY' })).toBeNull();
   });
 });
