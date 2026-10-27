@@ -20,6 +20,7 @@ export const noHeader: NativeStackNavigationOptions = {
 // Only labour routes use these presets, and each carries its visit (VisitRouteParams).
 const patientHeader = (navigation: HeaderNavigation): NativeStackNavigationOptions => ({
   headerShown: true,
+  statusBarStyle: 'dark', // the patient header is white; light icons vanish on it
   header: ({ navigation: stack, route }: NativeStackHeaderProps) => (
     <PatientAppBar
       visitUuid={(route.params as VisitRouteParams).visitUuid}

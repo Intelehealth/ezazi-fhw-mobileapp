@@ -337,6 +337,13 @@
     "kicker": "SCHEDULED OBSERVATION · {{stage}}",
     "title": "Observation {{time}}",
     "selectPlaceholder": "Select",
+    "back": "Back",
+    "next": "Next",
+    "leave": {
+      "title": "Are you sure you want to close patient observation?",
+      "message": "Are you sure you want to close the patient observation?",
+      "saveAndExit": "Save & Exit"
+    },
     "answer": {
       "yes": "Yes",
       "no": "No"

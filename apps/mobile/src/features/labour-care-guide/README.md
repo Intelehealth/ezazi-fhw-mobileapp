@@ -9,9 +9,10 @@ Labour monitoring for one visit: the Timeline, card capture, SOS and the end of 
 | View | `screens/`, `components/` | Drawing only; never imports `core/db` or `data/`. `PatientAppBar` is mounted by the navigator (`patientAppBar` / `patientCaptureAppBar`), never by a screen |
 | ViewModel | `stores/useTimelineViewModel.ts` | Reads the visit, re-reads when its tables change, re-derives card states every minute, `captureSos()` |
 | ViewModel | `stores/usePatientHeaderViewModel.ts` | The app bar's patient line, re-read when the patient or obs change |
-| ViewModel | `stores/useCardCaptureViewModel.ts` | The card a capture screen opens |
+| ViewModel | `stores/useCardCaptureViewModel.ts` | The card a capture screen opens, and its layout |
+| ViewModel | `stores/useCaptureFormViewModel.ts`, `stores/useCaptureForm.ts` | The capture form: tabs, Next / Back, Android's save and typing checks, alerts, error counts per tab, save |
 | Model | `data/` | `timelineReader` (`readTimeline`, `readPatient`), `captureReader`, `labourRepository` (`saveCard`, `captureSos`, `endStage1`, `refreshVisitRisk`) |
-| Model | `domain/` | Pure mapping: `timelineModel` (card rows → timeline), `captureCard` (card → capture title), `captureForm` (form ↔ the package's `CardInput`) |
+| Model | `domain/` | Pure mapping: `timelineModel` (card rows → timeline), `captureCard` (card → capture title and layout), `captureForm` (form ↔ the package's `CardInput`), `captureForm.schema` (the package's save rules for react-hook-form), `captureFieldView` (fields → controls) |
 
 New cards are created by `core/services/cardGeneration`, which runs in the background for every open visit; this feature only reads them.
 
@@ -29,6 +30,6 @@ New cards are created by `core/services/cardGeneration`, which runs in the backg
 
 ## Status (2026-10-26)
 
-- **Built:** the Timeline for Stage 1 from the database, card generation, the new-card alert, SOS capture, the save and End Stage 1 writers, the capture form model.
-- **Not built yet:** the capture screen's tabs and save (its route, app bar and title exist), the End Stage 1 UI, the Stage 2 and postpartum screens, edit and read-only modes.
+- **Built:** the Timeline for Stage 1 from the database, card generation, the new-card alert, SOS capture, the save and End Stage 1 writers, the capture screen (tabs, controls, Medication, notes, alert summary, save, Save & Exit).
+- **Not built yet:** the End Stage 1 UI, the Stage 2 and postpartum screens, edit and read-only modes.
 - **Dev builds** (`EXPO_PUBLIC_DEV_SEED=true`): Home offers a seeded test patient (every card state) and a live test visit that the card engine runs in real time (`core/db/seeds`).

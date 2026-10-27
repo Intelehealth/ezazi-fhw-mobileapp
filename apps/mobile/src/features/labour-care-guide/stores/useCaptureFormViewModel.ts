@@ -26,6 +26,8 @@ export interface CaptureFormViewModel {
   goBack: () => void;
   /** Next: the next tab without blocking; on the last tab, Save. */
   goNext: () => void;
+  /** Checks the rules and saves, or jumps to the first tab in error (last Next, Save & Exit). */
+  save: () => void;
   saveState: SaveState;
 }
 
@@ -67,6 +69,10 @@ export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSa
     if (index >= 0) setTabIndex(index);
   };
 
+  const trySave = () => {
+    if (saveState !== 'saving') submit((values) => void save(values), jumpTo);
+  };
+
   return {
     tabs,
     tabIndex,
@@ -76,10 +82,8 @@ export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSa
     isFirstTab: tabIndex === 0,
     isLastTab,
     goBack: () => setTabIndex((index) => Math.max(0, index - 1)),
-    goNext: () => {
-      if (!isLastTab) setTabIndex(tabIndex + 1);
-      else if (saveState !== 'saving') submit((values) => void save(values), jumpTo);
-    },
+    goNext: () => (isLastTab ? trySave() : setTabIndex(tabIndex + 1)),
+    save: trySave,
     saveState,
   };
 }
