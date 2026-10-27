@@ -17,8 +17,10 @@
       "otpInput": "OTP input",
       "close": "Close",
       "increase": "Increase {{label}}",
-      "decrease": "Decrease {{label}}"
+      "decrease": "Decrease {{label}}",
+      "search": "Search {{label}}"
     },
+    "useTypedText": "Use \u201c{{text}}\u201d",
     "tabWithErrors": "{{label}} ({{count}})"
   },
   "splash": {
@@ -333,7 +335,38 @@
   },
   "capture": {
     "kicker": "SCHEDULED OBSERVATION · {{stage}}",
-    "title": "Observation {{time}}"
+    "title": "Observation {{time}}",
+    "selectPlaceholder": "Select",
+    "answer": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "medicine": {
+      "title": "Add Medicine",
+      "name": "Medicine*",
+      "form": "Form*",
+      "strength": "Strength*",
+      "dosage": "Dose*",
+      "dosageUnit": "Dose Unit*",
+      "frequency": "Frequency*",
+      "route": "Route*",
+      "duration": "Duration*",
+      "durationUnit": "Duration Unit*",
+      "remark": "Remark",
+      "add": "Add",
+      "addAnother": "+ Add Medicine",
+      "edit": "Edit medicine",
+      "remove": "Remove medicine",
+      "summary": "{{name}} · {{strength}} · {{dose}} · {{route}}"
+    },
+    "notes": {
+      "placeholder": "Enter here",
+      "add": "+ Add",
+      "remove": "Remove {{label}} note"
+    },
+    "summary": {
+      "title": "Observation summary"
+    }
   },
   "partogram": {
     "field": {

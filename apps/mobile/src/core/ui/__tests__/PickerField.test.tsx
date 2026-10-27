@@ -52,3 +52,23 @@ describe('PickerField', () => {
     expect(screen.queryByRole('radio', { name: 'Clear' })).toBeNull();
   });
 });
+
+describe('PickerField with free text', () => {
+  it('filters the list by the typed text and can keep text that matches nothing', () => {
+    const onChange = setup({ freeText: true });
+    fireEvent.press(screen.getByRole('button', { name: 'Amniotic fluid' }));
+    fireEvent.changeText(screen.getByLabelText('Search Amniotic fluid'), 'thick');
+
+    expect(screen.queryByRole('radio', { name: 'Clear' })).toBeNull();
+    expect(screen.getByRole('radio', { name: 'Thick meconium' })).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Search Amniotic fluid'), 'Brownish');
+    fireEvent.press(screen.getByText('Use “Brownish”'));
+    expect(onChange).toHaveBeenCalledWith('Brownish');
+  });
+
+  it('shows a typed value that is not in the list', () => {
+    setup({ freeText: true, value: 'Brownish' });
+    expect(screen.getByText('Brownish')).toBeTruthy();
+  });
+});
