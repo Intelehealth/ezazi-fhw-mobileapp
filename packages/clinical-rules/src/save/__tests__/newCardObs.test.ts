@@ -6,7 +6,8 @@ import type { CardInput } from '../../validation/types';
 
 // Expected rows follow Android PartogramDataCaptureActivity.saveObs in WRITE mode
 // (whitelabel-master b3ddd15): buildObservation sets the alert code on value rows;
-// createNoResponseObs, the medicine and note builders leave comment unset.
+// createNoResponseObs and the infusion and note builders leave comment unset; Medicine.toObs
+// writes an empty comment.
 const NO_INFUSION = { answer: 'no' as const, entry: {} };
 
 describe('buildNewCardObs', () => {
@@ -67,6 +68,17 @@ describe('buildNewCardObs', () => {
     ]);
   });
 
+  it('trims typed values as Android does at input, so the stored value and its alert code agree', () => {
+    const rows = buildNewCardObs({
+      values: { [FIELD_ID.BASELINE_FHR]: ' 100 ', [FIELD_ID.PULSE]: '\t88', [FIELD_ID.SUPERVISOR_DOCTOR]: '   ' },
+    });
+
+    expect(rows.map(({ fieldId, value, comment }) => [fieldId, value, comment])).toEqual([
+      [FIELD_ID.BASELINE_FHR, '100', 'R'],
+      [FIELD_ID.PULSE, '88', 'G'],
+    ]);
+  });
+
   it('saves one obs per medicine in Android text format', () => {
     const rows = buildNewCardObs({
       values: {},
@@ -80,8 +92,8 @@ describe('buildNewCardObs', () => {
     });
 
     expect(rows.map((row) => [row.value, row.comment])).toEqual([
-      ['Tablet | Paracetamol | 500 mg | 1::Tab |  | Oral | ::', null],
-      ['Injection | Oxytocin | 10 IU/mL | 1::mL |  | IV Infusion | ::', null],
+      ['Tablet | Paracetamol | 500 mg | 1::Tab |  | Oral | ::', ''],
+      ['Injection | Oxytocin | 10 IU/mL | 1::mL |  | IV Infusion | ::', ''],
     ]);
   });
 

@@ -24,7 +24,8 @@ const { RED, GREEN } = ALERT_CODE;
 export interface DevObs {
   readonly concept: string;
   readonly value: string;
-  readonly alert?: string;
+  /** `tbl_obs.comment`; left out means `''`. */
+  readonly alert?: string | null;
 }
 
 export interface DevCard {

@@ -138,7 +138,7 @@ export function insertEncounterType(
       encounteruuid: input.encounterUuid,
       conceptuuid: ENCOUNTER_TYPE,
       value: input.value,
-      comment: '',
+      comment: null, // Android `ObsDAO.createObs` sets none
       creator: input.creator,
       creatoruuid: input.creatorUuid,
       voided: VOIDED_NO,

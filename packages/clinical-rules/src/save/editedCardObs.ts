@@ -1,5 +1,6 @@
 import { getAlertCode } from '../alerts/alertCode';
-import { FIELD_ID, NO_RESPONSE_VALUE } from '../constants';
+import { javaTrim } from '../internal/javaTrim';
+import { ALERT_CODE, FIELD_ID, NO_RESPONSE_VALUE } from '../constants';
 import type { FieldId } from '../constants';
 import { STAGE1_AND_2_FIELDS } from '../fields/stage1And2Fields';
 import { encodeInfusion } from '../storage/infusionJson';
@@ -48,7 +49,7 @@ export function buildEditedCardObs(stored: readonly StoredObs[], input: CardInpu
 
     if (field.storage === 'value') {
       if (!(field.id in input.values)) continue;
-      const value = input.values[field.id] ?? '';
+      const value = javaTrim(input.values[field.id] ?? ''); // trimmed at input, as Android
       const latest = rows[0];
       if (latest ? latest.value !== value : value !== '') add(value, getAlertCode(field.id, value));
     } else if (field.storage === 'infusion' && field.input.kind === 'infusion') {
@@ -71,7 +72,7 @@ export function buildEditedCardObs(stored: readonly StoredObs[], input: CardInpu
         for (const value of medicine.medicines.map(encodeMedicine)) {
           const match = savedMedicines.find((row) => row.value === value && !kept.has(row.uuid));
           if (match) kept.add(match.uuid);
-          else add(value, null);
+          else add(value, ALERT_CODE.NONE); // empty comment, as Android `Medicine.toObs`
         }
         savedMedicines.filter((row) => !kept.has(row.uuid)).forEach((row) => voidUuids.push(row.uuid));
         voidNo();

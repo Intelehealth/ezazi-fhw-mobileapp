@@ -1,5 +1,6 @@
 import { getAlertCode } from '../alerts/alertCode';
-import { FIELD_ID, NO_RESPONSE_VALUE } from '../constants';
+import { javaTrim } from '../internal/javaTrim';
+import { ALERT_CODE, FIELD_ID, NO_RESPONSE_VALUE } from '../constants';
 import type { AlertCode, ConceptKey, FieldId } from '../constants';
 import { STAGE1_AND_2_FIELDS } from '../fields/stage1And2Fields';
 import { encodeInfusion } from '../storage/infusionJson';
@@ -42,14 +43,17 @@ export function buildNewCardObs(input: CardInput, notes: CardNotes = {}): ObsDra
       drafts.push({ fieldId: field.id, conceptKey: field.conceptKey, value, comment });
 
     if (field.storage === 'value') {
-      const value = input.values[field.id];
-      if (value !== null && value !== undefined && value !== '') add(value, getAlertCode(field.id, value));
+      // Android trims each typed value as it is entered (PartogramQueryListingAdapter), so the
+      // stored value and its alert code both see the trimmed text.
+      const value = javaTrim(input.values[field.id] ?? '');
+      if (value !== '') add(value, getAlertCode(field.id, value));
     } else if (field.storage === 'infusion' && field.input.kind === 'infusion') {
       infusionValues(input[field.input.variant]).forEach((value) => add(value, null));
     } else if (field.storage === 'medicineList') {
       const medicine = input[FIELD_ID.MEDICINE];
       if (medicine?.answer === 'no') add(NO_RESPONSE_VALUE, null);
-      if (medicine?.answer === 'yes') medicine.medicines.forEach((entry) => add(encodeMedicine(entry), null));
+      // Android `Medicine.toObs` writes an empty comment on each medicine row.
+      if (medicine?.answer === 'yes') medicine.medicines.forEach((entry) => add(encodeMedicine(entry), ALERT_CODE.NONE));
     } else if (field.storage === 'noteList') {
       const fieldNotes = field.id === FIELD_ID.ASSESSMENT ? notes[FIELD_ID.ASSESSMENT] : notes[FIELD_ID.PLAN];
       fieldNotes?.filter((note) => note !== '').forEach((note) => add(note, null));

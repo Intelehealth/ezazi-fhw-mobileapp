@@ -2,7 +2,7 @@ import { FIELD_ID, STAGE1_OUTCOME } from '@ezazi/clinical-rules';
 
 import { encounterTypeName } from '@/core/db/constants/encounter';
 import { BASELINE_FHR, REFER_TYPE } from '@/core/db/constants/obs';
-import { DECISION_PENDING, VISIT_RISK } from '@/core/db/constants/visit';
+import { DECISION_PENDING, VISIT_READ_STATUS, VISIT_RISK } from '@/core/db/constants/visit';
 import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
 import { seedDevPatient } from '@/core/db/seeds/devPatient';
 import { DEV_VISIT_UUID } from '@/core/db/seeds/devPatient.data';
@@ -61,6 +61,20 @@ describe('labour repository', () => {
       save('165'); // FHR red (1) + the seeded BP pair, both red (counted once: 1)
       expect(visitAttributeRepo.findValue(DEV_VISIT_UUID, VISIT_RISK, db)).toBe('2.0');
       expect(visitRepo.findDirty(db).map((v) => v.uuid)).toContain(DEV_VISIT_UUID);
+    });
+
+    it('marks the visit for sync and read on every save, as Android, even when the risk is unchanged', () => {
+      save('150');
+      visitRepo.markSynced(DEV_VISIT_UUID, db);
+      visitAttributeRepo.markSynced(DEV_VISIT_UUID, db);
+
+      save('150');
+
+      expect(visitRepo.findDirty(db).map((v) => v.uuid)).toContain(DEV_VISIT_UUID);
+      const readStatus = visitAttributeRepo
+        .listByVisit(DEV_VISIT_UUID, db)
+        .find((row) => row.visit_attribute_type_uuid === VISIT_READ_STATUS);
+      expect(readStatus).toMatchObject({ value: '$', sync: SYNC_DIRTY });
     });
 
     it('edits by writing only what changed; the newest value wins', () => {

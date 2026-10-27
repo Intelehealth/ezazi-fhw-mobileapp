@@ -78,7 +78,7 @@ export function seedDevPatient(input: DevSeedInput, on: DbHandle): boolean {
       encounteruuid: encounterUuid,
       conceptuuid: obs.concept,
       value: obs.value,
-      comment: obs.alert ?? '',
+      comment: obs.alert === undefined ? '' : obs.alert,
       creator: input.providerUuid,
       creatoruuid: input.providerUuid,
       created_date: utcIsoTimestamp(time),
@@ -97,7 +97,7 @@ export function seedDevPatient(input: DevSeedInput, on: DbHandle): boolean {
     // Android writes the first card with no marker and no privacy value.
     const isFirst = position === 0;
     const uuid = addEncounter(typeUuid, time, isFirst ? null : PRIVACY_NOTICE_VALUE);
-    if (!isFirst) addObs(uuid, time, { concept: ENCOUNTER_TYPE, value: NORMAL_CARD_MARKER });
+    if (!isFirst) addObs(uuid, time, { concept: ENCOUNTER_TYPE, value: NORMAL_CARD_MARKER, alert: null });
     if (card.missed) addObs(uuid, time, { concept: MISSED_ENCOUNTER, value: MISSED_ENCOUNTER_VALUE });
     card.obs.forEach((obs) => addObs(uuid, time, obs));
   });
@@ -107,6 +107,7 @@ export function seedDevPatient(input: DevSeedInput, on: DbHandle): boolean {
   addObs(sos, sosTime, {
     concept: SOS_STAGE_HOUR,
     value: formatSosName(STAGE.STAGE1, DEV_SOS.hour, DEV_SOS.index),
+    alert: null,
   });
   DEV_SOS.obs.forEach((obs) => addObs(sos, sosTime, obs));
 

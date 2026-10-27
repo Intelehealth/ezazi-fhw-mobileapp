@@ -30,6 +30,14 @@ describe('buildEditedCardObs', () => {
     expect(edit.voidUuids).toEqual([]);
   });
 
+  it('trims a typed value before comparing, so padding alone writes nothing', () => {
+    const edit = buildEditedCardObs([stored(FIELD_ID.BASELINE_FHR, '150', 'fhr-1')], {
+      values: { [FIELD_ID.BASELINE_FHR]: ' 150 ' },
+    });
+
+    expect(rows(edit)).toEqual([]);
+  });
+
   it('compares with the newest stored value, not the first', () => {
     const before = [stored(FIELD_ID.BASELINE_FHR, '150'), stored(FIELD_ID.BASELINE_FHR, '165')];
     expect(rows(buildEditedCardObs(before, { values: { [FIELD_ID.BASELINE_FHR]: '165' } }))).toEqual([]);
@@ -84,7 +92,7 @@ describe('buildEditedCardObs', () => {
       [FIELD_ID.MEDICINE]: { answer: 'yes', medicines: [PARACETAMOL, oxytocin] },
     });
 
-    expect(rows(edit)).toEqual([[FIELD_ID.MEDICINE, 'Injection | Oxytocin | 10 IU/mL | 1::mL |  | IV Infusion | ::', null]]);
+    expect(rows(edit)).toEqual([[FIELD_ID.MEDICINE, 'Injection | Oxytocin | 10 IU/mL | 1::mL |  | IV Infusion | ::', '']]);
     expect([...edit.voidUuids].sort()).toEqual(['ibu-1', 'no-1']);
   });
 

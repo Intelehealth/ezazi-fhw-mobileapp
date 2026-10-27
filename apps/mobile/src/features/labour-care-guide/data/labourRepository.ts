@@ -85,7 +85,8 @@ export interface SaveCardInput {
 
 /**
  * Saves one card in one transaction (Android `saveObs`): new obs from the package's builders
- * (write-new on an edit), stale rows voided, the card marked for sync, VISIT_RISK refreshed.
+ * (write-new on an edit), stale rows voided, the card marked for sync, VISIT_RISK refreshed,
+ * then, as Android does on every save, the visit marked for sync and marked read.
  */
 export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number; voided: number } {
   return transact((tx) => {
@@ -108,6 +109,8 @@ export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number
     if (voidUuids.length > 0) obsRepo.markVoided([...voidUuids], tx);
     encounterRepo.markDirty(input.encounterUuid, tx);
     refreshVisitRisk(input.visitUuid, input.now, tx);
+    visitRepo.markDirty(input.visitUuid, tx);
+    visitAttributeRepo.markRead(input.visitUuid, tx);
     return { inserted: insert.length, voided: voidUuids.length };
   }, on);
 }

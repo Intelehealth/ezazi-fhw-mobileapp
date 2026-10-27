@@ -63,7 +63,8 @@ describe('scanAllVisits', () => {
       sync: SYNC_DIRTY,
     });
     expect(obsRepo.getEncounterTypeValue(card.uuid, db)).toBe('NORMAL');
-    expect(obsRepo.listByEncounter(card.uuid, db)[0]).toMatchObject({ creator: 'user-1', creatoruuid: 'user-1' });
+    // Android's createObs leaves the marker's comment unset.
+    expect(obsRepo.listByEncounter(card.uuid, db)[0]).toMatchObject({ creator: 'user-1', creatoruuid: 'user-1', comment: null });
   });
 
   it('never creates the same card twice when the scan runs again', () => {

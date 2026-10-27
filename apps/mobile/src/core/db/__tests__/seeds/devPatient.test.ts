@@ -1,6 +1,7 @@
 import { NORMAL_CARD_MARKER } from '@ezazi/clinical-rules';
 
 import { ENCOUNTER_ADMISSION, LCG_SOS, encounterTypeUuid } from '../../constants/encounter';
+import { ENCOUNTER_TYPE, MISSED_ENCOUNTER, SOS_STAGE_HOUR } from '../../constants/obs';
 import { DECISION_PENDING, VISIT_HOLDER } from '../../constants/visit';
 import { encounterRepo, obsRepo, patientRepo, visitAttributeRepo, visitRepo } from '../../repositories';
 import { encounter, obs } from '../../schema';
@@ -97,6 +98,16 @@ describe('dev patient seed', () => {
 
     expect(obsRepo.getEncounterTypeValue(first, db)).toBeNull();
     for (const uuid of rest) expect(obsRepo.getEncounterTypeValue(uuid, db)).toBe(NORMAL_CARD_MARKER);
+  });
+
+  it('keeps Android comments: NULL on the NORMAL marker and SOS label, an empty string on the Missed marker', () => {
+    seed(db);
+    const commentsOf = (conceptUuid: string) =>
+      db.select().from(obs).all().filter((row) => row.conceptuuid === conceptUuid).map((row) => row.comment);
+
+    expect(new Set(commentsOf(ENCOUNTER_TYPE))).toEqual(new Set([null]));
+    expect(commentsOf(SOS_STAGE_HOUR)).toEqual([null]);
+    expect(commentsOf(MISSED_ENCOUNTER)).toEqual(['']);
   });
 
   it('labels the SOS card with its stage and hour', () => {
