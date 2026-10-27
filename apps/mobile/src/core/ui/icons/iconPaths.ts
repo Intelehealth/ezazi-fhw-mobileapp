@@ -31,6 +31,10 @@ export const iconPaths = {
   // Material "chevron_right" — Timeline "Record Now"
   chevronRight: 'M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z',
 
+  // Material "add" / "remove" — capture stepper + and −
+  plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  minus: 'M19 13H5v-2h14v2z',
+
   // Checkbox tick (✓)
   check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
 

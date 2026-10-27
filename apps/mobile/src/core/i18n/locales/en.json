@@ -15,8 +15,11 @@
       "showPassword": "Show password",
       "hidePassword": "Hide password",
       "otpInput": "OTP input",
-      "close": "Close"
-    }
+      "close": "Close",
+      "increase": "Increase {{label}}",
+      "decrease": "Decrease {{label}}"
+    },
+    "tabWithErrors": "{{label}} ({{count}})"
   },
   "splash": {
     "tagline": "Empowering labour management\nthrough digital precision",

@@ -179,6 +179,19 @@ const palette = {
   dialogNoteBg: '#F5F1FF',
   dialogNoteBorder: '#CDBDF5',
   dialogCloseIcon: '#A4A1B5',
+
+  // ── Capture controls, Figma Observation flow tabs (251:556), 2026-10-28 ──
+  // Read off Kaveri's frame screenshots (rate limit). Alert and error have no frame yet:
+  // provisional, alert = the Missed-chip pink, error = the "--Alert" red (decided 2026-10-26).
+  controlSelectedBg: '#F3EAFF',
+  controlSelectedBorder: '#9D7CC8',
+  controlSelectedText: '#460092',
+  controlAlertBg: '#FFE7EF',
+  controlAlertBorder: '#FF71A3',
+  controlAlertText: '#F0004A',
+  controlDisabledBg: '#F5F4F8',
+  tabUnselectedText: '#9B97AA',
+  tabIndicator: '#460092',
 } as const;
 
 export const colors = {
@@ -235,6 +248,10 @@ export const dimens = {
   timelineDotSize: { phone: 28, tablet: 34 }, // TimelineCheckpointCard — checkpoint circle
   headerNavButton: 40, // PatientHeader back / close on phone; tablet follows Figma 251:565
   headerNavIcon: 24, // icon inside it
+  // Capture controls on phone; tablet follows the Figma tab frames via fromFigma
+  controlHeight: 44, // segmented button, number chip, picker field, stepper box
+  controlMinWidth: 72, // segmented button
+  tabIndicator: 2, // selected tab underline
 } as const;
 
 export const spacing = {
@@ -277,6 +294,11 @@ export const fontSizes = {
   // CardCaptureScreen title (Figma 251:581); tablet follows the frame via fromFigma
   captureKicker: { phone: 11, tablet: 13 }, // "SCHEDULED OBSERVATION · STAGE 1"
   captureTitle: { phone: 20, tablet: 24 }, // "Observation 9:30 AM"
+
+  // Capture controls (Figma 251:556); tablet follows the frame via fromFigma
+  controlLabel: { phone: 11, tablet: 13 }, // "COMPANION?" field caption
+  controlText: { phone: 14, tablet: 16 }, // option, chip, stepper and picker text
+  tabLabel: { phone: 12, tablet: 14 }, // "Supportive care"
 } as const;
 
 export const typography = {
