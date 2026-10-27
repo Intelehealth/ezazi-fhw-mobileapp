@@ -239,7 +239,7 @@ Requirement: every client captures **the same fields**, but a client may need **
 
 10. **Scan every minute, after the re-arm.** The backbone delivery re-arms first, then calls `runCardScan`, so a failed scan never ends the alarm chain. One more scan runs right after login as a catch-up.
 11. **No session, no scan.** `runCardScan` returns without opening the database when there is no access token or writer identity (§6).
-12. **One scan at a time, one transaction per visit.** An overlapping call shares the running scan's result; each visit's new card, Decision Pending flag and missed markers are written together.
+12. **One scan at a time, one transaction per visit.** An overlapping call shares the running scan's result; each visit's new card, Decision Pending flag and missed markers are written together. A visit that fails is logged and skipped, so the others still get their cards (a deviation: Android aborts the whole tick; decided 2026-10-27, Kaveri).
 13. **New-card alert on its own channel** (`labour-new-card-v1`, sound `al_1`, bundled by `plugins/withAlertSound.js`). Rule 6 applies: a change of sound or importance needs a new channel id.
 
 **Current state:** the 1-minute alarm is the production cadence (decided 2026-10-23). The 5 s heartbeat is foreground-only and for dev visibility — see the monitor README.

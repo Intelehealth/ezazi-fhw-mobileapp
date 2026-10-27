@@ -26,7 +26,7 @@ export interface SosRequest {
   readonly latestSosLabel: string | null; // SOS_STAGE_HOUR of the newest non-voided SOS
 }
 
-/** Why no SOS card is created. `decisionPending` is ours: Android allows it (decided 2026-10-15). */
+/** Why no SOS card is created. `decisionPending` is ours: Android allows it (decided 2026-10-15, Kaveri). */
 export type SosBlockReason =
   | 'visitCompleted'
   | 'notVisitHolder'

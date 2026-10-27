@@ -222,6 +222,20 @@ describe('obs repository', () => {
       expect(row(missed)).toMatchObject({ conceptuuid: MISSED_ENCOUNTER, value: '-' });
     });
 
+    // Deviation (2026-10-27, Kaveri): Android leaves creatoruuid and created_date NULL here.
+    it('writes the missed marker as Android does, with its creator uuid and created date filled', () => {
+      const missed = insertMissedEncounterMarker({ encounterUuid: ENC, ...CREW }, db);
+
+      expect(row(missed)).toMatchObject({
+        comment: '',
+        creator: CREW.creator,
+        creatoruuid: CREW.creatorUuid,
+        voided: VOIDED_NO,
+        sync: SYNC_DIRTY,
+      });
+      expect(row(missed)?.created_date).toMatch(/^2026-01-01T/); // the mocked write time
+    });
+
     it('updates only the obs row for an out-of-time reason', () => {
       // The legacy also flipped tbl_encounter.sync here, outside any
       // transaction. That pairing is the caller's now.

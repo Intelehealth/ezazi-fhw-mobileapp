@@ -217,9 +217,16 @@ flipped `sync` in the same statement, or that you did not overwrite `tbl_obs.com
 
 ## 9. Per-table specifics
 
+<!-- Superseded 2026-10-27 (Kaveri): the Missed marker's filled columns were added as a fifth. Original text kept for reference:
 Four behaviours that are not guessable from the schema.
+-->
+Five behaviours that are not guessable from the schema.
 
 **`obs.getAdmissionValues` is latest-wins, so admission values are never UPDATED.** It orders by `created_date DESC` and takes the first row per concept. Correcting a value means **writing a new obs**; the previous one survives as history. There is no update path and no write-once restriction — do not add either. This is also why `writeOne` always sets `created_date`: four legacy writers left it NULL, and a NULL sorts arbitrarily under that `ORDER BY`, which breaks latest-wins outright.
+
+**The Missed marker fills `creatoruuid` and `created_date`** (added 2026-10-27, Kaveri). Android's
+`checkObsAndCreateMissedObs` leaves both NULL; ours goes through `writeOne` like every other obs, so it
+sorts and pushes the same way.
 
 **The visit-attribute pull is whitelisted.** `visitAttribute.upsertManyFromPull` writes only the types in `PULLED_VISIT_ATTRIBUTE_TYPES`; the server offers far more than we store. An unrecognised type is returned in `skipped`, not dropped silently — so a new server attribute shows up as a reported skip rather than as missing data nobody noticed.
 
