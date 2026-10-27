@@ -16,8 +16,11 @@ export function runDevSeed(providerUuid: string): string {
   return DEV_VISIT_UUID;
 }
 
-/** Development builds only: starts Stage 1 on the live test visit, once; returns its visit uuid. */
-export function runDevVisitStart(providerUuid: string): string {
-  transact((tx) => startDevStage1({ providerUuid, now: Date.now() }, tx));
+/**
+ * Development builds only: starts Stage 1 on the live test visit, once, as the logged-in
+ * provider and user; returns its visit uuid.
+ */
+export function runDevVisitStart(writer: { providerUuid: string; creatorUuid: string }): string {
+  transact((tx) => startDevStage1({ ...writer, now: Date.now() }, tx));
   return DEV_LIVE_VISIT_UUID;
 }

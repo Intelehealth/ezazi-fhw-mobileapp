@@ -36,7 +36,7 @@ describe('scanAllVisits when one visit fails', () => {
     transact((tx) => {
       seedDevPatient({ providerUuid: IDENTITY.providerUuid, now: NOW }, tx); // next card due at +10 min
       seedDevLiveVisit({ providerUuid: IDENTITY.providerUuid, now: NOW - 30 * MINUTE }, tx);
-      startDevStage1({ providerUuid: IDENTITY.providerUuid, now: NOW - 30 * MINUTE }, tx); // due at 0
+      startDevStage1({ ...IDENTITY, now: NOW - 30 * MINUTE }, tx); // due at 0
     }, db);
   });
 

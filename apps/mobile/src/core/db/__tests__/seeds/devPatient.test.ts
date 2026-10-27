@@ -92,12 +92,10 @@ describe('dev patient seed', () => {
     expect(encounterRepo.findLatestClinicalByVisit(DEV_VISIT_UUID, db)?.uuid).toBe(due);
   });
 
-  it('marks cards as Android does: none on the first, NORMAL on the rest', () => {
+  it('marks every card NORMAL, the first too (Android leaves the first unmarked; decided 2026-10-27)', () => {
     seed(db);
-    const [first, ...rest] = DEV_CARDS.map((card) => cardUuid(db, card.name));
 
-    expect(obsRepo.getEncounterTypeValue(first, db)).toBeNull();
-    for (const uuid of rest) expect(obsRepo.getEncounterTypeValue(uuid, db)).toBe(NORMAL_CARD_MARKER);
+    for (const card of DEV_CARDS) expect(obsRepo.getEncounterTypeValue(cardUuid(db, card.name), db)).toBe(NORMAL_CARD_MARKER);
   });
 
   it('keeps Android comments: NULL on the NORMAL marker and SOS label, an empty string on the Missed marker', () => {

@@ -8,7 +8,7 @@ import { createTestDb, type TestDb } from '@/core/db/__tests__/helpers/testDb';
 import { scanAllVisits } from '../scan';
 
 /**
- * The engine taking over a visit that has only just started (Stage1_Hour1_1, no obs): what the
+ * The engine taking over a visit that has only just started (Stage1_Hour1_1 and its marker): what the
  * live test patient goes through on the device, minute by minute.
  */
 const IDENTITY = { providerUuid: 'provider-1', creatorUuid: 'user-1' };
@@ -29,7 +29,7 @@ describe('scanAllVisits on a just-started visit', () => {
     db = ctx.db;
     transact((tx) => {
       seedDevLiveVisit({ providerUuid: IDENTITY.providerUuid, now: NOW }, tx);
-      startDevStage1({ providerUuid: IDENTITY.providerUuid, now: NOW }, tx);
+      startDevStage1({ ...IDENTITY, now: NOW }, tx);
     }, db);
   });
 

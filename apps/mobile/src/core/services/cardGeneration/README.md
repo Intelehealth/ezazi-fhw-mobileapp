@@ -9,7 +9,7 @@ Creates labour cards on time for every open visit the logged-in provider holds, 
 
 ## What one scan writes, per visit, in one transaction
 
-- **Next card** when the latest card is old enough: the encounter (`encounterRepo.insertCard`) and its `NORMAL` marker obs.
+- **Next card** when the latest card is old enough: the encounter and its `NORMAL` marker obs, through `writeCard` (`core/db/card.ts`), the writer every card shares.
 - **Decision Pending** `'true'` after a stage's last card; the visit is marked for sync.
 - **Missed marker** (`MISSED_ENCOUNTER` = `-`) on an older card left empty. Android writes it while drawing the list; here the scan does (decided 2026-10-23).
 

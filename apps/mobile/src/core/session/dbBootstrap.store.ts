@@ -5,6 +5,8 @@ import { ensureSchema, resetSchemaInit } from '@/core/db/init';
 import { runDevSeed, runDevVisitStart } from '@/core/db/seeds';
 import { logger } from '@/core/utils/logger';
 
+import { readWriterIdentity } from './writerIdentity';
+
 /**
  * Readiness of the local offline store.
  *
@@ -20,8 +22,11 @@ interface DbBootstrapState {
   devVisitUuid: string | null;
   /** Idempotent — safe to call from a screen effect on every mount. */
   initialise: (providerUuid?: string | null) => Promise<void>;
-  /** Dev seed builds only: starts Stage 1 (once) on the live test visit; its uuid, or null on failure. */
-  startDevVisit: (providerUuid: string) => Promise<string | null>;
+  /**
+   * Dev seed builds only: starts Stage 1 (once) on the live test visit as the logged-in writer;
+   * its uuid, or null when logged out or on failure.
+   */
+  startDevVisit: () => Promise<string | null>;
   /** Logout teardown — forget readiness so the next login rebuilds from scratch. */
   reset: () => void;
 }
@@ -71,11 +76,13 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
     }
   },
 
-  startDevVisit: async (providerUuid) => {
+  startDevVisit: async () => {
     if (!env.DEV_SEED) return null;
     try {
+      const writer = await readWriterIdentity();
+      if (!writer) return null;
       await ensureSchema();
-      return runDevVisitStart(providerUuid);
+      return runDevVisitStart(writer);
     } catch (error: unknown) {
       logger.error('[db] dev visit start failed', error);
       return null;

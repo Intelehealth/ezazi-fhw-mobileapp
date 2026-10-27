@@ -46,7 +46,7 @@ Ported from the Android app in production (`elcg-fhw-mobileapp` @ `ezazi_sprint_
 - **When the next card is due.** Minutes since the latest card are whole minutes, truncated toward zero. At the gap (30 / 15) the next card is due, timed **now**; one minute before (29 / 14), `preSync`.
 - **No backfill.** Each card counts from the previous card's real time, so a late tick yields one card.
 - **End of a stage.** After the stage's last card: `markDecisionPending` with `'true'`, **on every later tick**. Android skips the write when the value is already `'true'` (`CardGenerationEngine` 290–291), so the app must too. The timer never moves a visit from Stage 1 to Stage 2.
-- **What a card carries.** A timer card carries the `NORMAL` marker (the `ENCOUNTER_TYPE` obs) and `privacynotice_value` `'true'`. Stage 2's first card has both; Stage 1's first card has neither (`AdmissionWriter`, and Nepal's `PatientDetailActivity` path).
+- **What a card carries.** A timer card carries the `NORMAL` marker (the `ENCOUNTER_TYPE` obs) and `privacynotice_value` `'true'`. Stage 2's first card has both; Stage 1's first card has the marker but no privacy value (see the deviation below).
 - **Stage starts** come from user actions:
   - Stage 1 on admission, and only for a new visit;
   - Stage 2 on "End Stage 1".
@@ -63,6 +63,7 @@ Ported from the Android app in production (`elcg-fhw-mobileapp` @ `ezazi_sprint_
 | A `hour ≥ 21 → Stage 2` branch | Not ported | Unreachable: Stage 1's limit card is `Stage1_Hour15_2`, so hour 16 is never generated |
 | A card type missing from the device's uuid table is silently skipped | Always returns the card | Mobile resolves names from constants, which hold all 58 cards |
 | Times are formatted in the device language, so a Marathi, Bengali or Assamese phone may write native digits (`२०२६-…`) | Always English digits (`2026-…`); native digits are still read | Decided 2026-10-15: data in the DB is English only |
+| Stage 1's first card has no `NORMAL` marker (`AdmissionWriter`, Nepal's `PatientDetailActivity`) | `getStageStart('stage1')` gives the marker too; SOS cards are unchanged | Marked like the timer cards (decided 2026-10-27, Kaveri). Android's e-partogram shows `ENCOUNTER_TYPE` in row 24, so that card's column now shows `NORMAL` like the rest |
 
 ## Card status on the timeline
 

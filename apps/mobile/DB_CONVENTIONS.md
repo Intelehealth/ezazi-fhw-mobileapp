@@ -39,6 +39,11 @@ lookup wrote rows with a blank `person_attribute_type_uuid` instead of failing.
 
 One file per entity under `repositories/`, mirroring `schema/` and `constants/`.
 
+**A timeline card spans two tables, so its writer is `core/db/card.ts`, not a repository** (added
+2026-10-27, Kaveri). `writeCard` writes the encounter and its `NORMAL` marker obs for every timer and
+stage-start card, Stage 1's first card included, which Android leaves unmarked. SOS cards carry their
+`SOS_STAGE_HOUR` label instead and are written by the labour repository.
+
 ---
 
 ## 2. Transactions

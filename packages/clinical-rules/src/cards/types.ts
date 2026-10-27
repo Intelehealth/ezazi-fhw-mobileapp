@@ -72,7 +72,7 @@ export interface StageStart {
   readonly stage: MonitoringStage;
   readonly card: CardDefinition;
   readonly encounterTime: string;
-  readonly marker: CardMarker | null; // null: Android writes none on Stage 1's first card
+  readonly marker: CardMarker; // Stage 1's first card too, unlike Android (decided 2026-10-27)
   readonly privacyNoticeValue: PrivacyNoticeValue | null; // null on Stage 1's first card
   readonly decisionPending: DecisionPendingValue;
 }

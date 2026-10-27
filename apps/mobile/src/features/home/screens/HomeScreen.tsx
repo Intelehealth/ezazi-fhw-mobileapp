@@ -36,8 +36,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const startDevVisit = useDbBootstrapStore((s) => s.startDevVisit);
 
   const openLiveDevVisit = async () => {
-    if (!providerUuid) return;
-    const visitUuid = await startDevVisit(providerUuid);
+    const visitUuid = await startDevVisit();
     if (visitUuid) navigation.navigate('Timeline', { visitUuid });
   };
 

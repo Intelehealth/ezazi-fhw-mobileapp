@@ -1,10 +1,10 @@
 import { DECISION_PENDING_SET, decideNextStep, getCardStatus } from '@ezazi/clinical-rules';
 
+import { writeCard } from '@/core/db/card';
 import { encounterTypeName } from '@/core/db/constants/encounter';
 import { DECISION_PENDING } from '@/core/db/constants/visit';
 import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
 import { transact, type DbHandle } from '@/core/db/tx';
-import { newUuid } from '@/core/db/uuid';
 import type { WriterIdentity } from '@/core/session/writerIdentity';
 import { logger } from '@/core/utils/logger';
 
@@ -49,20 +49,15 @@ export function scanVisit(visitUuid: string, identity: WriterIdentity, now: numb
     if (latest && name && latest.encounter_time) {
       const step = decideNextStep({ name, encounterTime: latest.encounter_time }, now);
       if (step.kind === 'createCard') {
-        const uuid = newUuid();
-        encounterRepo.insertCard(
+        writeCard(
           {
-            uuid,
             visitUuid,
             cardName: step.card.name,
             encounterTime: step.encounterTime,
-            providerUuid: identity.providerUuid,
             privacyNoticeValue: step.privacyNoticeValue,
+            marker: step.marker,
           },
-          tx,
-        );
-        obsRepo.insertEncounterType(
-          { encounterUuid: uuid, value: step.marker, creator: identity.creatorUuid, creatorUuid: identity.creatorUuid },
+          identity,
           tx,
         );
         result.cardsCreated += 1;

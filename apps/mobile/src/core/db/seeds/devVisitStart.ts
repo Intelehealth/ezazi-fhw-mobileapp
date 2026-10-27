@@ -2,9 +2,9 @@ import { STAGE, getStageStart } from '@ezazi/clinical-rules';
 
 import { VISIT_READ_STATUS_VALUE, VISIT_SPECIALITY_OBGYN } from '../constants/literals';
 import { DECISION_PENDING, VISIT_DR_SPECIALITY, VISIT_HOLDER, VISIT_READ_STATUS } from '../constants/visit';
+import { writeCard } from '../card';
 import { encounterRepo, visitRepo } from '../repositories';
 import type { DbHandle } from '../tx';
-import { newUuid } from '../uuid';
 import { writeDevPatientVisit, type DevSeedInput } from './devPatientVisit';
 import { DEV_LIVE_PATIENT, DEV_LIVE_VISIT_UUID } from './devVisitStart.data';
 
@@ -35,24 +35,25 @@ export function seedDevLiveVisit(input: DevSeedInput, on: DbHandle): boolean {
 }
 
 /**
- * Starts Stage 1 on the live test visit as Android does (`AdmissionWriter.insertStageOneEncounter`):
- * `Stage1_Hour1_1` at now, unsynced, no obs. Every later card comes from the card engine.
- * False when the visit is missing or already has a card.
+ * Starts Stage 1 on the live test visit (`AdmissionWriter.insertStageOneEncounter`):
+ * `Stage1_Hour1_1` at now, unsynced, with the NORMAL marker Android leaves out (decided
+ * 2026-10-27). Every later card comes from the card engine. `creatorUuid` is the logged-in
+ * user, the marker's creator. False when the visit is missing or already has a card.
  */
-export function startDevStage1(input: DevSeedInput, on: DbHandle): boolean {
+export function startDevStage1(input: DevSeedInput & { creatorUuid: string }, on: DbHandle): boolean {
   if (!visitRepo.findPatientUuidByVisit(DEV_LIVE_VISIT_UUID, on)) return false;
   if (encounterRepo.findLatestClinicalByVisit(DEV_LIVE_VISIT_UUID, on)) return false;
 
   const start = getStageStart(STAGE.STAGE1, input.now);
-  encounterRepo.insertCard(
+  writeCard(
     {
-      uuid: newUuid(),
       visitUuid: DEV_LIVE_VISIT_UUID,
       cardName: start.card.name,
       encounterTime: start.encounterTime,
-      providerUuid: input.providerUuid,
       privacyNoticeValue: start.privacyNoticeValue,
+      marker: start.marker,
     },
+    input,
     on,
   );
   return true;

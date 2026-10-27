@@ -94,10 +94,9 @@ export function seedDevPatient(input: DevSeedInput, on: DbHandle): boolean {
     if (!typeUuid) throw new Error(`Dev seed: unknown card ${card.name}`);
 
     const time = at(card.minutesAgo);
-    // Android writes the first card with no marker and no privacy value.
-    const isFirst = position === 0;
-    const uuid = addEncounter(typeUuid, time, isFirst ? null : PRIVACY_NOTICE_VALUE);
-    if (!isFirst) addObs(uuid, time, { concept: ENCOUNTER_TYPE, value: NORMAL_CARD_MARKER, alert: null });
+    // Every card has the NORMAL marker (the first too, unlike Android); the first has no privacy value.
+    const uuid = addEncounter(typeUuid, time, position === 0 ? null : PRIVACY_NOTICE_VALUE);
+    addObs(uuid, time, { concept: ENCOUNTER_TYPE, value: NORMAL_CARD_MARKER, alert: null });
     if (card.missed) addObs(uuid, time, { concept: MISSED_ENCOUNTER, value: MISSED_ENCOUNTER_VALUE });
     card.obs.forEach((obs) => addObs(uuid, time, obs));
   });

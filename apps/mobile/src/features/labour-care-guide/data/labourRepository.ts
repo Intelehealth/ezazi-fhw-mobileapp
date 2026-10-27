@@ -24,6 +24,7 @@ import type {
   StoredObs,
 } from '@ezazi/clinical-rules';
 
+import { writeCard } from '@/core/db/card';
 import { encounterTypeName } from '@/core/db/constants/encounter';
 import * as obsConcepts from '@/core/db/constants/obs';
 import { DECISION_PENDING, VISIT_RISK } from '@/core/db/constants/visit';
@@ -183,24 +184,17 @@ export function endStage1(
   transact((tx) => {
     if (decision.kind === 'startStage2') {
       const { start } = decision;
-      const uuid = newUuid();
-      encounterRepo.insertCard(
+      writeCard(
         {
-          uuid,
           visitUuid,
           cardName: start.card.name,
           encounterTime: start.encounterTime,
-          providerUuid: writer.providerUuid,
           privacyNoticeValue: start.privacyNoticeValue,
+          marker: start.marker,
         },
+        writer,
         tx,
       );
-      if (start.marker) {
-        obsRepo.insertEncounterType(
-          { encounterUuid: uuid, value: start.marker, creator: writer.creatorUuid, creatorUuid: writer.creatorUuid },
-          tx,
-        );
-      }
       if (visitAttributeRepo.upsertLocal(visitUuid, DECISION_PENDING, start.decisionPending, tx) !== null) {
         visitRepo.markDirty(visitUuid, tx);
       }

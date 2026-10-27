@@ -1,4 +1,7 @@
+import { NORMAL_CARD_MARKER } from '@ezazi/clinical-rules';
+
 import { encounterTypeName } from '../../constants/encounter';
+import { ENCOUNTER_TYPE } from '../../constants/obs';
 import { VISIT_SPECIALITY_OBGYN } from '../../constants/literals';
 import { DECISION_PENDING, VISIT_DR_SPECIALITY, VISIT_HOLDER, VISIT_READ_STATUS } from '../../constants/visit';
 import { encounterRepo, obsRepo, patientRepo, visitAttributeRepo, visitRepo } from '../../repositories';
@@ -11,16 +14,17 @@ import { createTestDb, type TestDb } from '../helpers/testDb';
 
 /**
  * The live test visit: a dummy patient, visit and attributes that are never pushed, and a start
- * that writes only Stage 1's first card as Android does, leaving every later card to the engine.
+ * that writes only Stage 1's first card and its marker, leaving every later card to the engine.
  */
 
 const PROVIDER = 'provider-dev';
+const CREATOR = 'user-dev';
 const NOW = Date.UTC(2026, 9, 26, 10, 0, 0);
 const MINUTE = 60_000;
 
 const seed = (db: DbHandle) => transact((tx) => seedDevLiveVisit({ providerUuid: PROVIDER, now: NOW }, tx), db);
 const start = (db: DbHandle, now = NOW) =>
-  transact((tx) => startDevStage1({ providerUuid: PROVIDER, now }, tx), db);
+  transact((tx) => startDevStage1({ providerUuid: PROVIDER, creatorUuid: CREATOR, now }, tx), db);
 
 describe('dev live visit', () => {
   let ctx: TestDb;
@@ -62,7 +66,7 @@ describe('dev live visit', () => {
   });
 
   describe('start', () => {
-    it('writes only Stage1_Hour1_1: at now, unsynced, not voided, no obs', () => {
+    it('writes only Stage1_Hour1_1: at now, unsynced, not voided, with the NORMAL marker', () => {
       seed(db);
       expect(start(db)).toBe(true);
 
@@ -78,7 +82,19 @@ describe('dev live visit', () => {
         sync: SYNC_DIRTY,
         voided: VOIDED_NO,
       });
-      expect(db.select().from(obs).all()).toEqual([]);
+      // Android writes no marker here; every RN card carries one (decided 2026-10-27).
+      expect(db.select().from(obs).all()).toEqual([
+        expect.objectContaining({
+          encounteruuid: card?.uuid,
+          conceptuuid: ENCOUNTER_TYPE,
+          value: NORMAL_CARD_MARKER,
+          comment: null,
+          creator: CREATOR,
+          creatoruuid: CREATOR,
+          voided: VOIDED_NO,
+          sync: SYNC_DIRTY,
+        }),
+      ]);
     });
 
     it('starts once: a second tap writes nothing', () => {
@@ -87,7 +103,7 @@ describe('dev live visit', () => {
 
       expect(start(db, NOW + MINUTE)).toBe(false);
       expect(encounterRepo.findTimelineByVisit(DEV_LIVE_VISIT_UUID, db)).toHaveLength(1);
-      expect(obsRepo.listByEncounter(encounterRepo.findLatestClinicalByVisit(DEV_LIVE_VISIT_UUID, db)!.uuid, db)).toEqual([]);
+      expect(obsRepo.listByEncounter(encounterRepo.findLatestClinicalByVisit(DEV_LIVE_VISIT_UUID, db)!.uuid, db)).toHaveLength(1);
     });
 
     it('writes nothing when the visit was never seeded', () => {
