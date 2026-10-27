@@ -9,14 +9,13 @@ import { TimelineScreen } from '../TimelineScreen';
 jest.mock('../../stores/useTimelineViewModel', () => ({ useTimelineViewModel: jest.fn() }));
 
 const captureSos = jest.fn();
-const goBack = jest.fn();
+const navigate = jest.fn();
 const props = {
-  navigation: { goBack },
+  navigation: { navigate },
   route: { key: 'Timeline-1', name: 'Timeline', params: { visitUuid: 'visit-1' } },
 } as unknown as NativeStackScreenProps<RootStackParamList, 'Timeline'>;
 
 const viewModel = {
-  patient: { id: 'p1', name: 'Live Test Patient', ezId: 'EZ-DEV-0002', ageYears: 29, gravidaLabel: 'G-' },
   checkpoints: [],
   activeStage: 'stage1' as const,
   captureSos,
@@ -33,15 +32,28 @@ describe('TimelineScreen', () => {
     render(<TimelineScreen {...props} />);
 
     expect(useTimelineViewModel).toHaveBeenCalledWith('visit-1');
-    expect(screen.queryByText('Live Test Patient')).toBeNull();
+    expect(screen.queryByText('STAGE 1')).toBeNull();
   });
 
-  it('shows the patient, the stage heading and the stage stepper', () => {
+  it('shows the stage heading; the patient app bar is the navigator\'s, not the screen\'s', () => {
     render(<TimelineScreen {...props} />);
 
-    expect(screen.getByText('Live Test Patient')).toBeTruthy();
-    expect(screen.getByText('EZ-DEV-0002 · 29 years · G-')).toBeTruthy();
     expect(screen.getByText('STAGE 1')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Close timeline' })).toBeNull();
+  });
+
+  it('opens the due card for capture from Record Now', () => {
+    (useTimelineViewModel as jest.Mock).mockReturnValue({
+      ...viewModel,
+      checkpoints: [
+        { id: 'c1', encounterUuid: 'card-1', scheduledAt: new Date().toISOString(), status: 'dueNow', access: 'write' },
+      ],
+    });
+    render(<TimelineScreen {...props} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Record Now' }));
+
+    expect(navigate).toHaveBeenCalledWith('CardCapture', { visitUuid: 'visit-1', encounterUuid: 'card-1' });
   });
 
   it('captures an SOS only after its confirm', () => {
@@ -64,13 +76,5 @@ describe('TimelineScreen', () => {
 
     expect(captureSos).not.toHaveBeenCalled();
     expect(screen.queryByText('Capture SOS observation?')).toBeNull();
-  });
-
-  it('closes back to the previous screen', () => {
-    render(<TimelineScreen {...props} />);
-
-    fireEvent.press(screen.getByRole('button', { name: 'Close timeline' }));
-
-    expect(goBack).toHaveBeenCalledTimes(1);
   });
 });

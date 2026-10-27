@@ -233,6 +233,8 @@ export const dimens = {
   labelGap: 6, // gap between label and its input
   fieldGap: 20, // vertical gap between form fields
   timelineDotSize: { phone: 28, tablet: 34 }, // TimelineCheckpointCard — checkpoint circle
+  headerNavButton: 40, // PatientHeader back / close on phone; tablet follows Figma 251:565
+  headerNavIcon: 24, // icon inside it
 } as const;
 
 export const spacing = {
@@ -271,6 +273,10 @@ export const fontSizes = {
   timelineCardBody: { phone: 13, tablet: 15 }, // checkpoint card description line
   timelineActionLabel: { phone: 11, tablet: 13 }, // SOS / Chat / Video Call / Rx captions
   compactButton: { phone: 14, tablet: 14 }, // AppButton size 'compact' ("Record Now")
+
+  // CardCaptureScreen title (Figma 251:581); tablet follows the frame via fromFigma
+  captureKicker: { phone: 11, tablet: 13 }, // "SCHEDULED OBSERVATION · STAGE 1"
+  captureTitle: { phone: 20, tablet: 24 }, // "Observation 9:30 AM"
 } as const;
 
 export const typography = {

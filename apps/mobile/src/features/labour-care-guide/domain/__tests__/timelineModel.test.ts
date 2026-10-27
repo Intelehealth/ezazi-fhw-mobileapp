@@ -1,4 +1,4 @@
-import { activeStageOf, ageInYears, buildCheckpoints, fullName, type TimelineCardRow } from '../timelineModel';
+import { activeStageOf, ageInYears, buildCheckpoints, fullName, labourStageOf, type TimelineCardRow } from '../timelineModel';
 
 const NOW = Date.UTC(2026, 9, 23, 10, 0, 0);
 const at = (minutesAgo: number) => {
@@ -78,6 +78,7 @@ describe('patient and stage helpers', () => {
     expect(activeStageOf('Stage1_Hour3_2')).toBe('stage1');
     expect(activeStageOf('Stage2_Hour1_1')).toBe('stage2');
     expect(activeStageOf(null)).toBe('stage1');
+    expect(labourStageOf('stage4')).toBe('earlyPostpartum');
   });
 
   it('counts whole years from the birth date', () => {

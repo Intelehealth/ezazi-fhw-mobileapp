@@ -4,7 +4,7 @@ import { transact, type DbHandle } from '@/core/db/tx';
 import { createTestDb, type TestDb } from '@/core/db/__tests__/helpers/testDb';
 
 import { buildCheckpoints } from '../../domain/timelineModel';
-import { readTimeline } from '../timelineReader';
+import { readPatient, readTimeline } from '../timelineReader';
 
 const PROVIDER = 'provider-1';
 const NOW = Date.UTC(2026, 9, 23, 10, 0, 0);
@@ -22,13 +22,17 @@ describe('readTimeline', () => {
   afterEach(() => ctx.close());
 
   it('reads the patient header, with gravida from the Admission obs', () => {
-    expect(readTimeline(DEV_VISIT_UUID, PROVIDER, db).patient).toMatchObject({
+    expect(readPatient(DEV_VISIT_UUID, db)).toMatchObject({
       patientUuid: DEV_PATIENT.uuid,
       openmrsId: DEV_PATIENT.openmrsId,
       firstName: DEV_PATIENT.firstName,
       lastName: DEV_PATIENT.lastName,
       gravida: '1',
     });
+  });
+
+  it('reads no patient for an unknown visit', () => {
+    expect(readPatient('no-such-visit', db)).toBeNull();
   });
 
   it('shows the fake patient as completed, completed, missed, SOS, due and upcoming', () => {

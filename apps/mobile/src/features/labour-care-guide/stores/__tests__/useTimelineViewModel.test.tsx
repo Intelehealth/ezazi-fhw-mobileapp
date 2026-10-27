@@ -21,15 +21,6 @@ const NOW = new Date('2026-10-26T10:00:00.000Z');
 const WRITER = { providerUuid: 'provider-1', creatorUuid: 'user-1' };
 
 const snapshot = (minutesAgo: number): TimelineSnapshot => ({
-  patient: {
-    patientUuid: 'p1',
-    openmrsId: 'EZ-DEV-0002',
-    firstName: 'Live',
-    middleName: null,
-    lastName: 'Test Patient',
-    dateOfBirth: '1997-08-21',
-    gravida: null,
-  },
   cards: [
     {
       encounterUuid: 'card-1',
@@ -73,7 +64,6 @@ describe('useTimelineViewModel', () => {
     rerender({});
 
     expect(readTimeline).toHaveBeenCalledWith(VISIT, WRITER.providerUuid, 'db-handle');
-    expect(result.current?.patient).toMatchObject({ name: 'Live Test Patient', ezId: 'EZ-DEV-0002', gravidaLabel: 'G-' });
     expect(result.current?.checkpoints.map((c) => c.status)).toEqual(['dueNow', 'upcoming']);
     expect(result.current?.activeStage).toBe('stage1');
   });
@@ -130,6 +120,6 @@ describe('useTimelineViewModel', () => {
 
     act(() => tablesChanged());
 
-    expect(result.current?.patient?.name).toBe('Live Test Patient');
+    expect(result.current?.checkpoints.map((c) => c.status)).toEqual(['dueNow', 'upcoming']);
   });
 });

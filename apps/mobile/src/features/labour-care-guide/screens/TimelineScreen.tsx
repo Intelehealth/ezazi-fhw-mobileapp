@@ -8,7 +8,6 @@ import { ConfirmDialog } from '@/core/ui/ConfirmDialog';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { RootStackParamList } from '@/navigation/types';
-import { PatientHeader } from '../components/PatientHeader';
 import { StageProgressBar } from '../components/StageProgressBar';
 import { TimelineCheckpointCard } from '../components/TimelineCheckpointCard';
 import { TimelineActionBar } from '../components/TimelineActionBar';
@@ -17,16 +16,18 @@ import { useTimelineViewModel } from '../stores/useTimelineViewModel';
 type Props = NativeStackScreenProps<RootStackParamList, 'Timeline'>;
 
 /**
- * Labour-monitoring timeline — patient header, stage stepper, the observation checklist, and
- * the quick-action bar — for one visit, from the database (useTimelineViewModel).
+ * Labour-monitoring timeline — stage stepper, the observation checklist and the quick-action
+ * bar — for one visit, from the database (useTimelineViewModel). The patient app bar comes
+ * from the navigator (`patientAppBar`).
  */
 export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
   const { t } = useTranslation();
   const { isTablet, fromFigma } = useResponsive();
   const viewModel = useTimelineViewModel(route.params.visitUuid);
   const [sosConfirmVisible, setSosConfirmVisible] = useState(false);
-  if (!viewModel?.patient) return <View style={styles.screen} />;
-  const { patient, checkpoints, activeStage } = viewModel;
+  if (!viewModel) return <View style={styles.screen} />;
+  const { checkpoints, activeStage } = viewModel;
+  const { visitUuid } = route.params;
 
   const confirmSos = () => {
     setSosConfirmVisible(false);
@@ -36,13 +37,6 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <View style={styles.screen}>
-      <PatientHeader
-        patient={patient}
-        onViewLcg={() => logger.debug('[timeline] View LCG tapped')}
-        onViewPostpartumReport={() => logger.debug('[timeline] Postpartum Report tapped')}
-        onClose={() => navigation.goBack()}
-      />
-
       <View
         style={[
           styles.stageBarWrap,
@@ -70,7 +64,10 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
             checkpoint={checkpoint}
             isFirst={index === 0}
             isLast={index === checkpoints.length - 1}
-            onRecordNow={() => logger.debug('[timeline] Record Now tapped', checkpoint.id)}
+            onRecordNow={() => {
+              const { encounterUuid } = checkpoint;
+              if (encounterUuid) navigation.navigate('CardCapture', { visitUuid, encounterUuid });
+            }}
           />
         ))}
       </ScrollView>

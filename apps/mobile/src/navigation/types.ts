@@ -20,8 +20,15 @@ export type RootStackParamList = {
   // App stack
   Home: undefined;
   /** The visit whose labour timeline is shown, read from the database. */
-  Timeline: { visitUuid: string };
+  Timeline: VisitRouteParams;
+  /** One card of that visit, opened from Record Now to capture its observations. */
+  CardCapture: VisitRouteParams & { encounterUuid: string };
 };
+
+/** Every labour route names its visit; the patient app bar reads it from here. */
+export interface VisitRouteParams {
+  visitUuid: string;
+}
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

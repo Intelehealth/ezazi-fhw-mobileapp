@@ -6,6 +6,7 @@ import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon, DangerTriangleIcon, LockKeyholeBadgeIcon } from '@/core/ui/icons';
 import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { formatClockTime, formatDate } from '@/core/utils/calendar';
 import type { CheckpointStatus, TimelineCheckpoint } from '../domain/timeline.types';
 
 interface TimelineCheckpointCardProps {
@@ -77,15 +78,6 @@ const BODY_KEY: Record<'completed' | 'missed' | 'dueNow', { normal: string; sos:
   dueNow: { normal: 'timeline.checkpoint.dueNowBody', sos: 'timeline.checkpoint.sosDueNowBody' },
 };
 
-// "9:30 AM": Figma writes the day period in capitals whatever the device locale does.
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toUpperCase();
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 function minutesUntil(iso: string): number {
   return Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 60_000));
 }
@@ -151,8 +143,9 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
   return (
     <View style={styles.row}>
       <View style={sizes.dateColumn}>
-        <Text style={[styles.date, sizes.date]}>{formatDate(checkpoint.scheduledAt)}</Text>
-        <Text style={[styles.time, sizes.time]}>{formatTime(checkpoint.scheduledAt)}</Text>
+        {/* Gregorian for now; Android shows BS in Nepal, support comes later (Kaveri, 2026-10-28). */}
+        <Text style={[styles.date, sizes.date]}>{formatDate(checkpoint.scheduledAt, 'AD')}</Text>
+        <Text style={[styles.time, sizes.time]}>{formatClockTime(checkpoint.scheduledAt)}</Text>
       </View>
 
       <View style={[styles.rail, sizes.rail]}>
@@ -198,7 +191,7 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
                 <Text style={bodyStyle}>{t(BODY_KEY.completed[isSos ? 'sos' : 'normal'])}</Text>
                 {checkpoint.recordedAt && (
                   <Text style={bodyStyle}>
-                    {t('timeline.checkpoint.completedRecordedAt', { time: formatTime(checkpoint.recordedAt) })}
+                    {t('timeline.checkpoint.completedRecordedAt', { time: formatClockTime(checkpoint.recordedAt) })}
                   </Text>
                 )}
               </View>
@@ -211,7 +204,7 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
             {checkpoint.status === 'upcoming' && (
               <Text style={[bodyStyle, styles.upcomingBody, sizes.bodyGap]}>
                 {t('timeline.checkpoint.upcomingBody', {
-                  time: formatTime(checkpoint.scheduledAt),
+                  time: formatClockTime(checkpoint.scheduledAt),
                   minutes: minutesUntil(checkpoint.scheduledAt),
                 })}
               </Text>

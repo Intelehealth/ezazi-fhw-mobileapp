@@ -12,6 +12,7 @@ import {
 import {
   existsByVisitAndType,
   findAll,
+  findByUuid,
   findByVisit,
   findCurrentStageName,
   findLatestClinicalByVisit,
@@ -253,6 +254,15 @@ describe('encounter repository', () => {
       insertSos({ uuid: 's2', visituuid: VISIT, encounter_time: '2026-06-01' }, db);
 
       expect(findLatestSosByVisit(VISIT, db)?.uuid).toBe('s2');
+    });
+
+    it('finds one encounter by uuid, but not a voided one', () => {
+      insertSos({ uuid: 's1', visituuid: VISIT, encounter_time: '2026-01-01' }, db);
+      upsert({ uuid: 'v1', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS, voided: VOIDED_YES }, db);
+
+      expect(findByUuid('s1', db)?.encounter_type_uuid).toBe(LCG_SOS);
+      expect(findByUuid('v1', db)).toBeNull();
+      expect(findByUuid('missing', db)).toBeNull();
     });
   });
 

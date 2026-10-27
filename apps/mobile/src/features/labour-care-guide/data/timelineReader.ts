@@ -11,7 +11,6 @@ import type { PatientRow, TimelineCardRow } from '../domain/timelineModel';
 
 /** Everything the timeline needs about one visit, read in one go. */
 export interface TimelineSnapshot {
-  patient: PatientRow | null;
   cards: TimelineCardRow[];
   visit: TimelineVisitFacts;
   currentCardName: string | null;
@@ -42,24 +41,26 @@ function readCard(row: { uuid: string; encounter_type_uuid: string | null; encou
   };
 }
 
-/** The visit's patient, cards (oldest first) and open / holder / Decision Pending facts. */
-export function readTimeline(visitUuid: string, providerUuid: string | null, on: DbHandle): TimelineSnapshot {
+/** The visit's patient as the patient app bar shows it, or null when the visit has none. */
+export function readPatient(visitUuid: string, on: DbHandle): PatientRow | null {
   const patientUuid = visitRepo.findPatientUuidByVisit(visitUuid, on);
   const header = patientUuid ? patientRepo.getPatientHeader(patientUuid, on) : null;
+  if (!patientUuid || !header) return null;
 
   return {
-    patient:
-      patientUuid && header
-        ? {
-            patientUuid,
-            openmrsId: header.openmrs_id,
-            firstName: header.first_name,
-            middleName: header.middle_name,
-            lastName: header.last_name,
-            dateOfBirth: patientRepo.getDateOfBirth(patientUuid, on),
-            gravida: obsRepo.getAdmissionValues(visitUuid, on)[OBS_GRAVIDA] ?? null,
-          }
-        : null,
+    patientUuid,
+    openmrsId: header.openmrs_id,
+    firstName: header.first_name,
+    middleName: header.middle_name,
+    lastName: header.last_name,
+    dateOfBirth: patientRepo.getDateOfBirth(patientUuid, on),
+    gravida: obsRepo.getAdmissionValues(visitUuid, on)[OBS_GRAVIDA] ?? null,
+  };
+}
+
+/** The visit's cards (oldest first) and open / holder / Decision Pending facts. */
+export function readTimeline(visitUuid: string, providerUuid: string | null, on: DbHandle): TimelineSnapshot {
+  return {
     cards: encounterRepo.findTimelineByVisit(visitUuid, on).map((row) => readCard(row, on)),
     visit: {
       decisionPending: visitAttributeRepo.findValue(visitUuid, DECISION_PENDING, on) === DECISION_PENDING_SET,

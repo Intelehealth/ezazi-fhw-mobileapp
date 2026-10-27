@@ -131,12 +131,14 @@ package (ARCHITECTURE.md, commit 3083a9e), so web and mobile use one copy. Origi
 
 Android shares a toolbar by having activities extend `BaseActivity`. In React Navigation the standard equivalent is the **navigator's `header` option**: set once on a navigator or group, every screen in it gets the app bar, and a screen that doesn't want it opts out with one line. Screens never render the app bar themselves.
 
-**Header presets** — `src/navigation/screenOptions.tsx` (the only two):
+**Header presets** — `src/navigation/screenOptions.tsx` (the only four; the labour pair added 2026-10-27):
 
 | Preset | Gives |
 |---|---|
 | `brandAppBar` | `core/ui/BrandAppBar` (Ezazi logo · "Last Refreshed" · hamburger menu) |
 | `noHeader` | no header — the root navigator's default |
+| `patientAppBar` | labour `PatientAppBar` for the route's `visitUuid`: patient line, View LCG / Postpartum Report, close (Timeline) |
+| `patientCaptureAppBar` | the same bar with back first instead of close (card capture) |
 
 **How to apply** (`src/navigation/RootNavigator.tsx`):
 
@@ -147,7 +149,7 @@ Android shares a toolbar by having activities extend `BaseActivity`. In React Na
 
   <Stack.Group screenOptions={brandAppBar}>                   {/* post-login: app bar by default */}
     <Stack.Screen name="Home" component={HomeScreen} />       {/* inherits brandAppBar */}
-    <Stack.Screen name="Timeline" component={TimelineScreen} options={noHeader} /> {/* opts out */}
+    <Stack.Screen name="Timeline" component={TimelineScreen} options={patientAppBar} /> {/* labour bar */}
   </Stack.Group>
 </Stack.Navigator>
 ```
@@ -155,7 +157,7 @@ Android shares a toolbar by having activities extend `BaseActivity`. In React Na
 Rules:
 
 - **The app bar is mounted by the navigator only.** Never import `BrandAppBar` in a screen, and never build a screen-local top bar, logo row or "Last Refreshed" label.
-- **Defaults live on the group, exceptions on the screen.** A group's `screenOptions` is whatever most of its screens need; a screen that differs sets `options={brandAppBar}` / `options={noHeader}` where it is registered. A header that must toggle at runtime (e.g. full-screen mode) uses `navigation.setOptions({ headerShown })`.
+- **Defaults live on the group, exceptions on the screen.** A group's `screenOptions` is whatever most of its screens need; a screen that differs sets `options={brandAppBar}` / `options={noHeader}` (or a labour route `options={patientAppBar}`) where it is registered. A header that must toggle at runtime (e.g. full-screen mode) uses `navigation.setOptions({ headerShown })`.
 - **App-bar data comes from stores, not props.** "Last Refreshed" reads `core/session/syncStatus.store` (the sync engine calls `markRefreshed()`); the menu will call `navigation.openDrawer()` once the drawer navigator exists — put the `header` option on that drawer navigator then.
 - **App-bar changes go in `core/ui/BrandAppBar` only**, so every screen picks them up at once.
 
@@ -254,7 +256,7 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 6. Register screens in the feature's navigator; wire into the root navigator.
 -->
 5. Build screens inside the right body shell (§3.1); **RHF+zod** for forms; subscribe to live queries / Zustand.
-6. Register screens in the feature's navigator; wire into the root navigator. App bar: inherit the group's header preset, or override with `options={brandAppBar | noHeader}` (§3.1).
+6. Register screens in the feature's navigator; wire into the root navigator. App bar: inherit the group's header preset, or override with `options={brandAppBar | noHeader | patientAppBar | patientCaptureAppBar}` (§3.1).
 7. Tests: repository, critical live query, sync reconciliation.
 8. Respect boundaries: import only `core/*`, `@ezazi/*`, and this feature.
 9. From root: `turbo run typecheck lint test`; in `apps/mobile`: `npx expo-doctor`.

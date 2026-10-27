@@ -1,5 +1,5 @@
 import { STAGE, findCard, getCardStatus, getUpcomingStep, parseUtcTimestamp } from '@ezazi/clinical-rules';
-import type { CardState, MonitoringStage, TimelineVisitFacts } from '@ezazi/clinical-rules';
+import type { CardState, StageId, TimelineVisitFacts } from '@ezazi/clinical-rules';
 
 import type { CheckpointStatus, LabourStage, TimelineCheckpoint } from './timeline.types';
 
@@ -27,11 +27,16 @@ export interface PatientRow {
 
 export const UPCOMING_CHECKPOINT_ID = 'upcoming';
 
-// Stage 4 (early postpartum) cards join here when the package schedules them.
-const STAGE_ON_SCREEN: Readonly<Record<MonitoringStage, LabourStage>> = {
+const STAGE_ON_SCREEN: Readonly<Record<StageId, LabourStage>> = {
   [STAGE.STAGE1]: 'stage1',
   [STAGE.STAGE2]: 'stage2',
+  [STAGE.STAGE4]: 'earlyPostpartum', // Android's "Stage3_*" cards
 };
+
+/** The stepper stage a package stage is shown as. */
+export function labourStageOf(stage: StageId): LabourStage {
+  return STAGE_ON_SCREEN[stage];
+}
 
 const toIso = (utc: string | null): string | null => {
   const ms = utc ? parseUtcTimestamp(utc) : null;
@@ -91,7 +96,7 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
 /** The stage the stepper highlights: the stage of the visit's highest card. */
 export function activeStageOf(currentCardName: string | null): LabourStage {
   const stage = currentCardName ? findCard(currentCardName)?.stage : undefined;
-  return stage ? STAGE_ON_SCREEN[stage] : 'stage1';
+  return stage ? labourStageOf(stage) : 'stage1';
 }
 
 /** Whole years between a `yyyy-MM-dd` birth date and `now`, or null when unknown. */

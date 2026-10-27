@@ -24,6 +24,10 @@ export const formatDate = (date: Date | string, system?: CalendarSystem): string
   return ad.format('DD MMM YYYY');
 };
 
+/** "9:30 AM": the clock time for display; Figma writes the day period in capitals. */
+export const formatClockTime = (date: Date | string): string =>
+  new Date(date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toUpperCase();
+
 /** Convert a BS date string ("YYYY-MM-DD") to a JS Date in Gregorian. */
 export const bsStringToAd = (bsString: string): Date => {
   const [y, m, d] = bsString.split('-').map(Number);

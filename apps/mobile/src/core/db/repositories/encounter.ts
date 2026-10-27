@@ -345,6 +345,17 @@ export function findLatestByVisitAndType(
   );
 }
 
+/** One encounter by uuid, or null when it is missing or voided. */
+export function findByUuid(uuid: string, on: DbHandle): Encounter | null {
+  return (
+    on
+      .select()
+      .from(encounter)
+      .where(and(eq(encounter.uuid, uuid), eq(encounter.voided, VOIDED_NO)))
+      .get() ?? null
+  );
+}
+
 export function findLatestSosByVisit(visitUuid: string, on: DbHandle): Encounter | null {
   return findLatestByVisitAndType(visitUuid, LCG_SOS, on);
 }

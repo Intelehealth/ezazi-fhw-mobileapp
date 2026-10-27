@@ -317,6 +317,7 @@
     "endStage": "End First Stage",
     "a11y": {
       "close": "Close timeline",
+      "back": "Back",
       "viewLcg": "View Labour Care Guide",
       "postpartumReport": "View Postpartum Report",
       "sos": "Send SOS alert",
@@ -326,6 +327,10 @@
     },
     "gravidaShort": "G{{gravida}}",
     "gravidaMissing": "G-"
+  },
+  "capture": {
+    "kicker": "SCHEDULED OBSERVATION · {{stage}}",
+    "title": "Observation {{time}}"
   },
   "partogram": {
     "field": {
