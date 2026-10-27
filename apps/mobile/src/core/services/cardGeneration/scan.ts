@@ -6,6 +6,7 @@ import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db
 import { transact, type DbHandle } from '@/core/db/tx';
 import { newUuid } from '@/core/db/uuid';
 import type { WriterIdentity } from '@/core/session/writerIdentity';
+import { logger } from '@/core/utils/logger';
 
 export interface ScanResult {
   cardsCreated: number;
@@ -80,10 +81,20 @@ export function scanVisit(visitUuid: string, identity: WriterIdentity, now: numb
   }, on);
 }
 
-/** Every open visit the provider holds, as Android's minute scan (`CardGenerationEngine`). */
+/**
+ * Every open visit the provider holds, as Android's minute scan (`CardGenerationEngine`). A visit
+ * that fails is logged and skipped, so the others still get their cards. Deviation: in Android
+ * one failure aborts the whole tick (decided 2026-10-27, Kaveri).
+ */
 export function scanAllVisits(identity: WriterIdentity, now: number, on: DbHandle): ScanResult {
   return visitRepo.findActiveVisitsByProvider(identity.providerUuid, on).reduce((total, visit) => {
-    const one = scanVisit(visit.uuid, identity, now, on);
+    let one: ScanResult;
+    try {
+      one = scanVisit(visit.uuid, identity, now, on);
+    } catch (error: unknown) {
+      logger.error('[cardGeneration] visit scan failed', visit.uuid, error);
+      return total;
+    }
     return {
       cardsCreated: total.cardsCreated + one.cardsCreated,
       decisionPendingSet: total.decisionPendingSet + one.decisionPendingSet,

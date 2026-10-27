@@ -17,6 +17,8 @@ async function scanWithSession(now: number): Promise<ScanResult | null> {
   if (!accessToken || !identity) return null;
 
   await ensureSchema();
+  // Logout may have run while the schema check awaited; opening the database now would re-create it.
+  if (!(await secureStorage.get('accessToken'))) return null;
   const result = scanAllVisits(identity, now, getDb());
   logger.debug('[cardGeneration] scan', result);
   if (result.cardsCreated > 0) {

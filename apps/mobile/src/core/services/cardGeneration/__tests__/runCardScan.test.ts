@@ -35,6 +35,17 @@ describe('runCardScan', () => {
     expect(scanAllVisits).not.toHaveBeenCalled();
   });
 
+  it('opens no database when logout happens while the schema check runs', async () => {
+    let tokenReads = 0;
+    (secureStorage.get as jest.Mock).mockImplementation(async (key: string) => {
+      if (key === 'accessToken') return tokenReads++ === 0 ? 't' : null;
+      return { userUuid: 'provider-1', creatorUuid: 'user-1' }[key] ?? null;
+    });
+
+    await expect(runCardScan()).resolves.toBeNull();
+    expect(scanAllVisits).not.toHaveBeenCalled();
+  });
+
   it('runs one scan at a time: an overlapping call shares the result', async () => {
     session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
 

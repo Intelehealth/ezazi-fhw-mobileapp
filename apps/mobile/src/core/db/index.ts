@@ -45,13 +45,28 @@ export function getRawDb(): SQLiteDatabase {
   return rawHandle as SQLiteDatabase;
 }
 
-/** Calls `listener` after any write to one of `tables`; returns the unsubscribe. For reads outside `useLiveQuery`. */
+// expo-sqlite reports each changed row on its own; one card save changes ~20 rows. Changes this
+// close together are answered with a single call.
+const TABLE_CHANGE_COALESCE_MS = 50;
+
+/**
+ * Calls `listener` once after a burst of writes to any of `tables`; returns the unsubscribe, which
+ * also drops a pending call. For reads outside `useLiveQuery`.
+ */
 export function onTablesChanged(tables: readonly Table[], listener: () => void): () => void {
   const names = new Set(tables.map((table) => getTableName(table)));
+  let pending: ReturnType<typeof setTimeout> | null = null;
   const subscription = addDatabaseChangeListener((event) => {
-    if (names.has(event.tableName)) listener();
+    if (!names.has(event.tableName) || pending) return;
+    pending = setTimeout(() => {
+      pending = null;
+      listener();
+    }, TABLE_CHANGE_COALESCE_MS);
   });
-  return () => subscription.remove();
+  return () => {
+    if (pending) clearTimeout(pending);
+    subscription.remove();
+  };
 }
 
 /** Whether the database has actually been opened in this process. */
