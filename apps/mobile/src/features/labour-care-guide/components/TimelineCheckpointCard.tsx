@@ -221,7 +221,8 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
           {checkpoint.status === 'upcoming' && <LockKeyholeBadgeIcon size={sizes.lockBadge} />}
         </View>
 
-        {checkpoint.status === 'dueNow' && (
+        {/* Only a card this nurse may write opens: Android drops the tap when the nurse does not hold the visit. */}
+        {checkpoint.status === 'dueNow' && checkpoint.access === 'write' && (
           <AppButton
             label={t('timeline.checkpoint.recordNow')}
             onPress={onRecordNow}

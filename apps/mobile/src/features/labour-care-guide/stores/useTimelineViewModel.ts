@@ -56,9 +56,9 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
   // The write lands in the tables watched above, so the timeline re-reads on its own.
   const captureSos = useCallback(async (): Promise<SosResult | null> => {
     if (!dbReady) return null;
-    const writer = await readWriterIdentity();
-    if (!writer) return null;
     try {
+      const writer = await readWriterIdentity();
+      if (!writer) return null;
       const result = writeSosCard(visitUuid, writer, Date.now(), getDb());
       if (result.kind === 'blocked') logger.info('[timeline] SOS not created', result.reason);
       return result;
