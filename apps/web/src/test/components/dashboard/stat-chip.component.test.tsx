@@ -30,4 +30,18 @@ describe('StatChipComponent', () => {
       screen.getByText('1').closest('div.p-4')?.parentElement?.className
     ).toContain(expectedClass);
   });
+
+  it('renders a dash instead of 0 when the count is unknown', () => {
+    render(
+      <StatChipComponent
+        tone="red"
+        count={null}
+        label="Priority cases"
+        icon={<span />}
+      />
+    );
+
+    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
 });

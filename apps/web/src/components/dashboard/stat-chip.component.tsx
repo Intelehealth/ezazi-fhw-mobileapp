@@ -4,7 +4,8 @@ type StatChipTone = 'red' | 'blue' | 'outline';
 
 interface StatChipComponentProps {
   icon: ReactNode;
-  count: number;
+  /** Null while the count is unknown (still loading, or the load failed) — rendered as a dash, not a misleading 0. */
+  count: number | null;
   label: string;
   tone: StatChipTone;
 }
@@ -38,7 +39,9 @@ export function StatChipComponent({
     >
       <div className="w-11 shrink-0">{icon}</div>
       <div className="p-4">
-        <h6 className="mt-2 mb-2 text-xl font-bold text-black">{count}</h6>
+        <h6 className="mt-2 mb-2 text-xl font-bold text-black">
+          {count ?? '–'}
+        </h6>
         <span className={`text-base font-bold ${TONE_LABEL_CLASSES[tone]}`}>
           {label}
         </span>
