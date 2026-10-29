@@ -32,6 +32,8 @@ ezazi-monorepo/
 │           │   │   └── sync/         #   the SINGLE sync engine (owns EMR-Middleware pull/push)
 │           │   ├── services/         #   long-lived singletons via hooks:
 │           │   │   ├── livekit/ (useCall) · socket/ (useChat) · fcm/ · firebase/
+│           │   │   ├── monitor/      #   labour monitor: foreground service + AlarmManager backbone (ARCHITECTURE_RULES §11)
+│           │   │   ├── batteryGuard/ #   low-battery dialog + notifications (ARCHITECTURE_RULES §11)
 │           │   │   └── storage/      #   secure-store (JWT) + async-storage wrappers
 │           │   ├── ui/               #   RN design-system primitives (AppButton, …)
 │           │   │   ├── hooks/        #   UI/layout hooks (useResponsive)
@@ -68,6 +70,13 @@ they do not become ad-hoc calls mid-move. Tracked in [`RESTRUCTURE_PLAN.md`](RES
 | Today | Home | Why |
 |---|---|---|
 | `stores/auth.store.ts` | `core/session/` | Planned for `features/auth/stores/`, but enforcing feature isolation exposed `HomeScreen` importing it for logout, and the root navigator routes on its `status`. App-wide session state belongs to no single feature — the same reasoning already applied to `featureConfig.store`. |
+
+**Added 2026-10 — background services:**
+
+| Today | Home | Why |
+|---|---|---|
+| labour monitor | `core/services/monitor/` | Long-lived and app-wide: started from `App.tsx` once authenticated, and re-invoked by the OS via `index.js`. Belongs to no single feature — `features/labour-care-guide` will *read* its results, not own it. |
+| low-battery alert | `core/services/batteryGuard/` | Same lifecycle as the monitor. Its dialog (`core/ui/LowBatteryDialog`) is rendered once, from `RootNavigator`, so it can appear over any screen. |
 
 Two related notes:
 
@@ -171,6 +180,13 @@ Enforcing it immediately surfaced a real violation: `HomeScreen` imported `featu
 7. Tests: repository, critical live query, sync reconciliation.
 8. Respect boundaries: import only `core/*`, `@ezazi/*`, and this feature.
 9. From root: `turbo run typecheck lint test`; in `apps/mobile`: `npx expo-doctor`.
+
+**Adding a background service instead of a feature** (anything that must keep running with the app backgrounded):
+
+1. Create `src/core/services/<name>/` with `constants.ts`, the service logic, an `index.ts` exposing `use<Name>(enabled)`, `__tests__/`, and a `README.md`.
+2. Call `use<Name>(authStatus === 'authenticated')` in `App.tsx`, next to `useMonitorService` / `useBatteryGuard`. The hook's cleanup must stop everything (logout).
+3. If it uses an alarm trigger: add a branch for its trigger id to the single `onBackgroundEvent` in `index.js` — never register a second one (eslint blocks it) — and subscribe with `onForegroundEvent` in the hook as well.
+4. Read ARCHITECTURE_RULES §11 first — every rule there was learned on a device.
 
 ---
 _Stack & versions: [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) · Monorepo: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)._

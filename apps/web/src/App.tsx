@@ -1,12 +1,18 @@
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/toast-theme.css';
 import './i18n';
+import { useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
+import { SessionExpiredModalComponent } from './components/auth/session-expired-modal.component';
 import { AppUIProvider } from './context/AppUIContext';
 // import { useAppConfig } from './hooks/queries/useAppConfig';
 import { AppRoutes } from './routes/app.routes';
+import { startSessionSync } from './services/session-sync';
 
 function App() {
+  /* Keeps this tab's session in step with logins, logouts and refreshes made in other tabs. */
+  useEffect(() => startSessionSync(), []);
+
   // Config fetch-on-boot (migration guide §5) is disabled for now — no one
   // is working on the config module yet and CONFIG_URL isn't a confirmed
   // real host (env.ts leaves it empty until it is), so this was just
@@ -17,6 +23,7 @@ function App() {
   return (
     <AppUIProvider>
       <AppRoutes />
+      <SessionExpiredModalComponent />
 
       {/*
         Props match intelehealth-hw-webapp-react's reference ToastContainer

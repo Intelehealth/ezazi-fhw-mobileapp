@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '../../utils/storage';
 
 describe('storage', () => {
@@ -32,5 +32,63 @@ describe('storage', () => {
 
     expect(storage.getAuthToken()).toBeNull();
     expect(storage.getStoredUser()).toBe('{"uuid":"u-1"}');
+  });
+
+  describe('session tokens', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('stores the access token, refresh token and an expiry stamp together', () => {
+      storage.setSessionTokens({
+        accessToken: 'access-1',
+        refreshToken: 'refresh-1',
+        expiresIn: 900,
+      });
+
+      expect(storage.getAuthToken()).toBe('access-1');
+      expect(storage.getRefreshToken()).toBe('refresh-1');
+      expect(storage.getAuthTokenExpiresAt()).toBe(Date.now() + 900_000);
+      expect(localStorage.getItem('ezazi_web_refresh_token')).toBe('refresh-1');
+    });
+
+    it('clearAuthToken removes the refresh token and the expiry stamp too', () => {
+      storage.setSessionTokens({
+        accessToken: 'access-1',
+        refreshToken: 'refresh-1',
+        expiresIn: 900,
+      });
+
+      storage.clearAuthToken();
+
+      expect(storage.getAuthToken()).toBeNull();
+      expect(storage.getRefreshToken()).toBeNull();
+      expect(storage.getAuthTokenExpiresAt()).toBeNull();
+    });
+
+    it('reports an unknown expiry when none is stored or the stored value is not a number', () => {
+      expect(storage.getAuthTokenExpiresAt()).toBeNull();
+
+      localStorage.setItem('ezazi_web_auth_token_expires_at', 'soon');
+      expect(storage.getAuthTokenExpiresAt()).toBeNull();
+    });
+  });
+
+  describe('isSessionKey', () => {
+    it('is true for the token and user keys, and for a full clear (null key)', () => {
+      expect(storage.isSessionKey('ezazi_web_auth_token')).toBe(true);
+      expect(storage.isSessionKey('ezazi_web_auth_user')).toBe(true);
+      expect(storage.isSessionKey(null)).toBe(true);
+    });
+
+    it('is false for anything else', () => {
+      expect(storage.isSessionKey('ezazi_web_refresh_token')).toBe(false);
+      expect(storage.isSessionKey('i18nextLng')).toBe(false);
+    });
   });
 });

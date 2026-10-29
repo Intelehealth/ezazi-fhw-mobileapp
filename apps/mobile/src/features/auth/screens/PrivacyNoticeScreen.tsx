@@ -4,7 +4,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   ToastAndroid,
   TouchableOpacity,
   View,
@@ -16,6 +15,7 @@ import { ScreenHeader } from '@/core/ui/ScreenHeader';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon } from '@/core/ui/icons';
+import { Text } from '@/core/ui/Text';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
@@ -31,7 +31,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'PrivacyNotice'>;
 
 export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
-  const { isTablet, cornerRadius } = useResponsive();
+  const { isTablet, cornerRadius, scale } = useResponsive();
   const setAuthenticated = useAuthStore(s => s.setAuthenticated);
   const [checked, setChecked] = useState(false);
 
@@ -76,14 +76,14 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   // ── Responsive values ──────────────────────────────────────────────────────
-  const WRAP_PAD = isTablet ? 16 : 12;
-  const CARD_PAD = isTablet ? 20 : 16;
-  const TEXT_SZ  = isTablet ? 16 : 12;
-  const LINE_H   = isTablet ? 26 : 19;
-  const SEC_GAP  = isTablet ? 20 : 16;
-  const CHECK_SZ = isTablet ? 24 : 22;
-  const BTN_GAP  = isTablet ? 14 : 12;
-  const BOT_PAD  = isTablet ? 32 : 24;
+  const WRAP_PAD = isTablet ? scale(16) : 12;
+  const CARD_PAD = isTablet ? scale(20) : 16;
+  const TEXT_SZ  = isTablet ? scale(16) : 12;
+  const LINE_H   = isTablet ? scale(26) : 19;
+  const SEC_GAP  = isTablet ? scale(20) : 16;
+  const CHECK_SZ = isTablet ? scale(24) : 22;
+  const BTN_GAP  = isTablet ? scale(14) : 12;
+  const BOT_PAD  = isTablet ? scale(32) : 24;
 
   return (
     <View style={styles.root}>
@@ -145,7 +145,7 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
               checked && styles.checkboxChecked,
             ]}>
               {checked && (
-                <AppIcon name="check" size={isTablet ? 15 : 13} color={colors.white} />
+                <AppIcon name="check" size={isTablet ? scale(15) : 13} color={colors.white} />
               )}
             </View>
             <Text style={[styles.captionTxt, { fontSize: TEXT_SZ, lineHeight: LINE_H, flex: 1 }]}>

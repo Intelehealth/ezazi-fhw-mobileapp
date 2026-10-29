@@ -5,6 +5,8 @@ import { SidebarNavComponent } from './sidebar-nav.component';
 interface DashboardLayoutComponentProps {
   userName: string;
   avatarUrl?: string;
+  /** Passed through to the header; false hides the global patient search. */
+  showPatientSearch?: boolean;
   onLogout: () => void;
   children: ReactNode;
 }
@@ -19,6 +21,7 @@ interface DashboardLayoutComponentProps {
 export function DashboardLayoutComponent({
   userName,
   avatarUrl,
+  showPatientSearch,
   onLogout,
   children,
 }: DashboardLayoutComponentProps) {
@@ -32,7 +35,11 @@ export function DashboardLayoutComponent({
         onLogout={onLogout}
       />
       <div className="flex-1 overflow-y-auto">
-        <AppHeaderComponent userName={userName} avatarUrl={avatarUrl} />
+        <AppHeaderComponent
+          userName={userName}
+          avatarUrl={avatarUrl}
+          showPatientSearch={showPatientSearch}
+        />
         <div className="p-5 pb-24">{children}</div>
       </div>
     </div>

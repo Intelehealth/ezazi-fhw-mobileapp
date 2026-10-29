@@ -97,6 +97,38 @@ describe('attachUnauthorizedRetryInterceptor', () => {
     expect(callInstance).toHaveBeenCalledWith(error.config);
   });
 
+  it('tells onUnauthorized which bearer token the rejected request was sent with', async () => {
+    const { instance, getResponseRejectedHandler } = createFakeInstance();
+    const onUnauthorized = vi.fn().mockResolvedValue('new-token');
+    attachUnauthorizedRetryInterceptor(instance, onUnauthorized);
+
+    const error = {
+      isAxiosError: true,
+      response: { status: 401 },
+      config: {
+        headers: { set: vi.fn(), get: vi.fn().mockReturnValue('Bearer old-token') },
+      },
+    };
+    await getResponseRejectedHandler()!(error);
+
+    expect(onUnauthorized).toHaveBeenCalledWith('old-token');
+  });
+
+  it('passes no token when the rejected request carried no Bearer header', async () => {
+    const { instance, getResponseRejectedHandler } = createFakeInstance();
+    const onUnauthorized = vi.fn().mockResolvedValue('new-token');
+    attachUnauthorizedRetryInterceptor(instance, onUnauthorized);
+
+    const error = {
+      isAxiosError: true,
+      response: { status: 401 },
+      config: { headers: { set: vi.fn(), get: vi.fn().mockReturnValue(undefined) } },
+    };
+    await getResponseRejectedHandler()!(error);
+
+    expect(onUnauthorized).toHaveBeenCalledWith(undefined);
+  });
+
   it('does not retry a request that has already been retried', async () => {
     const { instance, callInstance, getResponseRejectedHandler } = createFakeInstance();
     const onUnauthorized = vi.fn().mockResolvedValue('new-token');

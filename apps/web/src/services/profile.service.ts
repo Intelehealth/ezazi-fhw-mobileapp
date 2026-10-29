@@ -67,6 +67,23 @@ export const profileService = {
   },
 
   /**
+   * POST {OPENMRS_URL}/password — AuthService.changePassword: changes the
+   * signed-in user's own password, authenticated by the OpenMRS session
+   * cookie. OpenMRS checks `oldPassword` itself and rejects a wrong one.
+   */
+  async changePassword(
+    oldPassword: string,
+    newPassword: string
+  ): Promise<ApiResult<void>> {
+    try {
+      await openMrsHttpClient.post('/password', { oldPassword, newPassword });
+      return success(undefined);
+    } catch (error) {
+      return failure(mapAxiosError(error));
+    }
+  },
+
+  /**
    * DELETE {OPENMRS_URL}/session — ends the OpenMRS session (invalidates the
    * JSESSIONID cookie server-side). Called on logout, and on login when a new
    * session couldn't be established, so a previous user's still-valid cookie

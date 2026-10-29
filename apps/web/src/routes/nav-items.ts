@@ -51,7 +51,7 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
   },
   {
     label: 'Change Password',
-    path: `${ROUTES.DASHBOARD}/change-password`,
+    path: ROUTES.DASHBOARD_CHANGE_PASSWORD,
     iconDefault: lockBlue,
     iconActive: lockWhite,
   },

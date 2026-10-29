@@ -40,7 +40,7 @@ describe('DashboardLayoutComponent', () => {
     expect(screen.getByText('dashboard content')).toBeInTheDocument();
   });
 
-  it('calls onLogout when the sidebar Log-out row is clicked', () => {
+  it('calls onLogout when the sidebar Log-out is confirmed', () => {
     const onLogout = vi.fn();
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
@@ -51,6 +51,7 @@ describe('DashboardLayoutComponent', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes' }));
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 
@@ -69,5 +70,33 @@ describe('DashboardLayoutComponent', () => {
       screen.getByRole('button', { name: 'Expand sidebar' })
     ).toBeInTheDocument();
     expect(screen.queryByText('My Profile')).not.toBeInTheDocument();
+  });
+
+  it('shows the patient search by default and hides it when showPatientSearch is false', () => {
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <DashboardLayoutComponent userName="Demo Doctor" onLogout={vi.fn()}>
+          <p>dashboard content</p>
+        </DashboardLayoutComponent>
+      </MemoryRouter>
+    );
+    expect(
+      screen.getByPlaceholderText('Search by patient name or ID')
+    ).toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <DashboardLayoutComponent
+          userName="Demo Doctor"
+          onLogout={vi.fn()}
+          showPatientSearch={false}
+        >
+          <p>dashboard content</p>
+        </DashboardLayoutComponent>
+      </MemoryRouter>
+    );
+    expect(
+      screen.queryByPlaceholderText('Search by patient name or ID')
+    ).not.toBeInTheDocument();
   });
 });

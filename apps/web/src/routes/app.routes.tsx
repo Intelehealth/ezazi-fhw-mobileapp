@@ -37,6 +37,9 @@ const DashboardPage = lazy(() => import('../pages/dashboard/dashboard.page'));
 const ProfilePage = lazy(
   () => import('../pages/dashboard/profile/profile.page')
 );
+const ChangePasswordPage = lazy(
+  () => import('../pages/dashboard/change-password/change-password.page')
+);
 const HwProfilePage = lazy(
   () => import('../pages/dashboard/hw-profile/hw-profile.page')
 );
@@ -128,6 +131,14 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<RouteLoader />}>
               <HwProfilePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.DASHBOARD_CHANGE_PASSWORD}
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <ChangePasswordPage />
             </Suspense>
           }
         />

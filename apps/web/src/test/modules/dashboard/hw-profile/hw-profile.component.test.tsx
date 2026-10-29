@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, success } from '@ezazi/api-client';
 import { HwProfileComponent } from '../../../../modules/dashboard/hw-profile/hw-profile.component';
+import { saveSessionSnapshot } from '../../../../utils/session-snapshot';
 import { profileService } from '../../../../services/profile.service';
 import { useAppSelector } from '../../../../store/hooks';
 import type {
@@ -408,5 +409,54 @@ describe('HwProfileComponent', () => {
 
     expect(screen.getByLabelText('Age *')).toHaveValue(String(expectedAge));
     expect(screen.getByLabelText('Age *')).toHaveAttribute('readonly');
+  });
+
+  describe('session expiry', () => {
+    const SNAPSHOT_KEY = 'ezazi_web_session_snapshot';
+
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('keeps the edits typed so far when the session hard-expires, and puts them back in edit mode after login', async () => {
+      const first = renderHwProfile();
+      await waitFor(() =>
+        expect(screen.getByText('nurse@example.com')).toBeInTheDocument()
+      );
+      fireEvent.click(screen.getByRole('button', { name: /edit profile/i }));
+      fireEvent.change(screen.getByPlaceholderText('Enter first name'), {
+        target: { value: 'Meera' },
+      });
+
+      /* What the session service does at the moment of a hard expiry. */
+      saveSessionSnapshot('u-1');
+      first.unmount();
+
+      renderHwProfile();
+      await waitFor(() =>
+        expect(screen.getByPlaceholderText('Enter first name')).toHaveValue(
+          'Meera'
+        )
+      );
+      expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+    });
+
+    it('does not snapshot a profile that is only being viewed', async () => {
+      const view = renderHwProfile();
+      await waitFor(() =>
+        expect(screen.getByText('nurse@example.com')).toBeInTheDocument()
+      );
+
+      saveSessionSnapshot('u-1');
+
+      expect(JSON.parse(sessionStorage.getItem(SNAPSHOT_KEY)!).drafts).toEqual(
+        {}
+      );
+      view.unmount();
+    });
   });
 });

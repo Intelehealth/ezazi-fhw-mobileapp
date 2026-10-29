@@ -10,7 +10,9 @@ describe('NextButtonComponent', () => {
     const button = screen.getByRole('button', { name: /next/i });
     expect(button).not.toBeDisabled();
     expect(button.className).toContain('bg-[#2E1E91]');
-    expect(container.querySelector('img')?.getAttribute('src')).toBe(rightArrow);
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      rightArrow
+    );
   });
 
   it('renders outlined/disabled with the blue arrow icon when invalid', () => {
@@ -18,7 +20,25 @@ describe('NextButtonComponent', () => {
     const button = screen.getByRole('button', { name: /next/i });
     expect(button).toBeDisabled();
     expect(button.className).toContain('border-[#2E1E91]');
-    expect(container.querySelector('img')?.getAttribute('src')).toBe(rightArrowBlue);
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      rightArrowBlue
+    );
+  });
+
+  it('stays outlined but clickable when invalid and submittableWhenInvalid is set', () => {
+    render(<NextButtonComponent isValid={false} submittableWhenInvalid />);
+    const button = screen.getByRole('button', { name: /next/i });
+    expect(button).not.toBeDisabled();
+    expect(button.className).toContain('border-[#2E1E91]');
+    expect(button.className).toContain('cursor-pointer');
+    expect(button.className).not.toContain('cursor-not-allowed');
+  });
+
+  it('is still disabled while loading when submittableWhenInvalid is set', () => {
+    render(
+      <NextButtonComponent isValid={false} isLoading submittableWhenInvalid />
+    );
+    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
   });
 
   it('is disabled while loading even when valid', () => {
@@ -26,7 +46,7 @@ describe('NextButtonComponent', () => {
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
   });
 
-  it('supports custom label text and omitting the icon (otp-verification\'s Verify button)', () => {
+  it("supports custom label text and omitting the icon (otp-verification's Verify button)", () => {
     render(
       <NextButtonComponent isValid showIcon={false}>
         Verify
