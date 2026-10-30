@@ -26,6 +26,8 @@ interface InfusionFieldProps {
   answer: InfusionAnswer;
   onAnswer: (answer: 'yes' | 'no') => void;
   onInput: (id: InfusionInputId, value: string) => void;
+  /** The rate box lost focus (Android re-checks it then). */
+  onRateBlur: () => void;
   bounds: InfusionBounds;
   /** Messages by field or sub-input id, e.g. "infusionRate". */
   errors: Partial<Record<string, string>>;
@@ -35,7 +37,15 @@ interface InfusionFieldProps {
  * Oxytocin or IV Fluids (Android `PartogramQueryListingAdapter`): Yes / No, and after Yes the
  * inputs Android asks for. Oxytocin: strength, rate, status. IV Fluids: type (Other: free text), rate, status.
  */
-export const InfusionField: React.FC<InfusionFieldProps> = ({ field, answer, onAnswer, onInput, bounds, errors }) => {
+export const InfusionField: React.FC<InfusionFieldProps> = ({
+  field,
+  answer,
+  onAnswer,
+  onInput,
+  onRateBlur,
+  bounds,
+  errors,
+}) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
   const entry = answer.entry;
@@ -54,6 +64,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({ field, answer, onA
         onChange={(text) => onInput(id, text)}
         bounds={id === INFUSION_INPUT_ID.STRENGTH ? bounds.strength : bounds.rate}
         error={!!errors[id]}
+        onBlur={id === INFUSION_INPUT_ID.INFUSION_RATE ? onRateBlur : undefined}
       />
     </FormField>
   );

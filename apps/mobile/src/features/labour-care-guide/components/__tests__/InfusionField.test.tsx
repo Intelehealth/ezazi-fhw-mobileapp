@@ -14,7 +14,7 @@ const fieldOf = (id: string) =>
 const BOUNDS = { strength: getStepperSpec('oxytocinStrength', 'default'), rate: getStepperSpec('infusionRate', 'default') };
 
 const setup = (id: 'oxytocin' | 'ivFluids', answer: InfusionAnswer, errors = {}) => {
-  const handlers = { onAnswer: jest.fn(), onInput: jest.fn() };
+  const handlers = { onAnswer: jest.fn(), onInput: jest.fn(), onRateBlur: jest.fn() };
   render(<InfusionField field={fieldOf(id)} answer={answer} bounds={BOUNDS} errors={errors} {...handlers} />);
   return handlers;
 };
@@ -45,6 +45,12 @@ describe('InfusionField', () => {
 
     fireEvent.changeText(screen.getByLabelText('Type of IV fluid'), 'Plasma');
     expect(onInput).toHaveBeenCalledWith('otherType', 'Plasma');
+  });
+
+  it('reports leaving the rate box, for Android\'s re-check', () => {
+    const { onRateBlur } = setup('oxytocin', { answer: 'yes', entry: {} });
+    fireEvent(screen.getByLabelText('IV infusion rate (drops/minute)'), 'blur');
+    expect(onRateBlur).toHaveBeenCalled();
   });
 
   it('shows a sub-input\'s error under it', () => {

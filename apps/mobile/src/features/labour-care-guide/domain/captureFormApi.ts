@@ -36,11 +36,15 @@ export interface CaptureFormApi {
   fieldAlert: (id: FieldId) => boolean;
   fieldError: (id: FieldId | InfusionInputId) => string | undefined;
   setValue: (id: FieldId, value: string) => void;
+  /** The box lost focus: its range is checked even if the value is short. */
+  leaveField: (id: FieldId) => void;
 
   infusionAnswer: (id: InfusionFieldId) => InfusionAnswer;
   infusionErrors: (id: InfusionFieldId) => Partial<Record<string, string>>;
   setInfusionAnswer: (id: InfusionFieldId, answer: 'yes' | 'no') => void;
   setInfusionInput: (id: InfusionFieldId, input: InfusionInputId, value: string) => void;
+  /** Android clears a rate still below the minimum when its box loses focus. */
+  checkInfusionRateOnLeave: (id: InfusionFieldId) => void;
   infusionBounds: InfusionBounds;
 
   medicine: MedicineAnswer;

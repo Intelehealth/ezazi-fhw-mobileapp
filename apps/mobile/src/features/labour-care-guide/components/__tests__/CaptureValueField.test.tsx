@@ -12,7 +12,7 @@ const fieldOf = (id: string) =>
 
 const setup = (id: string, value = '', extra: { alert?: boolean; error?: string } = {}) => {
   const onChange = jest.fn();
-  render(<CaptureValueField field={fieldOf(id)} value={value} onChange={onChange} alert={!!extra.alert} error={extra.error} />);
+  render(<CaptureValueField field={fieldOf(id)} value={value} onChange={onChange} onLeave={jest.fn()} alert={!!extra.alert} error={extra.error} />);
   return onChange;
 };
 

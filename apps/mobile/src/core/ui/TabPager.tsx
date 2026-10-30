@@ -39,7 +39,7 @@ export const TabPager: React.FC<TabPagerProps> = ({ tabs, index, onIndexChange, 
     const selected = position === index;
     const hasErrors = (tab.errorCount ?? 0) > 0;
     const label = hasErrors ? t('common.tabWithErrors', { label: tab.label, count: tab.errorCount }) : tab.label;
-    const color = hasErrors ? colors.alertFigma : selected ? colors.primaryTextFigma : colors.tabUnselectedText;
+    const color = hasErrors ? colors.controlErrorText : selected ? colors.primaryTextFigma : colors.tabUnselectedText;
     return (
       <Pressable
         key={tab.key}

@@ -23,9 +23,9 @@ describe('ControlTextInput', () => {
 
   it('is outlined in red on error, and in the Figma border otherwise', () => {
     const { rerender } = render(<ControlTextInput label="Remark" value="" onChangeText={jest.fn()} error />);
-    expect(JSON.stringify(screen.toJSON())).toContain(colors.alertFigma);
+    expect(JSON.stringify(screen.toJSON())).toContain(colors.controlErrorBorder);
 
     rerender(<ControlTextInput label="Remark" value="" onChangeText={jest.fn()} />);
-    expect(JSON.stringify(screen.toJSON())).not.toContain(colors.alertFigma);
+    expect(JSON.stringify(screen.toJSON())).not.toContain(colors.controlErrorBorder);
   });
 });

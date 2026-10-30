@@ -37,6 +37,7 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => 
             answer={form.infusionAnswer(id)}
             onAnswer={(answer) => form.setInfusionAnswer(id, answer)}
             onInput={(input, value) => form.setInfusionInput(id, input, value)}
+            onRateBlur={() => form.checkInfusionRateOnLeave(id)}
             bounds={form.infusionBounds}
             errors={form.infusionErrors(id)}
           />
@@ -74,6 +75,7 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => 
             field={field}
             value={form.fieldValue(field.id)}
             onChange={(value) => form.setValue(field.id, value)}
+            onLeave={() => form.leaveField(field.id)}
             alert={form.fieldAlert(field.id)}
             error={form.fieldError(field.id)}
             style={half && styles.half}

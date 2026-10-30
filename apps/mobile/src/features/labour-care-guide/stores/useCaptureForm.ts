@@ -8,12 +8,14 @@ import {
   INFUSION_INPUT_ID,
   INFUSION_INPUT_LIMITS,
   checkDiastolicTyping,
+  checkInfusionRateOnBlur,
   checkInfusionRateTyping,
   checkStrengthTyping,
   filterFreeText,
   getAlertCode,
   getCardErrors,
   getStepperSpec,
+  getValidationRanges,
   systolicClearsDiastolic,
 } from '@ezazi/clinical-rules';
 import type {
@@ -21,6 +23,7 @@ import type {
   FieldId,
   InfusionEntry,
   InfusionInputId,
+  RangeId,
   RangeProfileId,
   SectionId,
   TypingCheck,
@@ -64,6 +67,8 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
   const values = form.watch();
   const submitted = form.formState.isSubmitted;
   const [typingErrors, setTypingErrors] = useState<Partial<Record<string, string>>>({});
+  const [rangeErrors, setRangeErrors] = useState<Partial<Record<FieldId, string>>>({});
+  const ranges = useMemo(() => getValidationRanges(profile), [profile]);
 
   const showTyping = (key: string, check: TypingCheck) =>
     setTypingErrors((current) => ({
@@ -75,15 +80,36 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
   const writeValue = (id: FieldId, value: string) =>
     form.setValue(`values.${id}`, value, { shouldValidate: submitted, shouldDirty: true });
 
+  // Typed far enough to judge: as many whole digits as the range's maximum (FHR: 3).
+  const isComplete = (id: FieldId, value: string) => {
+    const range = ranges[id as RangeId];
+    const wholeDigits = value.split('.')[0].length;
+    return range !== undefined && wholeDigits >= String(Math.trunc(range.max)).length;
+  };
+
+  /**
+   * The field's Save error shown as soon as the value is complete, or when the box is left
+   * (Figma "Record 24"): the package's Android range rules, run on the card as it stands.
+   */
+  const checkRange = (id: FieldId, value: string, leaving: boolean) => {
+    const current = form.getValues();
+    const card = toCardInput({ ...current, values: { ...current.values, [id]: value } }, layout);
+    const error = leaving || isComplete(id, value) ? getCardErrors(card, profile).find((e) => e.id === id) : undefined;
+    setRangeErrors((errors) => ({ ...errors, [id]: error ? errorMessage(error, t) : undefined }));
+  };
+
   const setValue = (id: FieldId, typed: string) => {
     const value = id === FIELD_ID.SUPERVISOR_DOCTOR ? filterFreeText(typed) : typed;
     if (id === FIELD_ID.DIASTOLIC_BP) {
       const check = checkDiastolicTyping(fieldValue(FIELD_ID.SYSTOLIC_BP), value);
       showTyping(id, check);
-      writeValue(id, check.kind === 'clear' ? '' : value);
+      const kept = check.kind === 'clear' ? '' : value;
+      writeValue(id, kept);
+      checkRange(id, kept, false);
       return;
     }
     writeValue(id, value);
+    checkRange(id, value, false);
     if (id === FIELD_ID.SYSTOLIC_BP && systolicClearsDiastolic(value, fieldValue(FIELD_ID.DIASTOLIC_BP))) {
       writeValue(FIELD_ID.DIASTOLIC_BP, '');
     }
@@ -100,6 +126,15 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
     }
     const answer = values[id];
     form.setValue(id, { ...answer, entry: { ...answer.entry, [ENTRY_KEY[input]]: value } }, { shouldValidate: submitted });
+  };
+
+  // Android adapter 986-995: on leaving the rate, a value still below the minimum is cleared.
+  const checkInfusionRateOnLeave = (id: InfusionFieldId) => {
+    const answer = form.getValues(id);
+    const check = checkInfusionRateOnBlur(answer.entry.infusionRate ?? null, profile);
+    showTyping(`${id}.${INFUSION_INPUT_ID.INFUSION_RATE}`, check);
+    if (check.kind !== 'clear') return;
+    form.setValue(id, { ...answer, entry: { ...answer.entry, infusionRate: '' } }, { shouldValidate: submitted });
   };
 
   const medicine = values[FIELD_ID.MEDICINE];
@@ -125,6 +160,7 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
   const errors = form.formState.errors;
   const fieldError = (id: FieldId | InfusionInputId): string | undefined =>
     typingErrors[id] ??
+    rangeErrors[id as FieldId] ??
     (id === FIELD_ID.MEDICINE ? errors.medicine?.message : errors.values?.[id as FieldId]?.message);
 
   const api: CaptureFormApi = {
@@ -132,6 +168,7 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
     fieldAlert: (id) => getAlertCode(id, fieldValue(id)) === ALERT_CODE.RED,
     fieldError,
     setValue,
+    leaveField: (id) => checkRange(id, fieldValue(id), true),
     infusionAnswer: (id) => values[id],
     infusionErrors: (id) => ({
       [id]: errors[id]?.message,
@@ -140,6 +177,7 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
     }),
     setInfusionAnswer: (id, answer) => form.setValue(id, { ...values[id], answer }, { shouldValidate: submitted }),
     setInfusionInput,
+    checkInfusionRateOnLeave,
     infusionBounds: {
       strength: getStepperSpec(INFUSION_INPUT_ID.STRENGTH, profile),
       rate: getStepperSpec(INFUSION_INPUT_ID.INFUSION_RATE, profile),

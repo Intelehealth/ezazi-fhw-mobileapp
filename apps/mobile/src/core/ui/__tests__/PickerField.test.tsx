@@ -43,7 +43,7 @@ describe('PickerField', () => {
 
   it('outlines in red on error', () => {
     setup({ error: true });
-    expect(fieldStyle().borderColor).toBe(colors.alertFigma);
+    expect(fieldStyle().borderColor).toBe(colors.controlErrorBorder);
   });
 
   it('does not open when disabled', () => {

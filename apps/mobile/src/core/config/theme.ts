@@ -181,8 +181,8 @@ const palette = {
   dialogCloseIcon: '#A4A1B5',
 
   // ── Capture controls, Figma Observation flow tabs (251:556), 2026-10-28 ──
-  // Read off Kaveri's frame screenshots (rate limit). Alert and error have no frame yet:
-  // provisional, alert = the Missed-chip pink, error = the "--Alert" red (decided 2026-10-26).
+  // Read off Kaveri's frame screenshots (rate limit). Alert has no frame yet: provisional, the
+  // Missed-chip pink (decided 2026-10-26). Error: Figma "Record 24/25" (2026-10-29).
   controlSelectedBg: '#F3EAFF',
   controlSelectedBorder: '#9D7CC8',
   controlSelectedText: '#460092',
@@ -190,6 +190,8 @@ const palette = {
   controlAlertBorder: '#FF71A3',
   controlAlertText: '#F0004A',
   controlDisabledBg: '#F5F4F8',
+  controlErrorBorder: '#FF71A3',
+  controlErrorText: '#FB0077',
   tabUnselectedText: '#9B97AA',
   tabIndicator: '#460092',
 } as const;

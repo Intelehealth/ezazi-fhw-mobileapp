@@ -5,6 +5,7 @@ import { colors, spacing } from '@/core/config/theme';
 
 import { useControlSizes } from './hooks/useControlSizes';
 import { useResponsive } from './hooks/useResponsive';
+import { DangerTriangleIcon } from './icons';
 import { Text } from './Text';
 
 interface FormFieldProps {
@@ -16,7 +17,7 @@ interface FormFieldProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** A capture field: its upper-case caption, the control, and an error line (Figma 251:556). */
+/** A capture field: its upper-case caption, the control, and an error line (Figma 251:556, "Record 24"). */
 export const FormField: React.FC<FormFieldProps> = ({ label, error, children, style }) => {
   const sizes = useControlSizes();
   const { fs } = useResponsive();
@@ -26,9 +27,10 @@ export const FormField: React.FC<FormFieldProps> = ({ label, error, children, st
       <Text style={[styles.label, { fontSize: sizes.label }]}>{label.toUpperCase()}</Text>
       {children}
       {!!error && (
-        <Text accessibilityRole="alert" style={[styles.error, { fontSize: fs('error') }]}>
-          {error}
-        </Text>
+        <View accessible accessibilityRole="alert" style={styles.errorRow}>
+          <DangerTriangleIcon size={fs('error')} color={colors.controlErrorText} />
+          <Text style={[styles.error, { fontSize: fs('error') }]}>{error}</Text>
+        </View>
       )}
     </View>
   );
@@ -41,8 +43,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
   },
-  error: {
-    color: colors.alertFigma,
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginTop: spacing.xs,
+  },
+  error: {
+    flex: 1,
+    color: colors.controlErrorText,
   },
 });

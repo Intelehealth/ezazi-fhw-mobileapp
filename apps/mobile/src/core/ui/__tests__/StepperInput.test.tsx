@@ -52,7 +52,7 @@ describe('StepperInput', () => {
 
   it('outlines an error in red', () => {
     setup({ error: true });
-    expect(inputStyle().borderColor).toBe(colors.alertFigma);
+    expect(inputStyle().borderColor).toBe(colors.controlErrorBorder);
   });
 
   it('cannot be typed in or stepped when disabled', () => {

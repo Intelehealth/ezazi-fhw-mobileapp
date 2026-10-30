@@ -23,6 +23,29 @@ describe('useCaptureForm', () => {
     expect(result.current.api.fieldValue('supervisorDoctor')).toBe('Dr rao ');
   });
 
+  it('shows a range error once the value has the maximum\'s digits, not before (Figma "Record 24")', () => {
+    const { result } = setup();
+    act(() => result.current.api.setValue('baselineFhr', '25'));
+    expect(result.current.api.fieldError('baselineFhr')).toBeUndefined();
+
+    act(() => result.current.api.setValue('baselineFhr', '250'));
+    expect(result.current.api.fieldError('baselineFhr')).toBe('Please enter Baseline FHR in between 90 and 220');
+
+    act(() => result.current.api.setValue('baselineFhr', '140'));
+    expect(result.current.api.fieldError('baselineFhr')).toBeUndefined();
+  });
+
+  it('checks a short value when its box is left, and nothing for an empty box', () => {
+    const { result } = setup();
+    act(() => result.current.api.setValue('pulse', '25'));
+    act(() => result.current.api.leaveField('pulse'));
+    expect(result.current.api.fieldError('pulse')).toBe('Please enter Pulse in between 30 and 250');
+
+    act(() => result.current.api.setValue('pulse', ''));
+    act(() => result.current.api.leaveField('pulse'));
+    expect(result.current.api.fieldError('pulse')).toBeUndefined();
+  });
+
   it('clears a diastolic typed before systolic, with Android\'s message under it', () => {
     const { result } = setup();
     act(() => result.current.api.setValue('diastolicBp', '80'));
@@ -49,6 +72,26 @@ describe('useCaptureForm', () => {
     act(() => result.current.api.setInfusionInput('oxytocin', 'infusionRate', '1'));
     expect(result.current.api.infusionAnswer('oxytocin').entry.infusionRate).toBe('1');
     expect(result.current.api.infusionErrors('oxytocin').infusionRate).toMatch(/^Infusion Rate must be in range of/);
+  });
+
+  it('clears a rate still below the minimum when its box is left, as Android does', () => {
+    const { result } = setup();
+    act(() => result.current.api.setInfusionAnswer('ivFluids', 'yes'));
+    act(() => result.current.api.setInfusionInput('ivFluids', 'infusionRate', '1'));
+    act(() => result.current.api.checkInfusionRateOnLeave('ivFluids'));
+
+    expect(result.current.api.infusionAnswer('ivFluids').entry.infusionRate).toBe('');
+    expect(result.current.api.infusionErrors('ivFluids').infusionRate).toMatch(/^Infusion Rate must be in range of/);
+  });
+
+  it('keeps a rate in range when its box is left', () => {
+    const { result } = setup();
+    act(() => result.current.api.setInfusionAnswer('ivFluids', 'yes'));
+    act(() => result.current.api.setInfusionInput('ivFluids', 'infusionRate', '30'));
+    act(() => result.current.api.checkInfusionRateOnLeave('ivFluids'));
+
+    expect(result.current.api.infusionAnswer('ivFluids').entry.infusionRate).toBe('30');
+    expect(result.current.api.infusionErrors('ivFluids').infusionRate).toBeUndefined();
   });
 
   it('adds, edits and removes medicines and notes', () => {

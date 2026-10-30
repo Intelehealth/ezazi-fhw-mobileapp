@@ -17,7 +17,7 @@ describe('controlLook', () => {
   });
 
   it('shows an error and a focus by the border only', () => {
-    expect(controlLook({ error: true })).toMatchObject({ background: colors.white, border: colors.alertFigma });
+    expect(controlLook({ error: true })).toMatchObject({ background: colors.white, border: colors.controlErrorBorder });
     expect(controlLook({ focused: true })).toMatchObject({ background: colors.white, border: colors.controlSelectedBorder });
   });
 

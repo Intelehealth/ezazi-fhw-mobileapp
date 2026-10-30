@@ -36,7 +36,7 @@ describe('TabPager', () => {
 
   it('shows a tab\'s error count in red', () => {
     setup();
-    expect(StyleSheet.flatten(screen.getByText('Medication (2)').props.style).color).toBe(colors.alertFigma);
+    expect(StyleSheet.flatten(screen.getByText('Medication (2)').props.style).color).toBe(colors.controlErrorText);
   });
 
   it('reports a tapped tab and a swiped page', () => {

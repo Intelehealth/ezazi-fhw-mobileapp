@@ -19,6 +19,8 @@ interface StepperInputProps {
   alert?: boolean;
   error?: boolean;
   disabled?: boolean;
+  /** Called when the box loses focus, for checks Android runs then. */
+  onBlur?: () => void;
 }
 
 /**
@@ -35,6 +37,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   alert,
   error,
   disabled,
+  onBlur,
 }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
@@ -69,7 +72,10 @@ export const StepperInput: React.FC<StepperInputProps> = ({
         value={value}
         onChangeText={(text) => onChange(sanitizeStepperText(text, bounds))}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => {
+          setFocused(false);
+          onBlur?.();
+        }}
         editable={!disabled}
         keyboardType={bounds.fractionDigits > 0 ? 'decimal-pad' : 'number-pad'}
         placeholder={placeholder}

@@ -38,7 +38,7 @@ describe.each([
   it('outlines every option in red on error, and ignores presses when disabled', () => {
     const onChange = jest.fn();
     const { rerender } = render(<Control options={OPTIONS} value={null} onChange={onChange} error />);
-    expect(styleOf('Yes').borderColor).toBe(colors.alertFigma);
+    expect(styleOf('Yes').borderColor).toBe(colors.controlErrorBorder);
 
     rerender(<Control options={OPTIONS} value={null} onChange={onChange} disabled />);
     fireEvent.press(screen.getByRole('radio', { name: 'Yes' }));

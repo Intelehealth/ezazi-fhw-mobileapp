@@ -16,6 +16,7 @@ interface CaptureValueFieldProps {
   field: FieldView;
   value: string;
   onChange: (value: string) => void;
+  onLeave: () => void;
   alert: boolean; // the value is an Android alert (stored with comment "R")
   error?: string;
   /** Placement only (flex, margins). */
@@ -23,7 +24,15 @@ interface CaptureValueFieldProps {
 }
 
 /** One single-value field of a capture tab, drawn with the control the rules package names. */
-export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({ field, value, onChange, alert, error, style }) => {
+export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
+  field,
+  value,
+  onChange,
+  onLeave,
+  alert,
+  error,
+  style,
+}) => {
   const { t } = useTranslation();
   const label = t(field.labelKey, { defaultValue: field.androidLabel });
   const options: ChoiceOption[] = field.options.map((option) => ({
@@ -43,7 +52,15 @@ export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({ field, val
         return <PickerField {...choice} label={label} placeholder={t('capture.selectPlaceholder')} />;
       case 'stepper':
         return field.bounds ? (
-          <StepperInput label={label} value={value} onChange={onChange} bounds={field.bounds} alert={alert} error={!!error} />
+          <StepperInput
+            label={label}
+            value={value}
+            onChange={onChange}
+            onBlur={onLeave}
+            bounds={field.bounds}
+            alert={alert}
+            error={!!error}
+          />
         ) : null;
       default:
         return <ControlTextInput label={label} value={value} onChangeText={onChange} error={!!error} />;
