@@ -5,7 +5,7 @@ import type { VisitTableVariant } from '../../components/dashboard/visit-table.c
 import { useDashboardVisits } from '../../hooks/queries/useDashboardVisits';
 import type { VisitListState } from '../../hooks/queries/useVisitList';
 import { getApiErrorMessage } from '../../utils/error-message';
-import type { CaseSectionKey, VisitRow } from './dashboard.types';
+import type { CaseSectionKey } from './dashboard.types';
 import prioritySquare from '../../assets/svgs/priority-square.svg';
 import prescriptionSquare from '../../assets/svgs/prescription-square.svg';
 import prescriptionCompletedSquare from '../../assets/svgs/prescription-completed-square.svg';
@@ -101,14 +101,6 @@ export function DashboardComponent() {
     });
   }
 
-  function handleRowClick(row: VisitRow) {
-    /*
-     * dashboard.component.html routes to `/dashboard/elcg/:uuid` per row —
-     * that partogram detail route doesn't exist in this app yet.
-     */
-    console.info('Open visit', row.uuid);
-  }
-
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -157,7 +149,10 @@ export function DashboardComponent() {
             searchPlaceholder={section.searchPlaceholder}
             isExpanded={expandedSections[section.key]}
             onToggle={() => toggleSection(section.key)}
-            onRowClick={handleRowClick}
+            /*
+             * No onRowClick yet: dashboard.component.html routes each row to
+             * `/dashboard/elcg/:uuid`, and that partogram route isn't built.
+             */
             isLoading={list.isLoading}
             errorMessage={
               list.error

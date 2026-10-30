@@ -95,16 +95,6 @@ describe('DashboardComponent', () => {
     expect(screen.getByText('ELCG-2001')).toBeInTheDocument();
   });
 
-  it('logs the visit uuid when a row is clicked (partogram detail route not built yet)', () => {
-    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-    render(<DashboardComponent />);
-
-    fireEvent.click(screen.getByText('ELCG-1042'));
-
-    expect(infoSpy).toHaveBeenCalledWith('Open visit', 'visit-pr-1');
-    infoSpy.mockRestore();
-  });
-
   it('shows a loading message and a dash on the chip while a section loads', () => {
     vi.mocked(useDashboardVisits).mockReturnValue(
       buildDashboardVisits({
