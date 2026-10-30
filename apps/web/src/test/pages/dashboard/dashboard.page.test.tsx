@@ -36,6 +36,21 @@ vi.mock('../../../hooks/queries/useProviderProfile', () => ({
   useProviderProfile: () => providerProfile,
 }));
 
+/*
+ * The visit lists need a QueryClient and have their own suites; this file
+ * only checks that the sections render inside the shell.
+ */
+vi.mock('../../../hooks/queries/useDashboardVisits', async () => {
+  const { buildDashboardVisits, buildVisitListState } =
+    await import('../../fixtures/visit-list');
+  return {
+    useDashboardVisits: () =>
+      buildDashboardVisits({
+        priority: buildVisitListState({ totalCount: 3 }),
+      }),
+  };
+});
+
 vi.mock('../../../store/hooks', () => ({
   useAppSelector: vi.fn(),
   useAppDispatch: vi.fn(),
@@ -105,13 +120,15 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Hello, doctor1 👋')).toBeInTheDocument();
   });
 
-  it('dispatches logout() when the sidebar Log-out row is clicked', async () => {
+  it('dispatches logout() once the sidebar Log-out is confirmed with Yes', async () => {
     mockAuthState(USER);
     const dispatch = vi.fn();
     vi.mocked(useAppDispatch).mockReturnValue(dispatch);
 
     renderDashboardPage();
     await userEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+    expect(dispatch).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
     expect(dispatch).toHaveBeenCalledTimes(1);
   });

@@ -7,6 +7,8 @@ import { PatientSearchComponent } from './patient-search.component';
 interface AppHeaderComponentProps {
   userName: string;
   avatarUrl?: string;
+  /** Pages that have no use for the global patient search (e.g. Change Password) turn it off. */
+  showPatientSearch?: boolean;
 }
 
 /**
@@ -19,6 +21,7 @@ interface AppHeaderComponentProps {
 export function AppHeaderComponent({
   userName,
   avatarUrl,
+  showPatientSearch = true,
 }: AppHeaderComponentProps) {
   const isNurse = useIsNurse();
 
@@ -30,7 +33,7 @@ export function AppHeaderComponent({
     <nav className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-white px-10 py-4">
       {/* Nurses don't get the global patient search (the Angular header only
           renders it on the doctor Dashboard page). */}
-      {!isNurse && <PatientSearchComponent />}
+      {!isNurse && showPatientSearch && <PatientSearchComponent />}
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
         <button

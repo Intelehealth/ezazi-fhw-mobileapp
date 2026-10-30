@@ -22,6 +22,7 @@ export default function ProfilePage() {
     <DashboardLayoutComponent
       userName={user?.displayName ?? user?.username ?? 'unknown user'}
       avatarUrl={providerProfile?.profile.photoUrl ?? undefined}
+      showPatientSearch={false}
       onLogout={() => dispatch(logout())}
     >
       <ProfileComponent />

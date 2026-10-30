@@ -1,26 +1,83 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StatChipComponent } from '../../components/dashboard/stat-chip.component';
 import { CaseSectionComponent } from '../../components/dashboard/case-section.component';
-import type { CaseSectionKey, VisitRow } from './dashboard.types';
-import {
-  COMPLETED_CASES,
-  IN_PROGRESS_CASES,
-  PRIORITY_CASES,
-} from './dashboard.mock-data';
+import type { VisitTableVariant } from '../../components/dashboard/visit-table.component';
+import { useDashboardVisits } from '../../hooks/queries/useDashboardVisits';
+import type { VisitListState } from '../../hooks/queries/useVisitList';
+import { getApiErrorMessage } from '../../utils/error-message';
+import type { CaseSectionKey } from './dashboard.types';
 import prioritySquare from '../../assets/svgs/priority-square.svg';
 import prescriptionSquare from '../../assets/svgs/prescription-square.svg';
 import prescriptionCompletedSquare from '../../assets/svgs/prescription-completed-square.svg';
 import chevronIcon from '../../assets/svgs/chevron-down.svg';
 
+interface SectionConfig {
+  key: CaseSectionKey;
+  icon: string;
+  tone: 'red' | 'blue' | 'outline';
+  title: string;
+  helpText: string;
+  variant: VisitTableVariant;
+  emptyMessage: string;
+  searchPlaceholder: string;
+}
+
+/** The three sections, in dashboard.component.html's order, with its copy. */
+const SECTIONS: SectionConfig[] = [
+  {
+    key: 'priority',
+    icon: prioritySquare,
+    tone: 'red',
+    title: 'Priority cases',
+    helpText: 'In-progress high priority cases',
+    variant: 'active',
+    emptyMessage: 'No any priority cases.',
+    searchPlaceholder: 'Search priority cases',
+  },
+  {
+    key: 'in-progress',
+    icon: prescriptionSquare,
+    tone: 'blue',
+    title: 'In-progress cases',
+    helpText: 'In-progress normal cases',
+    variant: 'active',
+    emptyMessage: 'No any normal cases.',
+    searchPlaceholder: 'Search in-progress cases',
+  },
+  {
+    key: 'completed',
+    icon: prescriptionCompletedSquare,
+    tone: 'outline',
+    title: 'Completed cases',
+    helpText: 'Completed cases',
+    variant: 'completed',
+    emptyMessage: 'No any completed cases.',
+    searchPlaceholder: 'Search completed cases',
+  },
+];
+
+const LOAD_FAILED_MESSAGE = 'Could not load cases. Please try again.';
+const LOAD_MORE_FAILED_MESSAGE = 'Could not load more cases. Please try again.';
+
+/** The stat-chip figure: unknown (a dash) until the section has loaded successfully. */
+function chipCount(list: VisitListState): number | null {
+  if (list.isLoading || (list.error && list.rows.length === 0)) return null;
+  return list.totalCount;
+}
+
+function sectionIcon(src: string): ReactNode {
+  return <img src={src} alt="" className="w-11" />;
+}
+
 /**
  * Ports dashboard.component.html's stat chips + accordion of case tables
  * (Priority / In-progress / Completed) — the ELCG doctor's post-login
- * landing page. Data is static (see dashboard.mock-data.ts) until the visit
- * API lands in @ezazi/api-client; layout, columns and interactions
- * (search, expand/collapse, pagination) match the Angular source 1:1 so
- * wiring real data later doesn't require reshaping the UI.
+ * landing page, backed by the portal's visit-list APIs (see
+ * hooks/queries/useDashboardVisits.ts). Each section loads, fails and
+ * retries on its own, so one failing list never blanks the other two.
  */
 export function DashboardComponent() {
+  const lists = useDashboardVisits();
   const [expandedSections, setExpandedSections] = useState<
     Record<CaseSectionKey, boolean>
   >({
@@ -44,35 +101,18 @@ export function DashboardComponent() {
     });
   }
 
-  function handleRowClick(row: VisitRow) {
-    // dashboard.component.html routes to `/dashboard/elcg/:uuid` per row —
-    // that partogram detail route doesn't exist in this app yet.
-    console.info('Open visit', row.uuid);
-  }
-
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-        <StatChipComponent
-          tone="red"
-          count={PRIORITY_CASES.length}
-          label="Priority cases"
-          icon={<img src={prioritySquare} alt="" className="w-11" />}
-        />
-        <StatChipComponent
-          tone="blue"
-          count={IN_PROGRESS_CASES.length}
-          label="In-progress cases"
-          icon={<img src={prescriptionSquare} alt="" className="w-11" />}
-        />
-        <StatChipComponent
-          tone="outline"
-          count={COMPLETED_CASES.length}
-          label="Completed cases"
-          icon={
-            <img src={prescriptionCompletedSquare} alt="" className="w-11" />
-          }
-        />
+        {SECTIONS.map(section => (
+          <StatChipComponent
+            key={section.key}
+            tone={section.tone}
+            count={chipCount(lists[section.key])}
+            label={section.title}
+            icon={sectionIcon(section.icon)}
+          />
+        ))}
       </div>
 
       <div className="mt-3 mb-2 flex justify-end">
@@ -94,47 +134,46 @@ export function DashboardComponent() {
         </button>
       </div>
 
-      <CaseSectionComponent
-        icon={<img src={prioritySquare} alt="" className="w-11" />}
-        title="Priority cases"
-        helpText="In-progress high priority cases"
-        count={PRIORITY_CASES.length}
-        rows={PRIORITY_CASES}
-        variant="active"
-        emptyMessage="No any priority cases."
-        searchPlaceholder="Search priority cases"
-        isExpanded={expandedSections.priority}
-        onToggle={() => toggleSection('priority')}
-        onRowClick={handleRowClick}
-      />
-
-      <CaseSectionComponent
-        icon={<img src={prescriptionSquare} alt="" className="w-11" />}
-        title="In-progress cases"
-        helpText="In-progress normal cases"
-        count={IN_PROGRESS_CASES.length}
-        rows={IN_PROGRESS_CASES}
-        variant="active"
-        emptyMessage="No any normal cases."
-        searchPlaceholder="Search in-progress cases"
-        isExpanded={expandedSections['in-progress']}
-        onToggle={() => toggleSection('in-progress')}
-        onRowClick={handleRowClick}
-      />
-
-      <CaseSectionComponent
-        icon={<img src={prescriptionCompletedSquare} alt="" className="w-11" />}
-        title="Completed cases"
-        helpText="Completed cases"
-        count={COMPLETED_CASES.length}
-        rows={COMPLETED_CASES}
-        variant="completed"
-        emptyMessage="No any completed cases."
-        searchPlaceholder="Search completed cases"
-        isExpanded={expandedSections.completed}
-        onToggle={() => toggleSection('completed')}
-        onRowClick={handleRowClick}
-      />
+      {SECTIONS.map(section => {
+        const list = lists[section.key];
+        return (
+          <CaseSectionComponent
+            key={section.key}
+            icon={sectionIcon(section.icon)}
+            title={section.title}
+            helpText={section.helpText}
+            count={list.totalCount}
+            rows={list.rows}
+            variant={section.variant}
+            emptyMessage={section.emptyMessage}
+            searchPlaceholder={section.searchPlaceholder}
+            isExpanded={expandedSections[section.key]}
+            onToggle={() => toggleSection(section.key)}
+            /*
+             * No onRowClick yet: dashboard.component.html routes each row to
+             * `/dashboard/elcg/:uuid`, and that partogram route isn't built.
+             */
+            isLoading={list.isLoading}
+            errorMessage={
+              list.error
+                ? getApiErrorMessage(list.error, LOAD_FAILED_MESSAGE)
+                : null
+            }
+            onRetry={list.retry}
+            hasMore={list.hasMore}
+            isLoadingMore={list.isLoadingMore}
+            loadMoreErrorMessage={
+              list.loadMoreError
+                ? getApiErrorMessage(
+                    list.loadMoreError,
+                    LOAD_MORE_FAILED_MESSAGE
+                  )
+                : null
+            }
+            onLoadMore={list.loadMore}
+          />
+        );
+      })}
     </div>
   );
 }

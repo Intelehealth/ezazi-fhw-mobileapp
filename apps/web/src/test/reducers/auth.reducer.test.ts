@@ -3,6 +3,7 @@ import {
   authReducer,
   loggedOut,
   loginSuccess,
+  tokenRefreshed,
 } from '../../reducers/auth.reducer';
 import type { AuthUser } from '../../types/auth.types';
 
@@ -49,6 +50,21 @@ describe('authReducer', () => {
       user: null,
       token: null,
       isAuthenticated: false,
+    });
+  });
+
+  it('swaps only the token on tokenRefreshed, keeping the user signed in', () => {
+    const signedIn = authReducer(
+      undefined,
+      loginSuccess({ token: 'tok-123', user: USER })
+    );
+
+    const state = authReducer(signedIn, tokenRefreshed('tok-456'));
+
+    expect(state).toEqual({
+      token: 'tok-456',
+      user: USER,
+      isAuthenticated: true,
     });
   });
 });

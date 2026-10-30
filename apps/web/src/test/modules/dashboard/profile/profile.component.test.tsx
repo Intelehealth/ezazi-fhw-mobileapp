@@ -8,10 +8,11 @@ import {
   within,
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { success } from '@ezazi/api-client';
 import userIcon from '../../../../assets/svgs/user.svg';
 import { ProfileComponent } from '../../../../modules/dashboard/profile/profile.component';
+import { saveSessionSnapshot } from '../../../../utils/session-snapshot';
 import { profileService } from '../../../../services/profile.service';
 import { useAppSelector } from '../../../../store/hooks';
 import type {
@@ -636,5 +637,57 @@ describe('ProfileComponent', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
     );
+  });
+
+  describe('session expiry', () => {
+    const SNAPSHOT_KEY = 'ezazi_web_session_snapshot';
+
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('keeps the edits typed so far when the session hard-expires, and puts them back in edit mode after login', async () => {
+      const first = renderProfile();
+      await waitFor(() =>
+        expect(screen.getByText('demo@example.com')).toBeInTheDocument()
+      );
+      fireEvent.click(screen.getByRole('button', { name: /edit profile/i }));
+      fireEvent.change(
+        screen.getByPlaceholderText('Enter registration number'),
+        {
+          target: { value: 'REG-DRAFT' },
+        }
+      );
+
+      /* What the session service does at the moment of a hard expiry. */
+      saveSessionSnapshot('u-1');
+      first.unmount();
+
+      renderProfile();
+      await waitFor(() =>
+        expect(
+          screen.getByPlaceholderText('Enter registration number')
+        ).toHaveValue('REG-DRAFT')
+      );
+      expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+    });
+
+    it('does not snapshot a profile that is only being viewed', async () => {
+      const view = renderProfile();
+      await waitFor(() =>
+        expect(screen.getByText('demo@example.com')).toBeInTheDocument()
+      );
+
+      saveSessionSnapshot('u-1');
+
+      expect(JSON.parse(sessionStorage.getItem(SNAPSHOT_KEY)!).drafts).toEqual(
+        {}
+      );
+      view.unmount();
+    });
   });
 });

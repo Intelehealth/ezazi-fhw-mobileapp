@@ -116,13 +116,15 @@ describe('HwProfilePage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('dispatches logout() when the sidebar Log-out row is clicked', async () => {
+  it('dispatches logout() once the sidebar Log-out is confirmed with Yes', async () => {
     mockAuthState(USER);
     const dispatch = vi.fn();
     vi.mocked(useAppDispatch).mockReturnValue(dispatch);
 
     renderHwProfilePage();
     await userEvent.click(screen.getByRole('button', { name: 'Log-out' }));
+    expect(dispatch).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }));
 
     expect(dispatch).toHaveBeenCalledTimes(1);
   });

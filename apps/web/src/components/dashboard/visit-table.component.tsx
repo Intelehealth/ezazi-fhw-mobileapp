@@ -10,6 +10,15 @@ import { AlertCountBadgeComponent } from './alert-count-badge.component';
  */
 export type VisitTableVariant = 'active' | 'completed';
 
+/*
+ * The table uses `border-separate` (for the gap between rows), which ignores
+ * borders on <tr>, so the divider above the headers is drawn on each <th>.
+ * Table cells take no margin, so the space around the header text is padding.
+ * The first column gets Angular Material's 24px first-of-type left inset.
+ */
+const HEADER_CELL_CLASS =
+  'border-t border-[#EFE8FF] pt-4 pb-3 pr-6 font-bold first:pl-6';
+
 interface VisitTableComponentProps {
   rows: VisitRow[];
   variant: VisitTableVariant;
@@ -34,25 +43,25 @@ export function VisitTableComponent({
       <table className="w-full border-separate border-spacing-y-1 text-left">
         <thead>
           <tr className="text-sm font-bold text-[#7F7B92]">
-            <th className="pr-6 font-bold">Patient Name & ID</th>
-            <th className="pr-6 font-bold">Age</th>
-            <th className="pr-6 font-bold">
+            <th className={HEADER_CELL_CLASS}>Patient Name & ID</th>
+            <th className={HEADER_CELL_CLASS}>Age</th>
+            <th className={HEADER_CELL_CLASS}>
               {variant === 'completed'
                 ? 'Date & Time of Birth'
                 : 'In-labour duration'}
             </th>
-            <th className="pr-6 font-bold">No. of Alerts</th>
-            <th className="pr-6 font-bold">Stage</th>
-            <th className="pr-6 font-bold">Cervix [Plot X]</th>
-            <th className="pr-6 font-bold">Descent [Plot O]</th>
-            <th className="pr-6 font-bold">Alarming readings</th>
+            <th className={HEADER_CELL_CLASS}>No. of Alerts</th>
+            <th className={HEADER_CELL_CLASS}>Stage</th>
+            <th className={HEADER_CELL_CLASS}>Cervix [Plot X]</th>
+            <th className={HEADER_CELL_CLASS}>Descent [Plot O]</th>
+            <th className={HEADER_CELL_CLASS}>Alarming readings</th>
             {variant === 'completed' && (
-              <th className="pr-6 font-bold">Birth Outcome</th>
+              <th className={HEADER_CELL_CLASS}>Birth Outcome</th>
             )}
             {variant === 'completed' && (
-              <th className="pr-6 font-bold">Reason</th>
+              <th className={HEADER_CELL_CLASS}>Reason</th>
             )}
-            <th className="pr-6 font-bold">Provider</th>
+            <th className={HEADER_CELL_CLASS}>Provider</th>
           </tr>
         </thead>
         <tbody>
@@ -60,15 +69,19 @@ export function VisitTableComponent({
             <tr
               key={row.uuid}
               onClick={() => onRowClick?.(row)}
+              /*
+               * Angular's `tr.mat-row:nth-child(odd)` stripe: the 1st, 3rd,
+               * 5th… row (even index) is grey; unseen visits override it.
+               */
               className={`h-[88px] cursor-pointer text-sm ${
                 row.isUnseen
                   ? 'bg-[#E6FFF3]'
-                  : index % 2 === 1
+                  : index % 2 === 0
                     ? 'bg-[#F7F7FA]'
                     : 'bg-white'
               }`}
             >
-              <td className="rounded-l-lg pr-6">
+              <td className="rounded-l-lg pr-6 pl-6">
                 <div className="flex items-center">
                   <img
                     src={row.patient.avatarUrl ?? userIcon}
@@ -88,7 +101,9 @@ export function VisitTableComponent({
                   </div>
                 </div>
               </td>
-              <td className="pr-6">{row.patient.age}y</td>
+              <td className="pr-6">
+                {row.patient.age === null ? '-' : `${row.patient.age}y`}
+              </td>
               <td className="pr-6">
                 {variant === 'completed'
                   ? (row.dateTimeOfBirth ?? '-')

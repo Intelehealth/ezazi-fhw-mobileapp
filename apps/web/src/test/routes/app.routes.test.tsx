@@ -43,6 +43,26 @@ vi.mock('../../hooks/queries/useProviderProfile', () => ({
   }),
 }));
 
+/* The dashboard's visit lists need a QueryClient; their own suites cover them. */
+vi.mock('../../hooks/queries/useDashboardVisits', async () => {
+  const { buildDashboardVisits, buildVisitListState } =
+    await import('../fixtures/visit-list');
+  const loading = buildVisitListState({ isLoading: true });
+  return {
+    useDashboardVisits: () =>
+      buildDashboardVisits({
+        priority: loading,
+        'in-progress': loading,
+        completed: loading,
+      }),
+  };
+});
+
+/* The change-password form's mutation needs a QueryClient; its own suite covers it. */
+vi.mock('../../hooks/mutations/useChangePassword', () => ({
+  useChangePassword: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 vi.mock('../../hooks/mutations/useLogin', () => ({
   useLogin: () => ({ mutate: vi.fn(), isPending: false, error: null }),
 }));
@@ -115,6 +135,17 @@ describe('AppRoutes', () => {
     await renderAtPath('/dashboard');
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+  });
+
+  it('renders the change-password page at /dashboard/change-password', async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: DOCTOR']);
+
+    await renderAtPath('/dashboard/change-password');
+
+    expect(await screen.findByText('Change password')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter old password')
+    ).toBeInTheDocument();
   });
 
   it('renders the nurse profile screen at /dashboard/hw-profile', async () => {
