@@ -1,18 +1,18 @@
 import { FIELD_ID, SECTION_ID, getCardErrors, getCardLayout, type CardLayout } from '@ezazi/clinical-rules';
 
-import { errorsByTab, initialCaptureValues, toCardInput } from '../captureForm';
+import { errorsByTab, initialCaptureValues, toCardInput, withMedicationShown } from '../captureForm';
 
 const halfHour = getCardLayout('Stage1_Hour1_2') as CardLayout;
 const exam = getCardLayout('Stage1_Hour1_1') as CardLayout;
 
 describe('initialCaptureValues', () => {
-  it('starts a new card empty, with the Medication answers on "No" as Android', () => {
+  it('starts a new card empty, its Medication answers unanswered until the tab is shown', () => {
     const form = initialCaptureValues(halfHour);
 
     expect(form.values[FIELD_ID.BASELINE_FHR]).toBe('');
     expect(form.values).not.toHaveProperty(FIELD_ID.PULSE); // not on a half-hour card
-    expect(form[FIELD_ID.OXYTOCIN].answer).toBe('no');
-    expect(form[FIELD_ID.MEDICINE]).toEqual({ answer: 'no', medicines: [] });
+    expect(form[FIELD_ID.OXYTOCIN].answer).toBeNull();
+    expect(form[FIELD_ID.MEDICINE]).toEqual({ answer: null, medicines: [] });
     expect(form.notes).toEqual({ [FIELD_ID.ASSESSMENT]: [], [FIELD_ID.PLAN]: [] });
   });
 
@@ -38,7 +38,25 @@ describe('toCardInput', () => {
 
     const input = toCardInput(form, halfHour);
     expect(input.values).not.toHaveProperty(FIELD_ID.PULSE);
-    expect(input[FIELD_ID.MEDICINE]).toEqual({ answer: 'no', medicines: [] });
+    expect(input[FIELD_ID.MEDICINE]).toEqual({ answer: null, medicines: [] });
+  });
+
+  it('saves a strength still being typed ("1.") as the value before the point, as Android', () => {
+    const form = initialCaptureValues(halfHour);
+    form[FIELD_ID.OXYTOCIN] = { answer: 'yes', entry: { strength: '1.', infusionRate: '20' } };
+    expect(toCardInput(form, halfHour)[FIELD_ID.OXYTOCIN]?.entry.strength).toBe('1');
+  });
+});
+
+describe('withMedicationShown', () => {
+  it('turns unanswered Medication answers into "No" and keeps given answers', () => {
+    const form = initialCaptureValues(halfHour);
+    form[FIELD_ID.IV_FLUIDS] = { answer: 'yes', entry: { type: 'Normal Saline' } };
+    const shown = withMedicationShown(form);
+
+    expect(shown[FIELD_ID.OXYTOCIN].answer).toBe('no');
+    expect(shown[FIELD_ID.IV_FLUIDS].answer).toBe('yes');
+    expect(shown[FIELD_ID.MEDICINE]).toEqual({ answer: 'no', medicines: [] });
   });
 });
 

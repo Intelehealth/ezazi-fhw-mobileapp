@@ -10,9 +10,9 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 const OWN_PATH = new Set<string>([FIELD_ID.OXYTOCIN, FIELD_ID.IV_FLUIDS, FIELD_ID.MEDICINE]);
 const errorPath = (error: ValidationError) => (OWN_PATH.has(error.id) ? [error.id] : ['values', error.id]);
 
-/** An error's message, filled with its range as Android's toasts are. */
+/** An error's message, filled with its range; Android's toast line breaks become spaces for the inline line. */
 export const errorMessage = (error: ValidationError, t: Translate): string =>
-  t(error.messageKey, { min: error.range?.min, max: error.range?.max });
+  t(error.messageKey, { min: error.range?.min, max: error.range?.max }).replace(/\s*\n+\s*/g, ' ');
 
 /**
  * The capture form's Save rules: the clinical rules package's `getCardErrors` (Android `saveObs`)

@@ -58,6 +58,24 @@ describe('useCaptureFormViewModel', () => {
     );
   });
 
+  it('saves no Medication "No"s when the Medication tab was never shown, as Android', async () => {
+    const { result, onSaved } = setup();
+    act(() => result.current.setTabIndex(3));
+    act(() => result.current.goNext());
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    const card = (saveCard as jest.Mock).mock.calls[0][0].card;
+    expect(card.oxytocin.answer).toBeNull();
+    expect(card.medicine.answer).toBeNull();
+  });
+
+  it('sets the Medication answers to "No" once that tab is shown', () => {
+    const { result } = setup();
+    act(() => result.current.setTabIndex(2));
+    expect(result.current.form.medicine.answer).toBe('no');
+    expect(result.current.form.infusionAnswer('ivFluids').answer).toBe('no');
+  });
+
   it('jumps to the first tab in error instead of saving', async () => {
     const { result } = setup();
     act(() => result.current.form.setInfusionAnswer('oxytocin', 'yes'));

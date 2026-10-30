@@ -18,26 +18,32 @@ export interface CaptureFormValues {
   [FIELD_ID.IV_FLUIDS]: InfusionAnswer;
   [FIELD_ID.MEDICINE]: MedicineAnswer;
   notes: Record<keyof CardNotes, string[]>;
+  /** When each medicine and note was added (UTC), saved as its `created_date`, as Android. */
+  addedAt: AddedAt;
 }
+
+export type AddedAt = Record<typeof FIELD_ID.MEDICINE | keyof CardNotes, string[]>;
 
 const fieldsOf = (layout: CardLayout): FieldId[] => layout.sections.flatMap((s) => s.fields.map((f) => f.id));
 
-// Android's Medication radios start on "No" (handleRadioCheckListener, defaultNo = true).
-const NO_INFUSION: InfusionAnswer = { answer: 'no', entry: {} };
+// Unanswered until the Medication tab is shown, which sets "No" (Android `handleRadioCheckListener`,
+// defaultNo, runs when the section is drawn); never shown, nothing is saved.
+const NO_INFUSION: InfusionAnswer = { answer: null, entry: {} };
 
 function infusionFrom(rows: readonly StoredObs[]): InfusionAnswer {
   const latest = rows[0];
-  if (!latest || isNoResponse(latest.value)) return NO_INFUSION;
+  if (!latest) return NO_INFUSION;
+  if (isNoResponse(latest.value)) return { answer: 'no', entry: {} };
   return { answer: 'yes', entry: decodeInfusion(latest.value) ?? {} };
 }
 
 function medicineFrom(rows: readonly StoredObs[]): MedicineAnswer {
   const medicines = rows.filter((row) => !isNoResponse(row.value)).flatMap((row) => decodeMedicine(row.value) ?? []);
-  return medicines.length > 0 ? { answer: 'yes', medicines } : { answer: 'no', medicines: [] };
+  return medicines.length > 0 ? { answer: 'yes', medicines } : { answer: rows.length > 0 ? 'no' : null, medicines: [] };
 }
 
 /**
- * Starting values. A new card is empty with the Medication answers on "No"; an edited card shows
+ * Starting values. A new card is empty with the Medication answers unanswered; an edited card shows
  * the newest stored value of each field (`stored` newest first). Notes start empty: they are add-only.
  */
 export function initialCaptureValues(layout: CardLayout, stored: readonly StoredObs[] = []): CaptureFormValues {
@@ -52,6 +58,25 @@ export function initialCaptureValues(layout: CardLayout, stored: readonly Stored
     [FIELD_ID.IV_FLUIDS]: infusionFrom(rowsOf(FIELD_ID.IV_FLUIDS)),
     [FIELD_ID.MEDICINE]: medicineFrom(rowsOf(FIELD_ID.MEDICINE)),
     notes: { [FIELD_ID.ASSESSMENT]: [], [FIELD_ID.PLAN]: [] },
+    addedAt: { [FIELD_ID.MEDICINE]: [], [FIELD_ID.ASSESSMENT]: [], [FIELD_ID.PLAN]: [] },
+  };
+}
+
+// Android never stores a strength still being typed ("1."): it keeps the value before the point.
+function completeStrength(answer: InfusionAnswer): InfusionAnswer {
+  const strength = answer.entry.strength;
+  return strength?.endsWith('.') ? { ...answer, entry: { ...answer.entry, strength: strength.slice(0, -1) } } : answer;
+}
+
+/** Medication answers still unanswered become "No": their tab has now been shown (Android defaultNo). */
+export function withMedicationShown(form: CaptureFormValues): CaptureFormValues {
+  const shown = (answer: InfusionAnswer): InfusionAnswer => (answer.answer === null ? { ...answer, answer: 'no' } : answer);
+  const medicine = form[FIELD_ID.MEDICINE];
+  return {
+    ...form,
+    [FIELD_ID.OXYTOCIN]: shown(form[FIELD_ID.OXYTOCIN]),
+    [FIELD_ID.IV_FLUIDS]: shown(form[FIELD_ID.IV_FLUIDS]),
+    [FIELD_ID.MEDICINE]: medicine.answer === null ? { ...medicine, answer: 'no' } : medicine,
   };
 }
 
@@ -64,7 +89,7 @@ export function toCardInput(form: CaptureFormValues, layout: CardLayout): CardIn
   }
   return {
     values,
-    ...(shown.has(FIELD_ID.OXYTOCIN) && { [FIELD_ID.OXYTOCIN]: form[FIELD_ID.OXYTOCIN] }),
+    ...(shown.has(FIELD_ID.OXYTOCIN) && { [FIELD_ID.OXYTOCIN]: completeStrength(form[FIELD_ID.OXYTOCIN]) }),
     ...(shown.has(FIELD_ID.IV_FLUIDS) && { [FIELD_ID.IV_FLUIDS]: form[FIELD_ID.IV_FLUIDS] }),
     ...(shown.has(FIELD_ID.MEDICINE) && { [FIELD_ID.MEDICINE]: form[FIELD_ID.MEDICINE] }),
   };

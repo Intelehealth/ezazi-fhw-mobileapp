@@ -7,6 +7,7 @@ import {
   FIELD_ID,
   INFUSION_INPUT_ID,
   INFUSION_INPUT_LIMITS,
+  IV_FLUID_OTHER_VALUE,
   checkDiastolicTyping,
   checkInfusionRateOnBlur,
   checkInfusionRateTyping,
@@ -29,7 +30,16 @@ import type {
   TypingCheck,
 } from '@ezazi/clinical-rules';
 
-import { errorsByTab, initialCaptureValues, toCardInput, type CaptureFormValues } from '../domain/captureForm';
+import { utcIsoTimestamp } from '@/core/utils/datetime';
+
+import {
+  errorsByTab,
+  initialCaptureValues,
+  toCardInput,
+  withMedicationShown,
+  type AddedAt,
+  type CaptureFormValues,
+} from '../domain/captureForm';
 import { createCaptureFormSchema, errorMessage } from '../domain/captureForm.schema';
 import type { CaptureFormApi, InfusionFieldId, NoteFieldId, SummarySection } from '../domain/captureFormApi';
 
@@ -39,9 +49,27 @@ export interface CaptureForm {
   tabErrorCounts: Partial<Record<SectionId, number>>;
   /** Validates with Android's Save rules; calls `onValid`, or `onInvalid` with the first tab in error. */
   submit: (onValid: (values: CaptureFormValues) => void, onInvalid: (firstTab: SectionId | null) => void) => void;
+  /** The Medication tab was shown: its unanswered answers become "No", as Android's defaultNo. */
+  showMedication: () => void;
 }
 
 const OTHER_TYPE_MAX = INFUSION_INPUT_LIMITS[INFUSION_INPUT_ID.OTHER_TYPE].maxLength;
+
+/**
+ * The infusion entry after one input changes. IV fluid type as Android (adapter 778-807): a listed
+ * fluid clears the Other text; "Other" is stored only with its text, so choosing it alone stores no type.
+ */
+function nextEntry(entry: InfusionEntry, input: InfusionInputId, value: string): InfusionEntry {
+  if (input === INFUSION_INPUT_ID.IV_FLUID_TYPE) {
+    return value === IV_FLUID_OTHER_VALUE
+      ? { ...entry, type: entry.otherType ? IV_FLUID_OTHER_VALUE : undefined }
+      : { ...entry, type: value, otherType: undefined };
+  }
+  if (input === INFUSION_INPUT_ID.OTHER_TYPE) {
+    return { ...entry, otherType: value || undefined, type: value ? IV_FLUID_OTHER_VALUE : undefined };
+  }
+  return { ...entry, [ENTRY_KEY[input]]: value };
+}
 
 // The entry key each sub-input is stored under (Android `Medication`).
 const ENTRY_KEY: Record<InfusionInputId, keyof InfusionEntry> = {
@@ -125,7 +153,7 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
       if (check.kind === 'clear') value = '';
     }
     const answer = values[id];
-    form.setValue(id, { ...answer, entry: { ...answer.entry, [ENTRY_KEY[input]]: value } }, { shouldValidate: submitted });
+    form.setValue(id, { ...answer, entry: nextEntry(answer.entry, input, value) }, { shouldValidate: submitted });
   };
 
   // Android adapter 986-995: on leaving the rate, a value still below the minimum is cleared.
@@ -142,6 +170,11 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
     form.setValue(FIELD_ID.MEDICINE, { ...medicine, medicines }, { shouldValidate: submitted });
 
   const setNotes = (id: NoteFieldId, notes: string[]) => form.setValue('notes', { ...values.notes, [id]: notes });
+  // Android stamps a medicine on add and on edit, and a note on add (NewMedicineFragment, NewPlanFragment).
+  const setAddedAt = (id: keyof AddedAt, times: string[]) => form.setValue('addedAt', { ...values.addedAt, [id]: times });
+  const stampAt = (id: keyof AddedAt, index: number) =>
+    setAddedAt(id, values.addedAt[id].map((time, i) => (i === index ? utcIsoTimestamp() : time)));
+  const dropAt = (id: keyof AddedAt, index: number) => setAddedAt(id, values.addedAt[id].filter((_, i) => i !== index));
 
   const optionLabel = (id: FieldId, value: string) => {
     const option = layout.sections.flatMap((s) => s.fields).find((f) => f.id === id)?.input;
@@ -184,12 +217,27 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
     },
     medicine,
     setMedicineAnswer: (answer) => form.setValue(FIELD_ID.MEDICINE, { ...medicine, answer }, { shouldValidate: submitted }),
-    addMedicine: (entry) => setMedicines([...medicine.medicines, entry]),
-    updateMedicine: (index, entry) => setMedicines(medicine.medicines.map((m, i) => (i === index ? entry : m))),
-    removeMedicine: (index) => setMedicines(medicine.medicines.filter((_, i) => i !== index)),
+    addMedicine: (entry) => {
+      setMedicines([...medicine.medicines, entry]);
+      setAddedAt(FIELD_ID.MEDICINE, [...values.addedAt[FIELD_ID.MEDICINE], utcIsoTimestamp()]);
+    },
+    updateMedicine: (index, entry) => {
+      setMedicines(medicine.medicines.map((m, i) => (i === index ? entry : m)));
+      stampAt(FIELD_ID.MEDICINE, index);
+    },
+    removeMedicine: (index) => {
+      setMedicines(medicine.medicines.filter((_, i) => i !== index));
+      dropAt(FIELD_ID.MEDICINE, index);
+    },
     fieldNotes: (id) => values.notes[id],
-    addNote: (id, text) => setNotes(id, [...values.notes[id], text]),
-    removeNote: (id, index) => setNotes(id, values.notes[id].filter((_, i) => i !== index)),
+    addNote: (id, text) => {
+      setNotes(id, [...values.notes[id], text]);
+      setAddedAt(id, [...values.addedAt[id], utcIsoTimestamp()]);
+    },
+    removeNote: (id, index) => {
+      setNotes(id, values.notes[id].filter((_, i) => i !== index));
+      dropAt(id, index);
+    },
     summary,
   };
 
@@ -202,5 +250,9 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
       void form.handleSubmit((valid) => onValid(valid), () =>
         onInvalid(errorsByTab(getCardErrors(toCardInput(form.getValues(), layout), profile), layout).firstTab),
       )(),
+    showMedication: () => {
+      const shown = withMedicationShown(form.getValues());
+      for (const id of [FIELD_ID.OXYTOCIN, FIELD_ID.IV_FLUIDS, FIELD_ID.MEDICINE] as const) form.setValue(id, shown[id]);
+    },
   };
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors, radii, spacing } from '@/core/config/theme';
@@ -70,7 +70,10 @@ export const PickerField: React.FC<PickerFieldProps> = ({
         accessibilityValue={{ text: shown ?? placeholder }}
         accessibilityState={{ disabled: !!disabled, expanded: open }}
         disabled={disabled}
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          Keyboard.dismiss();
+          setOpen(true);
+        }}
         style={[
           styles.field,
           { height: sizes.height, borderRadius: sizes.radius, backgroundColor: look.background, borderColor: look.border },

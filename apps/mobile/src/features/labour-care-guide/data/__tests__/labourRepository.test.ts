@@ -48,11 +48,58 @@ describe('labour repository', () => {
     );
 
   describe('saveCard', () => {
+    it('stamps each medicine and note with the time it was added, as Android', () => {
+      const medicine = { form: 'Tablet', name: 'Paracetamol', strength: '650 mg', dosage: '1', dosageUnit: 'Tab', frequency: '', route: 'Oral', duration: '', durationUnit: '' };
+      saveCard(
+        {
+          visitUuid: DEV_VISIT_UUID,
+          encounterUuid: dueCard,
+          card: { values: {}, [FIELD_ID.MEDICINE]: { answer: 'yes', medicines: [medicine] } },
+          notes: { [FIELD_ID.PLAN]: ['Review', 'Recheck'] },
+          addedAt: { [FIELD_ID.MEDICINE]: ['2026-10-29 08:01:00'], [FIELD_ID.PLAN]: ['2026-10-29 08:02:00', '2026-10-29 08:03:00'] },
+          writer: WRITER,
+          now: NOW,
+        },
+        db,
+      );
+
+      const createdAt = (value: string) => obsRepo.listByEncounter(dueCard, db).find((row) => row.value?.includes(value))?.created_date;
+      expect(createdAt('Paracetamol')).toBe('2026-10-29 08:01:00');
+      expect(createdAt('Review')).toBe('2026-10-29 08:02:00');
+      expect(createdAt('Recheck')).toBe('2026-10-29 08:03:00');
+    });
+
+    it('sets creator only on the infusion JSON and notes, as Android; creatoruuid on every row', () => {
+      saveCard(
+        {
+          visitUuid: DEV_VISIT_UUID,
+          encounterUuid: dueCard,
+          card: {
+            values: { [FIELD_ID.BASELINE_FHR]: '140' },
+            [FIELD_ID.OXYTOCIN]: { answer: 'yes', entry: { strength: '5', infusionRate: '20', infusionStatus: 'Started' } },
+            [FIELD_ID.IV_FLUIDS]: NO,
+          },
+          notes: { [FIELD_ID.PLAN]: ['Review'] },
+          writer: WRITER,
+          now: NOW,
+        },
+        db,
+      );
+
+      const rows = obsRepo.listByEncounter(dueCard, db).filter((row) => row.value !== 'NORMAL');
+      const creatorOf = (value: string) => rows.find((row) => row.value === value || row.value?.startsWith(value))?.creator;
+      expect(creatorOf('140')).toBeNull();
+      expect(creatorOf('No')).toBeNull();
+      expect(creatorOf('{')).toBe('user-1');
+      expect(creatorOf('Review')).toBe('user-1');
+      expect(rows.every((row) => row.creatoruuid === 'user-1')).toBe(true);
+    });
+
     it('writes the card with alert codes as the user, and marks it for sync', () => {
       expect(save('165')).toEqual({ inserted: 4, voided: 0 });
 
       const fhr = obsRepo.listByEncounter(dueCard, db).find((row) => row.conceptuuid === BASELINE_FHR)!;
-      expect(fhr).toMatchObject({ value: '165', comment: 'R', creator: 'user-1', creatoruuid: 'user-1' });
+      expect(fhr).toMatchObject({ value: '165', comment: 'R', creator: null, creatoruuid: 'user-1' });
       expect(obsRepo.hasRealObs(dueCard, db)).toBe(true);
       expect(encounterRepo.findUnsynced(db).map((row) => row.uuid)).toContain(dueCard);
     });

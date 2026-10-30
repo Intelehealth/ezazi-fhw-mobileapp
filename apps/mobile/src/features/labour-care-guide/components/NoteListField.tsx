@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { filterFreeText } from '@ezazi/clinical-rules';
 
 import { colors, spacing } from '@/core/config/theme';
 import { ControlTextInput } from '@/core/ui/ControlTextInput';
@@ -19,7 +20,10 @@ interface NoteListFieldProps {
   onRemove: (index: number) => void;
 }
 
-/** Assessment or Plan (Android "Add Assessment" / "Add Plan"): type a note, Add, and it joins the list. */
+/**
+ * Assessment or Plan (Android "Add Assessment" / "Add Plan"): type a note, Add, and it joins the list.
+ * Typing keeps Android's characters with the first letter upper-case; the note is stored as typed.
+ */
 export const NoteListField: React.FC<NoteListFieldProps> = ({ field, notes, onAdd, onRemove }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
@@ -28,7 +32,7 @@ export const NoteListField: React.FC<NoteListFieldProps> = ({ field, notes, onAd
   const canAdd = watch('text').trim() !== '';
 
   const add = handleSubmit(({ text }) => {
-    onAdd(text.trim());
+    onAdd(text);
     reset();
   });
 
@@ -50,7 +54,7 @@ export const NoteListField: React.FC<NoteListFieldProps> = ({ field, notes, onAd
             <ControlTextInput
               label={label}
               value={input.value}
-              onChangeText={input.onChange}
+              onChangeText={(text) => input.onChange(filterFreeText(text))}
               placeholder={t('capture.notes.placeholder')}
               onSubmitEditing={add}
               rightSlot={

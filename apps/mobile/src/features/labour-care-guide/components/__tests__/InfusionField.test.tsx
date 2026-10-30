@@ -37,14 +37,21 @@ describe('InfusionField', () => {
     expect(onInput).toHaveBeenCalledWith('infusionStatus', 'Continued');
   });
 
-  it('asks IV Fluids for its type, and a text for Other', () => {
-    const { onInput } = setup('ivFluids', { answer: 'yes', entry: { type: 'Other' } });
+  it('asks IV Fluids for its type, and a text for Other that a listed fluid closes', () => {
+    const { onInput } = setup('ivFluids', { answer: 'yes', entry: { type: 'Other', otherType: 'Plasma' } });
     expect(screen.queryByLabelText('Strength (U/L)')).toBeNull();
+    fireEvent.changeText(screen.getByLabelText('Type of IV fluid'), 'Plasmalyte');
+    expect(onInput).toHaveBeenCalledWith('otherType', 'Plasmalyte');
+
     fireEvent.press(screen.getByRole('radio', { name: 'Normal Saline' }));
     expect(onInput).toHaveBeenCalledWith('ivFluidType', 'Normal Saline');
+    expect(screen.queryByLabelText('Type of IV fluid')).toBeNull();
+  });
 
-    fireEvent.changeText(screen.getByLabelText('Type of IV fluid'), 'Plasma');
-    expect(onInput).toHaveBeenCalledWith('otherType', 'Plasma');
+  it('opens the Other text box when Other is picked', () => {
+    setup('ivFluids', { answer: 'yes', entry: {} });
+    fireEvent.press(screen.getByRole('radio', { name: 'Other IV Fluid*' }));
+    expect(screen.getByLabelText('Type of IV fluid')).toBeTruthy();
   });
 
   it('reports leaving the rate box, for Android\'s re-check', () => {

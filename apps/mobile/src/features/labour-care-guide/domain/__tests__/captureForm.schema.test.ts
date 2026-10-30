@@ -29,4 +29,11 @@ describe('createCaptureFormSchema', () => {
     form.oxytocin = { answer: 'yes', entry: {} };
     expect(schema.safeParse(form).error?.issues[0].path).toEqual(['oxytocin']);
   });
+
+  it('puts a multi-line Android message on one line', () => {
+    const multiLine = createCaptureFormSchema(LAYOUT, 'default', () => 'Please enter all\n\nOR\n\nSelect No');
+    const form = initialCaptureValues(LAYOUT);
+    form.oxytocin = { answer: 'yes', entry: {} };
+    expect(multiLine.safeParse(form).error?.issues[0].message).toBe('Please enter all OR Select No');
+  });
 });

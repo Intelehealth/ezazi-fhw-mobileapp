@@ -10,12 +10,12 @@ const FIELD = toTabViews(getCardLayout('Stage1_Hour1_1')!, 'default')
   .find((field) => field.id === 'assessment')!;
 
 describe('NoteListField', () => {
-  it('adds a typed note, trimmed, and empties the box', async () => {
+  it('adds a note with Android\'s first-letter capital, stored as typed, and empties the box', async () => {
     const onAdd = jest.fn();
     render(<NoteListField field={FIELD} notes={[]} onAdd={onAdd} onRemove={jest.fn()} />);
     expect(screen.getByRole('button', { name: '+ Add' }).props.accessibilityState.disabled).toBe(true);
 
-    fireEvent.changeText(screen.getByLabelText('Assessment'), '  Progressing well ');
+    fireEvent.changeText(screen.getByLabelText('Assessment'), 'progressing well'); // Android filter
     fireEvent.press(screen.getByRole('button', { name: '+ Add' }));
 
     await waitFor(() => expect(onAdd).toHaveBeenCalledWith('Progressing well'));

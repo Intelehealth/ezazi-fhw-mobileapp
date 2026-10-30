@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { spacing } from '@/core/config/theme';
 
@@ -26,7 +26,10 @@ export const ChoiceButton: React.FC<ChoiceButtonProps> = ({ label, state, onPres
       accessibilityLabel={label}
       accessibilityState={{ selected: !!state.selected, disabled: !!state.disabled }}
       disabled={state.disabled}
-      onPress={onPress}
+      onPress={() => {
+        Keyboard.dismiss(); // a pick ends typing in the stepper above it
+        onPress();
+      }}
       style={[
         styles.button,
         { minHeight: sizes.height, borderRadius: sizes.radius, backgroundColor: look.background, borderColor: look.border },

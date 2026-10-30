@@ -94,6 +94,27 @@ describe('useCaptureForm', () => {
     expect(result.current.api.infusionErrors('ivFluids').infusionRate).toBeUndefined();
   });
 
+  it('stores IV fluid "Other" only with its text, and clears the text on a listed fluid (Android)', () => {
+    const { result } = setup();
+    act(() => result.current.api.setInfusionAnswer('ivFluids', 'yes'));
+    act(() => result.current.api.setInfusionInput('ivFluids', 'ivFluidType', 'Other'));
+    expect(result.current.api.infusionAnswer('ivFluids').entry.type).toBeUndefined();
+
+    act(() => result.current.api.setInfusionInput('ivFluids', 'otherType', 'plasma'));
+    expect(result.current.api.infusionAnswer('ivFluids').entry).toMatchObject({ type: 'Other', otherType: 'Plasma' });
+
+    act(() => result.current.api.setInfusionInput('ivFluids', 'ivFluidType', 'Normal Saline'));
+    expect(result.current.api.infusionAnswer('ivFluids').entry).toEqual({ type: 'Normal Saline', otherType: undefined });
+  });
+
+  it('turns unanswered Medication answers into "No" once the tab is shown', () => {
+    const { result } = setup();
+    expect(result.current.api.medicine.answer).toBeNull();
+    act(() => result.current.showMedication());
+    expect(result.current.api.medicine.answer).toBe('no');
+    expect(result.current.api.infusionAnswer('oxytocin').answer).toBe('no');
+  });
+
   it('adds, edits and removes medicines and notes', () => {
     const { result } = setup();
     const medicine = { form: 'Tablet', name: 'Paracetamol', strength: '650 mg', dosage: '1', dosageUnit: 'Tab', frequency: '', route: 'Oral', duration: '', durationUnit: '' };

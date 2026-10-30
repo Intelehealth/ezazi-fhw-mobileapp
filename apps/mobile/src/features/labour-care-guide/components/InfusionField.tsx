@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import {
@@ -50,6 +50,12 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
   const sizes = useControlSizes();
   const entry = answer.entry;
   const isOxytocin = field.id === FIELD_ID.OXYTOCIN;
+  // "Other" opens its text box; the type is stored only once text is typed (Android).
+  const [otherOpen, setOtherOpen] = useState(entry.type === IV_FLUID_OTHER_VALUE);
+  const pickType = (value: string) => {
+    setOtherOpen(value === IV_FLUID_OTHER_VALUE);
+    onInput(INFUSION_INPUT_ID.IV_FLUID_TYPE, value);
+  };
 
   const labelOf = (id: keyof typeof INFUSION_INPUT_LABELS) =>
     t(INFUSION_INPUT_LABELS[id].labelKey, { defaultValue: INFUSION_INPUT_LABELS[id].androidLabel });
@@ -81,13 +87,13 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
             <FormField label={labelOf(INFUSION_INPUT_ID.IV_FLUID_TYPE)} error={errors[INFUSION_INPUT_ID.IV_FLUID_TYPE]}>
               <SegmentedChoice
                 options={choicesOf(IV_FLUID_TYPE_OPTIONS)}
-                value={entry.type ?? null}
-                onChange={(value) => onInput(INFUSION_INPUT_ID.IV_FLUID_TYPE, value)}
+                value={otherOpen ? IV_FLUID_OTHER_VALUE : (entry.type ?? null)}
+                onChange={pickType}
                 error={!!errors[INFUSION_INPUT_ID.IV_FLUID_TYPE]}
               />
             </FormField>
           )}
-          {!isOxytocin && entry.type === IV_FLUID_OTHER_VALUE && (
+          {!isOxytocin && otherOpen && (
             <ControlTextInput
               label={labelOf(INFUSION_INPUT_ID.IV_FLUID_TYPE)}
               value={entry.otherType ?? ''}

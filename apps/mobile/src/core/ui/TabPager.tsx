@@ -49,7 +49,12 @@ export const TabPager: React.FC<TabPagerProps> = ({ tabs, index, onIndexChange, 
         onPress={() => onIndexChange(position)}
         style={[styles.tab, sizes.isTablet && styles.tabSpread]}
       >
-        <Text numberOfLines={1} style={[styles.tabText, { fontSize: sizes.tab, color }, selected && styles.tabTextSelected]}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+          style={[styles.tabText, { fontSize: sizes.tab, color }, selected && styles.tabTextSelected]}
+        >
           {label}
         </Text>
         <View style={[styles.indicator, selected && styles.indicatorSelected]} />
@@ -98,7 +103,7 @@ const styles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     paddingTop: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   tabSpread: {
     flex: 1,

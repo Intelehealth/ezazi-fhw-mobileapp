@@ -17,6 +17,6 @@ export function useControlSizes() {
     icon: isTablet ? fromFigma(28) : dimens.headerNavIcon,
     text: isTablet ? fromFigma(20) : fs('controlText'),
     label: isTablet ? fromFigma(16) : fs('controlLabel'),
-    tab: isTablet ? fromFigma(18) : fs('tabLabel'),
+    tab: isTablet ? fromFigma(15) : fs('tabLabel'),
   };
 }

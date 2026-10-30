@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { SECTION_ID } from '@ezazi/clinical-rules';
 import type { CardLayout, SectionId } from '@ezazi/clinical-rules';
 
 import { RANGE_PROFILE } from '@/core/config/rangeProfile';
@@ -44,8 +45,14 @@ interface CaptureFormInput {
  */
 export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSaved }: CaptureFormInput): CaptureFormViewModel {
   const tabs = useMemo(() => toTabViews(layout, RANGE_PROFILE), [layout]);
-  const { api, tabErrorCounts, submit } = useCaptureForm(layout, RANGE_PROFILE);
+  const { api, tabErrorCounts, submit, showMedication } = useCaptureForm(layout, RANGE_PROFILE);
   const [tabIndex, setTabIndex] = useState(0);
+
+  // Android writes the Medication "No"s only once that section has been drawn.
+  const onMedicationTab = tabs[tabIndex]?.id === SECTION_ID.MEDICATION;
+  useEffect(() => {
+    if (onMedicationTab) showMedication();
+  }, [onMedicationTab]); // eslint-disable-line react-hooks/exhaustive-deps -- once per arrival
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const isLastTab = tabIndex === tabs.length - 1;
 
@@ -54,8 +61,8 @@ export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSa
     try {
       const writer = await readWriterIdentity();
       if (!writer) throw new Error('no logged-in writer');
-      const notes = values.notes;
-      saveCard({ visitUuid, encounterUuid, card: toCardInput(values, layout), notes, writer, now: Date.now() }, getDb());
+      const card = toCardInput(values, layout);
+      saveCard({ visitUuid, encounterUuid, card, notes: values.notes, addedAt: values.addedAt, writer, now: Date.now() }, getDb());
       setSaveState('idle');
       onSaved();
     } catch (error: unknown) {

@@ -1,7 +1,9 @@
 import {
   DECISION_PENDING_SET,
   FIELD_CONCEPT_KEY,
+  FIELD_ID,
   RISK_FIELD_IDS,
+  isNoResponse,
   buildEditedCardObs,
   buildNewCardObs,
   computeVisitRisk,
@@ -75,11 +77,30 @@ export function refreshVisitRisk(visitUuid: string, now: number, on: DbHandle): 
   return text;
 }
 
+// Android sets `obs.creator` only on the Oxytocin / IV JSON and on notes (PartogramDataCaptureActivity
+// 1211, ObsDTO.toObs); value, "No" and medicine rows leave it NULL. `creatoruuid` is always set.
+const CREATOR_CONCEPTS = new Set<ConceptKey>([
+  FIELD_CONCEPT_KEY[FIELD_ID.OXYTOCIN],
+  FIELD_CONCEPT_KEY[FIELD_ID.IV_FLUIDS],
+  FIELD_CONCEPT_KEY[FIELD_ID.ASSESSMENT],
+  FIELD_CONCEPT_KEY[FIELD_ID.PLAN],
+]);
+const hasAndroidCreator = (draft: ObsDraft) =>
+  CREATOR_CONCEPTS.has(draft.conceptKey as ConceptKey) && !isNoResponse(draft.value);
+
+// The builders emit medicines and notes in list order, so each takes the next added-at time of its concept.
+function addedAtByConcept(addedAt: SaveCardInput['addedAt']): Map<string, string[]> {
+  const ids = [FIELD_ID.MEDICINE, FIELD_ID.ASSESSMENT, FIELD_ID.PLAN] as const;
+  return new Map(ids.map((id) => [FIELD_CONCEPT_KEY[id] as string, [...(addedAt?.[id] ?? [])]]));
+}
+
 export interface SaveCardInput {
   visitUuid: string;
   encounterUuid: string;
   card: CardInput;
   notes?: CardNotes;
+  /** When each medicine and note was added, in list order; their rows take it as `created_date`. */
+  addedAt?: Partial<Record<typeof FIELD_ID.MEDICINE | keyof CardNotes, readonly string[]>>;
   writer: WriterIdentity;
   now: number;
 }
@@ -103,8 +124,13 @@ export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number
         ? buildEditedCardObs(stored, input.card, input.notes)
         : { insert: buildNewCardObs(input.card, input.notes), voidUuids: [] };
 
+    const addedAt = addedAtByConcept(input.addedAt);
     obsRepo.insertMany(
-      insert.map((draft: ObsDraft) => obsRow(input.encounterUuid, draft.conceptKey, draft.value, draft.comment, input.writer)),
+      insert.map((draft: ObsDraft) => ({
+        ...obsRow(input.encounterUuid, draft.conceptKey, draft.value, draft.comment, input.writer),
+        creator: hasAndroidCreator(draft) ? input.writer.creatorUuid : null,
+        created_date: isNoResponse(draft.value) ? undefined : addedAt.get(draft.conceptKey)?.shift(),
+      })),
       tx,
     );
     if (voidUuids.length > 0) obsRepo.markVoided([...voidUuids], tx);
