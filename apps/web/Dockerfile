@@ -1,8 +1,9 @@
 # eZAZI doctor webapp (apps/web) — static React/Vite SPA served by nginx.
 #
 # Build context must be the MONOREPO ROOT, not apps/web — this app depends on
-# the @ezazi/api-client, @ezazi/config, @ezazi/types workspace packages, and
-# npm workspaces needs the full tree to resolve them. From the repo root:
+# the @ezazi/api-client, @ezazi/config, @ezazi/types, @ezazi/clinical-rules
+# workspace packages, and npm workspaces needs the full tree to resolve them.
+# From the repo root:
 #
 #   docker build -f apps/web/Dockerfile \
 #     --build-arg VITE_AUTH_GATEWAY_URL=https://... \
@@ -32,12 +33,17 @@ WORKDIR /app
 # package.json actually changes, not on every source edit. All workspaces
 # must be present (not just apps/web + packages/*) or npm's workspace
 # resolution errors on the ones missing from `workspaces` in package.json.
+#
+# IMPORTANT: every time a new package is added under packages/ or apps/,
+# add its package.json here too. If one is missing, npm treats it as an
+# external dependency and fails with a 404 from registry.npmjs.org.
 COPY package.json turbo.json tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/mobile/package.json apps/mobile/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/types/package.json packages/types/package.json
+COPY packages/clinical-rules/package.json packages/clinical-rules/package.json
 
 # `npm install`, not `npm ci` — package-lock.json is gitignored in this repo
 # (see .gitignore), so it won't exist in a fresh checkout for `npm ci` to
