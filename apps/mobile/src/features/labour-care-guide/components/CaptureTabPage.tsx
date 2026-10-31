@@ -16,13 +16,15 @@ import { NoteListField } from './NoteListField';
 interface CaptureTabPageProps {
   tab: TabView;
   form: CaptureFormApi;
+  /** A submitted card shown read-only: values visible, nothing can be changed. */
+  readOnly?: boolean;
 }
 
 /**
  * One capture tab (Figma 251:556): its fields in Android order inside a card, two steppers to
  * a row. Medication puts each answer in its own card; Shared decision opens with the alert summary.
  */
-export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => {
+export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form, readOnly = false }) => {
   const sizes = useControlSizes();
   const card = [styles.card, { borderRadius: sizes.radius, gap: sizes.gap * 2 }];
 
@@ -40,6 +42,7 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => 
             onRateBlur={() => form.checkInfusionRateOnLeave(id)}
             bounds={form.infusionBounds}
             errors={form.infusionErrors(id)}
+            readOnly={readOnly}
           />
         );
       }
@@ -54,6 +57,7 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => 
             onUpdate={form.updateMedicine}
             onRemove={form.removeMedicine}
             error={form.fieldError(field.id)}
+            readOnly={readOnly}
           />
         );
       case 'noteList': {
@@ -63,6 +67,8 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => 
             key={field.id}
             field={field}
             notes={form.fieldNotes(id)}
+            savedNotes={form.savedNotes(id)}
+            readOnly={readOnly}
             onAdd={(text) => form.addNote(id, text)}
             onRemove={(index) => form.removeNote(id, index)}
           />
@@ -78,6 +84,7 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form }) => 
             onLeave={() => form.leaveField(field.id)}
             alert={form.fieldAlert(field.id)}
             error={form.fieldError(field.id)}
+            readOnly={readOnly}
             style={half && styles.half}
           />
         );

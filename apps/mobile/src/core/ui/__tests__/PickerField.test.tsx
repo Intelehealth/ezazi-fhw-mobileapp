@@ -71,4 +71,11 @@ describe('PickerField with free text', () => {
     setup({ freeText: true, value: 'Brownish' });
     expect(screen.getByText('Brownish')).toBeTruthy();
   });
+
+  it('shows the pick but does not open when read-only', () => {
+    setup({ value: 'C', readOnly: true });
+    expect(screen.getByText('Clear')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Amniotic fluid' }));
+    expect(screen.queryByRole('radio', { name: 'Thick meconium' })).toBeNull();
+  });
 });

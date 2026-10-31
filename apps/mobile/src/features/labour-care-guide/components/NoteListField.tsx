@@ -16,15 +16,24 @@ import type { FieldView } from '../domain/captureFieldView';
 interface NoteListFieldProps {
   field: FieldView; // Assessment or Plan
   notes: readonly string[]; // added on this card, not yet saved
+  savedNotes?: readonly string[]; // already saved on this card (Show): listed first, never removable
   onAdd: (text: string) => void;
   onRemove: (index: number) => void;
+  readOnly?: boolean;
 }
 
 /**
  * Assessment or Plan (Android "Add Assessment" / "Add Plan"): type a note, Add, and it joins the list.
  * Typing keeps Android's characters with the first letter upper-case; the note is stored as typed.
  */
-export const NoteListField: React.FC<NoteListFieldProps> = ({ field, notes, onAdd, onRemove }) => {
+export const NoteListField: React.FC<NoteListFieldProps> = ({
+  field,
+  notes,
+  savedNotes = [],
+  onAdd,
+  onRemove,
+  readOnly = false,
+}) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
   const label = t(field.labelKey, { defaultValue: field.androidLabel });
@@ -39,6 +48,11 @@ export const NoteListField: React.FC<NoteListFieldProps> = ({ field, notes, onAd
   return (
     <FormField label={label}>
       <View style={{ gap: sizes.gap }}>
+        {savedNotes.map((note, index) => (
+          <View key={`saved-${index}-${note}`} style={[styles.note, { borderRadius: sizes.radius }]}>
+            <Text style={[styles.noteText, { fontSize: sizes.text }]}>{note}</Text>
+          </View>
+        ))}
         {notes.map((note, index) => (
           <View key={`${index}-${note}`} style={[styles.note, { borderRadius: sizes.radius }]}>
             <Text style={[styles.noteText, { fontSize: sizes.text }]}>{note}</Text>
@@ -47,26 +61,28 @@ export const NoteListField: React.FC<NoteListFieldProps> = ({ field, notes, onAd
             </Pressable>
           </View>
         ))}
-        <Controller
-          control={control}
-          name="text"
-          render={({ field: input }) => (
-            <ControlTextInput
-              label={label}
-              value={input.value}
-              onChangeText={(text) => input.onChange(filterFreeText(text))}
-              placeholder={t('capture.notes.placeholder')}
-              onSubmitEditing={add}
-              rightSlot={
-                <Pressable accessibilityRole="button" accessibilityState={{ disabled: !canAdd }} disabled={!canAdd} onPress={add}>
-                  <Text style={[styles.add, { fontSize: sizes.label }, !canAdd && styles.addDisabled]}>
-                    {t('capture.notes.add')}
-                  </Text>
-                </Pressable>
-              }
-            />
-          )}
-        />
+        {!readOnly && (
+          <Controller
+            control={control}
+            name="text"
+            render={({ field: input }) => (
+              <ControlTextInput
+                label={label}
+                value={input.value}
+                onChangeText={(text) => input.onChange(filterFreeText(text))}
+                placeholder={t('capture.notes.placeholder')}
+                onSubmitEditing={add}
+                rightSlot={
+                  <Pressable accessibilityRole="button" accessibilityState={{ disabled: !canAdd }} disabled={!canAdd} onPress={add}>
+                    <Text style={[styles.add, { fontSize: sizes.label }, !canAdd && styles.addDisabled]}>
+                      {t('capture.notes.add')}
+                    </Text>
+                  </Pressable>
+                }
+              />
+            )}
+          />
+        )}
       </View>
     </FormField>
   );

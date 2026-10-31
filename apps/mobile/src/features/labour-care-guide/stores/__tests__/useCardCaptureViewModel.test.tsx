@@ -7,6 +7,7 @@ import { useCardCaptureViewModel } from '../useCardCaptureViewModel';
 
 jest.mock('@/core/db', () => ({ getDb: jest.fn(() => 'db-handle') }));
 jest.mock('../../data/captureReader', () => ({ readCaptureCard: jest.fn() }));
+jest.mock('../../data/labourRepository', () => ({ readStoredCardObs: jest.fn(() => [{ uuid: 'o1', fieldId: 'baselineFhr', value: '150', createdAt: '' }]) }));
 jest.mock('@/core/utils/logger', () => ({ logger: { error: jest.fn(), info: jest.fn(), debug: jest.fn() } }));
 
 const ROW = {
@@ -35,6 +36,7 @@ describe('useCardCaptureViewModel', () => {
     expect(readCaptureCard).toHaveBeenCalledWith('card-1', 'db-handle');
     expect(result.current?.header).toEqual({ isSos: false, stage: 'stage1', scheduledAt: '2026-10-27T04:00:00.000Z' });
     expect(result.current?.layout?.sections.map((section) => section.section.id)).toContain('baby');
+    expect(result.current?.stored).toEqual([{ uuid: 'o1', fieldId: 'baselineFhr', value: '150', createdAt: '' }]);
   });
 
   it('stays null for a card that cannot be read', () => {

@@ -27,6 +27,7 @@ const stubForm = (overrides: Partial<CaptureFormApi> = {}): CaptureFormApi => ({
   updateMedicine: jest.fn(),
   removeMedicine: jest.fn(),
   fieldNotes: () => [],
+  savedNotes: () => [],
   addNote: jest.fn(),
   removeNote: jest.fn(),
   summary: [],
@@ -77,5 +78,27 @@ describe('CaptureTabPage', () => {
     );
     expect(screen.getByText('OBSERVATION SUMMARY')).toBeTruthy();
     expect(screen.getByText('ASSESSMENT')).toBeTruthy();
+  });
+
+  it('shows a submitted card read-only: values visible, nothing changes', () => {
+    const form = stubForm({ fieldValue: (id) => (id === 'companion' ? 'N' : '') });
+    render(<CaptureTabPage tab={tab('supportiveCare')} form={form} readOnly />);
+
+    const no = screen.getAllByRole('radio', { name: 'No' })[0];
+    expect(no.props.accessibilityState).toMatchObject({ selected: true, disabled: true });
+    fireEvent.press(no);
+    expect(form.setValue).not.toHaveBeenCalled();
+  });
+
+  it('lists saved notes and hides the note box when read-only', () => {
+    render(
+      <CaptureTabPage
+        tab={tab('sharedDecisionMaking')}
+        form={stubForm({ savedNotes: (id) => (id === 'plan' ? ['Review in 30 min'] : []) })}
+        readOnly
+      />,
+    );
+    expect(screen.getByText('Review in 30 min')).toBeTruthy();
+    expect(screen.queryByLabelText('Plan')).toBeNull();
   });
 });

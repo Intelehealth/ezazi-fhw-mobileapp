@@ -19,6 +19,7 @@ interface CaptureValueFieldProps {
   onLeave: () => void;
   alert: boolean; // the value is an Android alert (stored with comment "R")
   error?: string;
+  readOnly?: boolean;
   /** Placement only (flex, margins). */
   style?: StyleProp<ViewStyle>;
 }
@@ -31,6 +32,7 @@ export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
   onLeave,
   alert,
   error,
+  readOnly,
   style,
 }) => {
   const { t } = useTranslation();
@@ -40,7 +42,7 @@ export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
     label: t(option.labelKey, { defaultValue: option.androidLabel }),
     alert: option.alert,
   }));
-  const choice = { options, value: value || null, onChange, error: !!error };
+  const choice = { options, value: value || null, onChange, error: !!error, readOnly };
 
   const control = (() => {
     switch (field.control) {
@@ -60,10 +62,11 @@ export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
             bounds={field.bounds}
             alert={alert}
             error={!!error}
+            readOnly={readOnly}
           />
         ) : null;
       default:
-        return <ControlTextInput label={label} value={value} onChangeText={onChange} error={!!error} />;
+        return <ControlTextInput label={label} value={value} onChangeText={onChange} error={!!error} readOnly={readOnly} />;
     }
   })();
 

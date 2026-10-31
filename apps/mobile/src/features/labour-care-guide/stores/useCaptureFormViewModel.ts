@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SECTION_ID } from '@ezazi/clinical-rules';
-import type { CardLayout, SectionId } from '@ezazi/clinical-rules';
+import type { CardAccess, CardLayout, SectionId, StoredObs } from '@ezazi/clinical-rules';
 
 import { RANGE_PROFILE } from '@/core/config/rangeProfile';
 import { getDb } from '@/core/db';
@@ -30,28 +30,46 @@ export interface CaptureFormViewModel {
   /** Checks the rules and saves, or jumps to the first tab in error (last Next, Save & Exit). */
   save: () => void;
   saveState: SaveState;
+  /** An older submitted card: shown as saved, nothing can be changed or saved (Android READ). */
+  readOnly: boolean;
 }
 
 interface CaptureFormInput {
   visitUuid: string;
   encounterUuid: string;
   layout: CardLayout;
+  /** How the Timeline opened the card: `write` new, `edit` the newest submitted, `read` an older one. */
+  access: Exclude<CardAccess, 'none'>;
+  /** What is already saved on the card, loaded into the form for `edit` and `read`. */
+  stored: readonly StoredObs[];
   onSaved: () => void;
+  /** Leave without saving: the last Next of a read-only card. */
+  onExit: () => void;
 }
 
 /**
  * The capture form's ViewModel: the card's tabs, moving between them, and Save on the last
  * Next (Android `saveObs`). Save checks the rules first and jumps to the first tab in error.
+ * A submitted card opens with its saved values: editable when newest, read-only otherwise.
  */
-export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSaved }: CaptureFormInput): CaptureFormViewModel {
+export function useCaptureFormViewModel({
+  visitUuid,
+  encounterUuid,
+  layout,
+  access,
+  stored,
+  onSaved,
+  onExit,
+}: CaptureFormInput): CaptureFormViewModel {
+  const readOnly = access === 'read';
   const tabs = useMemo(() => toTabViews(layout, RANGE_PROFILE), [layout]);
-  const { api, tabErrorCounts, submit, showMedication } = useCaptureForm(layout, RANGE_PROFILE);
+  const { api, tabErrorCounts, submit, showMedication } = useCaptureForm(layout, RANGE_PROFILE, stored);
   const [tabIndex, setTabIndex] = useState(0);
 
   // Android writes the Medication "No"s only once that section has been drawn.
   const onMedicationTab = tabs[tabIndex]?.id === SECTION_ID.MEDICATION;
   useEffect(() => {
-    if (onMedicationTab) showMedication();
+    if (onMedicationTab && !readOnly) showMedication();
   }, [onMedicationTab]); // eslint-disable-line react-hooks/exhaustive-deps -- once per arrival
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const isLastTab = tabIndex === tabs.length - 1;
@@ -77,7 +95,8 @@ export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSa
   };
 
   const trySave = () => {
-    if (saveState !== 'saving') submit((values) => void save(values), jumpTo);
+    if (readOnly) onExit();
+    else if (saveState !== 'saving') submit((values) => void save(values), jumpTo);
   };
 
   return {
@@ -92,5 +111,6 @@ export function useCaptureFormViewModel({ visitUuid, encounterUuid, layout, onSa
     goNext: () => (isLastTab ? trySave() : setTabIndex(tabIndex + 1)),
     save: trySave,
     saveState,
+    readOnly,
   };
 }

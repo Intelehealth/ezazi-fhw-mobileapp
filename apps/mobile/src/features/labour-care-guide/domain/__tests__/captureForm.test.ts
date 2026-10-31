@@ -1,6 +1,6 @@
 import { FIELD_ID, SECTION_ID, getCardErrors, getCardLayout, type CardLayout } from '@ezazi/clinical-rules';
 
-import { errorsByTab, initialCaptureValues, toCardInput, withMedicationShown } from '../captureForm';
+import { errorsByTab, initialCaptureValues, savedNotesFrom, toCardInput, withMedicationShown } from '../captureForm';
 
 const halfHour = getCardLayout('Stage1_Hour1_2') as CardLayout;
 const exam = getCardLayout('Stage1_Hour1_1') as CardLayout;
@@ -77,5 +77,16 @@ describe('errorsByTab', () => {
       counts: {},
       firstTab: null,
     });
+  });
+});
+
+describe('savedNotesFrom', () => {
+  it('lists a card\'s saved notes oldest first', () => {
+    expect(
+      savedNotesFrom([
+        { uuid: 'b', fieldId: FIELD_ID.PLAN, value: 'Recheck', createdAt: '2026-10-29 08:05:00' },
+        { uuid: 'a', fieldId: FIELD_ID.PLAN, value: 'Review', createdAt: '2026-10-29 08:00:00' },
+      ]),
+    ).toEqual({ [FIELD_ID.ASSESSMENT]: [], [FIELD_ID.PLAN]: ['Review', 'Recheck'] });
   });
 });

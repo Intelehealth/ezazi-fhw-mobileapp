@@ -15,10 +15,18 @@ jest.mock('@/core/utils/logger', () => ({ logger: { error: jest.fn(), info: jest
 const WRITER = { providerUuid: 'provider-1', creatorUuid: 'creator-1' };
 const LAYOUT = getCardLayout('Stage1_Hour1_2')!; // Baby, Labour progress, Medication, Shared decision
 
-const setup = () => {
+const STORED = [
+  { uuid: 'o1', fieldId: 'baselineFhr' as const, value: '150', createdAt: '2026-10-29 08:00:00' },
+  { uuid: 'o2', fieldId: 'oxytocin' as const, value: 'No', createdAt: '2026-10-29 08:00:00' },
+];
+
+const setup = (access: 'write' | 'edit' | 'read' = 'write', stored: typeof STORED = []) => {
   const onSaved = jest.fn();
-  const view = renderHook(() => useCaptureFormViewModel({ visitUuid: 'visit-1', encounterUuid: 'card-1', layout: LAYOUT, onSaved }));
-  return { onSaved, ...view };
+  const onExit = jest.fn();
+  const view = renderHook(() =>
+    useCaptureFormViewModel({ visitUuid: 'visit-1', encounterUuid: 'card-1', layout: LAYOUT, access, stored, onSaved, onExit }),
+  );
+  return { onSaved, onExit, ...view };
 };
 
 describe('useCaptureFormViewModel', () => {
@@ -96,5 +104,29 @@ describe('useCaptureFormViewModel', () => {
     await waitFor(() => expect(result.current.saveState).toBe('failed'));
     expect(saveCard).not.toHaveBeenCalled();
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('opens a submitted card with its saved values', () => {
+    const { result } = setup('edit', STORED);
+    expect(result.current.readOnly).toBe(false);
+    expect(result.current.form.fieldValue('baselineFhr')).toBe('150');
+    expect(result.current.form.infusionAnswer('oxytocin').answer).toBe('no');
+  });
+
+  it('leaves a read-only card on the last Next without saving', async () => {
+    const { result, onExit, onSaved } = setup('read', STORED);
+    expect(result.current.readOnly).toBe(true);
+    act(() => result.current.setTabIndex(3));
+    act(() => result.current.goNext());
+
+    expect(onExit).toHaveBeenCalled();
+    expect(saveCard).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('does not turn a read-only card\'s missing Medication answers into "No"', () => {
+    const { result } = setup('read', []);
+    act(() => result.current.setTabIndex(2));
+    expect(result.current.form.medicine.answer).toBeNull();
   });
 });

@@ -10,7 +10,7 @@ import { SYNC_DIRTY, VOIDED_YES } from '@/core/db/syncFlags';
 import { transact, type DbHandle } from '@/core/db/tx';
 import { createTestDb, type TestDb } from '@/core/db/__tests__/helpers/testDb';
 
-import { captureSos, endStage1, saveCard } from '../labourRepository';
+import { captureSos, endStage1, readStoredCardObs, saveCard } from '../labourRepository';
 
 const WRITER = { providerUuid: 'provider-1', creatorUuid: 'user-1' };
 const NOW = Date.UTC(2026, 9, 23, 10, 0, 0);
@@ -67,6 +67,31 @@ describe('labour repository', () => {
       expect(createdAt('Paracetamol')).toBe('2026-10-29 08:01:00');
       expect(createdAt('Review')).toBe('2026-10-29 08:02:00');
       expect(createdAt('Recheck')).toBe('2026-10-29 08:03:00');
+    });
+
+    it('on an edit, writes only the new medicine, with its own added time', () => {
+      const first = { form: 'Tablet', name: 'Paracetamol', strength: '650 mg', dosage: '1', dosageUnit: 'Tab', frequency: '', route: 'Oral', duration: '', durationUnit: '' };
+      const second = { ...first, name: 'Ibuprofen', strength: '400 mg' };
+      const saveWith = (medicines: (typeof first)[], addedAt: string[]) =>
+        saveCard(
+          {
+            visitUuid: DEV_VISIT_UUID,
+            encounterUuid: dueCard,
+            card: { values: {}, [FIELD_ID.MEDICINE]: { answer: 'yes', medicines } },
+            addedAt: { [FIELD_ID.MEDICINE]: addedAt },
+            writer: WRITER,
+            now: NOW,
+          },
+          db,
+        );
+
+      saveWith([first], ['2026-10-29 08:01:00']);
+      expect(readStoredCardObs(dueCard, db).filter((row) => row.fieldId === FIELD_ID.MEDICINE)).toHaveLength(1);
+
+      expect(saveWith([first, second], ['2026-10-29 08:01:00', '2026-10-29 08:30:00'])).toMatchObject({ inserted: 1, voided: 0 });
+      const createdAt = (value: string) => obsRepo.listByEncounter(dueCard, db).find((row) => row.value?.includes(value))?.created_date;
+      expect(createdAt('Paracetamol')).toBe('2026-10-29 08:01:00');
+      expect(createdAt('Ibuprofen')).toBe('2026-10-29 08:30:00');
     });
 
     it('sets creator only on the infusion JSON and notes, as Android; creatoruuid on every row', () => {

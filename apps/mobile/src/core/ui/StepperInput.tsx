@@ -21,6 +21,7 @@ interface StepperInputProps {
   disabled?: boolean;
   /** Called when the box loses focus, for checks Android runs then. */
   onBlur?: () => void;
+  readOnly?: boolean;
 }
 
 /**
@@ -38,6 +39,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   error,
   disabled,
   onBlur,
+  readOnly,
 }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
@@ -48,7 +50,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
   const box = { height: sizes.height, borderRadius: sizes.radius };
 
   const renderButton = (direction: 1 | -1) => {
-    const enabled = !disabled && (direction === 1 ? canIncrease : canDecrease);
+    const enabled = !disabled && !readOnly && (direction === 1 ? canIncrease : canDecrease);
     const look = controlLook({ disabled: !enabled });
     return (
       <Pressable
@@ -76,7 +78,7 @@ export const StepperInput: React.FC<StepperInputProps> = ({
           setFocused(false);
           onBlur?.();
         }}
-        editable={!disabled}
+        editable={!disabled && !readOnly}
         keyboardType={bounds.fractionDigits > 0 ? 'decimal-pad' : 'number-pad'}
         placeholder={placeholder}
         placeholderTextColor={colors.placeholder}

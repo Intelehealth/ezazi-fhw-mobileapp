@@ -53,7 +53,7 @@ describe('TimelineScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Record Now' }));
 
-    expect(navigate).toHaveBeenCalledWith('CardCapture', { visitUuid: 'visit-1', encounterUuid: 'card-1' });
+    expect(navigate).toHaveBeenCalledWith('CardCapture', { visitUuid: 'visit-1', encounterUuid: 'card-1', access: 'write' });
   });
 
   it('captures an SOS only after its confirm', () => {

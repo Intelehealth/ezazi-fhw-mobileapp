@@ -61,4 +61,12 @@ describe('StepperInput', () => {
     expect(inputStyle().backgroundColor).toBe(colors.controlDisabledBg);
     expect(screen.getByRole('button', { name: 'Increase Baseline FHR' }).props.accessibilityState.disabled).toBe(true);
   });
+
+  it('shows its value but cannot be typed in or stepped when read-only', () => {
+    const onChange = setup({ value: '140', readOnly: true });
+    expect(screen.getByLabelText('Baseline FHR').props.editable).toBe(false);
+    expect(screen.getByLabelText('Baseline FHR').props.value).toBe('140');
+    fireEvent.press(screen.getByRole('button', { name: 'Increase Baseline FHR' }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

@@ -16,7 +16,7 @@ interface TimelineCheckpointCardProps {
   isFirst: boolean;
   /** Hides the rail's bottom connector — this is the last row in the list. */
   isLast: boolean;
-  onRecordNow: () => void;
+  onOpen: () => void;
 }
 
 interface StatusLook {
@@ -88,7 +88,7 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
   checkpoint,
   isFirst,
   isLast,
-  onRecordNow,
+  onOpen,
 }) => {
   const { t } = useTranslation();
   const { isTablet, fs, fromFigma } = useResponsive();
@@ -136,6 +136,13 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
         lockBadge: 30,
         checkIcon: Math.round(dotSize * 0.6),
       };
+
+  const openLabelKey =
+    checkpoint.status === 'dueNow' && checkpoint.access === 'write'
+      ? 'timeline.checkpoint.recordNow'
+      : checkpoint.status === 'completed' && (checkpoint.access === 'edit' || checkpoint.access === 'read')
+        ? 'timeline.checkpoint.show'
+        : null;
 
   return (
     <View style={styles.row}>
@@ -211,15 +218,9 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
           {checkpoint.status === 'upcoming' && <LockKeyholeBadgeIcon size={sizes.lockBadge} />}
         </View>
 
-        {/* Only a card this nurse may write opens: Android drops the tap when the nurse does not hold the visit. */}
-        {checkpoint.status === 'dueNow' && checkpoint.access === 'write' && (
-          <AppButton
-            label={t('timeline.checkpoint.recordNow')}
-            onPress={onRecordNow}
-            size="compact"
-            showChevron
-            style={sizes.buttonGap}
-          />
+        {/* Record Now opens an empty card, Show a submitted one; only for the visit holder, as Android. */}
+        {openLabelKey && (
+          <AppButton label={t(openLabelKey)} onPress={onOpen} size="compact" showChevron style={sizes.buttonGap} />
         )}
       </View>
     </View>

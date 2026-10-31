@@ -64,9 +64,11 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
             checkpoint={checkpoint}
             isFirst={index === 0}
             isLast={index === checkpoints.length - 1}
-            onRecordNow={() => {
-              const { encounterUuid } = checkpoint;
-              if (encounterUuid) navigation.navigate('CardCapture', { visitUuid, encounterUuid });
+            onOpen={() => {
+              const { encounterUuid, access } = checkpoint;
+              if (encounterUuid && access && access !== 'none') {
+                navigation.navigate('CardCapture', { visitUuid, encounterUuid, access });
+              }
             }}
           />
         ))}

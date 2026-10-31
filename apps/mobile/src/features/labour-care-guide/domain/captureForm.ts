@@ -37,8 +37,10 @@ function infusionFrom(rows: readonly StoredObs[]): InfusionAnswer {
   return { answer: 'yes', entry: decodeInfusion(latest.value) ?? {} };
 }
 
+const savedMedicineRows = (rows: readonly StoredObs[]) => rows.filter((row) => !isNoResponse(row.value) && decodeMedicine(row.value));
+
 function medicineFrom(rows: readonly StoredObs[]): MedicineAnswer {
-  const medicines = rows.filter((row) => !isNoResponse(row.value)).flatMap((row) => decodeMedicine(row.value) ?? []);
+  const medicines = savedMedicineRows(rows).flatMap((row) => decodeMedicine(row.value) ?? []);
   return medicines.length > 0 ? { answer: 'yes', medicines } : { answer: rows.length > 0 ? 'no' : null, medicines: [] };
 }
 
@@ -58,7 +60,11 @@ export function initialCaptureValues(layout: CardLayout, stored: readonly Stored
     [FIELD_ID.IV_FLUIDS]: infusionFrom(rowsOf(FIELD_ID.IV_FLUIDS)),
     [FIELD_ID.MEDICINE]: medicineFrom(rowsOf(FIELD_ID.MEDICINE)),
     notes: { [FIELD_ID.ASSESSMENT]: [], [FIELD_ID.PLAN]: [] },
-    addedAt: { [FIELD_ID.MEDICINE]: [], [FIELD_ID.ASSESSMENT]: [], [FIELD_ID.PLAN]: [] },
+    addedAt: {
+      [FIELD_ID.MEDICINE]: savedMedicineRows(rowsOf(FIELD_ID.MEDICINE)).map((row) => row.createdAt),
+      [FIELD_ID.ASSESSMENT]: [],
+      [FIELD_ID.PLAN]: [],
+    },
   };
 }
 
@@ -78,6 +84,13 @@ export function withMedicationShown(form: CaptureFormValues): CaptureFormValues 
     [FIELD_ID.IV_FLUIDS]: shown(form[FIELD_ID.IV_FLUIDS]),
     [FIELD_ID.MEDICINE]: medicine.answer === null ? { ...medicine, answer: 'no' } : medicine,
   };
+}
+
+/** The Assessment and Plan notes already saved on a card, oldest first, shown above any new ones. */
+export function savedNotesFrom(stored: readonly StoredObs[]): Record<keyof CardNotes, string[]> {
+  const notesOf = (id: keyof CardNotes) =>
+    stored.filter((row) => row.fieldId === id).map((row) => row.value).reverse();
+  return { [FIELD_ID.ASSESSMENT]: notesOf(FIELD_ID.ASSESSMENT), [FIELD_ID.PLAN]: notesOf(FIELD_ID.PLAN) };
 }
 
 /** The package's `CardInput` for this card: only the fields the card shows. */

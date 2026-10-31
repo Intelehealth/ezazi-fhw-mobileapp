@@ -7,10 +7,11 @@ import { SegmentedChoice } from '@/core/ui/SegmentedChoice';
 interface YesNoChoiceProps {
   value: YesNoAnswer;
   onChange: (answer: 'yes' | 'no') => void;
+  readOnly?: boolean;
 }
 
 /** The Yes / No that opens Oxytocin, Medicine and IV Fluids (Figma "OXYTOCIN ADMINISTERED?"). */
-export const YesNoChoice: React.FC<YesNoChoiceProps> = ({ value, onChange }) => {
+export const YesNoChoice: React.FC<YesNoChoiceProps> = ({ value, onChange, readOnly }) => {
   const { t } = useTranslation();
   return (
     <SegmentedChoice
@@ -20,6 +21,7 @@ export const YesNoChoice: React.FC<YesNoChoiceProps> = ({ value, onChange }) => 
       ]}
       value={value}
       onChange={(answer) => onChange(answer === 'yes' ? 'yes' : 'no')}
+      readOnly={readOnly}
     />
   );
 };

@@ -30,6 +30,6 @@ New cards are created by `core/services/cardGeneration`, which runs in the backg
 
 ## Status (2026-10-26)
 
-- **Built:** the Timeline for Stage 1 from the database, card generation, the new-card alert, SOS capture, the save and End Stage 1 writers, the capture screen (tabs, controls, Medication, notes, alert summary, save, Save & Exit).
-- **Not built yet:** the End Stage 1 UI, the Stage 2 and postpartum screens, edit and read-only modes.
+- **Built:** the Timeline for Stage 1 from the database, card generation, the new-card alert, SOS capture, the save and End Stage 1 writers, the capture screen (tabs, controls, Medication, notes, alert summary, save, Save & Exit), and Show on a submitted card: the newest opens editable, older ones read-only, as Android (2026-10-31).
+- **Not built yet:** the End Stage 1 UI, the Stage 2 and postpartum screens.
 - **Dev builds** (`EXPO_PUBLIC_DEV_SEED=true`): Home offers a seeded test patient (every card state) and a live test visit that the card engine runs in real time (`core/db/seeds`).

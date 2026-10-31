@@ -11,10 +11,11 @@ interface NumberChipsProps {
   onChange: (value: string) => void;
   error?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 /** A short scale as one row of equal chips (Figma "CERVIX - CM", "DESCENT"). */
-export const NumberChips: React.FC<NumberChipsProps> = ({ options, value, onChange, error, disabled }) => {
+export const NumberChips: React.FC<NumberChipsProps> = ({ options, value, onChange, error, disabled, readOnly }) => {
   const sizes = useControlSizes();
 
   return (
@@ -25,7 +26,7 @@ export const NumberChips: React.FC<NumberChipsProps> = ({ options, value, onChan
           <ChoiceButton
             key={option.value}
             label={option.label}
-            state={{ selected, alert: selected && option.alert, error, disabled }}
+            state={{ selected, alert: selected && option.alert, error, disabled, readOnly }}
             onPress={() => onChange(option.value)}
             style={styles.chip}
           />

@@ -25,7 +25,7 @@ const LAYOUT = getCardLayout('Stage1_Hour1_2')!; // Baby, Labour progress, Medic
 
 type BeforeRemove = (event: { preventDefault: () => void; data: { action: unknown } }) => void;
 
-const setup = () => {
+const setup = (access: 'write' | 'edit' | 'read' = 'write') => {
   let beforeRemove: BeforeRemove = () => undefined;
   const navigation = {
     addListener: jest.fn((_name: string, listener: BeforeRemove) => {
@@ -37,7 +37,7 @@ const setup = () => {
   };
   const props = {
     navigation,
-    route: { key: 'CardCapture-1', name: 'CardCapture', params: { visitUuid: 'visit-1', encounterUuid: 'card-1' } },
+    route: { key: 'CardCapture-1', name: 'CardCapture', params: { visitUuid: 'visit-1', encounterUuid: 'card-1', access } },
   } as unknown as NativeStackScreenProps<RootStackParamList, 'CardCapture'>;
   render(<CardCaptureScreen {...props} />);
   const leave = () => {
@@ -63,7 +63,7 @@ describe('CardCaptureScreen', () => {
   });
 
   it('titles a timer card as scheduled, with its stage and time (Figma 251:581)', () => {
-    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: null });
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: null, stored: [] });
     setup();
 
     expect(screen.getByText('SCHEDULED OBSERVATION · STAGE 1')).toBeTruthy();
@@ -71,14 +71,14 @@ describe('CardCaptureScreen', () => {
   });
 
   it('gives an SOS card no title: it is never scheduled', () => {
-    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: { ...HEADER, isSos: true }, layout: null });
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: { ...HEADER, isSos: true }, layout: null, stored: [] });
     setup();
 
     expect(screen.queryByText(/OBSERVATION/)).toBeNull();
   });
 
   it('shows the card\'s tabs, with Back only from the second tab', () => {
-    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT });
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     setup();
 
     expect(screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
@@ -95,7 +95,7 @@ describe('CardCaptureScreen', () => {
   });
 
   it('saves on the last Next and goes back to the Timeline', async () => {
-    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT });
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     const { navigation } = setup();
 
     fireEvent.press(screen.getByRole('tab', { name: 'Shared decision' }));
@@ -106,7 +106,7 @@ describe('CardCaptureScreen', () => {
   });
 
   it('asks before leaving; Continue keeps the form open', () => {
-    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT });
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     const { leave } = setup();
 
     const event = leave();
@@ -119,7 +119,7 @@ describe('CardCaptureScreen', () => {
   });
 
   it('Save & Exit saves the card, then finishes leaving', async () => {
-    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT });
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     const { leave, navigation } = setup();
 
     leave();
@@ -127,5 +127,18 @@ describe('CardCaptureScreen', () => {
 
     await waitFor(() => expect(navigation.dispatch).toHaveBeenCalledWith({ type: 'GO_BACK' }));
     expect(saveCard).toHaveBeenCalled();
+  });
+
+  it('shows a read-only card without asking to save, and its last Next goes back', () => {
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
+    const { leave, navigation } = setup('read');
+
+    const event = leave();
+    expect(event.preventDefault).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByRole('tab', { name: 'Shared decision' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Next' }));
+    expect(navigation.goBack).toHaveBeenCalled();
+    expect(saveCard).not.toHaveBeenCalled();
   });
 });

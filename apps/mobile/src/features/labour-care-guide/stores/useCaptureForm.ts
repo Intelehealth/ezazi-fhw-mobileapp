@@ -27,6 +27,7 @@ import type {
   RangeId,
   RangeProfileId,
   SectionId,
+  StoredObs,
   TypingCheck,
 } from '@ezazi/clinical-rules';
 
@@ -35,6 +36,7 @@ import { utcIsoTimestamp } from '@/core/utils/datetime';
 import {
   errorsByTab,
   initialCaptureValues,
+  savedNotesFrom,
   toCardInput,
   withMedicationShown,
   type AddedAt,
@@ -85,11 +87,15 @@ const ENTRY_KEY: Record<InfusionInputId, keyof InfusionEntry> = {
  * checks (diastolic, Oxytocin strength, infusion rate) show their message under the input instead
  * of a toast (decided 2026-10-23); a check that clears the value clears it, as Android does.
  */
-export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): CaptureForm {
+export function useCaptureForm(
+  layout: CardLayout,
+  profile: RangeProfileId,
+  stored: readonly StoredObs[] = [],
+): CaptureForm {
   const { t } = useTranslation();
   const schema = useMemo(() => createCaptureFormSchema(layout, profile, t), [layout, profile, t]);
   const form = useForm<CaptureFormValues>({
-    defaultValues: initialCaptureValues(layout),
+    defaultValues: initialCaptureValues(layout, stored),
     resolver: zodResolver(schema),
   });
   const values = form.watch();
@@ -196,6 +202,8 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
     rangeErrors[id as FieldId] ??
     (id === FIELD_ID.MEDICINE ? errors.medicine?.message : errors.values?.[id as FieldId]?.message);
 
+  const savedNotes = useMemo(() => savedNotesFrom(stored), [stored]);
+
   const api: CaptureFormApi = {
     fieldValue,
     fieldAlert: (id) => getAlertCode(id, fieldValue(id)) === ALERT_CODE.RED,
@@ -230,6 +238,7 @@ export function useCaptureForm(layout: CardLayout, profile: RangeProfileId): Cap
       dropAt(FIELD_ID.MEDICINE, index);
     },
     fieldNotes: (id) => values.notes[id],
+    savedNotes: (id) => savedNotes[id],
     addNote: (id, text) => {
       setNotes(id, [...values.notes[id], text]);
       setAddedAt(id, [...values.addedAt[id], utcIsoTimestamp()]);

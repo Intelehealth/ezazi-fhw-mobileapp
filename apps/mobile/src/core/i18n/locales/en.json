@@ -302,6 +302,7 @@
       "dueNowBody": "Tap here to capture the observations",
       "upcomingBody": "Will be available at {{time}} (in {{minutes}} min)",
       "recordNow": "Record Now",
+      "show": "Show",
       "sosCompletedBody": "You have submitted an SOS observation data",
       "sosMissedBody": "You have missed the collection of SOS observations",
       "sosDueNowBody": "Tap here to capture the SOS observations"

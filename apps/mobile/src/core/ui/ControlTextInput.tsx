@@ -13,12 +13,13 @@ interface ControlTextInputProps
   onChangeText: (text: string) => void;
   error?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   /** Drawn inside the box on the right, e.g. an "+ Add" link. */
   rightSlot?: React.ReactNode;
 }
 
 /** A text box in the capture controls' look (Figma "SUPERVISOR / DOCTOR", "ADD MEDICINE" fields). */
-export const ControlTextInput: React.FC<ControlTextInputProps> = ({ label, error, disabled, rightSlot, ...input }) => {
+export const ControlTextInput: React.FC<ControlTextInputProps> = ({ label, error, disabled, readOnly, rightSlot, ...input }) => {
   const sizes = useControlSizes();
   const [focused, setFocused] = useState(false);
   const look = controlLook({ disabled, error, focused });
@@ -32,7 +33,7 @@ export const ControlTextInput: React.FC<ControlTextInputProps> = ({ label, error
     >
       <TextInput
         accessibilityLabel={label}
-        editable={!disabled}
+        editable={!disabled && !readOnly}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholderTextColor={colors.placeholder}

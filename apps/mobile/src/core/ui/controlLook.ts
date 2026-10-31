@@ -14,6 +14,7 @@ export interface ControlState {
   alert?: boolean; // a selected or entered value the clinical rules flag
   selected?: boolean;
   focused?: boolean;
+  readOnly?: boolean; // shown as it is, but cannot be changed (a submitted card); no effect on the look
 }
 
 export interface ControlLook {

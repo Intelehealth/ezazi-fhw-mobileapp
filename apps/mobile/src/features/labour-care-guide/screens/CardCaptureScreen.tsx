@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { NavigationAction } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
-import type { CardLayout } from '@ezazi/clinical-rules';
+import type { CardAccess, CardLayout, StoredObs } from '@ezazi/clinical-rules';
 
 import { colors, spacing } from '@/core/config/theme';
 import { ConfirmDialog } from '@/core/ui/ConfirmDialog';
@@ -28,10 +28,10 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CardCapture'>;
 export const CardCaptureScreen: React.FC<Props> = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { isTablet, fs, fromFigma } = useResponsive();
-  const { visitUuid, encounterUuid } = route.params;
+  const { visitUuid, encounterUuid, access } = route.params;
   const viewModel = useCardCaptureViewModel(encounterUuid);
   if (!viewModel) return <View style={styles.screen} />;
-  const { header, layout } = viewModel;
+  const { header, layout, stored } = viewModel;
 
   const stage = t(`timeline.stages.${header.stage}`).toUpperCase();
 
@@ -53,7 +53,16 @@ export const CardCaptureScreen: React.FC<Props> = ({ route, navigation }) => {
           </Text>
         </View>
       )}
-      {layout && <CaptureForm visitUuid={visitUuid} encounterUuid={encounterUuid} layout={layout} navigation={navigation} />}
+      {layout && (
+        <CaptureForm
+          visitUuid={visitUuid}
+          encounterUuid={encounterUuid}
+          layout={layout}
+          access={access}
+          stored={stored}
+          navigation={navigation}
+        />
+      )}
     </View>
   );
 };
@@ -62,14 +71,17 @@ interface CaptureFormProps {
   visitUuid: string;
   encounterUuid: string;
   layout: CardLayout;
+  access: Exclude<CardAccess, 'none'>;
+  stored: readonly StoredObs[];
   navigation: NativeStackNavigationProp<RootStackParamList, 'CardCapture'>;
 }
 
 /**
  * The tabs, the bottom bar, and the Save & Exit question that the app-bar back and the device
  * Back open (Figma "Modal"); Continue and ✕ keep the form open, since nothing is saved as a draft.
+ * A read-only card (Show on an older card) has nothing to save, so it leaves without asking.
  */
-const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, layout, navigation }) => {
+const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, layout, access, stored, navigation }) => {
   const { t } = useTranslation();
   const [askToLeave, setAskToLeave] = useState(false);
   const leaving = useRef(false);
@@ -79,22 +91,26 @@ const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, lay
     visitUuid,
     encounterUuid,
     layout,
+    access,
+    stored,
     onSaved: () => {
       leaving.current = true;
       if (pendingLeave.current) navigation.dispatch(pendingLeave.current);
       else navigation.goBack();
     },
+    onExit: () => navigation.goBack(),
   });
+  const readOnly = viewModel.readOnly;
 
   useEffect(
     () =>
       navigation.addListener('beforeRemove', (event) => {
-        if (leaving.current) return;
+        if (leaving.current || readOnly) return;
         event.preventDefault();
         pendingLeave.current = event.data.action;
         setAskToLeave(true);
       }),
-    [navigation],
+    [navigation, readOnly],
   );
 
   const saveAndExit = () => {
@@ -114,7 +130,7 @@ const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, lay
         onIndexChange={viewModel.setTabIndex}
       >
         {viewModel.tabs.map((tab) => (
-          <CaptureTabPage key={tab.id} tab={tab} form={viewModel.form} />
+          <CaptureTabPage key={tab.id} tab={tab} form={viewModel.form} readOnly={readOnly} />
         ))}
       </TabPager>
 

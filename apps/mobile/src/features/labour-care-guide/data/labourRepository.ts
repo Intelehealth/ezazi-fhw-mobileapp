@@ -9,6 +9,7 @@ import {
   computeVisitRisk,
   decideEndStage1,
   decideSos,
+  encodeMedicine,
   formatVisitRisk,
   parseUtcTimestamp,
 } from '@ezazi/clinical-rules';
@@ -88,10 +89,34 @@ const CREATOR_CONCEPTS = new Set<ConceptKey>([
 const hasAndroidCreator = (draft: ObsDraft) =>
   CREATOR_CONCEPTS.has(draft.conceptKey as ConceptKey) && !isNoResponse(draft.value);
 
-// The builders emit medicines and notes in list order, so each takes the next added-at time of its concept.
-function addedAtByConcept(addedAt: SaveCardInput['addedAt']): Map<string, string[]> {
-  const ids = [FIELD_ID.MEDICINE, FIELD_ID.ASSESSMENT, FIELD_ID.PLAN] as const;
-  return new Map(ids.map((id) => [FIELD_CONCEPT_KEY[id] as string, [...(addedAt?.[id] ?? [])]]));
+/**
+ * Each medicine and note is saved with the time it was added (Android). Matched to its row by
+ * value, since an edited card writes only its new or changed medicines and notes.
+ */
+function addedAtLookup(input: SaveCardInput): (draft: ObsDraft) => string | undefined {
+  const pending: { concept: string; value: string; at: string }[] = [];
+  const add = (id: keyof NonNullable<SaveCardInput['addedAt']>, values: readonly string[]) =>
+    values.forEach((value, index) => {
+      const at = input.addedAt?.[id]?.[index];
+      if (at) pending.push({ concept: FIELD_CONCEPT_KEY[id], value: value.trim(), at });
+    });
+  add(FIELD_ID.MEDICINE, (input.card[FIELD_ID.MEDICINE]?.medicines ?? []).map(encodeMedicine));
+  add(FIELD_ID.ASSESSMENT, input.notes?.[FIELD_ID.ASSESSMENT] ?? []);
+  add(FIELD_ID.PLAN, input.notes?.[FIELD_ID.PLAN] ?? []);
+  return (draft) => {
+    const index = pending.findIndex((entry) => entry.concept === draft.conceptKey && entry.value === draft.value.trim());
+    return index < 0 ? undefined : pending.splice(index, 1)[0].at;
+  };
+}
+
+/** A card's saved obs that belong to a field, newest first, voided ones left out: what Save and Show read. */
+export function readStoredCardObs(encounterUuid: string, on: DbHandle): StoredObs[] {
+  return obsRepo.listByEncounterNewestFirst(encounterUuid, on).flatMap((row) => {
+    const fieldId = row.conceptuuid ? FIELD_BY_CONCEPT.get(row.conceptuuid) : undefined;
+    return fieldId && row.voided === VOIDED_NO
+      ? [{ uuid: row.uuid, fieldId, value: row.value ?? '', createdAt: row.created_date ?? '' }]
+      : [];
+  });
 }
 
 export interface SaveCardInput {
@@ -99,7 +124,7 @@ export interface SaveCardInput {
   encounterUuid: string;
   card: CardInput;
   notes?: CardNotes;
-  /** When each medicine and note was added, in list order; their rows take it as `created_date`. */
+  /** When each medicine and note was added, in list order; its row takes it as `created_date`. */
   addedAt?: Partial<Record<typeof FIELD_ID.MEDICINE | keyof CardNotes, readonly string[]>>;
   writer: WriterIdentity;
   now: number;
@@ -112,24 +137,19 @@ export interface SaveCardInput {
  */
 export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number; voided: number } {
   return transact((tx) => {
-    const stored: StoredObs[] = obsRepo.listByEncounterNewestFirst(input.encounterUuid, tx).flatMap((row) => {
-      const fieldId = row.conceptuuid ? FIELD_BY_CONCEPT.get(row.conceptuuid) : undefined;
-      return fieldId && row.voided === VOIDED_NO
-        ? [{ uuid: row.uuid, fieldId, value: row.value ?? '', createdAt: row.created_date ?? '' }]
-        : [];
-    });
+    const stored = readStoredCardObs(input.encounterUuid, tx);
 
     const { insert, voidUuids } =
       stored.length > 0
         ? buildEditedCardObs(stored, input.card, input.notes)
         : { insert: buildNewCardObs(input.card, input.notes), voidUuids: [] };
 
-    const addedAt = addedAtByConcept(input.addedAt);
+    const addedAt = addedAtLookup(input);
     obsRepo.insertMany(
       insert.map((draft: ObsDraft) => ({
         ...obsRow(input.encounterUuid, draft.conceptKey, draft.value, draft.comment, input.writer),
         creator: hasAndroidCreator(draft) ? input.writer.creatorUuid : null,
-        created_date: isNoResponse(draft.value) ? undefined : addedAt.get(draft.conceptKey)?.shift(),
+        created_date: isNoResponse(draft.value) ? undefined : addedAt(draft),
       })),
       tx,
     );

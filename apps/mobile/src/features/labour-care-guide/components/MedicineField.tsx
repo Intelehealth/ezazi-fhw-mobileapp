@@ -21,6 +21,8 @@ interface MedicineFieldProps {
   onUpdate: (index: number, medicine: MedicineEntry) => void;
   onRemove: (index: number) => void;
   error?: string;
+  /** A submitted card shown read-only: the list only, no form, edit or remove. */
+  readOnly?: boolean;
 }
 
 // Which form is open: none, a new medicine, or the list row being edited.
@@ -38,12 +40,13 @@ export const MedicineField: React.FC<MedicineFieldProps> = ({
   onUpdate,
   onRemove,
   error,
+  readOnly = false,
 }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
   const [editing, setEditing] = useState<Editing>(null);
   const [formVersion, setFormVersion] = useState(0); // bumped to empty the form on Cancel
-  const formOpen = editing !== null || (answer.answer === 'yes' && answer.medicines.length === 0);
+  const formOpen = !readOnly && (editing !== null || (answer.answer === 'yes' && answer.medicines.length === 0));
 
   const submit = (medicine: MedicineEntry) => {
     if (typeof editing === 'number') onUpdate(editing, medicine);
@@ -60,7 +63,7 @@ export const MedicineField: React.FC<MedicineFieldProps> = ({
   return (
     <View style={{ gap: sizes.gap * 2 }}>
       <FormField label={t(field.labelKey, { defaultValue: field.androidLabel })} error={error}>
-        <YesNoChoice value={answer.answer} onChange={onAnswer} />
+        <YesNoChoice value={answer.answer} onChange={onAnswer} readOnly={readOnly} />
       </FormField>
 
       {answer.answer === 'yes' && (
@@ -78,12 +81,16 @@ export const MedicineField: React.FC<MedicineFieldProps> = ({
                   route: medicine.route,
                 })}
               </Text>
-              <Pressable accessibilityRole="button" accessibilityLabel={t('capture.medicine.edit')} onPress={() => setEditing(index)}>
-                <AppIcon name="edit" color={colors.controlSelectedText} size={sizes.icon} />
-              </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={t('capture.medicine.remove')} onPress={() => onRemove(index)}>
-                <AppIcon name="delete" color={colors.alertFigma} size={sizes.icon} />
-              </Pressable>
+              {!readOnly && (
+                <>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t('capture.medicine.edit')} onPress={() => setEditing(index)}>
+                    <AppIcon name="edit" color={colors.controlSelectedText} size={sizes.icon} />
+                  </Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t('capture.medicine.remove')} onPress={() => onRemove(index)}>
+                    <AppIcon name="delete" color={colors.alertFigma} size={sizes.icon} />
+                  </Pressable>
+                </>
+              )}
             </View>
           ))}
 
@@ -94,7 +101,7 @@ export const MedicineField: React.FC<MedicineFieldProps> = ({
               onSubmit={submit}
               onCancel={close}
             />
-          ) : (
+          ) : readOnly ? null : (
             <Pressable accessibilityRole="button" onPress={() => setEditing('new')} style={styles.addLink}>
               <Text style={[styles.addText, { fontSize: sizes.text }]}>{t('capture.medicine.addAnother')}</Text>
             </Pressable>

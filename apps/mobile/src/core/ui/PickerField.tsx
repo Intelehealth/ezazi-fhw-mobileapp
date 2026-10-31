@@ -21,6 +21,7 @@ interface PickerFieldProps {
   disabled?: boolean;
   /** Lets the nurse search the list or keep their own text, as Android's typeable dropdowns do. */
   freeText?: boolean;
+  readOnly?: boolean;
 }
 
 // Case-insensitive "contains", as Android's AutoCompleteTextView filter.
@@ -40,6 +41,7 @@ export const PickerField: React.FC<PickerFieldProps> = ({
   error,
   disabled,
   freeText,
+  readOnly,
 }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
@@ -68,8 +70,8 @@ export const PickerField: React.FC<PickerFieldProps> = ({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityValue={{ text: shown ?? placeholder }}
-        accessibilityState={{ disabled: !!disabled, expanded: open }}
-        disabled={disabled}
+        accessibilityState={{ disabled: !!disabled || !!readOnly, expanded: open }}
+        disabled={disabled || readOnly}
         onPress={() => {
           Keyboard.dismiss();
           setOpen(true);

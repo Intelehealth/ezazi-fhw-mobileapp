@@ -11,13 +11,14 @@ interface SegmentedChoiceProps {
   onChange: (value: string) => void;
   error?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 /**
  * A single choice shown as option buttons that wrap onto more rows (Figma "COMPANION?",
  * "FETAL POSITION"). Picking the selected option again keeps it, as Android's dialogs do.
  */
-export const SegmentedChoice: React.FC<SegmentedChoiceProps> = ({ options, value, onChange, error, disabled }) => {
+export const SegmentedChoice: React.FC<SegmentedChoiceProps> = ({ options, value, onChange, error, disabled, readOnly }) => {
   const sizes = useControlSizes();
 
   return (
@@ -28,7 +29,7 @@ export const SegmentedChoice: React.FC<SegmentedChoiceProps> = ({ options, value
           <ChoiceButton
             key={option.value}
             label={option.label}
-            state={{ selected, alert: selected && option.alert, error, disabled }}
+            state={{ selected, alert: selected && option.alert, error, disabled, readOnly }}
             onPress={() => onChange(option.value)}
             style={{ minWidth: sizes.minWidth }}
           />

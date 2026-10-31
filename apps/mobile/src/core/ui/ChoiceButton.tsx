@@ -24,8 +24,8 @@ export const ChoiceButton: React.FC<ChoiceButtonProps> = ({ label, state, onPres
     <Pressable
       accessibilityRole="radio"
       accessibilityLabel={label}
-      accessibilityState={{ selected: !!state.selected, disabled: !!state.disabled }}
-      disabled={state.disabled}
+      accessibilityState={{ selected: !!state.selected, disabled: !!state.disabled || !!state.readOnly }}
+      disabled={state.disabled || state.readOnly}
       onPress={() => {
         Keyboard.dismiss(); // a pick ends typing in the stepper above it
         onPress();

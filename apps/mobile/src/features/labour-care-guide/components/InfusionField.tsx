@@ -31,6 +31,7 @@ interface InfusionFieldProps {
   bounds: InfusionBounds;
   /** Messages by field or sub-input id, e.g. "infusionRate". */
   errors: Partial<Record<string, string>>;
+  readOnly?: boolean;
 }
 
 /**
@@ -45,6 +46,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
   onRateBlur,
   bounds,
   errors,
+  readOnly,
 }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
@@ -71,6 +73,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
         bounds={id === INFUSION_INPUT_ID.STRENGTH ? bounds.strength : bounds.rate}
         error={!!errors[id]}
         onBlur={id === INFUSION_INPUT_ID.INFUSION_RATE ? onRateBlur : undefined}
+        readOnly={readOnly}
       />
     </FormField>
   );
@@ -78,7 +81,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
   return (
     <View style={{ gap: sizes.gap * 2 }}>
       <FormField label={t(field.labelKey, { defaultValue: field.androidLabel })} error={errors[field.id]}>
-        <YesNoChoice value={answer.answer} onChange={onAnswer} />
+        <YesNoChoice value={answer.answer} onChange={onAnswer} readOnly={readOnly} />
       </FormField>
 
       {answer.answer === 'yes' && (
@@ -90,6 +93,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
                 value={otherOpen ? IV_FLUID_OTHER_VALUE : (entry.type ?? null)}
                 onChange={pickType}
                 error={!!errors[INFUSION_INPUT_ID.IV_FLUID_TYPE]}
+                readOnly={readOnly}
               />
             </FormField>
           )}
@@ -99,6 +103,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
               value={entry.otherType ?? ''}
               onChangeText={(text) => onInput(INFUSION_INPUT_ID.OTHER_TYPE, text)}
               error={!!errors[INFUSION_INPUT_ID.OTHER_TYPE]}
+              readOnly={readOnly}
             />
           )}
           <View style={[styles.row, { gap: sizes.gap * 2 }]}>
@@ -111,6 +116,7 @@ export const InfusionField: React.FC<InfusionFieldProps> = ({
               value={entry.infusionStatus ?? null}
               onChange={(value) => onInput(INFUSION_INPUT_ID.INFUSION_STATUS, value)}
               error={!!errors[INFUSION_INPUT_ID.INFUSION_STATUS]}
+              readOnly={readOnly}
             />
           </FormField>
         </>
