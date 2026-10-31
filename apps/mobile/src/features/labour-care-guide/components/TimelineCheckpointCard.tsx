@@ -148,8 +148,13 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
     <View style={styles.row}>
       <View style={sizes.dateColumn}>
         {/* Gregorian for now; Android shows BS in Nepal, support comes later (Kaveri, 2026-10-28). */}
-        <Text style={[styles.date, sizes.date]}>{formatDate(checkpoint.scheduledAt, 'AD')}</Text>
-        <Text style={[styles.time, sizes.time]}>{formatClockTime(checkpoint.scheduledAt)}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.date, sizes.date]}>
+          {formatDate(checkpoint.scheduledAt, 'AD')}
+        </Text>
+        {/* One line: Figma's column fits "9:30 AM", so a two-digit hour shrinks slightly instead of wrapping. */}
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.time, sizes.time]}>
+          {formatClockTime(checkpoint.scheduledAt)}
+        </Text>
       </View>
 
       <View style={[styles.rail, sizes.rail]}>
