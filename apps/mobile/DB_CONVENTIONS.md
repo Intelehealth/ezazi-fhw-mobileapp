@@ -114,7 +114,9 @@ in place, until the write-new question is decided (see LABOUR_OPEN_POINTS.md). O
 **An edited card rewrites its rows in place, as Android** (decided 2026-10-31, Kaveri, until the
 write-new question is settled). `buildEditedCardObs` names each row to rewrite by uuid and
 `obs.rewriteCardObs` overwrites its value with that value's own alert code, unvoided and unsynced; a
-field with no row gets a new one, and stale "No" rows and removed medicines are voided.
+field with no row gets a new one and a stale "No" is voided. Medicines and notes follow Android's
+lists: a new or edited medicine is a new row and the old one is not voided (an open point in
+`LABOUR_OPEN_POINTS.md`).
 
 ---
 

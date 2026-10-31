@@ -156,11 +156,11 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
 ### Building the obs to save
 
 - `buildNewCardObs(input, notes)`: the obs Android's `saveObs` writes for a new card, in field order. A filled value gets its alert code in `comment`; "No" or the infusion JSON for Oxytocin and IV Fluids; "No" or one obs per medicine; one obs per note. Empty values write nothing; non-value rows leave `comment` null, as Android.
-- `buildEditedCardObs(stored, input, notes)`: re-saving a card as Android's EDIT save (decided 2026-10-31, Kaveri). It returns obs to insert, obs to rewrite in place by uuid, and obs uuids to void: every shown field rewrites its oldest live row with the new value and alert code (a cleared number saved empty), a field with no row gets a new one, Yes after "No" rewrites or voids the stale "No", the same infusion JSON is never written twice, kept medicines are rewritten, removed ones voided, and notes are only added.
+- `buildEditedCardObs(stored, input, notes)`: re-saving a card as Android's EDIT save (decided 2026-10-31, Kaveri). It returns obs to insert, obs to rewrite in place by uuid, and obs uuids to void: every shown field rewrites its oldest live row with the new value and alert code (a cleared number saved empty), a field with no row gets a new one, Yes after "No" rewrites or voids the stale "No", the same infusion JSON is never written twice, saved medicines are left as they are and new or edited ones are new rows (the old row is not voided, as Android; open point), Medicine "No" voids every medicine, and saved notes are rewritten as they are with new ones added.
 
 Each draft carries the field's `conceptKey`; the app resolves it to the concept uuid and adds the encounter, creator and time in one `transact`.
 
-**Same as Android since 2026-10-31 (Kaveri):** an edited obs is updated in place. Whether to keep history instead (write-new, or void the old row) is still open; see `apps/mobile/LABOUR_OPEN_POINTS.md`. One difference remains: an edited medicine is matched by its text, so changing a medicine voids the old row and adds a new one, where Android rewrites the same row.
+**Same as Android since 2026-10-31 (Kaveri):** an edited obs is updated in place. Whether to keep history instead (write-new, or void the old row) is still open; see `apps/mobile/LABOUR_OPEN_POINTS.md`. Medicines are matched by their stored text, since the app's medicine list keeps no row id; the result matches Android's `isRecordFromLocalDb` check.
 
 ## Validation ranges (per client)
 

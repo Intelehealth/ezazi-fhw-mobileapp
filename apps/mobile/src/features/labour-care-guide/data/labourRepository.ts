@@ -162,7 +162,7 @@ export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number
           comment: draft.comment,
           creator: hasAndroidCreator(draft) ? input.writer.creatorUuid : null,
           creatoruuid: input.writer.creatorUuid,
-          created_date: (isNoResponse(draft.value) ? undefined : addedAt(draft)) ?? now,
+          created_date: draft.createdAt ?? (isNoResponse(draft.value) ? undefined : addedAt(draft)) ?? now,
         },
         tx,
       );

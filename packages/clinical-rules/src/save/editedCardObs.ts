@@ -21,6 +21,7 @@ export interface StoredObs {
 /** An obs rewritten in place by uuid: Android's EDIT save keeps the row and overwrites its value. */
 export interface ObsRewrite extends ObsDraft {
   readonly uuid: string;
+  readonly createdAt?: string; // kept as stored (notes); absent: the save time, as Android
 }
 
 /** What an edited card's save writes: obs to insert, obs to rewrite in place, obs uuids to void. */
@@ -40,7 +41,9 @@ const oldestFirst = (rows: readonly StoredObs[]) =>
 /**
  * Re-saving a card as Android's EDIT save (`PartogramDataCaptureActivity.saveObs` 642-745, decided
  * 2026-10-31 until the write-new question is settled): each shown field rewrites its existing row in
- * place, a field with no row gets a new one, and stale "No" rows and removed medicines are voided.
+ * place, a field with no row gets a new one, and a stale "No" is voided. Medicines and notes as
+ * Android's lists: saved ones are kept, new or edited ones are new rows, and a removed or edited
+ * medicine's old row is not voided (LABOUR_OPEN_POINTS.md); only Medicine "No" voids them.
  */
 export function buildEditedCardObs(stored: readonly StoredObs[], input: CardInput, notes: CardNotes = {}): CardEdit {
   const insert: ObsDraft[] = [];
@@ -88,16 +91,19 @@ export function buildEditedCardObs(stored: readonly StoredObs[], input: CardInpu
         write(noRow, NO_RESPONSE_VALUE, null);
       }
       if (medicine?.answer === 'yes') {
+        // Android `getMedicinesObsList` writes only medicines not loaded from the card: a saved one is
+        // left as it is, a new or edited one is a new row (empty comment, as `Medicine.toObs`).
         const kept = new Set<string>();
         for (const value of medicine.medicines.map(encodeMedicine)) {
           const match = savedMedicines.find((row) => row.value === value && !kept.has(row.uuid));
           if (match) kept.add(match.uuid);
-          write(match, value, ALERT_CODE.NONE); // empty comment, as Android `Medicine.toObs`
+          else insert.push(draft(value, ALERT_CODE.NONE));
         }
-        savedMedicines.filter((row) => !kept.has(row.uuid)).forEach((row) => voidUuids.push(row.uuid));
         voidStaleNo();
       }
     } else if (field.storage === 'noteList') {
+      // Android `getPlansObsList` / `getAssessmentsObsList`: saved notes are rewritten as they are, new ones added.
+      rows.forEach((row) => update.push({ ...draft(row.value, null), uuid: row.uuid, createdAt: row.createdAt }));
       const added = field.id === FIELD_ID.ASSESSMENT ? notes[FIELD_ID.ASSESSMENT] : notes[FIELD_ID.PLAN];
       added?.filter((note) => note !== '').forEach((note) => insert.push(draft(note, null)));
     }

@@ -12,8 +12,8 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 | # | Point | RN today | Android | Options |
 |---|---|---|---|---|
 | 1 | Editing a saved card | Rewrites the rows in place, as Android (since 2026-10-31) | Rewrites in place (`ObsDAO.updateObs`) | Keep Android's way · keep history by voiding the old row and writing a new one · write-new with both rows live (not safe after sync) |
-| 2 | An edited medicine | Matched by its text: a changed medicine voids the old row and adds a new one | Rewrites the same row | Keep · track each medicine's row so it is rewritten in place |
-| 3 | Medicine answer turned "No" on an edited card | Voids every saved medicine, then saves "No" | Voids only medicines removed in the list | Keep · follow Android |
+| 2 | **Suspected Android bug, copied for now:** a medicine removed or edited on an edited card | As Android: the old row is **not voided**. An edited medicine is a new row and the old one stays live; a removed one stays live (it reappears when the card is opened again). Only Medicine "No" voids all medicines | `getMedicinesObsList` (`ParamInfo` 332-341) writes only new medicines; `setDeletedMedicines` is only called in commented-out code (`PartogramQueryListingAdapter` 1435, 1448) | Keep Android's way · void the old row of a removed or edited medicine |
+| 3 | Notes on an edited card | As Android: saved notes are rewritten as they are (same uuid, time kept), new ones added; a removed note is not voided | `getPlansObsList` / `getAssessmentsObsList` rewrite every listed note | Keep · write only new notes |
 | 4 | Date-times written to the database (deviation row 20) | Arpan's rule: patient and visit rows in local time, encounter and obs in UTC | Mixed per column | All UTC in Android's formats · keep |
 | 5 | `modified_date` on card obs | UTC `yyyy-MM-dd HH:mm:ss` | Local time with offset on card saves | Part of #4 |
 | 6 | `created_date` on the Oxytocin / IV row | Always filled (DB_CONVENTIONS: an empty value breaks newest-wins reads) | Left empty | Keep · follow Android |
@@ -51,7 +51,7 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 
 | Date | Point | Decision (who) |
 |---|---|---|
-| 2026-10-31 | Edit save follows Android for now (point 1 stays open) | Kaveri |
+| 2026-10-31 | Edit save follows Android for now, including its medicine and note lists (points 1-3 stay open) | Kaveri |
 | 2026-10-29 | Where Dr. Venkat's frequency sheet and Android disagree, follow Android | Kaveri |
 | 2026-10-29 | Range errors while typing, in the Figma error style | Kaveri |
 | 2026-10-28 | Timeline dates in Gregorian for now | Kaveri |

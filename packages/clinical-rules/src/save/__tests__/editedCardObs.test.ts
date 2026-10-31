@@ -92,15 +92,24 @@ describe('buildEditedCardObs', () => {
     expect(rewritten(reused)).toEqual([['no', 'No', null]]);
   });
 
-  it('rewrites kept medicines, adds new ones, voids removed ones and a stale "No"', () => {
+  it('leaves saved medicines as they are, adds new ones, and voids a stale "No", as Android', () => {
     const edit = buildEditedCardObs(
-      [stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'kept'), stored(FIELD_ID.MEDICINE, 'Tablet | Gone | 1 mg | 1::Tab |  | Oral | ::', 'gone'), stored(FIELD_ID.MEDICINE, 'No', 'no')],
+      [stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'kept'), stored(FIELD_ID.MEDICINE, 'No', 'no')],
       { values: {}, [FIELD_ID.MEDICINE]: { answer: 'yes', medicines: [PARACETAMOL, { ...PARACETAMOL, name: 'Ibuprofen' }] } },
     );
 
-    expect(rewritten(edit)).toEqual([['kept', PARACETAMOL_TEXT, '']]);
+    expect(edit.update).toEqual([]);
     expect(inserted(edit)).toEqual([[FIELD_ID.MEDICINE, 'Tablet | Ibuprofen | 500 mg | 1::Tab |  | Oral | ::', '']]);
-    expect(edit.voidUuids.sort()).toEqual(['gone', 'no']);
+    expect(edit.voidUuids).toEqual(['no']);
+  });
+
+  it('keeps a removed or edited medicine\'s old row live, as Android (open point)', () => {
+    const edit = buildEditedCardObs(
+      [stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'old')],
+      { values: {}, [FIELD_ID.MEDICINE]: { answer: 'yes', medicines: [{ ...PARACETAMOL, dosage: '2' }] } },
+    );
+    expect(inserted(edit)).toEqual([[FIELD_ID.MEDICINE, 'Tablet | Paracetamol | 500 mg | 2::Tab |  | Oral | ::', '']]);
+    expect(edit.voidUuids).toEqual([]);
   });
 
   it('voids every medicine and saves "No" when Medicine turns No', () => {
@@ -112,9 +121,10 @@ describe('buildEditedCardObs', () => {
     expect(inserted(edit)).toEqual([[FIELD_ID.MEDICINE, 'No', null]]);
   });
 
-  it('only adds notes; earlier notes are never touched', () => {
-    const edit = buildEditedCardObs([stored(FIELD_ID.PLAN, 'Old plan', 'old')], { values: {} }, { [FIELD_ID.PLAN]: ['New plan', ''] });
+  it('rewrites saved notes as they are, keeping their time, and adds new ones, as Android', () => {
+    const old = stored(FIELD_ID.PLAN, 'Old plan', 'old');
+    const edit = buildEditedCardObs([old], { values: {} }, { [FIELD_ID.PLAN]: ['New plan', ''] });
     expect(inserted(edit)).toEqual([[FIELD_ID.PLAN, 'New plan', null]]);
-    expect(edit.update).toEqual([]);
+    expect(edit.update.map((row) => [row.uuid, row.value, row.createdAt])).toEqual([['old', 'Old plan', old.createdAt]]);
   });
 });
