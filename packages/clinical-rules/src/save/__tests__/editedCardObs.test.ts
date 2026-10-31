@@ -5,8 +5,8 @@ import { FIELD_ID } from '../../constants';
 import type { FieldId } from '../../constants';
 import type { CardInput } from '../../validation/types';
 
-// The outcome must match Android's EDIT save (PartogramDataCaptureActivity.saveObs,
-// whitelabel-master b3ddd15) read newest-first, without overwriting any row.
+// The outcome must match Android's EDIT save (PartogramDataCaptureActivity.saveObs 642-745,
+// whitelabel-master b3ddd15): rows are rewritten in place by uuid (ObsDAO.updateObs).
 let clock = 0;
 const stored = (fieldId: FieldId, value: string, uuid = `u${clock}`): StoredObs => ({
   uuid,
@@ -19,99 +19,102 @@ const PARACETAMOL = {
   frequency: '', route: 'Oral', duration: '', durationUnit: '',
 };
 const PARACETAMOL_TEXT = 'Tablet | Paracetamol | 500 mg | 1::Tab |  | Oral | ::';
-const rows = (edit: ReturnType<typeof buildEditedCardObs>) => edit.insert.map((r) => [r.fieldId, r.value, r.comment]);
+const inserted = (edit: ReturnType<typeof buildEditedCardObs>) => edit.insert.map((r) => [r.fieldId, r.value, r.comment]);
+const rewritten = (edit: ReturnType<typeof buildEditedCardObs>) => edit.update.map((r) => [r.uuid, r.value, r.comment]);
 
 describe('buildEditedCardObs', () => {
-  it('writes a changed value with its alert code, and nothing for an unchanged one', () => {
-    const before = [stored(FIELD_ID.BASELINE_FHR, '150'), stored(FIELD_ID.PULSE, '80')];
-    const edit = buildEditedCardObs(before, { values: { [FIELD_ID.BASELINE_FHR]: '165', [FIELD_ID.PULSE]: '80' } });
+  it('rewrites a changed value in its own row, with the new alert code', () => {
+    const edit = buildEditedCardObs([stored(FIELD_ID.BASELINE_FHR, '140', 'fhr')], {
+      values: { [FIELD_ID.BASELINE_FHR]: '170' },
+    });
 
-    expect(rows(edit)).toEqual([[FIELD_ID.BASELINE_FHR, '165', 'R']]);
+    expect(rewritten(edit)).toEqual([['fhr', '170', 'R']]);
+    expect(edit.insert).toEqual([]);
     expect(edit.voidUuids).toEqual([]);
   });
 
-  it('trims a typed value before comparing, so padding alone writes nothing', () => {
-    const edit = buildEditedCardObs([stored(FIELD_ID.BASELINE_FHR, '150', 'fhr-1')], {
-      values: { [FIELD_ID.BASELINE_FHR]: ' 150 ' },
-    });
-
-    expect(rows(edit)).toEqual([]);
+  it('rewrites every shown field, unchanged ones too, as Android does', () => {
+    const edit = buildEditedCardObs([stored(FIELD_ID.PULSE, '88', 'pulse')], { values: { [FIELD_ID.PULSE]: ' 88 ' } });
+    expect(rewritten(edit)).toEqual([['pulse', '88', 'G']]);
   });
 
-  it('compares with the newest stored value, not the first', () => {
-    const before = [stored(FIELD_ID.BASELINE_FHR, '150'), stored(FIELD_ID.BASELINE_FHR, '165')];
-    expect(rows(buildEditedCardObs(before, { values: { [FIELD_ID.BASELINE_FHR]: '165' } }))).toEqual([]);
-    expect(rows(buildEditedCardObs(before, { values: { [FIELD_ID.BASELINE_FHR]: '150' } }))).toEqual([
-      [FIELD_ID.BASELINE_FHR, '150', 'G'],
-    ]);
+  it('rewrites the oldest live row when a field has more than one (Android getObsuuid)', () => {
+    const older = stored(FIELD_ID.BASELINE_FHR, '140', 'older');
+    const newer = stored(FIELD_ID.BASELINE_FHR, '150', 'newer');
+    const edit = buildEditedCardObs([newer, older], { values: { [FIELD_ID.BASELINE_FHR]: '155' } });
+    expect(rewritten(edit)).toEqual([['older', '155', 'G']]);
   });
 
-  it('saves a cleared value as empty, as Android does on an edited card', () => {
-    const edit = buildEditedCardObs([stored(FIELD_ID.POSTURE, 'SP')], { values: { [FIELD_ID.POSTURE]: '' } });
-    expect(rows(edit)).toEqual([[FIELD_ID.POSTURE, '', '']]);
+  it('saves a cleared number as empty in its row, but leaves a choice that has no value', () => {
+    const edit = buildEditedCardObs([stored(FIELD_ID.PULSE, '88', 'pulse')], { values: { [FIELD_ID.PULSE]: '' } });
+    expect(rewritten(edit)).toEqual([['pulse', '', '']]);
+
+    const choice = buildEditedCardObs([stored(FIELD_ID.COMPANION, 'Y', 'companion')], { values: { [FIELD_ID.COMPANION]: '' } });
+    expect(choice.update).toEqual([]);
   });
 
-  it('adds a value that was empty before, and ignores fields the card does not show', () => {
-    const edit = buildEditedCardObs([stored(FIELD_ID.PULSE, '80')], { values: { [FIELD_ID.BASELINE_FHR]: '120' } });
-    expect(rows(edit)).toEqual([[FIELD_ID.BASELINE_FHR, '120', 'G']]);
+  it('adds a field that had no row, and ignores fields the card does not show', () => {
+    const edit = buildEditedCardObs([], { values: { [FIELD_ID.PULSE]: '88' } });
+    expect(inserted(edit)).toEqual([[FIELD_ID.PULSE, '88', 'G']]);
   });
 
-  it('voids the stale "No" when an infusion turns Yes, and never writes the same JSON twice', () => {
-    const no = stored(FIELD_ID.OXYTOCIN, 'No', 'no-1');
-    const input: CardInput = {
-      values: {},
-      [FIELD_ID.OXYTOCIN]: { answer: 'yes', entry: { strength: '5', infusionRate: '20', infusionStatus: 'Started' } },
-    };
+  it('turns a stored "No" into the infusion JSON in place, and writes nothing for the same JSON', () => {
+    const input: CardInput = { values: {}, [FIELD_ID.OXYTOCIN]: { answer: 'yes', entry: { strength: '5', infusionRate: '20', infusionStatus: 'Started' } } };
+    const edit = buildEditedCardObs([stored(FIELD_ID.OXYTOCIN, 'No', 'no')], input);
     const json = '{"infusionRate":"20","infusionStatus":"Started","strength":"5"}';
-
-    const first = buildEditedCardObs([no], input);
-    expect(rows(first)).toEqual([[FIELD_ID.OXYTOCIN, json, null]]);
-    expect(first.voidUuids).toEqual(['no-1']);
-
-    expect(rows(buildEditedCardObs([stored(FIELD_ID.OXYTOCIN, json)], input))).toEqual([]);
-  });
-
-  it('writes "No" when an infusion turns No, keeping the earlier JSON as Android does', () => {
-    const json = stored(FIELD_ID.IV_FLUIDS, '{"infusionRate":"10"}', 'json-1');
-    const edit = buildEditedCardObs([json], { values: {}, [FIELD_ID.IV_FLUIDS]: { answer: 'no', entry: {} } });
-
-    expect(rows(edit)).toEqual([[FIELD_ID.IV_FLUIDS, 'No', null]]);
+    expect(rewritten(edit)).toEqual([['no', json, null]]);
     expect(edit.voidUuids).toEqual([]);
-    expect(rows(buildEditedCardObs([stored(FIELD_ID.IV_FLUIDS, 'No')], { values: {}, [FIELD_ID.IV_FLUIDS]: { answer: 'no', entry: {} } }))).toEqual([]);
+
+    const same = buildEditedCardObs([stored(FIELD_ID.OXYTOCIN, json, 'json')], input);
+    expect(same.update).toEqual([]);
+    expect(same.insert).toEqual([]);
   });
 
-  it('keeps saved medicines, adds new ones, voids removed ones and a stale "No"', () => {
-    const before = [
-      stored(FIELD_ID.MEDICINE, 'No', 'no-1'),
-      stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'para-1'),
-      stored(FIELD_ID.MEDICINE, 'Tablet | Ibuprofen | 400 mg | 1::Tab |  | Oral | ::', 'ibu-1'),
-    ];
-    const oxytocin = { ...PARACETAMOL, form: 'Injection', name: 'Oxytocin', strength: '10 IU/mL', dosageUnit: 'mL', route: 'IV Infusion' };
-    const edit = buildEditedCardObs(before, {
-      values: {},
-      [FIELD_ID.MEDICINE]: { answer: 'yes', medicines: [PARACETAMOL, oxytocin] },
-    });
+  it('rewrites a changed infusion JSON and voids a leftover "No"', () => {
+    const edit = buildEditedCardObs(
+      [stored(FIELD_ID.IV_FLUIDS, '{"type":"Normal Saline"}', 'json'), stored(FIELD_ID.IV_FLUIDS, 'No', 'no')],
+      { values: {}, [FIELD_ID.IV_FLUIDS]: { answer: 'yes', entry: { type: 'Ringer Lactate', infusionRate: '20', infusionStatus: 'Started' } } },
+    );
+    expect(edit.update.map((row) => row.uuid)).toEqual(['json']);
+    expect(edit.voidUuids).toEqual(['no']);
+  });
 
-    expect(rows(edit)).toEqual([[FIELD_ID.MEDICINE, 'Injection | Oxytocin | 10 IU/mL | 1::mL |  | IV Infusion | ::', '']]);
-    expect([...edit.voidUuids].sort()).toEqual(['ibu-1', 'no-1']);
+  it('writes "No" when an infusion turns No, reusing a stored "No" and keeping the JSON, as Android', () => {
+    const json = stored(FIELD_ID.OXYTOCIN, '{"strength":"5"}', 'json');
+    const turnedNo = buildEditedCardObs([json], { values: {}, [FIELD_ID.OXYTOCIN]: { answer: 'no', entry: {} } });
+    expect(inserted(turnedNo)).toEqual([[FIELD_ID.OXYTOCIN, 'No', null]]);
+    expect(turnedNo.voidUuids).toEqual([]);
+
+    const reused = buildEditedCardObs([json, stored(FIELD_ID.OXYTOCIN, 'No', 'no')], {
+      values: {},
+      [FIELD_ID.OXYTOCIN]: { answer: 'no', entry: {} },
+    });
+    expect(rewritten(reused)).toEqual([['no', 'No', null]]);
+  });
+
+  it('rewrites kept medicines, adds new ones, voids removed ones and a stale "No"', () => {
+    const edit = buildEditedCardObs(
+      [stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'kept'), stored(FIELD_ID.MEDICINE, 'Tablet | Gone | 1 mg | 1::Tab |  | Oral | ::', 'gone'), stored(FIELD_ID.MEDICINE, 'No', 'no')],
+      { values: {}, [FIELD_ID.MEDICINE]: { answer: 'yes', medicines: [PARACETAMOL, { ...PARACETAMOL, name: 'Ibuprofen' }] } },
+    );
+
+    expect(rewritten(edit)).toEqual([['kept', PARACETAMOL_TEXT, '']]);
+    expect(inserted(edit)).toEqual([[FIELD_ID.MEDICINE, 'Tablet | Ibuprofen | 500 mg | 1::Tab |  | Oral | ::', '']]);
+    expect(edit.voidUuids.sort()).toEqual(['gone', 'no']);
   });
 
   it('voids every medicine and saves "No" when Medicine turns No', () => {
-    const edit = buildEditedCardObs([stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'para-1')], {
+    const edit = buildEditedCardObs([stored(FIELD_ID.MEDICINE, PARACETAMOL_TEXT, 'med')], {
       values: {},
       [FIELD_ID.MEDICINE]: { answer: 'no', medicines: [] },
     });
-
-    expect(rows(edit)).toEqual([[FIELD_ID.MEDICINE, 'No', null]]);
-    expect(edit.voidUuids).toEqual(['para-1']);
+    expect(edit.voidUuids).toEqual(['med']);
+    expect(inserted(edit)).toEqual([[FIELD_ID.MEDICINE, 'No', null]]);
   });
 
   it('only adds notes; earlier notes are never touched', () => {
-    const edit = buildEditedCardObs([stored(FIELD_ID.PLAN, 'Old plan', 'plan-1')], { values: {} }, {
-      [FIELD_ID.PLAN]: ['New plan'],
-    });
-
-    expect(rows(edit)).toEqual([[FIELD_ID.PLAN, 'New plan', null]]);
-    expect(edit.voidUuids).toEqual([]);
+    const edit = buildEditedCardObs([stored(FIELD_ID.PLAN, 'Old plan', 'old')], { values: {} }, { [FIELD_ID.PLAN]: ['New plan', ''] });
+    expect(inserted(edit)).toEqual([[FIELD_ID.PLAN, 'New plan', null]]);
+    expect(edit.update).toEqual([]);
   });
 });

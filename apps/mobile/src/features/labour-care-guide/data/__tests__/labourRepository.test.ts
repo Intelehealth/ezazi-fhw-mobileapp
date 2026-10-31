@@ -121,7 +121,7 @@ describe('labour repository', () => {
     });
 
     it('writes the card with alert codes as the user, and marks it for sync', () => {
-      expect(save('165')).toEqual({ inserted: 4, voided: 0 });
+      expect(save('165')).toEqual({ inserted: 4, updated: 0, voided: 0 });
 
       const fhr = obsRepo.listByEncounter(dueCard, db).find((row) => row.conceptuuid === BASELINE_FHR)!;
       expect(fhr).toMatchObject({ value: '165', comment: 'R', creator: null, creatoruuid: 'user-1' });
@@ -149,10 +149,16 @@ describe('labour repository', () => {
       expect(readStatus).toMatchObject({ value: '$', sync: SYNC_DIRTY });
     });
 
-    it('edits by writing only what changed; the newest value wins', () => {
+    it('edits in place as Android: the same row takes the new value and its alert code', () => {
       save('165');
-      expect(save('150')).toEqual({ inserted: 1, voided: 0 });
-      expect(save('150')).toEqual({ inserted: 0, voided: 0 });
+      const fhrRows = () => obsRepo.listByEncounter(dueCard, db).filter((row) => row.conceptuuid === BASELINE_FHR);
+      const before = fhrRows()[0];
+
+      // FHR and the three Medication "No" rows are rewritten; nothing new, nothing voided.
+      expect(save('150')).toEqual({ inserted: 0, updated: 4, voided: 0 });
+      expect(fhrRows()).toHaveLength(1);
+      expect(fhrRows()[0]).toMatchObject({ uuid: before.uuid, value: '150', comment: 'G', voided: 0 });
+      expect(encounterRepo.findUnsynced(db).map((row) => row.uuid)).toContain(dueCard);
       expect(visitAttributeRepo.findValue(DEV_VISIT_UUID, VISIT_RISK, db)).toBe('1.0');
     });
   });

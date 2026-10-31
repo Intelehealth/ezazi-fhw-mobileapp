@@ -150,7 +150,7 @@ export type { OutcomeDetails, OutcomeObs, EndStage1Decision } from './outcomes/d
 export { buildNewCardObs } from './save/newCardObs';
 export type { ObsDraft, CardNotes } from './save/newCardObs';
 export { buildEditedCardObs } from './save/editedCardObs';
-export type { StoredObs, CardEdit } from './save/editedCardObs';
+export type { StoredObs, CardEdit, ObsRewrite } from './save/editedCardObs';
 
 export { encodeInfusion, decodeInfusion } from './storage/infusionJson';
 export type { InfusionEntry } from './storage/infusionJson';

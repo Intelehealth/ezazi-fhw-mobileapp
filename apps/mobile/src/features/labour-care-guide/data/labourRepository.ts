@@ -36,7 +36,7 @@ import { SYNC_DIRTY, VOIDED_NO } from '@/core/db/syncFlags';
 import { transact, type DbHandle } from '@/core/db/tx';
 import { newUuid } from '@/core/db/uuid';
 import type { WriterIdentity } from '@/core/session/writerIdentity';
-import { localIsoTimestamp } from '@/core/utils/datetime';
+import { localIsoTimestamp, utcIsoTimestamp } from '@/core/utils/datetime';
 
 const CONCEPTS = obsConcepts as unknown as Readonly<Record<ConceptKey | OutcomeConceptKey, string>>;
 
@@ -131,18 +131,18 @@ export interface SaveCardInput {
 }
 
 /**
- * Saves one card in one transaction (Android `saveObs`): new obs from the package's builders
- * (write-new on an edit), stale rows voided, the card marked for sync, VISIT_RISK refreshed,
+ * Saves one card in one transaction (Android `saveObs`): new obs from the package's builders, an
+ * edited card's rows rewritten in place as Android, stale rows voided, the card marked for sync, VISIT_RISK refreshed,
  * then, as Android does on every save, the visit marked for sync and marked read.
  */
-export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number; voided: number } {
+export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number; updated: number; voided: number } {
   return transact((tx) => {
     const stored = readStoredCardObs(input.encounterUuid, tx);
 
-    const { insert, voidUuids } =
+    const { insert, update, voidUuids } =
       stored.length > 0
         ? buildEditedCardObs(stored, input.card, input.notes)
-        : { insert: buildNewCardObs(input.card, input.notes), voidUuids: [] };
+        : { insert: buildNewCardObs(input.card, input.notes), update: [], voidUuids: [] };
 
     const addedAt = addedAtLookup(input);
     obsRepo.insertMany(
@@ -153,12 +153,26 @@ export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number
       })),
       tx,
     );
+    const now = utcIsoTimestamp(input.now);
+    for (const draft of update) {
+      obsRepo.rewriteCardObs(
+        draft.uuid,
+        {
+          value: draft.value,
+          comment: draft.comment,
+          creator: hasAndroidCreator(draft) ? input.writer.creatorUuid : null,
+          creatoruuid: input.writer.creatorUuid,
+          created_date: (isNoResponse(draft.value) ? undefined : addedAt(draft)) ?? now,
+        },
+        tx,
+      );
+    }
     if (voidUuids.length > 0) obsRepo.markVoided([...voidUuids], tx);
     encounterRepo.markDirty(input.encounterUuid, tx);
     refreshVisitRisk(input.visitUuid, input.now, tx);
     visitRepo.markDirty(input.visitUuid, tx);
     visitAttributeRepo.markRead(input.visitUuid, tx);
-    return { inserted: insert.length, voided: voidUuids.length };
+    return { inserted: insert.length, updated: update.length, voided: voidUuids.length };
   }, on);
 }
 

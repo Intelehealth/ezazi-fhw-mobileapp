@@ -156,11 +156,11 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
 ### Building the obs to save
 
 - `buildNewCardObs(input, notes)`: the obs Android's `saveObs` writes for a new card, in field order. A filled value gets its alert code in `comment`; "No" or the infusion JSON for Oxytocin and IV Fluids; "No" or one obs per medicine; one obs per note. Empty values write nothing; non-value rows leave `comment` null, as Android.
-- `buildEditedCardObs(stored, input, notes)`: re-saving a card the write-new way (DB_CONVENTIONS, decided 2026-10-23). It returns obs to insert and obs uuids to void, with the same end result as Android's EDIT save read newest-first: a changed value is a new obs (a cleared one is saved empty), an unchanged value writes nothing, a Yes after "No" voids the stale "No", the same infusion JSON is never written twice, removed medicines are voided, and notes are only added.
+- `buildEditedCardObs(stored, input, notes)`: re-saving a card as Android's EDIT save (decided 2026-10-31, Kaveri). It returns obs to insert, obs to rewrite in place by uuid, and obs uuids to void: every shown field rewrites its oldest live row with the new value and alert code (a cleared number saved empty), a field with no row gets a new one, Yes after "No" rewrites or voids the stale "No", the same infusion JSON is never written twice, kept medicines are rewritten, removed ones voided, and notes are only added.
 
 Each draft carries the field's `conceptKey`; the app resolves it to the concept uuid and adds the encounter, creator and time in one `transact`.
 
-**Deviation:** Android updates an edited obs in place (and voids by uuid); here every change is a new obs and the newest wins (DB_CONVENTIONS write-new). **Decision pending (Kaveri, 2026-10-27): kept as is until decided.**
+**Same as Android since 2026-10-31 (Kaveri):** an edited obs is updated in place. Whether to keep history instead (write-new, or void the old row) is still open; see `apps/mobile/LABOUR_OPEN_POINTS.md`. One difference remains: an edited medicine is matched by its text, so changing a medicine voids the old row and adds a new one, where Android rewrites the same row.
 
 ## Validation ranges (per client)
 

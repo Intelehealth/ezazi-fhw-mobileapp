@@ -222,6 +222,24 @@ export function update(uuid: string, patch: ObsUpdate, on: DbHandle): void {
     .run();
 }
 
+/** The columns Android's EDIT save rewrites on a card obs (`ObsDAO.updateObs`). */
+export type CardObsRewrite = Pick<ObsInput, 'value' | 'creator' | 'creatoruuid'> & {
+  comment: string | null; // the new value's own alert code
+  created_date: string;
+};
+
+/**
+ * Rewrites one card obs in place, as Android's EDIT save does (decided 2026-10-31, Kaveri): the new
+ * value together with its own alert code, unvoided and marked for sync. The only writer that changes
+ * `comment`, and only alongside the value it codes.
+ */
+export function rewriteCardObs(uuid: string, row: CardObsRewrite, on: DbHandle): void {
+  on.update(obs)
+    .set({ ...row, voided: VOIDED_NO, modified_date: utcIsoTimestamp(), sync: SYNC_DIRTY })
+    .where(eq(obs.uuid, uuid))
+    .run();
+}
+
 /**
  * Soft delete — the only kind there is. Deliberately does NOT write `comment`:
  * the legacy stamped 'Void this' into it, destroying the alert code.

@@ -96,7 +96,7 @@ Original text kept for reference:
 alert threshold, `'G'` within it, `''` when the field is empty — and is the **sole input to the risk
 score**. Codes and the risk score are computed in `@ezazi/clinical-rules`, as Android's
 `getAlertNameUpdated` and `VisitAlertProcessor` do. Obs that are never coded keep Android's value:
-NULL for infusion, "No", note, SOS label and NORMAL marker obs; `''` for medicine and Missed rows. The legacy's `markedAsVoidedObsToDb` stomps it, destroying whatever alert was there.
+NULL for infusion, "No", note, SOS label and NORMAL marker obs; `''` for medicine and Missed rows. The legacy's `markedAsVoidedObsToDb` stomps it, destroying whatever alert was there. The one writer that changes it is `obs.rewriteCardObs`, an edited card's save, and only together with the value it codes (2026-10-31).
 
 **No hard deletes. Anywhere.** Deletion is the `voided` flag. No repository gets a `delete()`.
 
@@ -106,8 +106,15 @@ Written as obs under `ENCOUNTER_ADMISSION`, read back through the obs repository
 attribute fallback and no region branch. Four registration-only values stay attributes: registration
 number, profile-image timestamp, alternate number, registration start time.
 
+<!-- Superseded 2026-10-31 (Kaveri): an edited card is now saved as Android does, rewriting its rows
+in place, until the write-new question is decided (see LABOUR_OPEN_POINTS.md). Original text kept for reference:
 **Editing an obs means writing a new one.** Reads take the first row per concept ordered by
 `created_date DESC`, so the latest wins and the previous value survives as history.
+-->
+**An edited card rewrites its rows in place, as Android** (decided 2026-10-31, Kaveri, until the
+write-new question is settled). `buildEditedCardObs` names each row to rewrite by uuid and
+`obs.rewriteCardObs` overwrites its value with that value's own alert code, unvoided and unsynced; a
+field with no row gets a new one, and stale "No" rows and removed medicines are voided.
 
 ---
 

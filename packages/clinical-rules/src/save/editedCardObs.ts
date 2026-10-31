@@ -18,70 +18,90 @@ export interface StoredObs {
   readonly createdAt: string;
 }
 
-/** What an edited card's save writes: new obs to insert, and obs uuids to void. */
+/** An obs rewritten in place by uuid: Android's EDIT save keeps the row and overwrites its value. */
+export interface ObsRewrite extends ObsDraft {
+  readonly uuid: string;
+}
+
+/** What an edited card's save writes: obs to insert, obs to rewrite in place, obs uuids to void. */
 export interface CardEdit {
   readonly insert: readonly ObsDraft[];
+  readonly update: readonly ObsRewrite[];
   readonly voidUuids: readonly string[];
 }
 
 const EMPTY_JSON = encodeInfusion({});
 
-// Stored UTC text sorts as time; plain comparison keeps it locale-free. The sort is stable,
-// so rows from the same second stay in the caller's newest-first order.
-const newestFirst = (rows: readonly StoredObs[]) =>
-  [...rows].sort((a, b) => (a.createdAt === b.createdAt ? 0 : a.createdAt < b.createdAt ? 1 : -1));
+// Android `ObsDAO.getObsuuid`: the card's oldest live row for a concept is the one an edit rewrites.
+// Stored UTC text sorts as time; the sort is stable, so same-second rows keep the caller's order.
+const oldestFirst = (rows: readonly StoredObs[]) =>
+  [...rows].sort((a, b) => (a.createdAt === b.createdAt ? 0 : a.createdAt < b.createdAt ? -1 : 1));
 
 /**
- * Re-saving a card, write-new (DB_CONVENTIONS; decided 2026-10-23): reads take the newest obs
- * per field, so a change is a new obs and nothing is overwritten. Same outcome as Android's
- * EDIT save: changed values (a cleared one saved empty), "No" ↔ Yes with the stale "No" voided,
- * no duplicate infusion, removed medicines voided, notes added only. Unchanged values write nothing.
+ * Re-saving a card as Android's EDIT save (`PartogramDataCaptureActivity.saveObs` 642-745, decided
+ * 2026-10-31 until the write-new question is settled): each shown field rewrites its existing row in
+ * place, a field with no row gets a new one, and stale "No" rows and removed medicines are voided.
  */
 export function buildEditedCardObs(stored: readonly StoredObs[], input: CardInput, notes: CardNotes = {}): CardEdit {
   const insert: ObsDraft[] = [];
+  const update: ObsRewrite[] = [];
   const voidUuids: string[] = [];
 
   for (const field of STAGE1_AND_2_FIELDS) {
-    const rows = newestFirst(stored.filter((row) => row.fieldId === field.id));
-    const add = (value: string, comment: ObsDraft['comment']) =>
-      insert.push({ fieldId: field.id, conceptKey: field.conceptKey, value, comment });
-    const voidNo = () => rows.filter((row) => isNoResponse(row.value)).forEach((row) => voidUuids.push(row.uuid));
+    const rows = stored.filter((row) => row.fieldId === field.id);
+    const draft = (value: string, comment: ObsDraft['comment']): ObsDraft => ({
+      fieldId: field.id,
+      conceptKey: field.conceptKey,
+      value,
+      comment,
+    });
+    const write = (target: StoredObs | undefined, value: string, comment: ObsDraft['comment']) =>
+      target ? update.push({ ...draft(value, comment), uuid: target.uuid }) : insert.push(draft(value, comment));
+    const noRow = rows.find((row) => isNoResponse(row.value));
+    const voidStaleNo = (written?: StoredObs) => {
+      if (noRow && noRow !== written) voidUuids.push(noRow.uuid);
+    };
 
     if (field.storage === 'value') {
       if (!(field.id in input.values)) continue;
       const value = javaTrim(input.values[field.id] ?? ''); // trimmed at input, as Android
-      const latest = rows[0];
-      if (latest ? latest.value !== value : value !== '') add(value, getAlertCode(field.id, value));
+      const target = oldestFirst(rows)[0];
+      // Every shown field is rewritten, unchanged or not; a cleared choice writes nothing (Android radio flow).
+      if (target ? value !== '' || field.input.kind !== 'select' : value !== '') {
+        write(target, value, getAlertCode(field.id, value));
+      }
     } else if (field.storage === 'infusion' && field.input.kind === 'infusion') {
       const answer = input[field.input.variant];
-      if (answer?.answer === 'no' && !(rows[0] && isNoResponse(rows[0].value))) add(NO_RESPONSE_VALUE, null);
+      if (answer?.answer === 'no') write(noRow, NO_RESPONSE_VALUE, null); // the earlier JSON stays, as Android
       if (answer?.answer === 'yes') {
         const json = encodeInfusion(answer.entry);
-        if (json !== EMPTY_JSON && !rows.some((row) => row.value === json)) add(json, null);
-        voidNo();
+        const target = oldestFirst(rows)[0];
+        const changed = json !== EMPTY_JSON && !rows.some((row) => row.value === json);
+        if (changed) write(target, json, null);
+        voidStaleNo(changed ? target : undefined);
       }
     } else if (field.storage === 'medicineList') {
       const medicine = input[FIELD_ID.MEDICINE];
       const savedMedicines = rows.filter((row) => !isNoResponse(row.value));
       if (medicine?.answer === 'no') {
         savedMedicines.forEach((row) => voidUuids.push(row.uuid));
-        if (!rows.some((row) => isNoResponse(row.value))) add(NO_RESPONSE_VALUE, null);
+        write(noRow, NO_RESPONSE_VALUE, null);
       }
       if (medicine?.answer === 'yes') {
         const kept = new Set<string>();
         for (const value of medicine.medicines.map(encodeMedicine)) {
           const match = savedMedicines.find((row) => row.value === value && !kept.has(row.uuid));
           if (match) kept.add(match.uuid);
-          else add(value, ALERT_CODE.NONE); // empty comment, as Android `Medicine.toObs`
+          write(match, value, ALERT_CODE.NONE); // empty comment, as Android `Medicine.toObs`
         }
         savedMedicines.filter((row) => !kept.has(row.uuid)).forEach((row) => voidUuids.push(row.uuid));
-        voidNo();
+        voidStaleNo();
       }
     } else if (field.storage === 'noteList') {
       const added = field.id === FIELD_ID.ASSESSMENT ? notes[FIELD_ID.ASSESSMENT] : notes[FIELD_ID.PLAN];
-      added?.filter((note) => note !== '').forEach((note) => add(note, null));
+      added?.filter((note) => note !== '').forEach((note) => insert.push(draft(note, null)));
     }
   }
 
-  return { insert, voidUuids };
+  return { insert, update, voidUuids };
 }
