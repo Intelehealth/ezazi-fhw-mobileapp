@@ -11,13 +11,11 @@ import { AlertCountBadgeComponent } from './alert-count-badge.component';
 export type VisitTableVariant = 'active' | 'completed';
 
 /*
- * The table uses `border-separate` (for the gap between rows), which ignores
- * borders on <tr>, so the divider above the headers is drawn on each <th>.
  * Table cells take no margin, so the space around the header text is padding.
- * The first column gets Angular Material's 24px first-of-type left inset.
+ * The first column gets Angular Material's 24px first-of-type left inset. The
+ * divider above the headers belongs to the section (case-section.component.tsx).
  */
-const HEADER_CELL_CLASS =
-  'border-t border-[#EFE8FF] pt-4 pb-3 pr-6 font-bold first:pl-6';
+const HEADER_CELL_CLASS = 'pt-4 pb-3 pr-6 font-bold first:pl-6';
 
 interface VisitTableComponentProps {
   rows: VisitRow[];

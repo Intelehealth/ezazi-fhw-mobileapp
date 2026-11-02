@@ -86,6 +86,11 @@ export function ContactTabsComponent({
                 defaultCountry="in"
                 disableDialCodeAndPrefix
                 showDisabledDialCodeAndPrefix
+                /*
+                 * The library's per-country mask (India: ".....-.....") puts
+                 * a dash mid-number; show plain digits, as Angular does.
+                 */
+                disableFormatting
                 value={phoneValue}
                 onChange={(value, meta) =>
                   onPhoneChange(value, meta.country.dialCode)
