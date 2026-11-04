@@ -177,6 +177,16 @@ describe('AppRoutes', () => {
     expect(window.location.pathname).toBe('/dashboard/profile');
   });
 
+  it("renders a visit's WHO Labour Care Guide at /dashboard/elcg/:visitUuid", async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: DOCTOR']);
+
+    await renderAtPath('/dashboard/elcg/visit-1');
+
+    expect(
+      await screen.findByRole('heading', { name: 'WHO LABOUR CARE GUIDE VIEW' })
+    ).toBeInTheDocument();
+  });
+
   it('redirects an unauthenticated visitor away from a protected route to login', async () => {
     mockIsAuthenticated(false);
 

@@ -10,6 +10,10 @@ import {
   buildVisitRow,
 } from '../../fixtures/visit-list';
 
+const navigate = vi.hoisted(() => vi.fn());
+
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
+
 vi.mock('../../../hooks/queries/useDashboardVisits', () => ({
   useDashboardVisits: vi.fn(),
 }));
@@ -52,6 +56,7 @@ function mockLoadedSections() {
 }
 
 beforeEach(() => {
+  navigate.mockReset();
   vi.mocked(useDashboardVisits).mockReset();
   mockLoadedSections();
 });
@@ -93,6 +98,14 @@ describe('DashboardComponent', () => {
 
     expect(screen.queryByText('ELCG-1042')).not.toBeInTheDocument();
     expect(screen.getByText('ELCG-2001')).toBeInTheDocument();
+  });
+
+  it("opens a case's WHO Labour Care Guide when its row is clicked", async () => {
+    render(<DashboardComponent />);
+
+    await userEvent.click(screen.getByText('ELCG-1042'));
+
+    expect(navigate).toHaveBeenCalledWith('/dashboard/elcg/visit-pr-1');
   });
 
   it('shows a loading message and a dash on the chip while a section loads', () => {

@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { StatChipComponent } from '../../components/dashboard/stat-chip.component';
 import { CaseSectionComponent } from '../../components/dashboard/case-section.component';
 import type { VisitTableVariant } from '../../components/dashboard/visit-table.component';
 import { useDashboardVisits } from '../../hooks/queries/useDashboardVisits';
 import type { VisitListState } from '../../hooks/queries/useVisitList';
+import { ROUTES } from '../../routes/paths';
 import { getApiErrorMessage } from '../../utils/error-message';
 import type { CaseSectionKey } from './dashboard.types';
 import prioritySquare from '../../assets/svgs/priority-square.svg';
@@ -78,6 +80,7 @@ function sectionIcon(src: string): ReactNode {
  */
 export function DashboardComponent() {
   const lists = useDashboardVisits();
+  const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState<
     Record<CaseSectionKey, boolean>
   >({
@@ -149,10 +152,8 @@ export function DashboardComponent() {
             searchPlaceholder={section.searchPlaceholder}
             isExpanded={expandedSections[section.key]}
             onToggle={() => toggleSection(section.key)}
-            /*
-             * No onRowClick yet: dashboard.component.html routes each row to
-             * `/dashboard/elcg/:uuid`, and that partogram route isn't built.
-             */
+            /* dashboard.component.html's `[routerLink]="['/dashboard/elcg', row.uuid]"`. */
+            onRowClick={row => navigate(`${ROUTES.DASHBOARD_ELCG}/${row.uuid}`)}
             isLoading={list.isLoading}
             errorMessage={
               list.error
