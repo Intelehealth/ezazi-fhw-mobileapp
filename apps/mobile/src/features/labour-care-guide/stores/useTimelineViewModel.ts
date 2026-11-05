@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MS_PER_MINUTE } from '@ezazi/clinical-rules';
+import { MS_PER_MINUTE, STAGE1_OUTCOME } from '@ezazi/clinical-rules';
 
 import { getDb, onTablesChanged } from '@/core/db';
 import { encounter, obs, visit, visitAttribute } from '@/core/db/schema';
@@ -8,7 +8,7 @@ import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { readWriterIdentity } from '@/core/session/writerIdentity';
 import { logger } from '@/core/utils/logger';
 
-import { captureSos as writeSosCard, type SosResult } from '../data/labourRepository';
+import { captureSos as writeSosCard, endStage1, type SosResult } from '../data/labourRepository';
 import { readTimeline, type TimelineSnapshot } from '../data/timelineReader';
 import { activeStageOf, buildCheckpoints } from '../domain/timelineModel';
 import type { LabourStage, TimelineCheckpoint } from '../domain/timeline.types';
@@ -21,6 +21,11 @@ export interface TimelineViewModel {
   activeStage: LabourStage;
   /** The SOS button, after its confirm: Android's SOS card (encounter + SOS_STAGE_HOUR obs), or why not. */
   captureSos: () => Promise<SosResult | null>;
+  /**
+   * End First Stage, after its confirm: Stage 2's first card, as Android's "Move to Stage 2" choice
+   * (`cancelStage1ConfirmationDialog`). The other End Stage 1 choices come later. False when nothing was written.
+   */
+  startStage2: () => Promise<boolean>;
 }
 
 /**
@@ -66,12 +71,27 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
     }
   }, [visitUuid, dbReady]);
 
+  const startStage2 = useCallback(async (): Promise<boolean> => {
+    if (!dbReady) return false;
+    try {
+      const writer = await readWriterIdentity();
+      if (!writer) return false;
+      // Read now, not from the snapshot: a second tap must not start Stage 2 twice.
+      if (activeStageOf(readTimeline(visitUuid, providerUuid, getDb()).currentCardName) !== 'stage1') return false;
+      return endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, Date.now(), getDb()).kind === 'startStage2';
+    } catch (error: unknown) {
+      logger.error('[timeline] Stage 2 start failed', error);
+      return false;
+    }
+  }, [visitUuid, providerUuid, dbReady]);
+
   return useMemo(() => {
     if (!snapshot) return null;
     return {
       checkpoints: buildCheckpoints(snapshot.cards, snapshot.visit, now),
       activeStage: activeStageOf(snapshot.currentCardName),
       captureSos,
+      startStage2,
     };
-  }, [snapshot, now, captureSos]);
+  }, [snapshot, now, captureSos, startStage2]);
 }

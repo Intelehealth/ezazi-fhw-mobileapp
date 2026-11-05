@@ -20,7 +20,7 @@
       "decrease": "Decrease {{label}}",
       "search": "Search {{label}}"
     },
-    "useTypedText": "Use \u201c{{text}}\u201d",
+    "useTypedText": "Use “{{text}}”",
     "tabWithErrors": "{{label}} ({{count}})"
   },
   "splash": {
@@ -320,7 +320,17 @@
       "videoCall": "Video Call",
       "rx": "Rx"
     },
-    "endStage": "End First Stage",
+    "endStage": {
+      "stage1": "End First Stage",
+      "stage2": "End Second Stage",
+      "earlyPostpartum": "End Third Stage"
+    },
+    "endStage1Dialog": {
+      "title": "End Stage 1",
+      "message": "Are you sure you want to End Stage 1?",
+      "cancel": "Cancel",
+      "confirm": "Yes"
+    },
     "a11y": {
       "close": "Close timeline",
       "back": "Back",

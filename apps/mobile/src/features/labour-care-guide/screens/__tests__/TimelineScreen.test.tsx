@@ -9,6 +9,7 @@ import { TimelineScreen } from '../TimelineScreen';
 jest.mock('../../stores/useTimelineViewModel', () => ({ useTimelineViewModel: jest.fn() }));
 
 const captureSos = jest.fn();
+const startStage2 = jest.fn();
 const navigate = jest.fn();
 const props = {
   navigation: { navigate },
@@ -19,6 +20,7 @@ const viewModel = {
   checkpoints: [],
   activeStage: 'stage1' as const,
   captureSos,
+  startStage2,
 };
 
 describe('TimelineScreen', () => {
@@ -76,5 +78,36 @@ describe('TimelineScreen', () => {
 
     expect(captureSos).not.toHaveBeenCalled();
     expect(screen.queryByText('Capture SOS observation?')).toBeNull();
+  });
+
+  it('starts Stage 2 from End First Stage only after its confirm, as Android', () => {
+    render(<TimelineScreen {...props} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'End First Stage' }));
+    expect(screen.getByText('Are you sure you want to End Stage 1?')).toBeTruthy();
+    expect(startStage2).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Yes' }));
+    expect(startStage2).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Are you sure you want to End Stage 1?')).toBeNull();
+  });
+
+  it('writes nothing when the End Stage 1 confirm is cancelled', () => {
+    render(<TimelineScreen {...props} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'End First Stage' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(startStage2).not.toHaveBeenCalled();
+  });
+
+  it('shows End Second Stage in Stage 2, which does not open the Stage 1 confirm', () => {
+    (useTimelineViewModel as jest.Mock).mockReturnValue({ ...viewModel, activeStage: 'stage2' });
+    render(<TimelineScreen {...props} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'End Second Stage' }));
+
+    expect(screen.queryByText('Are you sure you want to End Stage 1?')).toBeNull();
+    expect(startStage2).not.toHaveBeenCalled();
   });
 });

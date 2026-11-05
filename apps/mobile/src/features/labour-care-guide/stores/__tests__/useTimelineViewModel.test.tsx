@@ -1,19 +1,20 @@
 import '@/core/i18n';
 import { act, renderHook } from '@testing-library/react-native';
+import { STAGE1_OUTCOME } from '@ezazi/clinical-rules';
 
 import { onTablesChanged } from '@/core/db';
 import { useAuthStore } from '@/core/session/auth.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { readWriterIdentity } from '@/core/session/writerIdentity';
 
-import { captureSos } from '../../data/labourRepository';
+import { captureSos, endStage1 } from '../../data/labourRepository';
 import { readTimeline, type TimelineSnapshot } from '../../data/timelineReader';
 import { useTimelineViewModel } from '../useTimelineViewModel';
 
 jest.mock('@/core/db', () => ({ getDb: jest.fn(() => 'db-handle'), onTablesChanged: jest.fn() }));
 jest.mock('@/core/session/writerIdentity', () => ({ readWriterIdentity: jest.fn() }));
 jest.mock('../../data/timelineReader', () => ({ readTimeline: jest.fn() }));
-jest.mock('../../data/labourRepository', () => ({ captureSos: jest.fn() }));
+jest.mock('../../data/labourRepository', () => ({ captureSos: jest.fn(), endStage1: jest.fn() }));
 jest.mock('@/core/utils/logger', () => ({ logger: { error: jest.fn(), info: jest.fn(), debug: jest.fn() } }));
 
 const VISIT = 'visit-1';
@@ -110,6 +111,29 @@ describe('useTimelineViewModel', () => {
     (readWriterIdentity as jest.Mock).mockRejectedValue(new Error('keystore'));
     await expect(result.current!.captureSos()).resolves.toBeNull();
     expect(captureSos).not.toHaveBeenCalled();
+  });
+
+  it('starts Stage 2 as Android\'s "Move to Stage 2" choice, as the logged-in writer', async () => {
+    (readWriterIdentity as jest.Mock).mockResolvedValue(WRITER);
+    (endStage1 as jest.Mock).mockReturnValue({ kind: 'startStage2' });
+    const { result } = renderHook(() => useTimelineViewModel(VISIT));
+
+    await expect(result.current!.startStage2()).resolves.toBe(true);
+    expect(endStage1).toHaveBeenCalledWith(VISIT, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, WRITER, NOW.getTime(), 'db-handle');
+  });
+
+  it('does not start Stage 2 twice, nor without a writer, nor when storage fails', async () => {
+    (readWriterIdentity as jest.Mock).mockResolvedValue(WRITER);
+    (readTimeline as jest.Mock).mockReturnValue({ ...snapshot(10), currentCardName: 'Stage2_Hour1_1' });
+    const { result } = renderHook(() => useTimelineViewModel(VISIT));
+    await expect(result.current!.startStage2()).resolves.toBe(false);
+
+    (readTimeline as jest.Mock).mockReturnValue(snapshot(10));
+    (readWriterIdentity as jest.Mock).mockResolvedValue(null);
+    await expect(result.current!.startStage2()).resolves.toBe(false);
+    (readWriterIdentity as jest.Mock).mockRejectedValue(new Error('keystore'));
+    await expect(result.current!.startStage2()).resolves.toBe(false);
+    expect(endStage1).not.toHaveBeenCalled();
   });
 
   it('keeps the last good timeline when a read fails', () => {

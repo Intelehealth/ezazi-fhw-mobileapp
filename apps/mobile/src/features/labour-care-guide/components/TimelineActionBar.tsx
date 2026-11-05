@@ -13,6 +13,8 @@ interface TimelineActionBarProps {
   onChat: () => void;
   onVideoCall: () => void;
   onRx: () => void;
+  /** The end-stage button's label: Android's "End First Stage", "End Second Stage" … for the active stage. */
+  endStageLabel: string;
   onEndStage: () => void;
 }
 
@@ -36,6 +38,7 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
   onChat,
   onVideoCall,
   onRx,
+  endStageLabel,
   onEndStage,
 }) => {
   const { t } = useTranslation();
@@ -84,7 +87,7 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
       </View>
 
       <AppButton
-        label={t('timeline.endStage')}
+        label={endStageLabel}
         onPress={onEndStage}
         style={{ marginTop: isTablet ? fromFigma(16) : spacing.md }}
       />

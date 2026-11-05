@@ -12,7 +12,7 @@ describe('TimelineActionBar', () => {
       onRx: jest.fn(),
       onEndStage: jest.fn(),
     };
-    render(<TimelineActionBar {...handlers} />);
+    render(<TimelineActionBar {...handlers} endStageLabel="End First Stage" />);
 
     fireEvent.press(screen.getByRole('button', { name: 'Send SOS alert' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open chat' }));

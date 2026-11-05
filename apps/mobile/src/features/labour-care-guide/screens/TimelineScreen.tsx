@@ -25,6 +25,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
   const { isTablet, fromFigma } = useResponsive();
   const viewModel = useTimelineViewModel(route.params.visitUuid);
   const [sosConfirmVisible, setSosConfirmVisible] = useState(false);
+  const [endStage1ConfirmVisible, setEndStage1ConfirmVisible] = useState(false);
   if (!viewModel) return <View style={styles.screen} />;
   const { checkpoints, activeStage } = viewModel;
   const { visitUuid } = route.params;
@@ -33,6 +34,18 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
     setSosConfirmVisible(false);
     // Figma: Capture SOS then opens the SOS form; the capture screen is not built yet.
     void viewModel.captureSos();
+  };
+
+  // Android opens the End Stage 1 choices first; only "Move to Stage 2" is built, so its confirm opens directly.
+  // End Second/Third Stage come later.
+  const endStage = () => {
+    if (activeStage === 'stage1') setEndStage1ConfirmVisible(true);
+    else logger.debug('[timeline] End stage tapped', activeStage);
+  };
+
+  const confirmEndStage1 = () => {
+    setEndStage1ConfirmVisible(false);
+    void viewModel.startStage2();
   };
 
   return (
@@ -79,7 +92,19 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         onChat={() => logger.debug('[timeline] Chat tapped')}
         onVideoCall={() => logger.debug('[timeline] Video call tapped')}
         onRx={() => logger.debug('[timeline] Rx tapped')}
-        onEndStage={() => logger.debug('[timeline] End stage tapped')}
+        endStageLabel={t(`timeline.endStage.${activeStage}`)}
+        onEndStage={endStage}
+      />
+
+      <ConfirmDialog
+        visible={endStage1ConfirmVisible}
+        tone="warning"
+        title={t('timeline.endStage1Dialog.title')}
+        message={t('timeline.endStage1Dialog.message')}
+        cancelLabel={t('timeline.endStage1Dialog.cancel')}
+        confirmLabel={t('timeline.endStage1Dialog.confirm')}
+        onCancel={() => setEndStage1ConfirmVisible(false)}
+        onConfirm={confirmEndStage1}
       />
 
       <ConfirmDialog
