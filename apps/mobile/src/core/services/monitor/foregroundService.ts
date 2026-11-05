@@ -115,6 +115,15 @@ export async function startMonitorService(): Promise<void> {
   await displayHeartbeat();
 }
 
+/**
+ * Starts the foreground service again if Android stopped it. Android 15+ stops a dataSync service after
+ * 6 hours a day and resets that limit when the app comes to the front, so this runs on every return to
+ * the foreground; on a running service it only refreshes the notification.
+ */
+export async function ensureMonitorServiceRunning(): Promise<void> {
+  await displayHeartbeat();
+}
+
 export async function stopMonitorService(): Promise<void> {
   if (tickTimer !== null) {
     clearInterval(tickTimer);

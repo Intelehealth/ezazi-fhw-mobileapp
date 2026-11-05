@@ -16,8 +16,6 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 | 3 | Notes on an edited card | As Android: saved notes are rewritten as they are (same uuid, time kept), new ones added; a removed note is not voided | `getPlansObsList` / `getAssessmentsObsList` rewrite every listed note | Keep · write only new notes |
 | 4 | Date-times written to the database (deviation row 20) | Arpan's rule: patient and visit rows in local time, encounter and obs in UTC | Mixed per column | All UTC in Android's formats · keep |
 | 5 | `modified_date` on card obs | UTC `yyyy-MM-dd HH:mm:ss` | Local time with offset on card saves | Part of #4 |
-| 6 | `created_date` on the Oxytocin / IV row | Always filled (DB_CONVENTIONS: an empty value breaks newest-wins reads) | Left empty | Keep · follow Android |
-| 7 | `created_date` on field rows of a new card | Save time | The value's own capture time (exact stamp not yet confirmed) | Confirm Android's stamp, then match |
 | 8 | Decision Pending visit attribute | Inserted when the row is missing | Only updated when it exists | Keep · follow Android |
 | 9 | Visit holder check | Only the visit-holder attribute counts; a voided Visit Complete is ignored | Any attribute equal to the provider id; any Visit Complete | Keep (stricter) · follow Android |
 | 10 | Cards after the app is closed | An OS alarm keeps creating cards | Stops while the app is closed | Keep · follow Android |
@@ -28,6 +26,12 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 | 15 | Wording | Medicine button "Add" (Android); Save & Exit text says "observation" (Figma says "registration") | — | Confirm |
 | 16 | Gradient buttons (Next, Record Now, End First Stage) | Plain colour | — | Needs a native package and a rebuild |
 | 17 | Read-only card, last Next | Goes back to the Timeline | Read mode has no save | Keep · hide Next on the last tab |
+| 18 | SOS dialog text | Says "This will open the SOS observation form", but Capture SOS only adds the SOS card to the Timeline | Same: only refreshes the Timeline (`TimelineVisitSummaryActivity` ~1539) | Change the text · open the form after Capture SOS |
+| 19 | Medicine Duration and Duration unit | Marked `*` but not required; Add works without them | Same: labels have `*`, `isValidMedicine` does not check them | Keep · drop the `*` · make them required |
+| 20 | Medicine Frequency list | "Single Dose, Stat Dose" appears twice | Same (`arrays_ezazi.xml` 119-120) | Keep · show it once |
+| 22 | **Card engine stops after 6 hours with the screen off** (15-hour device run, 2026-11-01) | The monitor's foreground service is type `dataSync`; Android 15+ stops it after 6 h a day (`FGS (dataSync) timed out` at 07:41). The app then becomes a cached process, Samsung's Freecess freezes it when the screen goes off and its alarms are deferred: no cards 07:42-09:11 and 10:19-11:00, then one card on wake-up and no backfill | Same service type (legacy app); its target SDK decides whether the limit applies (not checked) | Service type with no daily limit (e.g. `specialUse`, Play justification) · handle `onTimeout` · exact alarms that run while idle · battery-optimisation exemption prompt |
+| 23 | PendingIntent count keeps growing | System warns "Too many PendingIntent created" for the app (up to 1,200 by 03:11) | — | Reuse one PendingIntent per trigger, check the 5-second notification update |
+| 21 | Assessment / Plan typed but not added | Dropped on save; only notes added with "+ Add" are saved | Not yet checked | Check Android, then match |
 
 ## Android features not built yet
 
@@ -51,6 +55,7 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 
 | Date | Point | Decision (who) |
 |---|---|---|
+| 2026-11-01 | Former points 6 and 7: `created_date` on the Oxytocin / IV row and on field rows is the save time in UTC, as Android (`PartogramDataCaptureActivity` 561, 589, 666); RN already matches | Checked against Android (no decision needed) |
 | 2026-10-31 | Edit save follows Android for now, including its medicine and note lists (points 1-3 stay open) | Kaveri |
 | 2026-10-29 | Where Dr. Venkat's frequency sheet and Android disagree, follow Android | Kaveri |
 | 2026-10-29 | Range errors while typing, in the Figma error style | Kaveri |

@@ -64,6 +64,14 @@ export async function startBackboneAlerts(): Promise<void> {
   logger.debug('[MonitorTrigger] started');
 }
 
+/**
+ * Schedules the pending trigger again (same id, so it replaces the old one). The alarm is exact only
+ * if exact-alarm access is granted at scheduling time, so this runs after the user may have granted it.
+ */
+export async function rearmBackboneIfRunning(): Promise<void> {
+  if ((await AsyncStorage.getItem(MONITOR_TRIGGER_RUNNING_FLAG_KEY)) === 'true') await scheduleNextTrigger();
+}
+
 export async function stopBackboneAlerts(): Promise<void> {
   // Flag first: handleTriggerDelivered() reads it to decide whether to re-arm,
   // so clearing it before cancelling closes the in-flight-delivery race.

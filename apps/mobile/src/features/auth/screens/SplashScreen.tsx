@@ -11,6 +11,7 @@ import { clientConfig } from '@/core/config/clients';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
+import { askForExactAlarms } from '@/core/services/monitor/monitorAccess';
 import {
   checkAppPermissions,
   onAppForeground,
@@ -40,9 +41,11 @@ export const SplashScreen: React.FC = () => {
   const startBootstrap = useCallback(() => {
     if (!bootstrapCalled.current) {
       bootstrapCalled.current = true;
+      // Exact alarms are not a runtime permission, so they cannot join the system popup: their settings
+      // page opens right after it, then the app starts. askForExactAlarms never rejects.
       // bootstrap() always calls set() — either success or catch branch.
       // Use void intentionally: status update is handled inside the store.
-      void bootstrap();
+      void askForExactAlarms().then(() => bootstrap());
     }
   }, [bootstrap]);
 

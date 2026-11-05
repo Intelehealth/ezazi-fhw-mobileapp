@@ -24,3 +24,6 @@ export const MONITOR_TRIGGER_INTERVAL_MINUTES = 1;
 export const MONITOR_TRIGGER_TICK_COUNT_KEY = 'monitor_trigger_tick_count';
 export const MONITOR_TRIGGER_LAST_TICK_AT_KEY = 'monitor_trigger_last_tick_at';
 export const MONITOR_TRIGGER_RUNNING_FLAG_KEY = 'monitor_trigger_running';
+
+// Splash: how long to wait for the "Alarms & reminders" page to open before going on without it.
+export const MONITOR_SETTINGS_OPEN_TIMEOUT_MS = 3000;

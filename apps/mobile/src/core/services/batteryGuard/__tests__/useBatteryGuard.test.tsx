@@ -91,6 +91,19 @@ describe('useBatteryGuard', () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
     expect(stopBatteryGuard).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps the guard running on unmount (the app swiped away while still logged in)', async () => {
+    const unsubscribe = jest.fn();
+    (notifee.onForegroundEvent as jest.Mock).mockReturnValueOnce(unsubscribe);
+    const { unmount } = renderHook(() => useBatteryGuard(true));
+
+    await act(async () => {
+      unmount();
+    });
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(stopBatteryGuard).not.toHaveBeenCalled();
+  });
 });
 
 describe('useDismissLowBatteryDialog', () => {

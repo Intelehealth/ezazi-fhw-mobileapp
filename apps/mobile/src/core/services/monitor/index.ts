@@ -1,9 +1,22 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { AppState } from 'react-native';
 import notifee, { EventType } from 'react-native-notify-kit';
 import { runCardScan } from '@/core/services/cardGeneration';
 import { logger } from '@/core/utils/logger';
-import { getTickCount, startMonitorService, stopMonitorService, subscribeTickCount } from './foregroundService';
-import { getBackboneStatus, handleTriggerDelivered, startBackboneAlerts, stopBackboneAlerts } from './backboneTrigger';
+import {
+  ensureMonitorServiceRunning,
+  getTickCount,
+  startMonitorService,
+  stopMonitorService,
+  subscribeTickCount,
+} from './foregroundService';
+import {
+  getBackboneStatus,
+  handleTriggerDelivered,
+  rearmBackboneIfRunning,
+  startBackboneAlerts,
+  stopBackboneAlerts,
+} from './backboneTrigger';
 import { MONITOR_TRIGGER_NOTIFICATION_ID } from './constants';
 
 const BACKBONE_POLL_MS = 3000;
@@ -58,6 +71,26 @@ async function stopAll(): Promise<void> {
 }
 
 /**
+ * Back in the foreground (2026-11-01 device run: the dataSync service was stopped after 6 hours, then
+ * Samsung froze the app and deferred its alarms): restart the service, whose limit Android has just
+ * reset; re-arm the alarm so it is exact if access was granted meanwhile; catch up on cards. Each step
+ * is isolated. Exact-alarm access itself is asked for on the splash screen (`askForExactAlarms`).
+ */
+async function resumeOnForeground(): Promise<void> {
+  try {
+    await ensureMonitorServiceRunning();
+  } catch (error) {
+    logger.error('[monitor] foreground-service restart failed', error);
+  }
+  try {
+    await rearmBackboneIfRunning();
+  } catch (error) {
+    logger.error('[monitor] backbone re-arm failed', error);
+  }
+  await runCardScan().catch((error: unknown) => logger.error('[monitor] foreground card scan failed', error));
+}
+
+/**
  * Long-lived singleton, started once from the composition root (App.tsx) —
  * but only once `enabled`. Must stay false until the user is authenticated:
  * `startMonitorService()` calls `notifee.requestPermission()` for
@@ -70,19 +103,37 @@ async function stopAll(): Promise<void> {
  * health worker is even logged in anyway.
  */
 export function useMonitorService(enabled: boolean): void {
+  // Only logout (`enabled` true → false) stops the monitor. An unmount alone does not: swiping the app
+  // away from Recents destroys the screen while the process and the login live on, and the monitor must
+  // keep creating cards, as Android's service does (2026-11-01 device run: the swipe stopped it).
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    if (enabledRef.current && !enabled) void stopAll();
+    enabledRef.current = enabled;
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled) return;
 
     // Sequenced, not concurrent — both touch notifee's own shared native
     // state (channels, the foreground-service lifecycle); firing them
     // together dropped the heartbeat's notification in testing.
-    let cancelled = false;
-    void startWithRetry(() => cancelled).then(() => {
-      // Disabled (e.g. logout) while startup was still in flight: the start
-      // steps that already ran must be undone too.
-      if (cancelled) void stopAll();
+    let unmounted = false;
+    let started = false;
+    const loggedOut = () => !enabledRef.current;
+    void startWithRetry(loggedOut).then(() => {
+      // Logged out while startup was still in flight: the start steps that
+      // already ran must be undone too.
+      if (loggedOut()) {
+        void stopAll();
+        return;
+      }
+      started = true;
       // Catch-up: a card that fell due while the app was closed appears at once.
-      else void runCardScan().catch((error: unknown) => logger.error('[monitor] catch-up card scan failed', error));
+      void runCardScan().catch((error: unknown) => logger.error('[monitor] catch-up card scan failed', error));
+    });
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && started && !unmounted) void resumeOnForeground();
     });
 
     // index.js's onBackgroundEvent only catches a delivery while the app is
@@ -98,13 +149,12 @@ export function useMonitorService(enabled: boolean): void {
         void handleTriggerDelivered();
       }
     });
-    // `enabled` flipping to false (logout) or unmount must stop the service —
-    // otherwise the foreground notification stays up and the alarm chain
-    // keeps re-arming itself every minute after the user has logged out.
+    // Listeners only: stopping the service and the alarm chain is the logout
+    // effect's job above, and an unmount must leave them running.
     return () => {
-      cancelled = true;
+      unmounted = true;
       unsubscribe();
-      void stopAll();
+      appState.remove();
     };
   }, [enabled]);
 }

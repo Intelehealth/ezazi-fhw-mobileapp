@@ -34,7 +34,9 @@ The heartbeat is for foreground freshness only. Anything that must happen on tim
 | `constants.ts` | Channel ids, notification ids, intervals, AsyncStorage keys. |
 | `foregroundService.ts` | Heartbeat: start/stop the foreground service, tick counter, tick subscribers. |
 | `backboneTrigger.ts` | Backbone: schedule, handle delivery (record tick + re-arm), stop, status. |
-| `index.ts` | `useMonitorService(enabled)` — starts both layers with retry and stops both on disable/unmount. `useMonitorTickCount()` / `useBackboneStatus()` for the debug badge. |
+| `monitorAccess.ts` | Exact alarms ("Alarms & reminders"): `isExactAlarmAllowed()`, and `askForExactAlarms()`, which the splash screen calls after the runtime permissions to open the settings page. Without it the backbone alarm is inexact and Samsung defers it (2026-11-01 device run). |
+<!-- | `index.ts` | `useMonitorService(enabled)` — starts both layers with retry and stops both on disable/unmount. `useMonitorTickCount()` / `useBackboneStatus()` for the debug badge. | -->
+| `index.ts` | `useMonitorService(enabled)` — starts both layers with retry and stops both on logout only (not on unmount); restarts the service and re-arms the alarm on return to the foreground. `useMonitorTickCount()` / `useBackboneStatus()` for the debug badge. |
 | `../../../../index.js` | Registers the foreground-service runner and routes `onBackgroundEvent` deliveries to `handleTriggerDelivered()`. |
 
 ## Lifecycle
@@ -42,7 +44,9 @@ The heartbeat is for foreground freshness only. Anything that must happen on tim
 1. **Boot** (`index.js`): `registerMonitorForegroundServiceHandler()` — must be at boot so Android can re-invoke the runner after killing the process.
 2. **Login** (`App.tsx`): `useMonitorService(authStatus === 'authenticated')` starts the heartbeat, *then* the backbone — sequenced, not concurrent (concurrent starts dropped the heartbeat notification in testing).
 3. **Each backbone delivery**: dismiss the displayed trigger notification, record the tick in AsyncStorage, re-arm if the running flag is still `'true'`. Delivered in the background → `index.js`; in the foreground → the `onForegroundEvent` listener in `index.ts`.
-4. **Logout / unmount**: stop the backbone (flag cleared *first*, then trigger cancelled), then the heartbeat. Each step is isolated, so one failing does not leave the other running. A startup still in flight is cancelled and undone.
+<!-- 2026-11-01 Kaveri: commented out — swiping the app away stopped card creation; only logout stops the monitor now. -->
+<!-- 4. **Logout / unmount**: stop the backbone (flag cleared *first*, then trigger cancelled), then the heartbeat. Each step is isolated, so one failing does not leave the other running. A startup still in flight is cancelled and undone. -->
+4. **Logout** (`enabled` true → false): stop the backbone (flag cleared *first*, then trigger cancelled), then the heartbeat. Each step is isolated, so one failing does not leave the other running. A startup still in flight is undone. An unmount alone (the app swiped away from Recents) stops nothing: the process and the login live on, and cards must keep being created.
 
 ## Findings from on-device testing (2026-10-01 soak test)
 
@@ -82,5 +86,5 @@ Recorded from the code comments written at the time. Devices: an emulator and a 
 ## Tests
 
 `__tests__/foregroundService.test.ts` (start, tick cadence, no FGS fields per tick, subscribers, stop, failure),
-`handleTriggerDelivered.test.ts` (record, re-arm, stop, failure), `useMonitorService.test.tsx` (enable/disable/unmount).
+`handleTriggerDelivered.test.ts` (record, re-arm, stop, failure), `useMonitorService.test.tsx` (enable/disable, keeps running on unmount).
 On-device behaviour (Doze, process kill, lock screen) is **not** covered by jest — re-run a soak test after any change here.

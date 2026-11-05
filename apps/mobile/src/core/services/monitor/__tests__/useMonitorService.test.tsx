@@ -60,7 +60,7 @@ describe('useMonitorService', () => {
     });
   });
 
-  it('stops everything on unmount', async () => {
+  it('keeps running on unmount (the app swiped away while still logged in)', async () => {
     const { unmount } = renderHook(() => useMonitorService(true));
     await waitFor(() => expect(startBackboneAlerts).toHaveBeenCalled());
 
@@ -68,19 +68,19 @@ describe('useMonitorService', () => {
       unmount();
     });
 
-    await waitFor(() => {
-      expect(stopBackboneAlerts).toHaveBeenCalled();
-      expect(stopMonitorService).toHaveBeenCalled();
-    });
+    expect(stopBackboneAlerts).not.toHaveBeenCalled();
+    expect(stopMonitorService).not.toHaveBeenCalled();
   });
 
   it('still stops the alarm chain if stopping the foreground service throws', async () => {
     (stopMonitorService as jest.Mock).mockRejectedValueOnce(new Error('native failure'));
-    const { unmount } = renderHook(() => useMonitorService(true));
+    const { rerender } = renderHook(({ enabled }: { enabled: boolean }) => useMonitorService(enabled), {
+      initialProps: { enabled: true },
+    });
     await waitFor(() => expect(startBackboneAlerts).toHaveBeenCalled());
 
     await act(async () => {
-      unmount();
+      rerender({ enabled: false });
     });
 
     await waitFor(() => expect(stopBackboneAlerts).toHaveBeenCalled());

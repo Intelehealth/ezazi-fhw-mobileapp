@@ -8,9 +8,14 @@ import {
   openAppSettings,
   onAppForeground,
 } from '@/core/utils/permissions';
+import { askForExactAlarms } from '@/core/services/monitor/monitorAccess';
 
 jest.mock('@/core/session/auth.store', () => ({
   useAuthStore: jest.fn(),
+}));
+
+jest.mock('@/core/services/monitor/monitorAccess', () => ({
+  askForExactAlarms: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('@/core/utils/permissions', () => ({
@@ -36,6 +41,27 @@ describe('SplashScreen', () => {
     render(<SplashScreen />);
 
     await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+  });
+
+  it('asks for exact alarms after the runtime permissions, and starts the app only once that is done', async () => {
+    let finishAsking: () => void = () => {};
+    (askForExactAlarms as jest.Mock).mockReturnValueOnce(new Promise<void>((resolve) => (finishAsking = resolve)));
+    (requestAppPermissions as jest.Mock).mockResolvedValue('granted');
+    render(<SplashScreen />);
+
+    await waitFor(() => expect(askForExactAlarms).toHaveBeenCalledTimes(1));
+    expect(bootstrap).not.toHaveBeenCalled();
+
+    finishAsking();
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+  });
+
+  it('does not ask for exact alarms while a runtime permission is denied', async () => {
+    (requestAppPermissions as jest.Mock).mockResolvedValue('denied');
+    render(<SplashScreen />);
+
+    expect(await screen.findByText('Permissions Required')).toBeTruthy();
+    expect(askForExactAlarms).not.toHaveBeenCalled();
   });
 
   it('shows the permission-denied dialog and never bootstraps when denied', async () => {

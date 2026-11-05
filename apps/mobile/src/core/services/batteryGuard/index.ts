@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import notifee, { EventType } from 'react-native-notify-kit';
 import { logger } from '@/core/utils/logger';
 import {
@@ -17,6 +17,14 @@ import { useBatteryGuardStore } from './batteryGuard.store';
  * and the same reason: no battery guard before a health worker is logged in.
  */
 export function useBatteryGuard(enabled: boolean): void {
+  // Only logout (`enabled` true → false) stops the guard, as with useMonitorService: an unmount alone
+  // (the app swiped away from Recents) leaves the process and the login running.
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    if (enabledRef.current && !enabled) void stopBatteryGuard();
+    enabledRef.current = enabled;
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -39,10 +47,7 @@ export function useBatteryGuard(enabled: boolean): void {
       }
     });
 
-    return () => {
-      unsubscribe();
-      void stopBatteryGuard();
-    };
+    return () => unsubscribe();
   }, [enabled]);
 }
 
