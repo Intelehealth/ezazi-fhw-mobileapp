@@ -51,18 +51,18 @@ export const DEV_PATIENT = {
 
 export const DEV_VISIT_UUID = 'b7d4f2a0-5c1e-4f3a-9a6b-2d8e7c0f1a02';
 
-export const DEV_ADMITTED_MINUTES_AGO = 125;
+export const DEV_ADMITTED_MINUTES_AGO = 115;
 
 export const DEV_ADMISSION_VALUES: readonly DevObs[] = [
   { concept: OBS_GRAVIDA, value: '1' },
   { concept: OBS_PARITY, value: '0' },
 ];
 
-/** One card per timeline state: two submitted, one missed, the due card last (next one in 10 min). */
+/** One card per timeline state, 30 min apart as Stage 1: two submitted, one missed, the due card last (next one in 10 min). */
 export const DEV_CARDS: readonly DevCard[] = [
   {
     name: formatCardName(STAGE.STAGE1, 1, 1),
-    minutesAgo: 120,
+    minutesAgo: 110,
     obs: [
       { concept: BASELINE_FHR, value: '150', alert: GREEN },
       { concept: PULSE, value: '88', alert: GREEN },
@@ -75,20 +75,20 @@ export const DEV_CARDS: readonly DevCard[] = [
   },
   {
     name: formatCardName(STAGE.STAGE1, 1, 2),
-    minutesAgo: 90,
+    minutesAgo: 80,
     obs: [
       { concept: BASELINE_FHR, value: '165', alert: RED },
       { concept: CONTRACTIONS_PER_10MIN, value: '4', alert: GREEN },
       { concept: DURATION_OF_CONTRACTION, value: '45', alert: GREEN },
     ],
   },
-  { name: formatCardName(STAGE.STAGE1, 2, 1), minutesAgo: 60, obs: [], missed: true },
+  { name: formatCardName(STAGE.STAGE1, 2, 1), minutesAgo: 50, obs: [], missed: true },
   { name: formatCardName(STAGE.STAGE1, 2, 2), minutesAgo: 20, obs: [] },
 ];
 
 export const DEV_SOS: DevSos = {
   hour: 2,
   index: 1,
-  minutesAgo: 45,
+  minutesAgo: 35,
   obs: [{ concept: BASELINE_FHR, value: '105', alert: RED }],
 };

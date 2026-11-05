@@ -55,6 +55,6 @@ describe('readTimeline', () => {
   it('dates a completed card by its newest observation', () => {
     const first = readTimeline(DEV_VISIT_UUID, PROVIDER, db).cards[0];
     expect(first.hasRealObs).toBe(true);
-    expect(first.recordedAt).toBe('2026-10-23 08:00:00');
+    expect(first.recordedAt).toBe('2026-10-23 08:10:00');
   });
 });
