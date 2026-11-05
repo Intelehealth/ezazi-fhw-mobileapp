@@ -12,14 +12,10 @@ describe('toTabViews', () => {
     expect(toTabViews(getSosLayout('stage1'), 'default')).toHaveLength(6);
   });
 
-  it('names each field\'s control, with options flagged for alerts', () => {
+  it('names each field\'s control and its options', () => {
     const companion = fieldOf('Stage1_Hour1_1', 'companion');
     expect(companion.control).toBe('segmented');
-    expect(companion.options.map((option) => [option.value, option.alert])).toEqual([
-      ['Y', false],
-      ['N', true],
-      ['D', false],
-    ]);
+    expect(companion.options.map((option) => option.value)).toEqual(['Y', 'N', 'D']);
     expect(fieldOf('Stage1_Hour1_1', 'amnioticFluid').control).toBe('picker');
     expect(fieldOf('Stage1_Hour1_1', 'cervix').control).toBe('chips');
   });

@@ -8,12 +8,11 @@ const LAYOUT = getCardLayout('Stage1_Hour1_1')!;
 const setup = () => renderHook(() => useCaptureForm(LAYOUT, 'default'));
 
 describe('useCaptureForm', () => {
-  it('stores a value and flags an Android alert value', () => {
+  it('stores a value and lists an Android alert value in the summary', () => {
     const { result } = setup();
     act(() => result.current.api.setValue('companion', 'N'));
 
     expect(result.current.api.fieldValue('companion')).toBe('N');
-    expect(result.current.api.fieldAlert('companion')).toBe(true);
     expect(result.current.api.summary.find((s) => s.labelKey === 'partogram.section.supportiveCare')?.items[0]?.value).toBe('No');
   });
 

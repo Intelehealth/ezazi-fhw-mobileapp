@@ -82,7 +82,6 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form, readO
             value={form.fieldValue(field.id)}
             onChange={(value) => form.setValue(field.id, value)}
             onLeave={() => form.leaveField(field.id)}
-            alert={form.fieldAlert(field.id)}
             error={form.fieldError(field.id)}
             readOnly={readOnly}
             style={half && styles.half}

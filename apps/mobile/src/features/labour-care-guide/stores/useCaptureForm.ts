@@ -206,7 +206,6 @@ export function useCaptureForm(
 
   const api: CaptureFormApi = {
     fieldValue,
-    fieldAlert: (id) => getAlertCode(id, fieldValue(id)) === ALERT_CODE.RED,
     fieldError,
     setValue,
     leaveField: (id) => checkRange(id, fieldValue(id), true),

@@ -64,13 +64,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { maxWidth: isTablet ? scale(440) : 360, padding: isTablet ? scale(24) : 20 }]}>
+        {/* Figma's modal is near square on a tablet (~1.25 : 1): width about 15 times the title size. */}
+        <View style={[styles.card, { maxWidth: isTablet ? scale(300) : 360, padding: isTablet ? scale(20) : 20 }]}>
           {/* Decorative rings behind the badge, clipped by the card. */}
           {RINGS.map((ring) => (
             <View
               key={ring.scale}
               pointerEvents="none"
-              style={[styles.ring, ringBox(badge * ring.scale, ring.color, isTablet ? scale(24) : 20, badge)]}
+              style={[styles.ring, ringBox(badge * ring.scale, ring.color, isTablet ? scale(20) : 20, badge)]}
             />
           ))}
 
@@ -92,13 +93,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.title, { fontSize: isTablet ? scale(22) : 18 }]}>{title}</Text>
-          <Text style={[styles.message, { fontSize: isTablet ? scale(15) : 14 }]}>{message}</Text>
+          <Text style={[styles.title, { fontSize: isTablet ? scale(20) : 18 }]}>{title}</Text>
+          <Text style={[styles.message, { fontSize: isTablet ? scale(14) : 14 }]}>{message}</Text>
 
           {note && (
             <View style={styles.note}>
               <AppIcon name="infoCircle" size={isTablet ? scale(18) : 16} color={colors.primary} />
-              <Text style={[styles.noteText, { fontSize: isTablet ? scale(14) : 13 }]}>{note}</Text>
+              <Text style={[styles.noteText, { fontSize: isTablet ? scale(13) : 13 }]}>{note}</Text>
             </View>
           )}
 

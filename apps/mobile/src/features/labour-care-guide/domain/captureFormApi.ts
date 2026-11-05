@@ -33,7 +33,6 @@ export interface SummarySection {
 /** What the capture tabs read and call; the capture ViewModel provides it. */
 export interface CaptureFormApi {
   fieldValue: (id: FieldId) => string;
-  fieldAlert: (id: FieldId) => boolean;
   fieldError: (id: FieldId | InfusionInputId) => string | undefined;
   setValue: (id: FieldId, value: string) => void;
   /** The box lost focus: its range is checked even if the value is short. */

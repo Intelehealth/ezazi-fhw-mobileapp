@@ -17,20 +17,21 @@ interface CaptureValueFieldProps {
   value: string;
   onChange: (value: string) => void;
   onLeave: () => void;
-  alert: boolean; // the value is an Android alert (stored with comment "R")
   error?: string;
   readOnly?: boolean;
   /** Placement only (flex, margins). */
   style?: StyleProp<ViewStyle>;
 }
 
-/** One single-value field of a capture tab, drawn with the control the rules package names. */
+/**
+ * One single-value field of a capture tab, drawn with the control the rules package names. An alert
+ * value keeps the selected look, not the alert one (Kaveri, 2026-11-03); its "R" is still stored.
+ */
 export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
   field,
   value,
   onChange,
   onLeave,
-  alert,
   error,
   readOnly,
   style,
@@ -40,7 +41,6 @@ export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
   const options: ChoiceOption[] = field.options.map((option) => ({
     value: option.value,
     label: t(option.labelKey, { defaultValue: option.androidLabel }),
-    alert: option.alert,
   }));
   const choice = { options, value: value || null, onChange, error: !!error, readOnly };
 
@@ -60,7 +60,6 @@ export const CaptureValueField: React.FC<CaptureValueFieldProps> = ({
             onChange={onChange}
             onBlur={onLeave}
             bounds={field.bounds}
-            alert={alert}
             error={!!error}
             readOnly={readOnly}
           />

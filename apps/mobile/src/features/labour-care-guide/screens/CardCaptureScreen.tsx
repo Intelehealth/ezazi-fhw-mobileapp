@@ -45,10 +45,11 @@ export const CardCaptureScreen: React.FC<Props> = ({ route, navigation }) => {
             isTablet && { paddingHorizontal: fromFigma(40), paddingTop: fromFigma(24), gap: fromFigma(8) },
           ]}
         >
-          <Text style={[styles.kicker, { fontSize: isTablet ? fromFigma(18) : fs('captureKicker') }]}>
+          {/* Figma sets 18 and 32; both a little smaller on the device (Kaveri, 2026-11-01). */}
+          <Text style={[styles.kicker, { fontSize: isTablet ? fromFigma(16) : fs('captureKicker') }]}>
             {t('capture.kicker', { stage })}
           </Text>
-          <Text style={[styles.title, { fontSize: isTablet ? fromFigma(32) : fs('captureTitle') }]}>
+          <Text style={[styles.title, { fontSize: isTablet ? fromFigma(28) : fs('captureTitle') }]}>
             {t('capture.title', { time: formatClockTime(header.scheduledAt) })}
           </Text>
         </View>

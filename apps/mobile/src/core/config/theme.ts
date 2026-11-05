@@ -294,8 +294,8 @@ export const fontSizes = {
   compactButton: { phone: 14, tablet: 14 }, // AppButton size 'compact' ("Record Now")
 
   // CardCaptureScreen title (Figma 251:581); tablet follows the frame via fromFigma
-  captureKicker: { phone: 11, tablet: 13 }, // "SCHEDULED OBSERVATION · STAGE 1"
-  captureTitle: { phone: 20, tablet: 24 }, // "Observation 9:30 AM"
+  captureKicker: { phone: 10, tablet: 13 }, // "SCHEDULED OBSERVATION · STAGE 1"
+  captureTitle: { phone: 18, tablet: 24 }, // "Observation 9:30 AM"
 
   // Capture controls (Figma 251:556); tablet follows the frame via fromFigma
   controlLabel: { phone: 11, tablet: 13 }, // "COMPANION?" field caption

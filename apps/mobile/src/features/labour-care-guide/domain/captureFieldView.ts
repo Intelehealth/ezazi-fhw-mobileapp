@@ -16,7 +16,6 @@ export interface OptionView {
   value: string;
   labelKey: string;
   androidLabel: string;
-  alert: boolean;
 }
 
 /** One field as the screen draws it: the control, and its options or stepper bounds. */
@@ -49,7 +48,6 @@ export function toFieldView(field: FieldDefinition, stage: MonitoringStage, prof
       value: option.value,
       labelKey: option.labelKey,
       androidLabel: option.androidLabel,
-      alert: option.alert === true,
     })),
     bounds: control === 'stepper' ? getStepperSpec(field.id as StepperId, profile) : null,
   };

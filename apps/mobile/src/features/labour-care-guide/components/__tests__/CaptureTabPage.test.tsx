@@ -11,7 +11,6 @@ const tab = (id: string) => TABS.find((candidate) => candidate.id === id)!;
 
 const stubForm = (overrides: Partial<CaptureFormApi> = {}): CaptureFormApi => ({
   fieldValue: () => '',
-  fieldAlert: () => false,
   fieldError: () => undefined,
   setValue: jest.fn(),
   leaveField: jest.fn(),
