@@ -22,9 +22,15 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
  * uses for its illustration over the USERNAME field.
  */
 
-// assets/clients/default/setup_logo.png natural aspect ratio (width / height)
-// — same asset + ratio LoginScreen/SetupScreen already use.
-const LOGO_ASPECT = 364 / 144;
+// Header logo and its natural aspect ratio (width / height), read from the
+// asset itself: a client without setupLogo (Nepal) falls back to its own
+// logo, whose shape differs from the default 364 x 144 wordmark — a fixed
+// ratio letterboxed it into a sliver.
+const LOGO_SOURCE = clientConfig.assets.setupLogo ?? clientConfig.assets.logo;
+const LOGO_ASPECT = (() => {
+  const resolved = Image.resolveAssetSource?.(LOGO_SOURCE as number);
+  return resolved?.width && resolved?.height ? resolved.width / resolved.height : 364 / 144;
+})();
 
 // assets/clients/default/forgot_password_shield.png natural aspect ratio (165 / 198)
 const SHIELD_ASPECT = 165 / 198;
@@ -117,7 +123,7 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
       >
         <View style={[styles.titleBlock, { paddingRight: shieldW + 12 }]}>
           <Image
-            source={clientConfig.assets.setupLogo ?? clientConfig.assets.logo}
+            source={LOGO_SOURCE}
             style={{ width: logoW, height: logoH }}
             resizeMode="contain"
           />
