@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee from 'react-native-notify-kit';
+import { cardAlarm } from '@/core/services/monitor/cardAlarmNative';
 import { stopBatteryGuard } from '../batteryGuard';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -9,13 +10,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('react-native-notify-kit', () => ({
   __esModule: true,
   default: {
-    cancelTriggerNotifications: jest.fn().mockResolvedValue(undefined),
     cancelNotification: jest.fn().mockResolvedValue(undefined),
   },
-  AlarmType: {},
   AndroidImportance: {},
-  TriggerType: {},
 }));
+
+jest.mock('@/core/services/monitor/cardAlarmNative', () => ({ cardAlarm: { disarmBattery: jest.fn() } }));
 
 jest.mock('expo-battery', () => ({}));
 
@@ -33,10 +33,20 @@ describe('stopBatteryGuard', () => {
     expect(await AsyncStorage.getItem('battery_guard_running')).toBe('false');
   });
 
-  it('cancels the scheduled check and the displayed (ongoing) low-battery notification', async () => {
+  it('cancels the check alarm and the displayed (ongoing) low-battery notification', async () => {
     await stopBatteryGuard();
 
-    expect(notifee.cancelTriggerNotifications).toHaveBeenCalledTimes(1);
+    expect(cardAlarm!.disarmBattery).toHaveBeenCalledTimes(1);
     expect(notifee.cancelNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the running flag before cancelling the alarm (an in-flight check then does not re-arm)', async () => {
+    await AsyncStorage.setItem('battery_guard_running', 'true');
+    (cardAlarm!.disarmBattery as jest.Mock).mockImplementationOnce(() => {
+      void AsyncStorage.getItem('battery_guard_running').then((value) => expect(value).toBe('false'));
+    });
+
+    await stopBatteryGuard();
+    expect(cardAlarm!.disarmBattery).toHaveBeenCalledTimes(1);
   });
 });

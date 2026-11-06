@@ -49,4 +49,11 @@ describe('scanAllVisits when one visit fails', () => {
     expect(result.cardsCreated).toBe(1);
     expect(encounterRepo.findTimelineByVisit(DEV_LIVE_VISIT_UUID, db)).toHaveLength(2);
   });
+
+  it('keeps the failed visit in the next wake-up, so its card is tried again', () => {
+    const result = scanAllVisits(IDENTITY, NOW + 10 * MINUTE, db);
+
+    // The failed visit's card is still due (now), sooner than the live visit's next card.
+    expect(result.nextDueAt).toBe(NOW + 10 * MINUTE);
+  });
 });

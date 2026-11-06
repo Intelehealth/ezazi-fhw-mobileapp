@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { env } from '@/core/config/env';
 import { ensureSchema, resetSchemaInit } from '@/core/db/init';
 import { runDevSeed, runDevVisitStart } from '@/core/db/seeds';
+import { scanAndRearm } from '@/core/services/monitor/cardScheduler';
 import { logger } from '@/core/utils/logger';
 
 import { readWriterIdentity } from './writerIdentity';
@@ -69,6 +70,8 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
       await ensureSchema();
       const devVisitUuid = env.DEV_SEED && providerUuid ? seedQuietly(providerUuid) : null;
       set({ phase: 'ready', devVisitUuid });
+      // The login scan may have run before this database existed: arm the card alarm for its visits.
+      void scanAndRearm('visitStart');
     } catch (error: unknown) {
       // Console-only. Nothing surfaces this to the user by design.
       logger.error('[db] schema init failed', error);
@@ -82,7 +85,9 @@ export const useDbBootstrapStore = create<DbBootstrapState>((set, get) => ({
       const writer = await readWriterIdentity();
       if (!writer) return null;
       await ensureSchema();
-      return runDevVisitStart(writer);
+      const visitUuid = runDevVisitStart(writer);
+      void scanAndRearm('visitStart');
+      return visitUuid;
     } catch (error: unknown) {
       logger.error('[db] dev visit start failed', error);
       return null;

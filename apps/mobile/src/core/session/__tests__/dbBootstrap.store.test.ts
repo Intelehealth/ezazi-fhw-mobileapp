@@ -1,6 +1,7 @@
 import { env } from '@/core/config/env';
 import { ensureSchema } from '@/core/db/init';
 import { runDevSeed, runDevVisitStart } from '@/core/db/seeds';
+import { scanAndRearm } from '@/core/services/monitor/cardScheduler';
 
 import { useDbBootstrapStore } from '../dbBootstrap.store';
 import { readWriterIdentity } from '../writerIdentity';
@@ -9,6 +10,7 @@ jest.mock('@/core/config/env', () => ({ env: { DEV_SEED: false } }));
 jest.mock('@/core/db/init', () => ({ ensureSchema: jest.fn().mockResolvedValue(undefined), resetSchemaInit: jest.fn() }));
 jest.mock('@/core/db/seeds', () => ({ runDevSeed: jest.fn(), runDevVisitStart: jest.fn() }));
 jest.mock('../writerIdentity', () => ({ readWriterIdentity: jest.fn() }));
+jest.mock('@/core/services/monitor/cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('@/core/utils/logger', () => ({ logger: { error: jest.fn(), debug: jest.fn(), info: jest.fn() } }));
 
 const WRITER = { providerUuid: 'provider-1', creatorUuid: 'user-1' };
@@ -69,6 +71,19 @@ describe('dbBootstrap store', () => {
       throw new Error('write failed');
     });
     await expect(useDbBootstrapStore.getState().startDevVisit()).resolves.toBeNull();
+  });
+
+  it('arms the card alarm once the database is ready: the login scan may have run before it existed', async () => {
+    await useDbBootstrapStore.getState().initialise('provider-1');
+
+    expect(scanAndRearm).toHaveBeenCalledWith('visitStart');
+  });
+
+  it('arms the card alarm for the live test visit it starts', async () => {
+    setDevSeed(true);
+    await useDbBootstrapStore.getState().startDevVisit();
+
+    expect(scanAndRearm).toHaveBeenCalledWith('visitStart');
   });
 
   it('starts nothing when no one is logged in', async () => {

@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import { STAGE1_OUTCOME } from '@ezazi/clinical-rules';
 
 import { onTablesChanged } from '@/core/db';
+import { scanAndRearm } from '@/core/services/monitor/cardScheduler';
 import { useAuthStore } from '@/core/session/auth.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { readWriterIdentity } from '@/core/session/writerIdentity';
@@ -13,6 +14,7 @@ import { useTimelineViewModel } from '../useTimelineViewModel';
 
 jest.mock('@/core/db', () => ({ getDb: jest.fn(() => 'db-handle'), onTablesChanged: jest.fn() }));
 jest.mock('@/core/session/writerIdentity', () => ({ readWriterIdentity: jest.fn() }));
+jest.mock('@/core/services/monitor/cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../../data/timelineReader', () => ({ readTimeline: jest.fn() }));
 jest.mock('../../data/labourRepository', () => ({ captureSos: jest.fn(), endStage1: jest.fn() }));
 jest.mock('@/core/utils/logger', () => ({ logger: { error: jest.fn(), info: jest.fn(), debug: jest.fn() } }));
@@ -120,6 +122,8 @@ describe('useTimelineViewModel', () => {
 
     await expect(result.current!.startStage2()).resolves.toBe(true);
     expect(endStage1).toHaveBeenCalledWith(VISIT, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, WRITER, NOW.getTime(), 'db-handle');
+    // The first Stage 2 card's successor is 15 min away, sooner than the armed Stage 1 alarm.
+    expect(scanAndRearm).toHaveBeenCalledWith('stageChange');
   });
 
   it('does not start Stage 2 twice, nor without a writer, nor when storage fails', async () => {
@@ -134,6 +138,7 @@ describe('useTimelineViewModel', () => {
     (readWriterIdentity as jest.Mock).mockRejectedValue(new Error('keystore'));
     await expect(result.current!.startStage2()).resolves.toBe(false);
     expect(endStage1).not.toHaveBeenCalled();
+    expect(scanAndRearm).not.toHaveBeenCalled();
   });
 
   it('keeps the last good timeline when a read fails', () => {

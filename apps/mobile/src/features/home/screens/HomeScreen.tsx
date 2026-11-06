@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/core/session/auth.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
-import { useMonitorTickCount, useBackboneStatus } from '@/core/services/monitor';
+import { useCardWakeLog } from '@/core/services/monitor';
 import { AppButton } from '@/core/ui/AppButton';
 import { Text } from '@/core/ui/Text';
 import { colors, radii, spacing, typography } from '@/core/config/theme';
@@ -27,8 +27,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
-  const monitorTicks = useMonitorTickCount();
-  const backbone = useBackboneStatus();
+  const wakeLog = useCardWakeLog();
 
   const providerUuid = useAuthStore((s) => s.userUuid);
   const initialiseDb = useDbBootstrapStore((s) => s.initialise);
@@ -48,13 +47,17 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>{t('home.title')}</Text>
       <Text style={styles.note}>{t('home.note')}</Text>
-      {/* Temporary dev indicator for the background-monitor soak test — remove once the notification alone is trusted. */}
+      {/* Temporary dev indicator for the card-alarm device runs: the last wake-ups and how late each was. */}
       <View style={styles.monitorBadge}>
-        <Text style={styles.monitorText}>Heartbeat (foreground only): tick {monitorTicks}</Text>
-        <Text style={styles.monitorText}>
-          Backbone (survives backgrounding): tick {backbone.tickCount}
-          {backbone.lastTickAt ? ` · ${backbone.lastTickAt}` : ''}
-        </Text>
+        {wakeLog.length === 0 ? (
+          <Text style={styles.monitorText}>Card alarm: no wake-up yet</Text>
+        ) : (
+          wakeLog.map((line) => (
+            <Text key={line} style={styles.monitorText}>
+              {line}
+            </Text>
+          ))
+        )}
       </View>
       <View style={styles.btn}>
         <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />

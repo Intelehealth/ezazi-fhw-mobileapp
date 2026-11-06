@@ -9,7 +9,10 @@ import { scanAllVisits, type ScanResult } from './scan';
 
 export type { ScanResult } from './scan';
 
-let inFlight: Promise<ScanResult | null> | null = null;
+let current: Promise<ScanResult | null> | null = null;
+let currentNow = 0;
+let next: Promise<ScanResult | null> | null = null;
+let nextNow = 0;
 
 async function scanWithSession(now: number): Promise<ScanResult | null> {
   const [accessToken, identity] = await Promise.all([secureStorage.get('accessToken'), readWriterIdentity()]);
@@ -28,13 +31,31 @@ async function scanWithSession(now: number): Promise<ScanResult | null> {
   return result;
 }
 
+function start(now: number): Promise<ScanResult | null> {
+  currentNow = now;
+  current = scanWithSession(now).finally(() => {
+    current = null;
+  });
+  return current;
+}
+
 /**
- * The minute scan, one at a time: a second call while one runs gets the same result instead
- * of scanning twice. Null when nobody is logged in.
+ * The card scan, one at a time. A call while one runs gets that scan's result when its own time is not
+ * later; a call with a later time gets one more scan right after it (several such calls share it, at the
+ * latest time), so a card that falls due while a scan is running is never missed. Null when nobody is
+ * logged in.
  */
 export function runCardScan(now: number = Date.now()): Promise<ScanResult | null> {
-  inFlight ??= scanWithSession(now).finally(() => {
-    inFlight = null;
-  });
-  return inFlight;
+  if (!current) return start(now);
+  if (now <= currentNow) return current;
+  nextNow = Math.max(nextNow, now);
+  next ??= current
+    .catch(() => null)
+    .then(() => {
+      const rerunAt = nextNow;
+      next = null;
+      nextNow = 0;
+      return runCardScan(rerunAt);
+    });
+  return next;
 }

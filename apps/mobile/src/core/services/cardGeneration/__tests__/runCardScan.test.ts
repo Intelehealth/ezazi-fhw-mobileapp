@@ -46,15 +46,47 @@ describe('runCardScan', () => {
     expect(scanAllVisits).not.toHaveBeenCalled();
   });
 
-  it('runs one scan at a time: an overlapping call shares the result', async () => {
+  it('runs one scan at a time: an overlapping call with the same time shares the result', async () => {
     session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
 
-    const [first, second] = await Promise.all([runCardScan(), runCardScan()]);
+    const [first, second] = await Promise.all([runCardScan(1000), runCardScan(1000)]);
     expect(first).toBe(second);
     expect(scanAllVisits).toHaveBeenCalledTimes(1);
 
-    await runCardScan();
+    await runCardScan(2000);
     expect(scanAllVisits).toHaveBeenCalledTimes(2);
+  });
+
+  it('an overlapping call with a later time gets one more scan at that time, never the older result', async () => {
+    session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
+    const later = { ...RESULT, cardsCreated: 0 };
+    (scanAllVisits as jest.Mock).mockReturnValueOnce(RESULT).mockReturnValueOnce(later);
+
+    const [first, second] = await Promise.all([runCardScan(1000), runCardScan(5000)]);
+
+    expect(first).toBe(RESULT);
+    expect(second).toBe(later);
+    expect((scanAllVisits as jest.Mock).mock.calls.map((call) => call[1])).toEqual([1000, 5000]);
+  });
+
+  it('several later calls share one follow-up scan, at the latest of their times', async () => {
+    session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
+
+    await Promise.all([runCardScan(1000), runCardScan(3000), runCardScan(7000), runCardScan(500)]);
+
+    expect((scanAllVisits as jest.Mock).mock.calls.map((call) => call[1])).toEqual([1000, 7000]);
+  });
+
+  it('a failed scan still lets the follow-up run', async () => {
+    session({ accessToken: 't', userUuid: 'provider-1', creatorUuid: 'user-1' });
+    (scanAllVisits as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('db busy');
+    });
+
+    const [first, second] = await Promise.allSettled([runCardScan(1000), runCardScan(2000)]);
+
+    expect(first.status).toBe('rejected');
+    expect(second).toEqual({ status: 'fulfilled', value: RESULT });
   });
 
   it('alerts only when a card was created, and a failed alert does not fail the scan', async () => {

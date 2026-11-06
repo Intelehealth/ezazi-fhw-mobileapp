@@ -1,14 +1,6 @@
 import { useEffect, useRef } from 'react';
-import notifee, { EventType } from 'react-native-notify-kit';
 import { logger } from '@/core/utils/logger';
-import {
-  acknowledgeDialog,
-  BATTERY_TRIGGER_NOTIFICATION_ID,
-  checkPendingDialog,
-  handleCheckTriggerDelivered,
-  startBatteryGuard,
-  stopBatteryGuard,
-} from './batteryGuard';
+import { acknowledgeDialog, checkPendingDialog, startBatteryGuard, stopBatteryGuard } from './batteryGuard';
 import { useBatteryGuardStore } from './batteryGuard.store';
 
 /**
@@ -38,16 +30,7 @@ export function useBatteryGuard(enabled: boolean): void {
         useBatteryGuardStore.getState().showDialog(percent);
       }
     });
-
-    // Same foreground/background split as the labour-monitor trigger —
-    // index.js's onBackgroundEvent only catches a delivery while backgrounded.
-    const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.DELIVERED && detail.notification?.id === BATTERY_TRIGGER_NOTIFICATION_ID) {
-        void handleCheckTriggerDelivered();
-      }
-    });
-
-    return () => unsubscribe();
+    // The checks themselves run from the native battery alarm (monitor/cardScanTask.ts), app open or not.
   }, [enabled]);
 }
 

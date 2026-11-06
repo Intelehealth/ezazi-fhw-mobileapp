@@ -1,0 +1,6 @@
+{
+  "name": "card-alarm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wake-up for the labour card engine: alarm clock + exact watchdog alarm, a short foreground service that runs the JS card scan, and re-arm on boot, update and clock change."
+}

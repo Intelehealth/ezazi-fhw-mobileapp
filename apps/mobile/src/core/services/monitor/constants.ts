@@ -1,29 +1,28 @@
-export const MONITOR_CHANNEL_ID = 'labour-monitor';
-export const MONITOR_NOTIFICATION_ID = 'labour-monitor-service';
+// The card engine's wake-up (2026-11-06, CARD_ENGINE_ALARM_PLAN.md). Replaces the dataSync foreground
+// service and the 1-minute alarm chain, which Android 15+ stopped after 6 hours (open point #22).
 
-// Short for dev visibility while proving the service stays alive; the real
-// clinical cadence is minutes-scale (30/15-min Stage 1/2 intervals), unaffected
-// by how often this heartbeat itself ticks (ARCHITECTURE_RULES §4 — checking
-// more often than the clinical interval catches nothing new).
-export const MONITOR_TICK_INTERVAL_MS = 5_000;
+// The alarm clock rings this long before the card is due, so a cold app start (1-3 s) is over and the
+// task waits for the exact due second: the card is written on time and no delay carries forward.
+export const CARD_PRE_WAKE_MS = 20_000;
 
-// The reliable layer — AlarmManager-backed, survives Doze/backgrounding.
-// Confirmed via the 2026-10-01 soak test that the heartbeat above does not:
-// RN's own setInterval/setTimeout fire on Android's Choreographer frame
-// callbacks (JavaTimerManager.kt), which the OS stops delivering once there's
-// no visible window to vsync against — no flag or wake lock changes that.
-// 1 minute in production too, via a self-rescheduling TimestampTrigger: the card
-// engine scans every minute like Android's, since each visit is at its own point
-// in its schedule (decided 2026-10-23; monitor README).
-// `-v2`: Android fixes a channel's importance at creation and ignores later
-// changes, so making this channel IMPORTANCE_MIN needed a new id.
-export const MONITOR_TRIGGER_CHANNEL_ID = 'labour-monitor-trigger-v2';
-export const MONITOR_TRIGGER_NOTIFICATION_ID = 'labour-monitor-trigger';
-export const MONITOR_TRIGGER_INTERVAL_MINUTES = 1;
+// The watchdog alarm, in case the main wake-up failed. Every scan re-arms both, so it normally never rings.
+export const CARD_WATCHDOG_DELAY_MS = 2 * 60_000;
 
-export const MONITOR_TRIGGER_TICK_COUNT_KEY = 'monitor_trigger_tick_count';
-export const MONITOR_TRIGGER_LAST_TICK_AT_KEY = 'monitor_trigger_last_tick_at';
-export const MONITOR_TRIGGER_RUNNING_FLAG_KEY = 'monitor_trigger_running';
+// A task woken early never waits longer than this for the due second (a wrong clock cannot hold it).
+export const CARD_MAX_WAIT_MS = 60_000;
+
+// A card still due right after a scan is scanned again at once, at most this many times.
+export const CARD_MAX_RESCANS = 2;
+
+// After that (a visit whose scan keeps failing), try again in a minute rather than give up.
+export const CARD_RETRY_DELAY_MS = 60_000;
+
+// The JS task the native CardScanService runs (modules/card-alarm, CardScanService.TASK_NAME).
+export const CARD_SCAN_TASK = 'CardScan';
+
+// Triggers of the old monitor, cancelled on start so an app updated mid-labour shows no stray
+// "Monitor check" notification from them.
+export const LEGACY_TRIGGER_IDS = ['labour-monitor-trigger', 'battery-guard-trigger'];
 
 // Splash: how long to wait for the "Alarms & reminders" page to open before going on without it.
 export const MONITOR_SETTINGS_OPEN_TIMEOUT_MS = 3000;

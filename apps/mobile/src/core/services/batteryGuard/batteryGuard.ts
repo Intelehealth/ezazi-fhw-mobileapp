@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Battery from 'expo-battery';
-import notifee, { AlarmType, AndroidImportance, TriggerType } from 'react-native-notify-kit';
+import notifee, { AndroidImportance } from 'react-native-notify-kit';
 import { i18n } from '@/core/i18n';
-import { minutesFromNow } from '@/core/utils/datetime';
+import { cardAlarm } from '@/core/services/monitor/cardAlarmNative';
 import { logger } from '@/core/utils/logger';
 import { useBatteryGuardStore } from './batteryGuard.store';
 import {
@@ -18,42 +18,22 @@ import {
 } from './constants';
 
 /**
- * Low-battery alert — entirely separate from backboneTrigger.ts's own
- * AlarmManager chain (own channels, own notification id, own AsyncStorage
- * keys, own trigger loop) so nothing here can regress the already
- * soak-tested labour-monitor trigger.
+ * Low-battery alert — separate state (own channels, notification id and AsyncStorage keys) from the card
+ * engine, but woken by the same native alarm module (modules/card-alarm, BATTERY slot), whose short
+ * foreground service keeps the app awake while the check runs.
  *
- * `expo-battery`'s addBatteryLevelListener is unsuitable for this on
- * Android: the docs say it only fires on the OS's own BATTERY_LOW /
- * BATTERY_OKAY broadcasts, not on every 1% step — far too coarse for a
- * "notify every percent between 30-35" requirement. So the level itself is
- * polled on a short AlarmManager-backed cycle (same SET_EXACT_AND_ALLOW_
- * WHILE_IDLE mechanism as the labour-monitor backbone, so it survives Doze
- * the same proven way). addBatteryStateListener (plug/unplug), by
- * contrast, isn't documented as throttled, so that's wired as a plain
- * event listener for an immediate reaction — the moment the user plugs in,
- * the notification cancels without waiting for the next poll.
+ * `expo-battery`'s addBatteryLevelListener only fires on the OS's BATTERY_LOW / BATTERY_OKAY broadcasts,
+ * far too coarse for a warning per percent between 35 and 30, so the level is polled on an exact alarm.
+ * Every 5 minutes (2026-11-06; it was every minute, which used most of the 72 alarms an hour Android
+ * allows an app while the screen is off, CARD_ENGINE_ALARM_PLAN.md §3). A sound level crossed between two
+ * checks still sounds. addBatteryStateListener (plug/unplug) is a plain listener for an immediate reaction.
  */
 
-// `-v2`: Android fixes a channel's importance at creation and ignores later
-// changes, so making this channel IMPORTANCE_MIN needed a new id.
-const TRIGGER_CHANNEL_ID = 'battery-guard-trigger-v2';
-const TRIGGER_NOTIFICATION_ID = 'battery-guard-trigger';
 const RUNNING_FLAG_KEY = 'battery_guard_running';
 
-// Test cadence — mirrors backboneTrigger.ts's own MONITOR_TRIGGER_INTERVAL_MINUTES.
-// A battery percent point doesn't need second-by-second tracking; 1 minute
-// catches every 1% step comfortably (batteries don't typically drop faster).
-const CHECK_INTERVAL_MINUTES = 1;
+const CHECK_INTERVAL_MS = 5 * 60_000;
 
 async function ensureChannels(): Promise<void> {
-  await notifee.createChannel({
-    id: TRIGGER_CHANNEL_ID,
-    name: 'Battery check (internal)',
-    // MIN: silent, no status-bar icon, collapsed in the shade. This
-    // notification is only the alarm's vehicle, not something to read.
-    importance: AndroidImportance.MIN,
-  });
   await notifee.createChannel({
     id: BATTERY_SILENT_CHANNEL_ID,
     name: 'Battery warnings',
@@ -68,21 +48,12 @@ async function ensureChannels(): Promise<void> {
   });
 }
 
-async function scheduleNextCheck(): Promise<void> {
-  const timestamp = minutesFromNow(CHECK_INTERVAL_MINUTES);
-  await notifee.createTriggerNotification(
-    {
-      id: TRIGGER_NOTIFICATION_ID,
-      title: 'Battery check',
-      body: 'Internal battery-level check.',
-      android: { channelId: TRIGGER_CHANNEL_ID },
-    },
-    {
-      type: TriggerType.TIMESTAMP,
-      timestamp,
-      alarmManager: { type: AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE },
-    },
-  );
+function armNextCheck(): void {
+  try {
+    cardAlarm?.armBattery(Date.now() + CHECK_INTERVAL_MS);
+  } catch (error) {
+    logger.error('[batteryGuard] arming the next check failed', error);
+  }
 }
 
 async function clearAlertState(): Promise<void> {
@@ -152,7 +123,10 @@ export async function evaluateBatteryNow(): Promise<void> {
   await AsyncStorage.setItem(BATTERY_LAST_NOTIFIED_PERCENT_KEY, String(percent));
 
   const isCritical = percent <= ONGOING_THRESHOLD_PERCENT;
-  const playSound = SOUND_MILESTONE_PERCENTS.includes(percent);
+  // A sound level reached, or passed since the last warning (checks are 5 minutes apart).
+  const playSound = SOUND_MILESTONE_PERCENTS.some(
+    (milestone) => percent === milestone || (lastNotified !== null && lastNotified > milestone && percent < milestone),
+  );
 
   try {
     await notifee.displayNotification({
@@ -171,21 +145,13 @@ export async function evaluateBatteryNow(): Promise<void> {
   }
 }
 
-/** Called from index.js's onBackgroundEvent / index.ts's onForegroundEvent on the trigger's DELIVERED event. */
-export async function handleCheckTriggerDelivered(): Promise<void> {
-  // Same as handleTriggerDelivered(): dismiss the displayed "Battery check"
-  // vehicle notification; isolated so it can never block the check or re-arm.
+/** The battery alarm rang (monitor/cardScanTask.ts): check, then arm the next check while still running. */
+export async function handleBatteryWake(): Promise<void> {
   try {
-    await notifee.cancelDisplayedNotification(TRIGGER_NOTIFICATION_ID);
-  } catch (error) {
-    logger.error('[batteryGuard] could not dismiss the displayed trigger notification', error);
-  }
-
-  await evaluateBatteryNow();
-
-  const stillRunning = (await AsyncStorage.getItem(RUNNING_FLAG_KEY)) === 'true';
-  if (stillRunning) {
-    await scheduleNextCheck();
+    await evaluateBatteryNow();
+  } finally {
+    const stillRunning = (await AsyncStorage.getItem(RUNNING_FLAG_KEY)) === 'true';
+    if (stillRunning) armNextCheck();
   }
 }
 
@@ -194,8 +160,13 @@ let activeStateSubscription: ReturnType<typeof Battery.addBatteryStateListener> 
 export async function startBatteryGuard(): Promise<void> {
   await ensureChannels();
   await AsyncStorage.setItem(RUNNING_FLAG_KEY, 'true');
+  try {
+    cardAlarm?.start(); // idempotent: the monitor starts it too, on the same login
+  } catch (error) {
+    logger.error('[batteryGuard] alarm module start failed', error);
+  }
   await evaluateBatteryNow();
-  await scheduleNextCheck();
+  armNextCheck();
 
   activeStateSubscription?.remove();
   activeStateSubscription = Battery.addBatteryStateListener(({ batteryState }) => {
@@ -216,14 +187,17 @@ export async function startBatteryGuard(): Promise<void> {
 export async function stopBatteryGuard(): Promise<void> {
   activeStateSubscription?.remove();
   activeStateSubscription = null;
-  // Flag first: an in-flight handleCheckTriggerDelivered() reads it to decide
+  // Flag first: an in-flight handleBatteryWake() reads it to decide
   // whether to re-arm, so clearing it before cancelling closes that race.
   await AsyncStorage.setItem(RUNNING_FLAG_KEY, 'false');
-  await notifee.cancelTriggerNotifications([TRIGGER_NOTIFICATION_ID]);
+  try {
+    cardAlarm?.disarmBattery();
+  } catch (error) {
+    logger.error('[batteryGuard] cancelling the check alarm failed', error);
+  }
   // The low-battery alert is `ongoing` (can't be swiped away) — without this
   // it stays stuck at its last percentage after logout.
   await clearAlertState();
   logger.debug('[batteryGuard] stopped');
 }
 
-export { TRIGGER_NOTIFICATION_ID as BATTERY_TRIGGER_NOTIFICATION_ID };

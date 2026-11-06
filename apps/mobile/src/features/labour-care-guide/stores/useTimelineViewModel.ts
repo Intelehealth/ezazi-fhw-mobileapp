@@ -4,6 +4,7 @@ import { MS_PER_MINUTE, STAGE1_OUTCOME } from '@ezazi/clinical-rules';
 import { getDb, onTablesChanged } from '@/core/db';
 import { encounter, obs, visit, visitAttribute } from '@/core/db/schema';
 import { useAuthStore } from '@/core/session/auth.store';
+import { scanAndRearm } from '@/core/services/monitor/cardScheduler';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { readWriterIdentity } from '@/core/session/writerIdentity';
 import { logger } from '@/core/utils/logger';
@@ -78,7 +79,10 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
       if (!writer) return false;
       // Read now, not from the snapshot: a second tap must not start Stage 2 twice.
       if (activeStageOf(readTimeline(visitUuid, providerUuid, getDb()).currentCardName) !== 'stage1') return false;
-      return endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, Date.now(), getDb()).kind === 'startStage2';
+      const started = endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, Date.now(), getDb()).kind === 'startStage2';
+      // The next card is now 15 min away, sooner than the Stage 1 alarm: arm it again (Android re-arms here too).
+      if (started) void scanAndRearm('stageChange');
+      return started;
     } catch (error: unknown) {
       logger.error('[timeline] Stage 2 start failed', error);
       return false;

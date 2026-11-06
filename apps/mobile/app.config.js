@@ -73,11 +73,8 @@ module.exports = {
         'USE_FINGERPRINT',
         'READ_SMS',
         'RECEIVE_SMS',
-        // Without this, notify-kit's SET_EXACT_AND_ALLOW_WHILE_IDLE backbone
-        // trigger silently falls back to an inexact alarm (confirmed via
-        // logcat: "SCHEDULE_EXACT_ALARM permission not granted") — Android
-        // may then batch/delay delivery by minutes, defeating the whole
-        // point of this layer.
+        // The card alarms (modules/card-alarm, which declares it too) are exact only with this, and the
+        // user must still turn on "Alarms & reminders" (the splash screen requires it, as Android does).
         'SCHEDULE_EXACT_ALARM',
       ],
     },
@@ -95,19 +92,10 @@ module.exports = {
       'expo-localization',
       'expo-secure-store',
       'expo-local-authentication',
-      [
-        'react-native-notify-kit',
-        {
-          android: {
-            foregroundService: {
-              // Mirrors the legacy Android app's FOREGROUND_SERVICE_DATA_SYNC
-              // permission (CallListenerBackgroundService) for the same job:
-              // periodically re-checking local state, not sensors/media/calls.
-              types: ['dataSync'],
-            },
-          },
-        },
-      ],
+      // Notifications only: the card engine's wake-up is the local module modules/card-alarm (alarm clock +
+      // a short foreground service), not notify-kit's dataSync foreground service, which Android 15+ stops
+      // after 6 hours (2026-11-06, CARD_ENGINE_ALARM_PLAN.md).
+      'react-native-notify-kit',
       // Android's new-card alert sound (al_1) into res/raw, for the notification channel.
       './plugins/withAlertSound',
     ],

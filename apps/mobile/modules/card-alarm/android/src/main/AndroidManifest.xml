@@ -1,0 +1,36 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+  <!-- Package visibility for the Samsung "Never sleeping apps" deep link. -->
+  <queries>
+    <package android:name="com.samsung.android.lool" />
+  </queries>
+
+  <application>
+    <!-- Alarms, boot, app update, clock change and "Alarms & reminders" granted. System broadcasts
+         reach a receiver that is not exported. -->
+    <receiver
+      android:name="org.intelehealth.ezazi.cardalarm.CardAlarmReceiver"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+      </intent-filter>
+    </receiver>
+
+    <!-- Runs the JS card scan for a few seconds after a wake-up. shortService: no 6-hour limit, may be
+         started from an exact alarm, keeps the process out of the cached-app freezer. -->
+    <service
+      android:name="org.intelehealth.ezazi.cardalarm.CardScanService"
+      android:exported="false"
+      android:foregroundServiceType="shortService" />
+  </application>
+</manifest>

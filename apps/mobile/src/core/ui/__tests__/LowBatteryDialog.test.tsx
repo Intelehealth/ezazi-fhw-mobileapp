@@ -15,12 +15,10 @@ jest.mock('react-native-notify-kit', () => ({
 }));
 
 jest.mock('@/core/services/batteryGuard/batteryGuard', () => ({
-  BATTERY_TRIGGER_NOTIFICATION_ID: 'battery-guard-trigger',
   startBatteryGuard: jest.fn().mockResolvedValue(undefined),
   stopBatteryGuard: jest.fn().mockResolvedValue(undefined),
   checkPendingDialog: jest.fn().mockResolvedValue(null),
   acknowledgeDialog: jest.fn().mockResolvedValue(undefined),
-  handleCheckTriggerDelivered: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('@/core/utils/logger', () => ({

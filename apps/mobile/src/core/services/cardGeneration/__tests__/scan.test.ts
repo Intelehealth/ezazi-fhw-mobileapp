@@ -42,7 +42,14 @@ describe('scanAllVisits', () => {
   afterEach(() => ctx.close());
 
   it('waits while the latest card is younger than 30 minutes', () => {
-    expect(scanAllVisits(IDENTITY, NOW, db)).toEqual({ cardsCreated: 0, decisionPendingSet: 0, missedMarkers: 0, preSyncDue: 0 });
+    expect(scanAllVisits(IDENTITY, NOW, db)).toEqual({
+      cardsCreated: 0,
+      decisionPendingSet: 0,
+      missedMarkers: 0,
+      preSyncDue: 0,
+      duplicatesSkipped: 0,
+      nextDueAt: NOW + 10 * MINUTE,
+    });
     expect(latestName(db)).toBe('Stage1_Hour2_2');
   });
 
@@ -105,6 +112,81 @@ describe('scanAllVisits', () => {
     expect(visitAttributeRepo.findValue(DEV_VISIT_UUID, DECISION_PENDING, db)).toBe('true');
     expect(visitRepo.findDirty(db).map((v) => v.uuid)).toContain(DEV_VISIT_UUID);
     expect(scanAllVisits(IDENTITY, NOW + 26 * MINUTE, db).decisionPendingSet).toBe(0);
+  });
+
+  it('gives the next due time exactly: 30 minutes after the newest card, to the millisecond', () => {
+    const result = scanAllVisits(IDENTITY, NOW + 10 * MINUTE, db);
+
+    expect(result.cardsCreated).toBe(1);
+    expect(result.nextDueAt).toBe(NOW + 40 * MINUTE);
+  });
+
+  it('a scan at the exact due millisecond creates the card (no off-by-one minute)', () => {
+    expect(scanAllVisits(IDENTITY, NOW + 10 * MINUTE - 1, db).cardsCreated).toBe(0);
+    expect(scanAllVisits(IDENTITY, NOW + 10 * MINUTE, db).cardsCreated).toBe(1);
+  });
+
+  it('never writes a card whose name the visit already has (Android isEncounterAlreadyAvailable)', () => {
+    // An older Stage1_Hour3_1 (e.g. from another device): the latest is still Stage1_Hour2_2.
+    transact((tx) => {
+      encounterRepo.insertManyReplacing(
+        [{
+          uuid: 'other-device-card',
+          visituuid: DEV_VISIT_UUID,
+          encounter_time: utcIsoTimestamp(NOW - 200 * MINUTE),
+          encounter_type_uuid: encounterTypeUuid('Stage1_Hour3_1'),
+          voided: VOIDED_NO,
+        }],
+        tx,
+      );
+    }, db);
+
+    const result = scanAllVisits(IDENTITY, NOW + 10 * MINUTE, db);
+
+    expect(result).toMatchObject({ cardsCreated: 0, duplicatesSkipped: 1 });
+    expect(latestName(db)).toBe('Stage1_Hour2_2');
+  });
+
+  it('a voided card of that name does not block the new one (unlike Android)', () => {
+    transact((tx) => {
+      encounterRepo.insertManyReplacing(
+        [{
+          uuid: 'voided-card',
+          visituuid: DEV_VISIT_UUID,
+          encounter_time: utcIsoTimestamp(NOW - 200 * MINUTE),
+          encounter_type_uuid: encounterTypeUuid('Stage1_Hour3_1'),
+          voided: 1,
+        }],
+        tx,
+      );
+    }, db);
+
+    expect(scanAllVisits(IDENTITY, NOW + 10 * MINUTE, db).cardsCreated).toBe(1);
+    expect(latestName(db)).toBe('Stage1_Hour3_1');
+  });
+
+  it('nothing is due once Decision Pending is set after the last card, so no alarm is armed', () => {
+    transact((tx) => {
+      encounterRepo.insertManyReplacing(
+        [{
+          uuid: 'last-card',
+          visituuid: DEV_VISIT_UUID,
+          encounter_time: utcIsoTimestamp(NOW - 5 * MINUTE),
+          encounter_type_uuid: encounterTypeUuid('Stage1_Hour15_2'),
+          voided: VOIDED_NO,
+        }],
+        tx,
+      );
+    }, db);
+
+    // Before: Decision Pending itself is due 30 minutes after the last card.
+    expect(scanAllVisits(IDENTITY, NOW, db).nextDueAt).toBe(NOW + 25 * MINUTE);
+    expect(scanAllVisits(IDENTITY, NOW + 25 * MINUTE, db)).toMatchObject({ decisionPendingSet: 1, nextDueAt: null });
+    expect(scanAllVisits(IDENTITY, NOW + 26 * MINUTE, db).nextDueAt).toBeNull();
+  });
+
+  it('no visit, no next due time', () => {
+    expect(scanAllVisits({ ...IDENTITY, providerUuid: 'someone-else' }, NOW, db).nextDueAt).toBeNull();
   });
 
   it("leaves other providers' visits alone", () => {

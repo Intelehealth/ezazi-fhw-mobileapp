@@ -3,29 +3,17 @@
 // full ICU data, leaving Intl.PluralRules undefined at runtime.
 import 'intl-pluralrules';
 
-// Registers what the Android foreground service runs. Must happen at boot,
-// outside the component tree, so the OS can re-invoke it after a restart.
-import { registerMonitorForegroundServiceHandler } from '@/core/services/monitor/foregroundService';
-registerMonitorForegroundServiceHandler();
+// The labour card engine's wake-up (modules/card-alarm): after every alarm, boot, app update or clock
+// change, the native CardScanService runs this task while it keeps the device awake. Registered at boot,
+// outside the component tree, so it runs with the app closed too.
+import { AppRegistry } from 'react-native';
+import { CARD_SCAN_TASK, runCardScanTask } from '@/core/services/monitor';
+AppRegistry.registerHeadlessTask(CARD_SCAN_TASK, () => runCardScanTask);
 
-// Only one onBackgroundEvent handler may exist app-wide (notify-kit docs) —
-// this is the AlarmManager-backed trigger firing, the reliable layer that
-// survives backgrounding where the JS-timer heartbeat above does not.
-// batteryGuard's own trigger is a second, independent alarm chain (own
-// channel/notification id), but it has to share this one handler — adding
-// an `else if` branch here, not touching the monitor branch above it.
-import notifee, { EventType } from 'react-native-notify-kit';
-import { handleTriggerDelivered } from '@/core/services/monitor/backboneTrigger';
-import { MONITOR_TRIGGER_NOTIFICATION_ID } from '@/core/services/monitor/constants';
-import { handleCheckTriggerDelivered, BATTERY_TRIGGER_NOTIFICATION_ID } from '@/core/services/batteryGuard/batteryGuard';
-notifee.onBackgroundEvent(async ({ type, detail }) => {
-  if (type !== EventType.DELIVERED) return;
-  if (detail.notification?.id === MONITOR_TRIGGER_NOTIFICATION_ID) {
-    await handleTriggerDelivered();
-  } else if (detail.notification?.id === BATTERY_TRIGGER_NOTIFICATION_ID) {
-    await handleCheckTriggerDelivered();
-  }
-});
+// notify-kit: only one onBackgroundEvent may exist app-wide. No alarm runs through notify-kit any more;
+// this only receives taps on notifications (new card, low battery), which need no background work.
+import notifee from 'react-native-notify-kit';
+notifee.onBackgroundEvent(async () => {});
 
 // `expo/AppEntry`'s hardcoded `../../App` import breaks once node_modules is
 // hoisted to the monorepo root, so register the root component directly.
