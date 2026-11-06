@@ -37,7 +37,7 @@ ezazi-monorepo/
 │           │   │   └── sync/         #   the SINGLE sync engine (owns EMR-Middleware pull/push)
 │           │   ├── services/         #   long-lived singletons via hooks:
 │           │   │   ├── livekit/ (useCall) · socket/ (useChat) · fcm/ · firebase/
-│           │   │   ├── monitor/      #   labour monitor: foreground service + AlarmManager backbone (ARCHITECTURE_RULES §11)
+│           │   │   ├── monitor/      #   labour monitor: card alarms (modules/card-alarm) + scan task (ARCHITECTURE_RULES §11)
 │           │   │   ├── cardGeneration/ # minute card scan + new-card alert, run by the monitor (ARCHITECTURE_RULES §11)
 │           │   │   ├── batteryGuard/ #   low-battery dialog + notifications (ARCHITECTURE_RULES §11)
 │           │   │   └── storage/      #   secure-store (JWT) + async-storage wrappers

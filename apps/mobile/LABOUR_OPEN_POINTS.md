@@ -18,8 +18,12 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 | 5 | `modified_date` on card obs | UTC `yyyy-MM-dd HH:mm:ss` | Local time with offset on card saves | Part of #4 |
 | 8 | Decision Pending visit attribute | Inserted when the row is missing | Only updated when it exists | Keep · follow Android |
 | 9 | Visit holder check | Only the visit-holder attribute counts; a voided Visit Complete is ignored | Any attribute equal to the provider id; any Visit Complete | Keep (stricter) · follow Android |
+<!-- 2026-11-06 Kaveri: settled by the card-alarm redesign, see Settled 2026-11-06
 | 10 | Cards after the app is closed | An OS alarm keeps creating cards | Stops while the app is closed | Keep · follow Android |
+-->
+<!-- 2026-11-06 Kaveri: settled by the card-alarm redesign, see Settled 2026-11-06
 | 11 | Card timing (exact-alarm access, parked) | Scan every ~105 s, so a card can be ~1¾ min late | Up to 1 min late | Team doc "Card engine timing: exact alarm access" |
+-->
 | 12 | Tapping a selected option again | Keeps it selected | (dialogs) | Keep · clear the choice |
 | 13 | "−" on an empty stepper | Fills the starting value, as "+" | (no steppers) | Keep · do nothing |
 | 14 | Notes added on this card | Can be removed before saving | Not confirmed | Keep · Android's way once confirmed |
@@ -29,8 +33,12 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 | 18 | SOS dialog text | Says "This will open the SOS observation form", but Capture SOS only adds the SOS card to the Timeline | Same: only refreshes the Timeline (`TimelineVisitSummaryActivity` ~1539) | Change the text · open the form after Capture SOS |
 | 19 | Medicine Duration and Duration unit | Marked `*` but not required; Add works without them | Same: labels have `*`, `isValidMedicine` does not check them | Keep · drop the `*` · make them required |
 | 20 | Medicine Frequency list | "Single Dose, Stat Dose" appears twice | Same (`arrays_ezazi.xml` 119-120) | Keep · show it once |
+<!-- 2026-11-06 Kaveri: settled by the card-alarm redesign, see Settled 2026-11-06
 | 22 | **Card engine stops after 6 hours with the screen off** (15-hour device run, 2026-11-01) | The monitor's foreground service is type `dataSync`; Android 15+ stops it after 6 h a day (`FGS (dataSync) timed out` at 07:41). The app then becomes a cached process, Samsung's Freecess freezes it when the screen goes off and its alarms are deferred: no cards 07:42-09:11 and 10:19-11:00, then one card on wake-up and no backfill | Same service type (legacy app); its target SDK decides whether the limit applies (not checked) | Service type with no daily limit (e.g. `specialUse`, Play justification) · handle `onTimeout` · exact alarms that run while idle · battery-optimisation exemption prompt |
+-->
+<!-- 2026-11-06 Kaveri: settled by the card-alarm redesign, see Settled 2026-11-06
 | 23 | PendingIntent count keeps growing | System warns "Too many PendingIntent created" for the app (up to 1,200 by 03:11) | — | Reuse one PendingIntent per trigger, check the 5-second notification update |
+-->
 | 21 | Assessment / Plan typed but not added | Dropped on save; only notes added with "+ Add" are saved | Not yet checked | Check Android, then match |
 
 ## Android features not built yet
@@ -50,11 +58,16 @@ Started 2026-10-31 (Kaveri). Android reference: `whitelabel-master` b3ddd15.
 - Sizes and colours against Figma once its rate limit resets; picker sheet and alert style have no frame yet.
 - The dev "Open debugger to view warnings" toast.
 - Login lost on app restart (login flow, outside this module).
+- Card engine: 20-hour screen-off soak on the tablet (Stage 1 then Stage 2), and a reboot mid-labour (after the first unlock). Same build, wake log `Android/data/org.intelehealth.ezazi/files/card-wakes.log`.
+- Card engine: Samsung may put an app unused for about 3 days to sleep (16 days: deep sleep, alarms blocked). The in-app guide to "Unrestricted" battery and "Never sleeping apps" was removed for now (Kaveri, 2026-11-06); decide after testing, meanwhile a tablet-setup checklist item.
+- Card engine (optional): the 5-minute battery wake could also create an overdue card, so a failed main wake-up costs about 5 s instead of the 2-minute watchdog.
+- Login screen: "Something went wrong" and no locations once, right after a logout (2026-11-06); a restart loaded them. Login flow, outside this module.
 
 ## Settled
 
 | Date | Point | Decision (who) |
 |---|---|---|
+| 2026-11-06 | Former points 10, 11, 22, 23 (cards with the app closed, card timing, 6-hour stop, PendingIntent growth): the card engine wakes on an alarm clock 20 s before each due card, waits for the due second and scans inside a short foreground service, with a watchdog alarm 2 min after; no dataSync service (CARD_ENGINE_ALARM_PLAN.md). Device run, Galaxy Tab, Android 16, eZAZI in no Samsung exemption list: app open, background, swiped away with the process dead, screen locked, light Doze with the battery unplugged, app updated: every card 5-17 ms after its due time (Android's design drifts about 15 min over Stage 1); a crashed wake-up recovered by the watchdog at +2 min; logout stopped every alarm, login re-armed; PendingIntents steady at about 25 (was 1,200). Deep Doze is not entered while a card alarm is within 30 min (more battery during a labour). | Kaveri (go-ahead), device-tested |
 | 2026-11-01 | Former points 6 and 7: `created_date` on the Oxytocin / IV row and on field rows is the save time in UTC, as Android (`PartogramDataCaptureActivity` 561, 589, 666); RN already matches | Checked against Android (no decision needed) |
 | 2026-10-31 | Edit save follows Android for now, including its medicine and note lists (points 1-3 stay open) | Kaveri |
 | 2026-10-29 | Where Dr. Venkat's frequency sheet and Android disagree, follow Android | Kaveri |

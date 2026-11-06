@@ -55,7 +55,10 @@ Before dependency/architecture work in `apps/mobile`:
 | `apps/mobile/{babel,metro,jest}.config.js` | Bundler/test config — **required for Drizzle:** `metro.config.js` pushes `sql` onto `resolver.sourceExts`; `babel.config.js` runs `['inline-import', { extensions: ['.sql'] }]` (and must stay **before** `react-native-worklets/plugin` when that is added) so bundled `.sql` migrations resolve. Missing either = an empty DB in a release build. |
 | `apps/mobile/drizzle/` | **Generated** migrations (`drizzle-kit generate`) + `migrations.js` — committed, applied on-device |
 | `apps/mobile/.env` | `EXPO_PUBLIC_*` config (no secrets) |
+<!-- 2026-11-06 Kaveri: the foreground-service runner is gone.
 | `apps/mobile/index.js` | App entry. Registers the monitor's foreground-service runner and the **one** app-wide notify-kit `onBackgroundEvent` handler — both must run at boot, outside the component tree, so the OS can re-invoke them after killing the process (§11). |
+-->
+| `apps/mobile/index.js` | App entry. Registers the `CardScan` headless task (run by `modules/card-alarm`'s service after every wake-up) and the **one** app-wide notify-kit `onBackgroundEvent` handler — both at boot, outside the component tree, so they work with the app closed (§11). |
 
 <!-- Superseded 2026-10-15 (Kaveri): adds `@ezazi/clinical-rules`, the new shared clinical rules package (commit 3083a9e), so mobile and web use one copy of the rules. Original text kept for reference:
 **Shared packages (consumed by mobile *and* the web app):** `@ezazi/api-client` (HTTP client + `ApiResult` + endpoints), `@ezazi/config` (multi-tenant client registry + env contracts), `@ezazi/types` (domain types).
@@ -83,7 +86,10 @@ Pins live in `apps/mobile/package.json`. **Two classes — do not confuse them.*
 | `dayjs` · `nepali-date-converter` | `^1.11` · `^3.4` | Calendar: AD + Nepali BS. Which one a client uses is a per-client config choice (§7); both ship in every build. |
 | `axios` | `^1.7` | Transport under `@ezazi/api-client`, which owns the client factory + interceptors. Direct use in mobile is deliberately limited to the raw refresh POST in `services/api/client.ts` (must bypass the interceptor to avoid recursing on 401) and type-only imports. **Build new API surface on `@ezazi/api-client`, not raw axios.** |
 | `@expo-google-fonts/lato` | `0.4.1` | The Lato webfont package. Pinned EXACT, and deliberately not (B) — it is not an Expo SDK module, so `npx expo install` does not manage its version. `App.tsx` gates the splash on `useFonts` until it loads, because `core/ui/Text.tsx` assumes the family is registered. |
+<!-- 2026-11-06 Kaveri: notify-kit no longer runs the monitor (card-alarm redesign).
 | `react-native-notify-kit` | `^10.8.0` | Background services (§11): Android foreground service, AlarmManager-backed trigger notifications, notification channels. Used by `core/services/monitor` and `core/services/batteryGuard`. **Android-only; New-Arch-only** (passes the §5 gate). Config plugin in `app.config.js` (`foregroundService.types: ['dataSync']`). Single-maintainer risk — see §10. |
+-->
+| `react-native-notify-kit` | `^10.8.0` | Notifications and channels (new-card alert, low-battery warnings). No longer the wake-up of any background service: its trigger delivery has no keep-alive while JS runs (§11 rule 4); that is the local module `modules/card-alarm` (Expo Modules API, Kotlin, New-Arch by construction). **Android-only; New-Arch-only** (passes the §5 gate). Config plugin in `app.config.js`, no foreground service. Single-maintainer risk — see §10. |
 
 ### (B) SDK-managed — install via `npx expo install`, NEVER hardcode
 `expo-sqlite`, `@react-native-async-storage/async-storage`, `react-native-screens`, `react-native-safe-area-context`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-secure-store`, `expo-local-authentication`, `expo-localization`, `expo-notifications`, `expo-background-task`, `expo-status-bar`, `expo-constants`, `expo-linking`, `expo-splash-screen`, `expo-asset`, `react-native-svg`, `expo-crypto`, `expo-font`.
@@ -219,30 +225,63 @@ Requirement: every client captures **the same fields**, but a client may need **
 
 > Added 2026-10-08. Code: `src/core/services/monitor/` and `src/core/services/batteryGuard/` — each has a README with the full detail. This section holds the rules; the one-line tripwires are in [`CLAUDE.md`](CLAUDE.md).
 
+<!-- 2026-11-06 Kaveri: the foreground-service runner is gone and unmount no longer stops a service (card-alarm redesign, CARD_ENGINE_ALARM_PLAN.md).
 **Where they live and how they run.** Long-lived background services go in `core/services/<name>/`. Each exposes a `use<Name>(enabled)` hook that `App.tsx` (the composition root) calls with `authStatus === 'authenticated'` — so a service starts after login and its cleanup stops it on logout. Anything the OS must be able to call after killing the process (the foreground-service runner, the background-event handler) is registered in `index.js`, at boot.
+-->
+**Where they live and how they run.** Long-lived background services go in `core/services/<name>/`. Each exposes a `use<Name>(enabled)` hook that `App.tsx` (the composition root) calls with `authStatus === 'authenticated'` — so a service starts after login and only logout (`enabled` true → false) stops it; an unmount alone (the app swiped from Recents) does not. Anything the OS must be able to call after killing the process (the `CardScan` headless task, the notify-kit background-event handler) is registered in `index.js`, at boot.
 
+<!-- 2026-11-06 Kaveri: the dataSync foreground service was removed: Android 15+ stops it after 6 hours a day (open point #22).
 **Native config they depend on** (`app.config.js`): the `SCHEDULE_EXACT_ALARM` permission, `POST_NOTIFICATIONS`, and the notify-kit plugin with `foregroundService.types: ['dataSync']`.
+-->
+**Native config they depend on:** the local Expo module `modules/card-alarm` (Kotlin; its own manifest declares the alarm receiver, the `shortService` scan service, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`), `POST_NOTIFICATIONS` (`app.config.js`), and the notify-kit plugin for notifications only (no foreground service).
 
 **Rules — each one learned on a device, none caught by tsc/jest:**
 
+<!-- 2026-11-06 Kaveri: the wake-up is now the card-alarm module, not a notify-kit trigger.
 1. **A JS timer is not a background clock.** RN's `setInterval`/`setTimeout` fire on Android Choreographer frame callbacks, which stop once there is no visible window. No wake lock, Doze exemption or headless task changes that (2026-10-01 soak test, emulator + Galaxy Tab A11). Anything that must fire while backgrounded uses an AlarmManager trigger (`SET_EXACT_AND_ALLOW_WHILE_IDLE`).
+-->
+1. **A JS timer is not a background clock.** RN's `setInterval`/`setTimeout` fire on Android Choreographer frame callbacks, which stop once there is no visible window (2026-10-01 soak test, emulator + Galaxy Tab A11). Anything that must fire while backgrounded uses an alarm of `modules/card-alarm`. (A timer *inside* the running `CardScan` task does work: the task is active. The task uses one to wait the last seconds to the due time.)
+<!-- 2026-11-06 Kaveri: now required on splash, as Android.
 2. **Exact alarms need `SCHEDULE_EXACT_ALARM`.** Without it the trigger silently falls back to an inexact alarm that Android may delay by minutes (seen in logcat).
+-->
+2. **Exact alarms need "Alarms & reminders".** `SCHEDULE_EXACT_ALARM` is not granted on install (Android 14+); without it every alarm silently becomes inexact and may be minutes late. The splash screen blocks the app until it is on, with Android's own dialog (da07197).
+<!-- 2026-11-06 Kaveri: no trigger chain runs through notify-kit any more.
 3. **Only one `onBackgroundEvent` per app.** A second registration replaces the first and silently kills the other service's alarm chain. It lives in `index.js`; add a branch per trigger id. Enforced by eslint (§9).
+-->
+3. **Only one `onBackgroundEvent` per app.** A second registration replaces the first. It lives in `index.js` and today only receives notification taps; no alarm runs through notify-kit. Enforced by eslint (§9).
+<!-- 2026-11-06 Kaveri: notify-kit trigger delivery is no longer used (it has no keep-alive while JS runs).
 4. **Handle trigger delivery in the foreground too.** `onBackgroundEvent` misses deliveries while the app is open, so each service also subscribes with `onForegroundEvent`. The delivery handler is what re-arms the next alarm — missing one foreground delivery ends the chain (the 15-minute soak recorded zero backbone ticks for this reason).
+-->
+4. **Background work runs inside the card-alarm service, never straight from an alarm event.** Android 14+ freezes an app about 10 s after an alarm receiver ends, and notify-kit ends its receiver before JS even starts, holding nothing. `CardScanService` (a `shortService` foreground service started from the alarm, which Android allows) holds a wake lock and keeps the process unfrozen until the `CardScan` task resolves, app open or closed.
+<!-- 2026-11-06 Kaveri: the flag moved to the native module.
 5. **Clear the "running" flag before cancelling the trigger.** The delivery handler reads that flag to decide whether to re-arm; clearing it first stops an in-flight delivery from re-arming after stop/logout.
+-->
+5. **Clear the "running" flag before cancelling the alarms.** The native flag (`CardAlarmState`, written with `commit`) is checked by the receiver and by every arm call; clearing it first stops an in-flight wake-up from re-arming after logout. The battery guard's own AsyncStorage flag follows the same order.
 6. **A notification channel's importance and sound are fixed at creation.** Later changes are ignored on-device. To change them, create a new channel id (hence the `-v2` ids).
 7. **Start only after login.** Starting on mount raced SplashScreen's own `POST_NOTIFICATIONS` request and hung Splash on "Loading…".
+<!-- 2026-11-06 Kaveri: the long-running service and its startup retry are gone.
 8. **`startForegroundService()` can be refused** (`ForegroundServiceStartNotAllowedException`) when Android does not consider the app visible — e.g. a cold start behind the lock screen. Starting must retry, never fail silently.
+-->
+8. **No long-running foreground service.** `dataSync` is stopped after 6 hours a day on Android 15+ (2026-11-01 device run: 40–90 min gaps). One short service per wake-up instead. A refused start is written to the wake log, and the watchdog alarm (2 min after the due time) tries again.
 9. **Stop everything on logout**, including any `ongoing` notification, which the user cannot swipe away.
 
 **Card engine** (`core/services/cardGeneration/`, added 2026-10-23; Android's `CardGenerationEngine`):
 
+<!-- 2026-11-06 Kaveri: the 1-minute scan is replaced by due-time alarms (CARD_ENGINE_ALARM_PLAN.md).
 10. **Scan every minute, after the re-arm.** The backbone delivery re-arms first, then calls `runCardScan`, so a failed scan never ends the alarm chain. One more scan runs right after login as a catch-up.
+-->
+10. **Wake at the due time, scan, then re-arm in `finally`.** An alarm clock rings 20 s before the earliest due card (the only alarm Android never defers); the task waits for the due second, so the card's time is its due time and no delay carries forward (Android's whole-minute arming drifts about 15 min over Stage 1). A watchdog exact alarm 2 min after the due time covers a failed wake-up. Every scan re-arms both, so a failed scan never ends the chain (a still-due card is rescanned at most twice, then retried in a minute). Re-arm after anything that changes the next due card: login, return to the app, Start Stage 2, a visit start; boot, app update, clock change and exact-alarm access granted wake the scan natively. No alarm once Decision Pending is set.
 11. **No session, no scan.** `runCardScan` returns without opening the database when there is no access token or writer identity (§6).
+<!-- 2026-11-06 Kaveri: later callers now rerun instead of reusing an older result; duplicate guard added.
 12. **One scan at a time, one transaction per visit.** An overlapping call shares the running scan's result; each visit's new card, Decision Pending flag and missed markers are written together. A visit that fails is logged and skipped, so the others still get their cards (a deviation: Android aborts the whole tick; decided 2026-10-27, Kaveri).
+-->
+12. **One scan at a time, one transaction per visit.** An overlapping call with the same or an earlier time shares the running scan's result; one with a later time gets one more scan right after it, so a card falling due mid-scan is never missed. Each visit's new card, Decision Pending flag and missed markers are written together, and a card whose name the visit already has (not voided) is never written again (Android's `isEncounterAlreadyAvailable`). A visit that fails is logged and skipped, so the others still get their cards (a deviation: Android aborts the whole tick; decided 2026-10-27, Kaveri).
 13. **New-card alert on its own channel** (`labour-new-card-v1`, sound `al_1`, bundled by `plugins/withAlertSound.js`). Rule 6 applies: a change of sound or importance needs a new channel id.
 
+<!-- 2026-11-06 Kaveri: the 1-minute alarm and the 5 s heartbeat are gone.
 **Current state:** the 1-minute alarm is the production cadence (decided 2026-10-23). The 5 s heartbeat is foreground-only and for dev visibility — see the monitor README.
+-->
+**Current state:** due-time alarms (`modules/card-alarm`) since 2026-11-06; the battery guard checks every 5 minutes on the same module. Every wake-up is written to a wake log (`Android/data/org.intelehealth.ezazi/files/card-wakes.log`, times only) — see the monitor README.
 
 ---
 _Structure & the "why": [`MOBILE_STACK.md`](MOBILE_STACK.md) · Monorepo: [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md)._
