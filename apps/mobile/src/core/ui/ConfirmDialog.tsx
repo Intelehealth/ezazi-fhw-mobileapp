@@ -17,9 +17,10 @@ interface ConfirmDialogProps {
   message: string;
   /** Optional highlighted line under the message (Figma's purple info banner). */
   note?: string;
-  cancelLabel: string;
+  /** Without a cancel label and handler the dialog has one button and no ✕ (a blocking gate). */
+  cancelLabel?: string;
   confirmLabel: string;
-  onCancel: () => void;
+  onCancel?: () => void;
   onConfirm: () => void;
   /** The ✕ and the device Back button; defaults to onCancel. */
   onClose?: () => void;
@@ -41,7 +42,7 @@ const RINGS = [
 /**
  * The shared two-button confirmation (Figma "Modal": Capture SOS, Save & Exit) on React
  * Native `Modal`: tone badge with its rings, ✕, title, message, optional note, Cancel and
- * Confirm side by side. Sizes are provisional until the modal frame can be read in Figma.
+ * Confirm side by side; or one button and no ✕ for a gate that cannot be dismissed. Sizes are provisional until the modal frame can be read in Figma.
  */
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   visible,
@@ -62,7 +63,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const iconSize = Math.round(badge * 0.5);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose ?? noop}>
       <View style={styles.backdrop}>
         {/* Figma's modal is near square on a tablet (~1.25 : 1): width about 15 times the title size. */}
         <View style={[styles.card, { maxWidth: isTablet ? scale(300) : 360, padding: isTablet ? scale(20) : 20 }]}>
@@ -83,14 +84,16 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 <AppIcon name="dangerCircle" size={iconSize} color={look.icon} />
               )}
             </View>
-            <TouchableOpacity
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel={t('dialog.a11y.close')}
-              hitSlop={12}
-            >
-              <AppIcon name="close" size={isTablet ? scale(22) : 20} color={colors.dialogCloseIcon} />
-            </TouchableOpacity>
+            {onClose && (
+              <TouchableOpacity
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel={t('dialog.a11y.close')}
+                hitSlop={12}
+              >
+                <AppIcon name="close" size={isTablet ? scale(22) : 20} color={colors.dialogCloseIcon} />
+              </TouchableOpacity>
+            )}
           </View>
 
           <Text style={[styles.title, { fontSize: isTablet ? scale(20) : 18 }]}>{title}</Text>
@@ -104,9 +107,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           )}
 
           <View style={styles.actions}>
-            <View style={styles.flex1}>
-              <AppButton label={cancelLabel} onPress={onCancel} variant="secondary" size="compact" />
-            </View>
+            {cancelLabel && onCancel && (
+              <View style={styles.flex1}>
+                <AppButton label={cancelLabel} onPress={onCancel} variant="secondary" size="compact" />
+              </View>
+            )}
             <View style={styles.flex1}>
               <AppButton label={confirmLabel} onPress={onConfirm} size="compact" />
             </View>
@@ -116,6 +121,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     </Modal>
   );
 };
+
+const noop = () => undefined;
 
 // A ring centred on the badge, which sits at the card's padding corner.
 function ringBox(diameter: number, color: string, padding: number, badge: number) {

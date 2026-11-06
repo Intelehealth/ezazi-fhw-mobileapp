@@ -62,4 +62,23 @@ describe('ConfirmDialog', () => {
 
     expect(screen.queryByText('Capture SOS observation?')).toBeNull();
   });
+
+  it('one button and no ✕ when no cancel is given (a gate that cannot be dismissed)', () => {
+    const onConfirm = jest.fn();
+    render(
+      <ConfirmDialog
+        visible
+        tone="warning"
+        title="Permission required"
+        message="Tap Continue, then turn on Alarms & reminders."
+        confirmLabel="Continue"
+        onConfirm={onConfirm}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    expect(screen.queryByLabelText('Close dialog')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 });

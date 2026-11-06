@@ -49,6 +49,11 @@
       "retry": "Retry permission request"
     }
   },
+  "exactAlarmGate": {
+    "title": "Permission required",
+    "message": "eZazi schedules an alarm for every partogram observation, so each reading is prompted at the exact minute it falls due during labour.\n\nAndroid does not grant this permission automatically. Without it the app cannot alert you on time, so it cannot be used.\n\nTap Continue, then turn on Alarms & reminders.",
+    "continue": "Continue"
+  },
   "setup": {
     "title": "Welcome Back!",
     "subtitle": "Sign in to continue caring for your patients.",

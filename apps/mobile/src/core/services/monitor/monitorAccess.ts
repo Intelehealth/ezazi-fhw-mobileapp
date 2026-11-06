@@ -4,10 +4,10 @@ import { logger } from '@/core/utils/logger';
 import { MONITOR_SETTINGS_OPEN_TIMEOUT_MS } from './constants';
 
 /**
- * Exact alarms ("Alarms & reminders"). Without them the backbone alarm silently becomes inexact and Samsung
- * defers it while the app is frozen, so cards come late (2026-11-01 device run). It is not a runtime
- * permission: Android only lets the user switch it on in its settings page, which Play allows an app to open.
- * Android's own app does not ask, because it targets SDK 34, where nothing stops its service.
+ * Exact alarms ("Alarms & reminders"). Without them every card alarm is inexact and can be minutes late
+ * (2026-11-01 device run). It is not a runtime permission: Android only lets the user switch it on in its
+ * settings page, which Play allows an app to open. The splash screen requires it, as Android does since
+ * da07197 (2026-11-03).
  */
 export async function isExactAlarmAllowed(): Promise<boolean> {
   const settings = await notifee.getNotificationSettings();
@@ -58,3 +58,4 @@ export async function askForExactAlarms(): Promise<void> {
     logger.error('[monitor] exact-alarm request failed', error);
   }
 }
+

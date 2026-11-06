@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import { ConfirmDialog } from '@/core/ui/ConfirmDialog';
 import { PermissionDeniedDialog } from '@/core/ui/PermissionDeniedDialog';
 import { Text } from '@/core/ui/Text';
 import { iconPaths } from '@/core/ui/icons';
@@ -11,7 +12,8 @@ import { clientConfig } from '@/core/config/clients';
 import { colors } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
-import { askForExactAlarms } from '@/core/services/monitor/monitorAccess';
+import { askForExactAlarms, isExactAlarmAllowed } from '@/core/services/monitor/monitorAccess';
+import { logger } from '@/core/utils/logger';
 import {
   checkAppPermissions,
   onAppForeground,
@@ -36,18 +38,35 @@ export const SplashScreen: React.FC = () => {
   const [permState, setPermState] = useState<PermState>('idle');
   // Guard so bootstrap() is called exactly once even if requestPermissions is retried
   const bootstrapCalled = useRef(false);
+  // "Alarms & reminders" off: the app cannot be used, as Android's splash gate (da07197).
+  const [exactAlarmGate, setExactAlarmGate] = useState(false);
 
-  // ── Permission request ────────────────────────────────────────────────────
-  const startBootstrap = useCallback(() => {
-    if (!bootstrapCalled.current) {
-      bootstrapCalled.current = true;
-      // Exact alarms are not a runtime permission, so they cannot join the system popup: their settings
-      // page opens right after it, then the app starts. askForExactAlarms never rejects.
-      // bootstrap() always calls set() — either success or catch branch.
-      // Use void intentionally: status update is handled inside the store.
-      void askForExactAlarms().then(() => bootstrap());
+  // ── Exact alarms, then bootstrap ─────────────────────────────────────────
+  // Not a runtime permission, so not in the system popup: the cards cannot come on time without it.
+  // A failed check lets the app go on rather than lock it out.
+  const continueIfExactAlarmsAllowed = useCallback(async () => {
+    let allowed = true;
+    try {
+      allowed = await isExactAlarmAllowed();
+    } catch (error) {
+      logger.error('[splash] exact-alarm check failed', error);
     }
+    setExactAlarmGate(!allowed);
+    if (!allowed || bootstrapCalled.current) return;
+    bootstrapCalled.current = true;
+    // bootstrap() always calls set() — either success or catch branch.
+    // Use void intentionally: status update is handled inside the store.
+    void bootstrap();
   }, [bootstrap]);
+
+  const startBootstrap = useCallback(() => {
+    void continueIfExactAlarmsAllowed();
+  }, [continueIfExactAlarmsAllowed]);
+
+  // Continue: Android's "Alarms & reminders" page for eZAZI, then check again on the way back.
+  const openExactAlarmSettings = useCallback(() => {
+    void askForExactAlarms().then(() => continueIfExactAlarmsAllowed());
+  }, [continueIfExactAlarmsAllowed]);
 
   const requestPermissions = useCallback(async () => {
     setPermState('requesting');
@@ -99,6 +118,13 @@ export const SplashScreen: React.FC = () => {
     const unsubscribe = onAppForeground(() => void checkAfterSettings());
     return unsubscribe;
   }, [permState, checkAfterSettings]);
+
+  // ── Gate up: allowed from elsewhere (quick settings) and back in the app ────
+  useEffect(() => {
+    if (!exactAlarmGate) return;
+    const unsubscribe = onAppForeground(() => void continueIfExactAlarmsAllowed());
+    return unsubscribe;
+  }, [exactAlarmGate, continueIfExactAlarmsAllowed]);
 
   // ── Hardware back-button: exit app when dialog is showing ─────────────────
   useEffect(() => {
@@ -248,6 +274,16 @@ export const SplashScreen: React.FC = () => {
         onRetry={requestPermissions}
         onOpenSettings={openAppSettings}
         onClose={() => BackHandler.exitApp()}
+      />
+
+      {/* One button, no ✕: as Android, the app cannot be used without exact alarms. */}
+      <ConfirmDialog
+        visible={exactAlarmGate}
+        tone="warning"
+        title={t('exactAlarmGate.title')}
+        message={t('exactAlarmGate.message')}
+        confirmLabel={t('exactAlarmGate.continue')}
+        onConfirm={openExactAlarmSettings}
       />
 
     </View>

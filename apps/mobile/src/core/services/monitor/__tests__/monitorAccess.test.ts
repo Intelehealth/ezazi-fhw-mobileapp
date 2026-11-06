@@ -93,3 +93,4 @@ describe('monitorAccess', () => {
     expect(logger.error).toHaveBeenCalledTimes(2);
   });
 });
+

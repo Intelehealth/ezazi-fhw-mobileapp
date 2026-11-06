@@ -8,7 +8,7 @@ import {
   openAppSettings,
   onAppForeground,
 } from '@/core/utils/permissions';
-import { askForExactAlarms } from '@/core/services/monitor/monitorAccess';
+import { askForExactAlarms, isExactAlarmAllowed } from '@/core/services/monitor/monitorAccess';
 
 jest.mock('@/core/session/auth.store', () => ({
   useAuthStore: jest.fn(),
@@ -16,6 +16,7 @@ jest.mock('@/core/session/auth.store', () => ({
 
 jest.mock('@/core/services/monitor/monitorAccess', () => ({
   askForExactAlarms: jest.fn().mockResolvedValue(undefined),
+  isExactAlarmAllowed: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('@/core/utils/permissions', () => ({
@@ -30,6 +31,7 @@ describe('SplashScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (isExactAlarmAllowed as jest.Mock).mockResolvedValue(true);
     bootstrap.mockResolvedValue(undefined);
     (useAuthStore as unknown as jest.Mock).mockImplementation(
       (selector: (s: { bootstrap: typeof bootstrap }) => unknown) => selector({ bootstrap }),
@@ -43,16 +45,55 @@ describe('SplashScreen', () => {
     await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
   });
 
-  it('asks for exact alarms after the runtime permissions, and starts the app only once that is done', async () => {
-    let finishAsking: () => void = () => {};
-    (askForExactAlarms as jest.Mock).mockReturnValueOnce(new Promise<void>((resolve) => (finishAsking = resolve)));
+  it('starts the app at once when exact alarms are already allowed', async () => {
     (requestAppPermissions as jest.Mock).mockResolvedValue('granted');
     render(<SplashScreen />);
 
-    await waitFor(() => expect(askForExactAlarms).toHaveBeenCalledTimes(1));
-    expect(bootstrap).not.toHaveBeenCalled();
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+    expect(askForExactAlarms).not.toHaveBeenCalled();
+    expect(screen.queryByText('Permission required')).toBeNull();
+  });
 
-    finishAsking();
+  it("exact alarms off: Android's blocking dialog, one button, and the app does not start", async () => {
+    (isExactAlarmAllowed as jest.Mock).mockResolvedValue(false);
+    (requestAppPermissions as jest.Mock).mockResolvedValue('granted');
+    render(<SplashScreen />);
+
+    expect(await screen.findByText('Permission required')).toBeTruthy();
+    expect(screen.getByText(/Tap Continue, then turn on Alarms & reminders/)).toBeTruthy();
+    expect(screen.queryByText('Cancel')).toBeNull();
+    expect(bootstrap).not.toHaveBeenCalled();
+  });
+
+  it('Continue opens Alarms & reminders; allowed on return, the app starts', async () => {
+    (isExactAlarmAllowed as jest.Mock).mockResolvedValueOnce(false).mockResolvedValue(true);
+    (requestAppPermissions as jest.Mock).mockResolvedValue('granted');
+    render(<SplashScreen />);
+
+    fireEvent.press(await screen.findByText('Continue'));
+
+    await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+    expect(askForExactAlarms).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByText('Permission required')).toBeNull());
+  });
+
+  it('still off on return: the dialog stays and the app does not start', async () => {
+    (isExactAlarmAllowed as jest.Mock).mockResolvedValue(false);
+    (requestAppPermissions as jest.Mock).mockResolvedValue('granted');
+    render(<SplashScreen />);
+
+    fireEvent.press(await screen.findByText('Continue'));
+
+    await waitFor(() => expect(askForExactAlarms).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Permission required')).toBeTruthy();
+    expect(bootstrap).not.toHaveBeenCalled();
+  });
+
+  it('a failing exact-alarm check lets the app start rather than lock it out', async () => {
+    (isExactAlarmAllowed as jest.Mock).mockRejectedValue(new Error('no module'));
+    (requestAppPermissions as jest.Mock).mockResolvedValue('granted');
+    render(<SplashScreen />);
+
     await waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
   });
 
