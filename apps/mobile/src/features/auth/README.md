@@ -10,8 +10,8 @@
 | EZ-939 | Forgot Pwd — reset password | `ForgotPasswordResetScreen.tsx` | `ForgotPasswordActivity` (Fragment 3) |
 | EZ-940 | Biometric unlock | (composed inside Splash + Login) — uses `expo-local-authentication` | (new — not in legacy) |
 | EZ-941 | Privacy / DPDPA notice | `PrivacyNoticeScreen.tsx` | `PrivacyNoticeActivity` |
-| EZ-942 | Transparent session refresh | inside `src/services/api/client.ts` (axios interceptor) | (new — was less robust in legacy) |
-| EZ-943 | Logout with JWT blacklist | inside `src/stores/auth.store.ts` `.logout()` + HomeScreen menu | menu item in `HomeActivity` |
+| EZ-942 | Transparent session refresh | inside `src/core/api/client.ts` (axios interceptor) | (new — was less robust in legacy) |
+| EZ-943 | Logout with JWT blacklist | inside `src/core/session/auth.store.ts` `.logout()` + HomeScreen menu | menu item in `HomeActivity` |
 
 Each `*.tsx` is a compile-ready stub. Wire up the form + API call as each ticket is picked up.
 
