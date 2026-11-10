@@ -147,16 +147,22 @@ export function insertObsImage(
   input: { uuid: string; encounterUuid: string; conceptUuid: string },
   on: DbHandle,
 ): void {
-  const values = {
+  const stamp = utcIsoTimestamp();
+  const shared = {
     uuid: input.uuid,
     encounteruuid: input.encounterUuid,
     conceptuuid: input.conceptUuid,
-    modified_date: utcIsoTimestamp(),
+    modified_date: stamp,
     voided: VOIDED_NO,
     sync: SYNC_DIRTY,
   };
 
-  on.insert(obs).values(values).onConflictDoUpdate({ target: obs.uuid, set: values }).run();
+  on.insert(obs)
+    // `obs.listByEncounter` orders by created_date; left NULL these sorted arbitrarily.
+    .values({ ...shared, created_date: stamp })
+    // Absent from the conflict set on purpose: a re-insert keeps the original.
+    .onConflictDoUpdate({ target: obs.uuid, set: shared })
+    .run();
 }
 
 /**

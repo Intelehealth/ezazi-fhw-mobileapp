@@ -160,6 +160,22 @@ describe('image repository', () => {
       });
     });
 
+    it('stamps created_date, which the by-encounter read orders by', () => {
+      // Left NULL, these rows sorted arbitrarily among the clinical obs.
+      insertObsImage({ uuid: 'o1', encounterUuid: ENC, conceptUuid: COMPLEX_IMAGE_AD }, db);
+
+      expect(obsRow('o1')?.created_date).toEqual(expect.any(String));
+    });
+
+    it('keeps the original created_date when the same uuid is written again', () => {
+      insertObsImage({ uuid: 'o1', encounterUuid: ENC, conceptUuid: COMPLEX_IMAGE_AD }, db);
+      const first = obsRow('o1')?.created_date;
+
+      insertObsImage({ uuid: 'o1', encounterUuid: ENC, conceptUuid: COMPLEX_IMAGE_AD }, db);
+
+      expect(obsRow('o1')?.created_date).toBe(first);
+    });
+
     it('does not blank the clinical columns of an existing row', () => {
       // The legacy used REPLACE, which is DELETE+INSERT, so re-inserting an
       // existing obs uuid wiped its value, comment, creator and created_date.
