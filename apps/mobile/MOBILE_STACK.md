@@ -42,7 +42,8 @@ ezazi-monorepo/
 │           │   ├── config/           #   env · theme · clients/ · app-wide remote config
 │           │   ├── session/          #   auth.store — app-wide session (navigation routes on it)
 │           │   ├── i18n/ · utils/    #   locales, logger, calendar (BS/AD)
-│           │   └── api/              #   thin mobile adapter over @ezazi/api-client (auth token, storage)
+│           │   ├── api/              #   thin mobile adapter over @ezazi/api-client (auth token, storage)
+│           │   └── useCases/         #   local writes: pairs every child write with its parent's dirty flag
 │           ├── features/             # one folder per feature; MIRRORS legacy modules (§8)
 │           │   ├── auth/
 │           │   │   ├── screens/ components/ data/   ( + stores/ domain/ as needed )
@@ -99,10 +100,10 @@ Two related notes:
 | Presentation | `features/*/screens`, `components` | Render, dispatch to stores/hooks | Contain business logic, DB, or network |
 | State | `features/*/stores` + DB live queries | Session/UI state; expose domain data | Duplicate DB rows |
 | Domain | `features/*/domain` + `@ezazi/types` | Entities, zod schemas, real logic (partograph, risk scores, LCG) | Grow thick |
-| Data | `features/*/data`, `core/db`, `@ezazi/api-client` | Repositories over DB ⊕ API; the sync engine | Let features bypass it |
+| Data | `features/*/data`, `core/useCases`, `core/db`, `@ezazi/api-client` | Repositories over DB ⊕ API; `core/useCases` pairs every local child write with its parent's dirty flag; the sync engine | Let features bypass it; call a repository writer for a child row |
 | Services | `core/services` | Long-lived singletons via hooks | Live in the component tree |
 
-**Flow:** Screen → Zustand store / Drizzle `useLiveQuery` (ViewModel) → repository in `features/*/data` → `core/db` and/or `@ezazi/api-client` → the sync engine reconciles in the background. Navigation is reactive off auth state.
+**Flow:** Screen → Zustand store / Drizzle `useLiveQuery` (ViewModel) → repository in `features/*/data` → **`core/useCases` for writes**, `core/db` for reads, and/or `@ezazi/api-client` → the sync engine reconciles in the background. Navigation is reactive off auth state.
 
 ### 3.1 App bar & screen shells — the RN "BaseActivity" (rule, 2026-10-21)
 

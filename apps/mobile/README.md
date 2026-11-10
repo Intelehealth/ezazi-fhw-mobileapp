@@ -54,12 +54,13 @@ src/
 ├── core/                # mobile-only shared spine
 │   ├── api/             #   thin adapter over @ezazi/api-client (+ client, responseHandler)
 │   ├── config/          #   env, theme, clients/, published-config store + api
-│   ├── db/              #   expo-sqlite + Drizzle: schema/, repositories/, constants/
+│   ├── db/              #   expo-sqlite + Drizzle: schema/, repositories/, constants/, sync/
 │   ├── i18n/            #   locales + i18next setup
 │   ├── services/
 │   │   └── storage/     #   secure-store (JWT) + async-storage wrappers
 │   ├── session/         #   auth.store — app-wide session state
 │   ├── ui/              #   design-system primitives, ThemeContext, hooks/
+│   ├── useCases/        #   local writes: child row + its parent's dirty flag, one transaction
 │   └── utils/           #   logger, calendar, base64, permissions, toast
 ├── features/            # one folder per feature; may import core/*, @ezazi/*, itself
 │   ├── auth/            #   screens/ components/ data/  (Sprint 42)
