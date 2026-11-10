@@ -3,6 +3,7 @@ import * as obsConcepts from '../constants/obs';
 import * as dbLiterals from '../constants/literals';
 import * as providerAttributes from '../constants/provider';
 import * as visitAttributes from '../constants/visit';
+import * as wireConstants from '../constants/wire';
 
 /**
  * Guards the ported uuids. A uuid under two names is how the legacy file hid
@@ -15,6 +16,7 @@ const FILES = {
   'constants/obs.ts': obsConcepts,
   'constants/provider.ts': providerAttributes,
   'constants/visit.ts': visitAttributes,
+  'constants/wire.ts': wireConstants,
 };
 
 const entries = Object.entries(FILES).flatMap(([file, mod]) =>
@@ -26,7 +28,8 @@ const entries = Object.entries(FILES).flatMap(([file, mod]) =>
 describe('uuid constants', () => {
   it('exports the full ported set', () => {
     // Deliberately brittle: a changed count means a constant was added or lost.
-    expect(entries).toHaveLength(103);
+    // 105 = 103 + ENCOUNTER_EMERGENCY + OPENMRS_IDENTIFIER_TYPE.
+    expect(entries).toHaveLength(105);
   });
 
   it('gives every uuid exactly one name, with no exceptions', () => {

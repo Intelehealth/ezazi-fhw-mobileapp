@@ -19,6 +19,8 @@ export const ENCOUNTER_VISIT_COMPLETE = 'bd1fbfaa-f5fb-4ebd-b75c-564506fc309e';
 export const ENCOUNTER_PATIENT_EXIT_SURVEY = '629a9d0b-48eb-405e-953d-a5964c88dc30';
 export const ENCOUNTER_ADMISSION = 'e22e39fd-7db2-45e7-80f1-60fa0d5a4378';
 export const LCG_SOS = '6ce3e2eb-35d4-4aa2-aa77-6d1d3b3f524a';
+/** Named for the push: the legacy sends an EMERGENCY encounter with NO obs. */
+export const ENCOUNTER_EMERGENCY = 'ca5f5dc3-4f0b-4097-9cae-5cf2eb44a09c';
 
 // Labour-stage markers. Filed among concepts in the Java, matched on encounter_type_uuid.
 export const STAGE1_HOUR1_1 = 'ee560d18-34a1-4ad8-87c8-98aed99c663d';
