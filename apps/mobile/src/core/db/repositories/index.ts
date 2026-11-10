@@ -10,6 +10,7 @@
  * See `tx.ts` and `DB_CONVENTIONS.md` §1.
  */
 
+export * as appStateRepo from './appState';
 export * as encounterRepo from './encounter';
 export * as imageRepo from './image';
 export * as locationRepo from './location';

@@ -9,6 +9,7 @@ import { createTestDb, type TestDb } from '../helpers/testDb';
  */
 
 const EXPECTED = [
+  'appStateRepo',
   'encounterRepo',
   'imageRepo',
   'locationRepo',
