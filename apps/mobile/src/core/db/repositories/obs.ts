@@ -253,6 +253,17 @@ export function updateOutOfTimeReason(
     .run();
 }
 
+/**
+ * Clears the dirty flag on observations the server accepted. Takes uuids
+ * because the push reply names encounters, not observations — the caller
+ * remembers which obs it sent with each one.
+ */
+export function markSynced(uuids: string[], on: DbHandle): void {
+  if (uuids.length === 0) return;
+
+  on.update(obs).set({ sync: SYNC_CLEAN }).where(inArray(obs.uuid, uuids)).run();
+}
+
 // ── reads ─────────────────────────────────────────────────────────────────
 
 /** The base by-encounter read. Everything else on this axis specialises it. */

@@ -45,6 +45,7 @@ import {
   listObsByVisitAndConcept,
   listObsUuidsByEncounterAndConcept,
   listUnsyncedByEncounter,
+  markSynced,
   markVoided,
   update,
   updateOutOfTimeReason,
@@ -359,6 +360,22 @@ describe('obs repository', () => {
       upsertManyFromServer([{ uuid: 'pulled', encounteruuid: ENC, conceptuuid: CONCEPT_A }], db);
 
       expect(listUnsyncedByEncounter(ENC, db)).toEqual([]);
+    });
+
+    it('markSynced takes accepted rows out of the queue', () => {
+      // Nothing cleared this flag before, so every pushed obs was sent again
+      // on the next cycle, forever.
+      const uuid = insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A }, db);
+      markSynced([uuid], db);
+
+      expect(listUnsyncedByEncounter(ENC, db)).toEqual([]);
+    });
+
+    it('markSynced on an empty list leaves the queue alone', () => {
+      const uuid = insert({ encounteruuid: ENC, conceptuuid: CONCEPT_A }, db);
+      markSynced([], db);
+
+      expect(listUnsyncedByEncounter(ENC, db).map((entry) => entry.uuid)).toEqual([uuid]);
     });
   });
 

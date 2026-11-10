@@ -6,7 +6,9 @@ import {
   getAttributeValue,
   getPatientHeader,
   listAttributes,
+  listDirtyAttributes,
   listDirtyPatients,
+  markAttributesSynced,
   markPatientSynced,
   setPatientAttribute,
   updatePatient,
@@ -124,6 +126,25 @@ describe('patient repository', () => {
       upsertPatientAttributesFromServer([attr], db);
 
       expect(attributeRows()[0]).toMatchObject({ sync: SYNC_CLEAN });
+    });
+
+    it('markPatientSynced does NOT clear the attribute flag', () => {
+      // The reason markAttributesSynced has to exist: the patient mark touches
+      // tbl_patient only, so pushed attributes stayed dirty forever.
+      upsertPatientAttributes([attr], db);
+      markPatientSynced('p1', 'EZ-1', SYNC_CLEAN, db);
+
+      expect(attributeRows()[0]).toMatchObject({ sync: SYNC_DIRTY });
+
+      markAttributesSynced(['a1'], db);
+      expect(attributeRows()[0]).toMatchObject({ sync: SYNC_CLEAN });
+    });
+
+    it('lists only dirty attributes', () => {
+      upsertPatientAttributes([attr], db);
+      upsertPatientAttributesFromServer([{ ...attr, uuid: 'a2', value: 'y' }], db);
+
+      expect(listDirtyAttributes(db).map((a) => a.uuid)).toEqual(['a1']);
     });
   });
 

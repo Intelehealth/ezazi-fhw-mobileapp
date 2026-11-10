@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { localIsoTimestamp } from '@/core/utils/datetime';
 
@@ -172,6 +172,20 @@ export function markPatientSynced(
 }
 
 /**
+ * Clears the dirty flag on attribute rows the server accepted. Separate from
+ * `markPatientSynced`, which touches `tbl_patient` only — without this, pushed
+ * attributes stay dirty and are sent again on every cycle.
+ */
+export function markAttributesSynced(uuids: string[], on: DbHandle): void {
+  if (uuids.length === 0) return;
+
+  on.update(patientAttribute)
+    .set({ sync: SYNC_CLEAN })
+    .where(inArray(patientAttribute.uuid, uuids))
+    .run();
+}
+
+/**
  * Stores a filesystem path, not image data. Deliberately does NOT mark the row
  * dirty — legacy behaviour, so a photo change alone is never pushed.
  */
@@ -240,6 +254,15 @@ export function getAttributeTypeUuid(name: string, on: DbHandle): string | null 
  */
 export function listDirtyPatients(on: DbHandle): Patient[] {
   return on.select().from(patient).where(eq(patient.sync, SYNC_DIRTY)).all();
+}
+
+/** Attribute rows the server has not seen, across all patients. */
+export function listDirtyAttributes(on: DbHandle): PatientAttribute[] {
+  return on
+    .select()
+    .from(patientAttribute)
+    .where(eq(patientAttribute.sync, SYNC_DIRTY))
+    .all();
 }
 
 export function getOpenmrsId(uuid: string, on: DbHandle): string | null {
