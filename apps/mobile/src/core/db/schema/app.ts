@@ -24,6 +24,9 @@ export const appState = sqliteTable('tbl_app_state', {
   hydration_state: text('hydration_state').notNull().default('pending'),
   hydration_attempts: integer('hydration_attempts').notNull().default(0),
   last_error: text('last_error'),
-  staged_manifest: text('staged_manifest'),
-  updated_at: text('updated_at'),
+  // The watermark the next pull asks from, straight into the URL. It is the
+  // SERVER's clock, not ours. The trailing space in the default is deliberate.
+  last_successful_pull_time: text('last_successful_pull_time')
+    .notNull()
+    .default('2006-08-22 22:21:48 '),
 });
