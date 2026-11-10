@@ -46,26 +46,34 @@ function findUuidForDedupe(visitUuid: string, typeUuid: string, on: DbHandle): s
 }
 
 /**
- * One row, reusing an existing encounter of the same type on the same visit.
- * The legacy looked the existing row up by (visit, type) but then UPDATEd by
- * the INCOMING uuid — so when they differed the update matched nothing and the
- * encounter was silently dropped. This updates the uuid the lookup returned.
+ * Pull-path write. The server's uuid IS the identity, so there is no dedupe
+ * by (visit, type) here: re-keying a pulled row to a local uuid destroys the
+ * key the push ack matches on, and the row is never confirmed.
  */
-function writeOne(row: NewEncounter, on: DbHandle): void {
-  const values = { ...row, modified_date: utcIsoTimestamp() };
-  const type = values.encounter_type_uuid;
+function writeFromServer(row: NewEncounter, on: DbHandle): void {
+  const values = { ...row, modified_date: utcIsoTimestamp(), sync: SYNC_CLEAN };
+
+  on.insert(encounter)
+    .values(values)
+    .onConflictDoUpdate({ target: encounter.uuid, set: values })
+    .run();
+}
+
+/**
+ * Local write. Dedupes by (visit, type) and ADOPTS the uuid it finds rather
+ * than renaming the row — so a pulled encounter keeps the server's uuid.
+ * Always re-arms the dirty flag, or an edit to a pushed row never goes again.
+ */
+function writeLocal(row: NewEncounter, on: DbHandle): void {
+  const type = row.encounter_type_uuid;
 
   // SOS is never deduped: a visit may carry many.
-  if (type && type !== LCG_SOS && values.visituuid) {
-    const existing = findUuidForDedupe(values.visituuid, type, on);
-    if (existing) {
-      on.update(encounter)
-        .set({ ...values, uuid: existing })
-        .where(eq(encounter.uuid, existing))
-        .run();
-      return;
-    }
-  }
+  const uuid =
+    type && type !== LCG_SOS && row.visituuid
+      ? (findUuidForDedupe(row.visituuid, type, on) ?? row.uuid)
+      : row.uuid;
+
+  const values = { ...row, uuid, modified_date: utcIsoTimestamp(), sync: SYNC_DIRTY };
 
   on.insert(encounter)
     .values(values)
@@ -77,27 +85,12 @@ function writeOne(row: NewEncounter, on: DbHandle): void {
 
 /** Pull-path bulk write, one transaction's worth of rows. */
 export function upsertMany(rows: NewEncounter[], on: DbHandle): void {
-  for (const row of rows) writeOne({ ...row, sync: SYNC_CLEAN }, on);
+  for (const row of rows) writeFromServer(row, on);
 }
 
-/** The most-used write in the app. Dedupes by (visit, type). */
+/** The most-used write in the app. Dedupes by (visit, type), never re-keys. */
 export function upsert(row: NewEncounter, on: DbHandle): void {
-  writeOne(row, on);
-}
-
-/**
- * Bulk write with NO dedupe — always replaces by uuid. Semantically different
- * from `upsertMany`; the legacy opened a transaction per row, which was a
- * performance bug rather than a requirement.
- */
-export function insertManyReplacing(rows: NewEncounter[], on: DbHandle): void {
-  for (const row of rows) {
-    const values = { ...row, modified_date: utcIsoTimestamp() };
-    on.insert(encounter)
-      .values(values)
-      .onConflictDoUpdate({ target: encounter.uuid, set: values })
-      .run();
-  }
+  writeLocal(row, on);
 }
 
 export function markDirty(uuid: string, on: DbHandle): void {
@@ -116,7 +109,7 @@ export function insertAdmission(
   input: { uuid: string; visitUuid: string; providerUuid: string; encounterTime: string },
   on: DbHandle,
 ): void {
-  writeOne(
+  writeLocal(
     {
       uuid: input.uuid,
       visituuid: input.visitUuid,
@@ -124,7 +117,6 @@ export function insertAdmission(
       encounter_time: input.encounterTime,
       encounter_type_uuid: ENCOUNTER_ADMISSION,
       voided: VOIDED_NO,
-      sync: SYNC_DIRTY,
     },
     on,
   );
@@ -135,7 +127,7 @@ export function insertVisitComplete(
   input: { uuid: string; visitUuid: string; providerUuid: string; encounterTime: string },
   on: DbHandle,
 ): void {
-  writeOne(
+  writeLocal(
     {
       uuid: input.uuid,
       visituuid: input.visitUuid,
@@ -143,7 +135,6 @@ export function insertVisitComplete(
       encounter_time: input.encounterTime,
       encounter_type_uuid: ENCOUNTER_VISIT_COMPLETE,
       voided: VOIDED_NO,
-      sync: SYNC_DIRTY,
     },
     on,
   );
@@ -151,18 +142,14 @@ export function insertVisitComplete(
 
 /** Never deduped — a visit may carry many SOS encounters, by design. */
 export function insertSos(row: NewEncounter, on: DbHandle): void {
-  const values = { ...row, encounter_type_uuid: LCG_SOS, modified_date: utcIsoTimestamp() };
-  on.insert(encounter)
-    .values(values)
-    .onConflictDoUpdate({ target: encounter.uuid, set: values })
-    .run();
+  writeLocal({ ...row, encounter_type_uuid: LCG_SOS }, on);
 }
 
 export function insertDeliveryOutcomeStage3(
   row: Omit<NewEncounter, 'encounter_type_uuid'>,
   on: DbHandle,
 ): void {
-  writeOne({ ...row, encounter_type_uuid: DELIVERY_OUTCOME_STAGE3 }, on);
+  writeLocal({ ...row, encounter_type_uuid: DELIVERY_OUTCOME_STAGE3 }, on);
 }
 
 // ── reads ─────────────────────────────────────────────────────────────────

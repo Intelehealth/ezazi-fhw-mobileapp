@@ -23,7 +23,6 @@ import {
   findVisitCompleteUuid,
   insertAdmission,
   insertDeliveryOutcomeStage3,
-  insertManyReplacing,
   insertSos,
   insertVisitComplete,
   isStage3Started,
@@ -127,17 +126,17 @@ describe('encounter repository', () => {
       expect(rows()).toHaveLength(2);
     });
 
-    it('insertManyReplacing skips the dedupe entirely', () => {
-      // Semantically different from upsertMany: always replaces by uuid.
-      insertManyReplacing(
-        [
-          { uuid: 'e1', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS },
-          { uuid: 'e2', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS },
-        ],
+    it('keeps the SERVER uuid on a pull, even when a local row of that type exists', () => {
+      // The push ack matches on uuid. Re-keying a pulled row to the local one
+      // means the server's confirmation never finds it again.
+      upsert({ uuid: 'local', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS }, db);
+      upsertMany(
+        [{ uuid: 'from-server', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS }],
         db,
       );
 
-      expect(rows()).toHaveLength(2);
+      expect(row('from-server')).toBeDefined();
+      expect(row('from-server')?.sync).toBe(SYNC_CLEAN);
     });
   });
 
@@ -172,10 +171,37 @@ describe('encounter repository', () => {
     it('writes pulled rows clean and local rows dirty', () => {
       upsertMany([{ uuid: 'pulled', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS }], db);
       upsert({ uuid: 'local', visituuid: 'v2', encounter_type_uuid: ENCOUNTER_VITALS }, db);
-      markDirty('local', db);
 
       expect(row('pulled')?.sync).toBe(SYNC_CLEAN);
       expect(row('local')?.sync).toBe(SYNC_DIRTY);
+    });
+
+    it('re-arms the dirty flag when an already-pushed encounter is edited', () => {
+      // The column default only fires on a fresh INSERT, so without an explicit
+      // flag an edit to a clean row stayed clean and was never pushed again.
+      upsert({ uuid: 'e1', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS }, db);
+      markSynced('e1', db);
+
+      upsert(
+        {
+          uuid: 'e1',
+          visituuid: VISIT,
+          encounter_type_uuid: ENCOUNTER_VITALS,
+          provider_uuid: 'dr-2',
+        },
+        db,
+      );
+
+      expect(row('e1')?.sync).toBe(SYNC_DIRTY);
+      expect(row('e1')?.provider_uuid).toBe('dr-2');
+    });
+
+    it('writes SOS and the stage-3 outcome dirty, like every other local write', () => {
+      insertSos({ uuid: 's1', visituuid: VISIT }, db);
+      insertDeliveryOutcomeStage3({ uuid: 'd1', visituuid: VISIT }, db);
+
+      expect(row('s1')?.sync).toBe(SYNC_DIRTY);
+      expect(row('d1')?.sync).toBe(SYNC_DIRTY);
     });
 
     it('round-trips the dirty flag', () => {
