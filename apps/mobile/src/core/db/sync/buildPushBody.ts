@@ -96,6 +96,8 @@ export interface BuiltPush {
    * only, so without this the ack cannot clear the right observation flags.
    */
   observationsByEncounter: Map<string, string[]>;
+  /** The same problem one table over: the reply never names attributes either. */
+  attributesByPatient: Map<string, string[]>;
 }
 
 /**
@@ -192,5 +194,16 @@ export function buildPushBody(set: DirtySet, context: PushContext, on: DbHandle)
     };
   });
 
-  return { body: { patients, persons, visits, encounters }, observationsByEncounter };
+  const attributesByPatient = new Map(
+    set.patients.map(({ patient, attributes }) => [
+      patient.uuid,
+      attributes.map((row) => row.uuid),
+    ]),
+  );
+
+  return {
+    body: { patients, persons, visits, encounters },
+    observationsByEncounter,
+    attributesByPatient,
+  };
 }

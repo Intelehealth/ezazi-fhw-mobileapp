@@ -161,12 +161,15 @@ export function setPatientAttribute(
 /** Applies the server-assigned openmrs_id after a push, and clears the flag. */
 export function markPatientSynced(
   uuid: string,
-  openmrsId: string,
+  openmrsId: string | null,
   synced: boolean,
   on: DbHandle,
 ): void {
+  // A reply that carries no id must not wipe the one we already hold.
+  const idPatch = openmrsId === null ? {} : { openmrs_id: openmrsId };
+
   on.update(patient)
-    .set({ openmrs_id: openmrsId, sync: synced })
+    .set({ ...idPatch, sync: synced })
     .where(eq(patient.uuid, uuid))
     .run();
 }
