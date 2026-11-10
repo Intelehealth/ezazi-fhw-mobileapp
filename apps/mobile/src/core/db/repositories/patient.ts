@@ -171,6 +171,11 @@ export function markPatientSynced(
     .run();
 }
 
+/** Flags a patient for the next push. The attribute use cases pair with this. */
+export function markDirty(uuid: string, on: DbHandle): void {
+  on.update(patient).set({ sync: SYNC_DIRTY }).where(eq(patient.uuid, uuid)).run();
+}
+
 /**
  * Clears the dirty flag on attribute rows the server accepted. Separate from
  * `markPatientSynced`, which touches `tbl_patient` only — without this, pushed

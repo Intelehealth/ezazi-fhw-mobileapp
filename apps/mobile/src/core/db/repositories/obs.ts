@@ -327,6 +327,23 @@ export function listUnsyncedByEncounter(encounterUuid: string, on: DbHandle): Ob
     .all();
 }
 
+/**
+ * The distinct encounters a set of observations belong to. Exists for the
+ * dirty-parent pairing: editing or voiding an obs has to flag its encounter,
+ * and the caller holds obs uuids, not encounter uuids.
+ */
+export function listEncounterUuidsFor(uuids: string[], on: DbHandle): string[] {
+  if (uuids.length === 0) return [];
+
+  return on
+    .selectDistinct({ encounteruuid: obs.encounteruuid })
+    .from(obs)
+    .where(inArray(obs.uuid, uuids))
+    .all()
+    .map((entry) => entry.encounteruuid)
+    .filter((uuid): uuid is string => uuid !== null);
+}
+
 /** Narrow projection — `comment` here is the alert code, not a note. */
 export function listCommentsByEncounter(
   encounterUuid: string,
