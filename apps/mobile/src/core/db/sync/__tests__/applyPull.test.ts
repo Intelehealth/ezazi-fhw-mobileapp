@@ -1,8 +1,18 @@
 import { eq } from 'drizzle-orm';
 
+import { VISIT_HOLDER } from '@/core/db/constants/visit';
 import { APP_STATE_ID } from '@/core/db/init';
 import { appStateRepo } from '@/core/db/repositories';
-import { appState, encounter, location, obs, patient, provider, visit } from '@/core/db/schema';
+import {
+  appState,
+  encounter,
+  location,
+  obs,
+  patient,
+  provider,
+  visit,
+  visitAttribute,
+} from '@/core/db/schema';
 import { SYNC_CLEAN } from '@/core/db/syncFlags';
 import { transact, type DbHandle } from '@/core/db/tx';
 import { createTestDb, type TestDb } from '@/core/db/__tests__/helpers/testDb';
@@ -19,7 +29,17 @@ const RETURNED = '2026-11-10 06:30:00 ';
 
 const FULL: PullPayload = {
   pullexecutedtime: RETURNED,
-  patientlist: [{ uuid: 'p1', firstname: 'Asha', lastname: 'Devi', dateofbirth: '1996-04-02' }],
+  patientlist: [
+    {
+      uuid: 'p1',
+      firstname: 'Asha',
+      lastname: 'Devi',
+      dateofbirth: '1996-04-02',
+      address1: 'House 4',
+      address2: 'Near the well',
+      dateCreated: '2026-10-02 08:15:00',
+    },
+  ],
   patientAttributeTypeListMaster: [{ uuid: 't1', name: 'Bed Number' }],
   patientAttributesList: [
     { uuid: 'a1', patientuuid: 'p1', person_attribute_type_uuid: 't1', value: '7' },
@@ -41,8 +61,16 @@ const FULL: PullPayload = {
       obsServerModifiedDate: '2026-11-09 10:05:00',
     },
   ],
+  // A REAL type. With an unwhitelisted one the row is skipped and the old
+  // assertion of 1 passed on the input count while nothing was written.
   visitAttributeList: [
-    { uuid: 'va1', visit_uuid: 'v1', visit_attribute_type_uuid: 'vt1', value: 'y', voided: 0 },
+    {
+      uuid: 'va1',
+      visit_uuid: 'v1',
+      visit_attribute_type_uuid: VISIT_HOLDER,
+      value: 'y',
+      voided: 0,
+    },
   ],
 };
 
@@ -94,6 +122,10 @@ describe('applyPull', () => {
       first_name: 'Asha',
       last_name: 'Devi',
       date_of_birth: '1996-04-02',
+      address1: 'House 4',
+      address2: 'Near the well',
+      // Patient lists order by this, and nothing local ever writes it.
+      dateCreated: '2026-10-02 08:15:00',
     });
     // creator_uuid on the wire, creator in the column.
     expect(ctx.db.select().from(visit).where(eq(visit.uuid, 'v1')).get()?.creator).toBe('dr1');
@@ -151,6 +183,28 @@ describe('applyPull', () => {
     applyPull({ ...FULL, somethingNew: [1, 2] } as PullPayload, db);
 
     expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('counts visit attributes WRITTEN, not received, and says what it skipped', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const result = applyPull(
+      {
+        ...FULL,
+        visitAttributeList: [
+          { uuid: 'va9', visit_uuid: 'v1', visit_attribute_type_uuid: 'vt1', value: 'y', voided: 0 },
+        ],
+      },
+      db,
+    );
+
+    expect(result.visitAttributes).toBe(0);
+    expect(ctx.db.select().from(visitAttribute).all()).toEqual([]);
+    // The logger prefixes a timestamp, so the message is the SECOND argument.
+    expect(warn).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('skipped'), [
+      'vt1',
+    ]);
     warn.mockRestore();
   });
 

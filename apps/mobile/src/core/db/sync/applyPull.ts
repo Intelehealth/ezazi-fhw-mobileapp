@@ -29,6 +29,8 @@ export interface PulledPatient {
   lastname?: string | null;
   dateofbirth?: string | null;
   phonenumber?: string | null;
+  address1?: string | null;
+  address2?: string | null;
   cityvillage?: string | null;
   stateprovince?: string | null;
   postalcode?: string | null;
@@ -36,6 +38,8 @@ export interface PulledPatient {
   education?: string | null;
   economic?: string | null;
   gender?: string | null;
+  /** camelCase, alone among these. The Java field beside it is `createdAt`. */
+  dateCreated?: string | null;
   creatoruuid?: string | null;
   dead?: string | null;
 }
@@ -205,7 +209,9 @@ export function applyPull(payload: PullPayload, on?: DbHandle): ApplyResult {
     visitRepo.upsertManyFromServer(visits.map(toVisitRow), tx);
     encounterRepo.upsertMany(encounters.map(toEncounterRow), tx);
     obsRepo.upsertManyFromServer(observations.map(toObsRow), tx);
-    visitAttributeRepo.upsertManyFromPull(visitAttributes, tx);
+    // Whitelisted by type, so the written count is NOT the input count.
+    const pulledVisitAttributes = visitAttributeRepo.upsertManyFromPull(visitAttributes, tx);
+    warnOnSkippedTypes(pulledVisitAttributes.skipped);
 
     // Last, and inside the same transaction. This is the whole point.
     if (cursor) appStateRepo.setPullCursor(cursor, tx);
@@ -220,7 +226,7 @@ export function applyPull(payload: PullPayload, on?: DbHandle): ApplyResult {
       locations: locations.length,
       providers: providers.length,
       providerAttributes: providerAttributes.length,
-      visitAttributes: visitAttributes.length,
+      visitAttributes: pulledVisitAttributes.written,
       cursor,
     };
   }, on);
@@ -230,6 +236,12 @@ export function applyPull(payload: PullPayload, on?: DbHandle): ApplyResult {
 function warnOnUnknownKeys(payload: PullPayload): void {
   const unknown = Object.keys(payload).filter((key) => !KNOWN_KEYS.includes(key));
   if (unknown.length > 0) logger.warn('[sync] pull response had unknown keys', unknown);
+}
+
+/** Deduped: one unknown type across 300 rows is one line, not 300. */
+function warnOnSkippedTypes(skipped: string[]): void {
+  if (skipped.length === 0) return;
+  logger.warn('[sync] pull skipped visit attribute types', [...new Set(skipped)]);
 }
 
 // ── wire → column. Only the names that differ are interesting. ─────────────
@@ -243,6 +255,8 @@ function toPatientRow(row: PulledPatient) {
     last_name: row.lastname ?? null,
     date_of_birth: row.dateofbirth ?? null,
     phone_number: row.phonenumber ?? null,
+    address1: row.address1 ?? null,
+    address2: row.address2 ?? null,
     city_village: row.cityvillage ?? null,
     state_province: row.stateprovince ?? null,
     postal_code: row.postalcode ?? null,
@@ -250,6 +264,9 @@ function toPatientRow(row: PulledPatient) {
     education_status: row.education ?? null,
     economic_status: row.economic ?? null,
     gender: row.gender ?? null,
+    // The list reads order by this. Our edit path never sets it, so a pulled
+    // patient that does not take it here stays NULL for good.
+    dateCreated: row.dateCreated ?? null,
     creatoruuid: row.creatoruuid ?? null,
     dead: row.dead ?? null,
   };
