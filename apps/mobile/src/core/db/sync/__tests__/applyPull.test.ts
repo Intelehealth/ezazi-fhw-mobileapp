@@ -87,7 +87,7 @@ describe('applyPull', () => {
   afterEach(() => ctx.close());
 
   it('writes every table from one payload', () => {
-    const result = applyPull(FULL, db);
+    const result = applyPull(FULL, RETURNED, db);
 
     expect(result).toMatchObject({
       patients: 1,
@@ -105,7 +105,7 @@ describe('applyPull', () => {
   });
 
   it('lands server rows CLEAN, so the push does not send them straight back', () => {
-    applyPull(FULL, db);
+    applyPull(FULL, RETURNED, db);
 
     expect(ctx.db.select().from(patient).where(eq(patient.uuid, 'p1')).get()?.sync).toBe(SYNC_CLEAN);
     expect(ctx.db.select().from(visit).where(eq(visit.uuid, 'v1')).get()?.sync).toBe(SYNC_CLEAN);
@@ -116,7 +116,7 @@ describe('applyPull', () => {
   });
 
   it('maps the names that differ between the wire and our columns', () => {
-    applyPull(FULL, db);
+    applyPull(FULL, RETURNED, db);
 
     expect(ctx.db.select().from(patient).where(eq(patient.uuid, 'p1')).get()).toMatchObject({
       first_name: 'Asha',
@@ -164,6 +164,7 @@ describe('applyPull', () => {
           },
         ],
       },
+      null,
       db,
     );
 
@@ -194,7 +195,7 @@ describe('applyPull', () => {
   it('moves the cursor to what the server returned', () => {
     expect(appStateRepo.getPullCursor(db)).toBe(EPOCH);
 
-    applyPull(FULL, db);
+    applyPull(FULL, RETURNED, db);
 
     expect(appStateRepo.getPullCursor(db)).toBe(RETURNED);
   });
@@ -204,7 +205,7 @@ describe('applyPull', () => {
     // get skipped permanently.
     expect(() =>
       transact((tx) => {
-        applyPull(FULL, tx);
+        applyPull(FULL, RETURNED, tx);
         throw new Error('later failure');
       }, db),
     ).toThrow('later failure');
@@ -214,14 +215,17 @@ describe('applyPull', () => {
     expect(ctx.db.select().from(obs).all()).toEqual([]);
   });
 
-  it('leaves the cursor alone when the response carries no watermark', () => {
-    applyPull({ patientlist: [{ uuid: 'p1', firstname: 'Asha' }] }, db);
+  it('leaves the cursor alone when the CALLER passes null', () => {
+    // What every page but the last gets. The payload still carries a watermark;
+    // applyPull must not reach for it.
+    applyPull({ patientlist: [{ uuid: 'p1', firstname: 'Asha' }], pullexecutedtime: RETURNED }, null, db);
 
+    expect(ctx.db.select().from(patient).all()).toHaveLength(1);
     expect(appStateRepo.getPullCursor(db)).toBe(EPOCH);
   });
 
   it('is a no-op on an empty payload', () => {
-    const result = applyPull({}, db);
+    const result = applyPull({}, null, db);
 
     expect(result.patients).toBe(0);
     expect(result.cursor).toBeNull();
@@ -231,7 +235,7 @@ describe('applyPull', () => {
   it('warns about keys it does not know instead of dropping them silently', () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    applyPull({ ...FULL, somethingNew: [1, 2] } as PullPayload, db);
+    applyPull({ ...FULL, somethingNew: [1, 2] } as PullPayload, RETURNED, db);
 
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
@@ -247,6 +251,7 @@ describe('applyPull', () => {
           { uuid: 'va9', visit_uuid: 'v1', visit_attribute_type_uuid: 'vt1', value: 'y', voided: 0 },
         ],
       },
+      RETURNED,
       db,
     );
 
@@ -263,6 +268,7 @@ describe('applyPull', () => {
     // providerAttributeTypeList and visitAttributeTypeList map to no table.
     const result = applyPull(
       { ...FULL, providerAttributeTypeList: [{}], visitAttributeTypeList: [{}] } as PullPayload,
+      RETURNED,
       db,
     );
 

@@ -131,9 +131,17 @@ export interface PulledVisitAttributeRow {
   voided: number;
 }
 
+/**
+ * ONE PAGE of a pull, already unwrapped. The wire sends `{ status, data }` and
+ * this is the `data`. Hand in the envelope and every list reads as absent.
+ */
 export interface PullPayload {
   /** The watermark the NEXT pull asks from. The server's clock, not ours. */
   pullexecutedtime?: string | null;
+  /** The NEXT page to ask for. `-1` means this was the last one. */
+  pageNo?: number;
+  /** Carried by every page. The legacy reads it into a local and never uses it. */
+  totalCount?: number;
   patientlist?: PulledPatient[];
   patientAttributeTypeListMaster?: PulledAttributeType[];
   patientAttributesList?: PulledPatientAttribute[];
@@ -151,7 +159,15 @@ export interface PullPayload {
  * does not model them either — `providerAttributeTypeList` is `List<Object>`
  * there. Listed so a reader knows this is a decision, not an oversight.
  */
-const IGNORED_KEYS = ['providerAttributeTypeList', 'visitAttributeTypeList'] as const;
+const IGNORED_KEYS = [
+  'providerAttributeTypeList',
+  'visitAttributeTypeList',
+  // A 16th key in the legacy's response model that nothing anywhere reads.
+  'propertyContents',
+] as const;
+
+/** Pagination control, read by the driver. Not data, so applyPull ignores them. */
+const CONTROL_KEYS = ['pageNo', 'totalCount'] as const;
 
 const KNOWN_KEYS: readonly string[] = [
   'pullexecutedtime',
@@ -166,6 +182,7 @@ const KNOWN_KEYS: readonly string[] = [
   'providerAttributeList',
   'visitAttributeList',
   ...IGNORED_KEYS,
+  ...CONTROL_KEYS,
 ];
 
 export interface ApplyResult {
@@ -184,11 +201,17 @@ export interface ApplyResult {
 }
 
 /**
- * Parents before children. With one transaction and no declared foreign keys
- * the order cannot change the outcome — it is written this way so it stays
- * correct if foreign keys are ever switched on.
+ * Parents before children, in one transaction. The CURSOR IS A PARAMETER, never
+ * `payload.pullexecutedtime`: every page of a run carries that value, so a page
+ * reading it itself would commit the END of the run after page 0 and skip the
+ * rest forever. Only the caller knows which page is last — pass `null` for all
+ * the others. `pullAllPages` does this; prefer it over calling this directly.
  */
-export function applyPull(payload: PullPayload, on?: DbHandle): ApplyResult {
+export function applyPull(
+  payload: PullPayload,
+  cursor: string | null,
+  on?: DbHandle,
+): ApplyResult {
   warnOnUnknownKeys(payload);
 
   const patients = payload.patientlist ?? [];
@@ -201,7 +224,6 @@ export function applyPull(payload: PullPayload, on?: DbHandle): ApplyResult {
   const encounters = payload.encounterlist ?? [];
   const observations = payload.obslist ?? [];
   const visitAttributes = payload.visitAttributeList ?? [];
-  const cursor = payload.pullexecutedtime ?? null;
 
   return transact((tx) => {
     patientRepo.upsertPatients(patients.map(toPatientRow), tx);
