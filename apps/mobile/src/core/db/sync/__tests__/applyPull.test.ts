@@ -140,6 +140,57 @@ describe('applyPull', () => {
     expect(ctx.db.select().from(provider).where(eq(provider.uuid, 'dr1')).get()?.role).toBe('nurse');
   });
 
+  it('keeps every column a real providerlist row carries', () => {
+    // Verbatim from the 2026-11-11 archive. 14 keys; imagePath is not one of
+    // them, so it must stay NULL — it is a device-local path.
+    applyPull(
+      {
+        providerlist: [
+          {
+            role: 'Organizational: Doctor',
+            useruuid: 'a4ac4fee-538f-11e6-9cfe-86f436325720',
+            emailId: 'NA',
+            telephoneNumber: 'NA',
+            providerId: '3',
+            given_name: 'Super',
+            family_name: 'User',
+            voided: 0,
+            gender: 'M',
+            dateofbirth: '2000-07-06',
+            uuid: 'f9badd80-ab76-11e2-9e96-0800200c9a66',
+            identifier: 'UNKNOWN',
+            middle_name: 'v',
+            countryCode: 'NA',
+          },
+        ],
+      },
+      db,
+    );
+
+    const row = ctx.db
+      .select()
+      .from(provider)
+      .where(eq(provider.uuid, 'f9badd80-ab76-11e2-9e96-0800200c9a66'))
+      .get();
+
+    expect(row).toMatchObject({
+      identifier: 'UNKNOWN',
+      given_name: 'Super',
+      middle_name: 'v',
+      family_name: 'User',
+      gender: 'M',
+      dateofbirth: '2000-07-06',
+      emailId: 'NA',
+      telephoneNumber: 'NA',
+      countryCode: 'NA',
+      role: 'Organizational: Doctor',
+      useruuid: 'a4ac4fee-538f-11e6-9cfe-86f436325720',
+      providerId: '3',
+      voided: 0,
+    });
+    expect(row?.imagePath).toBeNull();
+  });
+
   it('moves the cursor to what the server returned', () => {
     expect(appStateRepo.getPullCursor(db)).toBe(EPOCH);
 

@@ -97,13 +97,21 @@ export interface PulledLocation {
   retired?: number | null;
 }
 
+/** All 14 keys a real `providerlist` carries. `imagePath` is NOT among them. */
 export interface PulledProvider {
   uuid: string;
   identifier?: string | null;
   given_name?: string | null;
+  middle_name?: string | null;
   family_name?: string | null;
+  gender?: string | null;
+  dateofbirth?: string | null;
+  emailId?: string | null;
+  telephoneNumber?: string | null;
+  countryCode?: string | null;
   role?: string | null;
   useruuid?: string | null;
+  providerId?: string | null;
   voided?: number;
 }
 
@@ -320,14 +328,23 @@ function toLocationRow(row: PulledLocation) {
   };
 }
 
+// Every name below is identical on the wire and in the column, deliberately:
+// the mapping is the place these drift, so there is nothing here to get wrong.
 function toProviderRow(row: PulledProvider) {
   return {
     uuid: row.uuid,
     identifier: row.identifier ?? null,
     given_name: row.given_name ?? null,
+    middle_name: row.middle_name ?? null,
     family_name: row.family_name ?? null,
+    gender: row.gender ?? null,
+    dateofbirth: row.dateofbirth ?? null,
+    emailId: row.emailId ?? null,
+    telephoneNumber: row.telephoneNumber ?? null,
+    countryCode: row.countryCode ?? null,
     role: row.role ?? null,
     useruuid: row.useruuid ?? null,
+    providerId: row.providerId ?? null,
     voided: row.voided ?? 0,
   };
 }

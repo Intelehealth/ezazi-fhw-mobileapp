@@ -78,7 +78,7 @@ describe('ensureSchema', () => {
 
       expect(tables(client)).toBe(17);
       expect(stateRows(client)).toBe(1);
-      expect(journal(client)).toBe(3); // 0000, 0001, 0002
+      expect(journal(client)).toBe(4); // 0000 through 0003
     });
 
     it('writes the state row under the id the hydration resolver reads', async () => {
@@ -104,7 +104,7 @@ describe('ensureSchema', () => {
     });
 
     it('does not re-apply migrations', () => {
-      expect(journal(client)).toBe(3); // 0000, 0001, 0002
+      expect(journal(client)).toBe(4); // 0000 through 0003
     });
   });
 
