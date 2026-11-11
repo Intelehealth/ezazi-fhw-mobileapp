@@ -18,7 +18,7 @@ import type { BuiltPush } from './buildPushBody';
 
 interface AckRow {
   uuid: string;
-  syncd?: boolean | string | null;
+  sync?: boolean | string | null;
 }
 
 export interface PushAckPayload {
@@ -42,7 +42,7 @@ export interface AckResult {
 
 /** The wire sends a boolean, the legacy stringified it. Accept either. */
 function accepted(row: AckRow): boolean {
-  return row.syncd === true || row.syncd === 'true' || row.syncd === 'TRUE';
+  return row.sync === true || row.sync === 'true' || row.sync === 'TRUE';
 }
 
 /**

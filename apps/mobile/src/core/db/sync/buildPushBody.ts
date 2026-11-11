@@ -24,15 +24,23 @@ interface PushName {
 }
 
 interface PushAddress {
+  address1: string | null;
+  address2: string | null;
   cityVillage: string | null;
   stateProvince: string | null;
   postalCode: string | null;
   country: string | null;
 }
 
-interface PushAttribute {
+/** Person attributes carry no uuid — the server keys them by (person, type). */
+interface PushPersonAttribute {
   attributeType: string | null;
   value: string | null;
+}
+
+/** The visit one DOES carry its uuid. One shared type hid that difference. */
+interface PushVisitAttribute extends PushPersonAttribute {
+  uuid: string;
 }
 
 export interface PushPerson {
@@ -41,7 +49,7 @@ export interface PushPerson {
   gender: string | null;
   names: PushName[];
   addresses: PushAddress[];
-  attributes: PushAttribute[];
+  attributes: PushPersonAttribute[];
 }
 
 export interface PushPatient {
@@ -58,7 +66,7 @@ export interface PushVisit {
   startDatetime: string | null;
   /** Omitted entirely while the visit is open — the legacy only sets it when closed. */
   stopDatetime?: string;
-  attributes: PushAttribute[];
+  attributes: PushVisitAttribute[];
 }
 
 export interface PushObs {
@@ -67,7 +75,8 @@ export interface PushObs {
   value: string | null;
   comment: string | null;
   voided: number;
-  createdDate: string | null;
+  /** `obsDatetime` on the wire; the Java FIELD is `createdDate`, the annotation is not. */
+  obsDatetime: string | null;
 }
 
 export interface PushEncounter {
@@ -118,6 +127,8 @@ export function buildPushBody(set: DirtySet, context: PushContext, on: DbHandle)
     ],
     addresses: [
       {
+        address1: patient.address1,
+        address2: patient.address2,
         cityVillage: patient.city_village,
         stateProvince: patient.state_province,
         postalCode: patient.postal_code,
@@ -151,6 +162,7 @@ export function buildPushBody(set: DirtySet, context: PushContext, on: DbHandle)
     startDatetime: row.startdate,
     ...(row.enddate ? { stopDatetime: row.enddate } : {}),
     attributes: row.attributes.map((attribute) => ({
+      uuid: attribute.uuid,
       attributeType: attribute.visit_attribute_type_uuid,
       value: attribute.value,
     })),
@@ -189,7 +201,7 @@ export function buildPushBody(set: DirtySet, context: PushContext, on: DbHandle)
         value: entry.value,
         comment: entry.comment,
         voided: entry.voided,
-        createdDate: entry.created_date,
+        obsDatetime: entry.created_date,
       })),
     };
   });

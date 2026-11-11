@@ -1,6 +1,6 @@
 /**
  * The only values ever written to the `sync` and `voided` columns.
- * Types mirror the API: `sync` is boolean (wire `syncd`), `voided` is 0/1 (wire
+ * Types mirror the API: `sync` is boolean (wire `sync`), `voided` is 0/1 (wire
  * sends a JSON number). See ARCHITECTURE_RULES §6.
  */
 

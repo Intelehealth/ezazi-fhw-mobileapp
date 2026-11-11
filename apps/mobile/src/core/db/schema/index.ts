@@ -1,7 +1,7 @@
 /**
  * Offline SQLite schema (OpenMRS model), ported 1:1 from Android. See ARCHITECTURE_RULES §6.
  * `uuid` is the PK, except tbl_location (`locationuuid`) and tbl_user_credentials (synthetic id).
- * `sync`/`voided` are INTEGER mirroring the API: `sync` boolean (wire `syncd`), `voided` 0/1.
+ * `sync`/`voided` are INTEGER mirroring the API: `sync` boolean (wire `sync`), `voided` 0/1.
  * Every other column is TEXT unless noted; optional columns are nullable.
  * Indexes (3rd arg per table): FK/lookup columns plus `sync` — keep in step with the sync engine.
  */

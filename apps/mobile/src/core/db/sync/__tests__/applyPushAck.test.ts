@@ -54,7 +54,7 @@ describe('applyPushAck', () => {
     const uuid = seedEncounterWithObs();
     const built = sent();
 
-    const result = applyPushAck({ encounterlist: [{ uuid: ENC, syncd: true }] }, built, db);
+    const result = applyPushAck({ encounterlist: [{ uuid: ENC, sync: true }] }, built, db);
 
     expect(encSync()).toBe(SYNC_CLEAN);
     expect(obsRow(uuid)?.sync).toBe(SYNC_CLEAN);
@@ -65,7 +65,7 @@ describe('applyPushAck', () => {
     const uuid = seedEncounterWithObs();
     const built = sent();
 
-    const result = applyPushAck({ encounterlist: [{ uuid: ENC, syncd: false }] }, built, db);
+    const result = applyPushAck({ encounterlist: [{ uuid: ENC, sync: false }] }, built, db);
 
     expect(encSync()).toBe(SYNC_DIRTY);
     expect(obsRow(uuid)?.sync).toBe(SYNC_DIRTY);
@@ -91,7 +91,7 @@ describe('applyPushAck', () => {
     const dropped = obsRepo.insert({ encounteruuid: ENC, conceptuuid: 'c2', value: null }, db);
     const built = sent();
 
-    applyPushAck({ encounterlist: [{ uuid: ENC, syncd: true }] }, built, db);
+    applyPushAck({ encounterlist: [{ uuid: ENC, sync: true }] }, built, db);
 
     expect(obsRow(kept)?.sync).toBe(SYNC_CLEAN);
     expect(obsRow(dropped)?.sync).toBe(SYNC_DIRTY);
@@ -106,7 +106,7 @@ describe('applyPushAck', () => {
     const built = sent();
 
     applyPushAck(
-      { patientlist: [{ uuid: PATIENT, openmrs_id: 'EZ-10517', syncd: true }] },
+      { patientlist: [{ uuid: PATIENT, openmrs_id: 'EZ-10517', sync: true }] },
       built,
       db,
     );
@@ -119,16 +119,16 @@ describe('applyPushAck', () => {
     patientRepo.markPatientSynced(PATIENT, 'EZ-1', SYNC_DIRTY, db);
     const built = sent();
 
-    applyPushAck({ patientlist: [{ uuid: PATIENT, syncd: true }] }, built, db);
+    applyPushAck({ patientlist: [{ uuid: PATIENT, sync: true }] }, built, db);
 
     expect(patientRow()?.openmrs_id).toBe('EZ-1');
   });
 
-  it('accepts syncd as a boolean or as the string the legacy sends', () => {
+  it('accepts sync as a boolean or as the string the legacy sends', () => {
     seedEncounterWithObs();
     const built = sent();
 
-    applyPushAck({ encounterlist: [{ uuid: ENC, syncd: 'true' }] }, built, db);
+    applyPushAck({ encounterlist: [{ uuid: ENC, sync: 'true' }] }, built, db);
 
     expect(encSync()).toBe(SYNC_CLEAN);
   });
@@ -139,7 +139,7 @@ describe('applyPushAck', () => {
 
     expect(() =>
       transact((tx) => {
-        applyPushAck({ encounterlist: [{ uuid: ENC, syncd: true }] }, built, tx);
+        applyPushAck({ encounterlist: [{ uuid: ENC, sync: true }] }, built, tx);
         throw new Error('later failure');
       }, db),
     ).toThrow('later failure');
@@ -157,9 +157,9 @@ describe('applyPushAck', () => {
 
     applyPushAck(
       {
-        patientlist: [{ uuid: PATIENT, openmrs_id: 'EZ-1', syncd: true }],
-        visitlist: [{ uuid: VISIT, syncd: true }],
-        encounterlist: [{ uuid: ENC, syncd: true }],
+        patientlist: [{ uuid: PATIENT, openmrs_id: 'EZ-1', sync: true }],
+        visitlist: [{ uuid: VISIT, sync: true }],
+        encounterlist: [{ uuid: ENC, sync: true }],
       },
       built,
       db,

@@ -1,7 +1,14 @@
 import { ENCOUNTER_ADMISSION, ENCOUNTER_EMERGENCY } from '@/core/db/constants/encounter';
 import { PROVIDER_ENCOUNTER_ROLE } from '@/core/db/constants/provider';
+import { VISIT_HOLDER } from '@/core/db/constants/visit';
 import { OPENMRS_IDENTIFIER_TYPE } from '@/core/db/constants/wire';
-import { encounterRepo, obsRepo, patientRepo, visitRepo } from '@/core/db/repositories';
+import {
+  encounterRepo,
+  obsRepo,
+  patientRepo,
+  visitAttributeRepo,
+  visitRepo,
+} from '@/core/db/repositories';
 import type { DbHandle } from '@/core/db/tx';
 import { createTestDb, type TestDb } from '@/core/db/__tests__/helpers/testDb';
 
@@ -35,6 +42,8 @@ describe('buildPushBody', () => {
           last_name: 'Devi',
           date_of_birth: '1996-04-02',
           gender: 'F',
+          address1: 'House 4',
+          address2: 'Near the well',
           city_village: 'Pune',
         },
       ],
@@ -130,6 +139,52 @@ describe('buildPushBody', () => {
 
     // The dropped one must NOT be marked sent when the encounter is accepted.
     expect(build().observationsByEncounter.get('e1')).toEqual([kept]);
+  });
+
+  // ── wire keys. A wrong one here fails silently: the server ignores the
+  // field and the push still returns 200. Assert the spelling, not the value.
+
+  it('dates an observation with obsDatetime, never the Java field name', () => {
+    encounterRepo.upsert(
+      { uuid: 'e1', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_ADMISSION },
+      db,
+    );
+    obsRepo.insert({ encounteruuid: 'e1', conceptuuid: 'c1', value: '120' }, db);
+
+    const [observation] = build().body.encounters[0].obs;
+
+    expect(observation).not.toHaveProperty('createdDate');
+    expect(observation.obsDatetime).toEqual(expect.any(String));
+  });
+
+  it('sends a uuid on a VISIT attribute and none on a person attribute', () => {
+    const attribute = visitAttributeRepo.insertLocal(VISIT, VISIT_HOLDER, 'dr1', db);
+    visitRepo.markDirty(VISIT, db);
+    patientRepo.updatePatient(PATIENT, { first_name: 'Asha' }, db);
+    patientRepo.upsertPatientAttributesFromServer(
+      [{ uuid: 'a1', patientuuid: PATIENT, person_attribute_type_uuid: 't1', value: '7' }],
+      db,
+    );
+
+    const built = build();
+
+    expect(built.body.visits[0].attributes).toEqual([
+      { uuid: attribute, attributeType: VISIT_HOLDER, value: 'dr1' },
+    ]);
+    expect(built.body.persons[0].attributes[0]).not.toHaveProperty('uuid');
+  });
+
+  it('sends both address lines, which neither direction filled before', () => {
+    patientRepo.updatePatient(PATIENT, { first_name: 'Asha' }, db);
+
+    expect(build().body.persons[0].addresses[0]).toEqual({
+      address1: 'House 4',
+      address2: 'Near the well',
+      cityVillage: 'Pune',
+      stateProvince: null,
+      postalCode: null,
+      country: null,
+    });
   });
 
   it('returns four empty arrays when nothing is waiting', () => {
