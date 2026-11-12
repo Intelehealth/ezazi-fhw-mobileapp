@@ -30,6 +30,9 @@ let ormHandle: ReturnType<typeof createOrm> | null = null;
 export function getDb(): ReturnType<typeof createOrm> {
   if (!ormHandle) {
     rawHandle = openDatabaseSync(DATABASE_NAME, { enableChangeListener: true });
+    // A writer appends to a side file instead of locking the database, so a
+    // screen can read while sync writes. Without it, that read is SQLITE_BUSY.
+    rawHandle.execSync('PRAGMA journal_mode = WAL;');
     ormHandle = createOrm(rawHandle);
   }
   return ormHandle;
