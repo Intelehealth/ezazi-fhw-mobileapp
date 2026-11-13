@@ -79,6 +79,35 @@ describe('visit attribute repository', () => {
       expect(rows()).toHaveLength(2);
     });
 
+    it('updates a pair it already holds even when the type is not whitelisted', () => {
+      // The legacy filters on the insert branch only. Gating updates too freezes
+      // a non-whitelisted attribute at whatever value it was created with.
+      db.insert(visitAttribute)
+        .values({
+          uuid: 'local-1',
+          visit_uuid: VISIT,
+          visit_attribute_type_uuid: 'some-future-type',
+          value: 'old',
+          voided: VOIDED_NO,
+          sync: SYNC_DIRTY,
+        })
+        .run();
+
+      const result = upsertManyFromPull([pulled('s1', 'some-future-type', 'new')], db);
+
+      expect(result).toEqual({ written: 1, skipped: [] });
+      expect(row('local-1')?.value).toBe('new');
+      expect(row('local-1')?.sync).toBe(SYNC_CLEAN);
+      expect(rows()).toHaveLength(1);
+    });
+
+    it('still refuses to CREATE a row for a type it does not read', () => {
+      const result = upsertManyFromPull([pulled('s1', 'some-future-type', 'new')], db);
+
+      expect(result).toEqual({ written: 0, skipped: ['some-future-type'] });
+      expect(rows()).toHaveLength(0);
+    });
+
     it('accepts all five whitelisted types and nothing else', () => {
       const result = upsertManyFromPull(
         [

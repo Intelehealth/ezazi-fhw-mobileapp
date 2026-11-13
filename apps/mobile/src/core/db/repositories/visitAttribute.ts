@@ -100,19 +100,16 @@ function writePair(
  * mean a local uuid can diverge from the server's; the pair is what anything
  * reads, so nothing depends on them agreeing.
  *
- * Unrecognised types are still filtered out, because only these five are ever
- * read — but they are returned in `skipped` instead of vanishing in silence.
+ * The whitelist gates INSERTS ONLY. A pair we already hold takes whatever the
+ * server sends, so an attribute cannot freeze at a stale local value because
+ * its type is not one we read — `VisitAttributeListDAO.java:73-97` filters on
+ * the insert branch alone and this matches it. Skipped inserts are reported.
  */
 export function upsertManyFromPull(rows: PulledVisitAttribute[], on: DbHandle): PullResult {
   const allowed = new Set<string>(PULLED_VISIT_ATTRIBUTE_TYPES);
   const result: PullResult = { written: 0, skipped: [] };
 
   for (const row of rows) {
-    if (!allowed.has(row.visit_attribute_type_uuid)) {
-      result.skipped.push(row.visit_attribute_type_uuid);
-      continue;
-    }
-
     const existing = findUuidsForPair(row.visit_uuid, row.visit_attribute_type_uuid, on);
 
     if (existing.length > 0) {
@@ -121,6 +118,13 @@ export function upsertManyFromPull(rows: PulledVisitAttribute[], on: DbHandle): 
         .where(forPair(row.visit_uuid, row.visit_attribute_type_uuid))
         .run();
     } else {
+      // Only a pair we do not hold is gated. A type we never read is not
+      // worth a new row; an existing one is already costing us the row.
+      if (!allowed.has(row.visit_attribute_type_uuid)) {
+        result.skipped.push(row.visit_attribute_type_uuid);
+        continue;
+      }
+
       on.insert(visitAttribute)
         .values({ ...row, sync: SYNC_CLEAN })
         .onConflictDoUpdate({
