@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { env } from '@/core/config/env';
 import { secureStorage } from '@/core/services/storage/secure-storage';
+import { requestSessionEnd } from '@/core/session/sessionEnd';
 import { logger } from '@/core/utils/logger';
 import { createApiClient } from '@ezazi/api-client';
 import { trackApiActivity } from './trackApiActivity';
@@ -23,7 +24,12 @@ async function refreshAccessToken(): Promise<string | null> {
   refreshInFlight = (async () => {
     try {
       const refreshToken = await secureStorage.get('refreshToken');
-      if (!refreshToken) return null;
+      if (!refreshToken) {
+        // Returned BEFORE the catch below, so this path used to clear nothing
+        // and leave the database on the device. It ends a session like any other.
+        await requestSessionEnd('tokenExpired');
+        return null;
+      }
       const res = await axios.post(`${env.AUTH_GATEWAY_URL}/auth/refresh`, { refreshToken });
       const { accessToken: newAccess, refreshToken: newRefresh } = res.data;
       if (newAccess) await secureStorage.set('accessToken', newAccess);
@@ -33,7 +39,10 @@ async function refreshAccessToken(): Promise<string | null> {
       // logger.info, not .warn — a failed refresh is handled here (falls back to
       // unauthenticated) and must never pop React Native's LogBox on screen.
       logger.info('Token refresh failed', err);
+      // Kept even though the handler clears too: the transport must not need
+      // a store to be loaded before the secrets come off the device.
       await secureStorage.clear();
+      await requestSessionEnd('tokenExpired');
       return null;
     } finally {
       refreshInFlight = null;

@@ -6,6 +6,7 @@ import { logApiError } from '@/core/api/errors/logApiError';
 import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { teardownDb } from '@/core/db/teardown';
+import { setSessionEndHandler, type SessionEndReason } from '@/core/session/sessionEnd';
 import { isJwtExpired } from '@/core/utils/jwt';
 import { logger } from '@/core/utils/logger';
 
@@ -112,14 +113,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     // Result intentionally unused — server may be offline, we still clear local state.
     await sessionApi.logout();
-    await secureStorage.clear();
-    // Clinical data must not outlive the session: closes the connection,
-    // deletes the .db file and invalidates both memos. Never throws.
-    await teardownDb();
-    // Forget DB readiness, so the next login re-runs schema init.
-    useDbBootstrapStore.getState().reset();
-    // 'needsLogin', not 'needsSetup' — this device has already been through
-    // Setup once, so logging out should return to Login.
-    set({ status: 'needsLogin', userUuid: null, role: null });
+    await endSession();
   },
 }));
+
+/**
+ * The ONE teardown, whatever ended the session. A token expiring used to run
+ * none of it: `client.ts` returned before its own catch, so the database, the
+ * secrets and the background work all outlived the session on that path.
+ */
+async function endSession(): Promise<void> {
+  await secureStorage.clear();
+  // Clinical data must not outlive the session: closes the connection,
+  // deletes the .db file and invalidates both memos. Never throws.
+  await teardownDb();
+  // Forget DB readiness, so the next login re-runs schema init.
+  useDbBootstrapStore.getState().reset();
+  // Moving OFF 'authenticated' is what stops the monitor service and the
+  // backbone alarm: App.tsx gates useMonitorService on this very value, and
+  // its cleanup calls stopAll(). ARPAN'S CALL: both reasons land on Login,
+  // on the grounds that the device has already been through Setup once.
+  useAuthStore.setState({ status: 'needsLogin', userUuid: null, role: null });
+}
+
+// `client.ts` cannot import this store without closing a cycle through
+// session.api.ts, so the transport raises an event and this answers it.
+setSessionEndHandler(async (reason: SessionEndReason) => {
+  logger.info('[session] ending', reason);
+  await endSession();
+});

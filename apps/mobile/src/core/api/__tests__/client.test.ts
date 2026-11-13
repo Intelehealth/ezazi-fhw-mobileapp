@@ -2,12 +2,14 @@ import axios from 'axios';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { logger } from '@/core/utils/logger';
 import { createApiClient } from '@ezazi/api-client';
+import { requestSessionEnd } from '@/core/session/sessionEnd';
 
 jest.mock('@/core/config/env', () => ({ env: { AUTH_GATEWAY_URL: 'https://auth.example.test' } }));
 jest.mock('@/core/services/storage/secure-storage', () => ({
   secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
 }));
 jest.mock('@/core/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn() } }));
+jest.mock('@/core/session/sessionEnd', () => ({ requestSessionEnd: jest.fn() }));
 jest.mock('@ezazi/api-client', () => ({
   ...jest.requireActual('@ezazi/api-client'),
   createApiClient: jest.fn(() => ({
@@ -29,6 +31,7 @@ describe('apiClient (auth-gateway client)', () => {
     (logger.info as jest.Mock).mockReset();
     (logger.warn as jest.Mock).mockReset();
     postSpy = jest.spyOn(axios, 'post').mockReset();
+    (requestSessionEnd as jest.Mock).mockReset();
   });
 
   afterEach(() => {
@@ -62,6 +65,16 @@ describe('apiClient (auth-gateway client)', () => {
       expect(postSpy).not.toHaveBeenCalled();
     });
 
+    it('ends the session when there is no refresh token', async () => {
+      // This path returns before the catch below, so it used to clear nothing
+      // and leave the database and the background work on a logged-out device.
+      (secureStorage.get as jest.Mock).mockResolvedValue(null);
+
+      await options.onUnauthorized();
+
+      expect(requestSessionEnd).toHaveBeenCalledWith('tokenExpired');
+    });
+
     it('posts the refresh token, persists the new tokens, and returns the new access token', async () => {
       (secureStorage.get as jest.Mock).mockResolvedValue('stored-refresh-token');
       postSpy.mockResolvedValue({ data: { accessToken: 'new-access', refreshToken: 'new-refresh' } });
@@ -86,6 +99,7 @@ describe('apiClient (auth-gateway client)', () => {
       expect(logger.info).toHaveBeenCalled();
       expect(logger.warn).not.toHaveBeenCalled();
       expect(secureStorage.clear).toHaveBeenCalledTimes(1);
+      expect(requestSessionEnd).toHaveBeenCalledWith('tokenExpired');
       expect(result).toBeNull();
     });
 

@@ -20,6 +20,7 @@ jest.mock('@/core/config/featureConfig.store', () => ({
 jest.mock('@/core/db/teardown', () => ({ teardownDb: jest.fn() }));
 
 import { SPLASH_MIN_MS, useAuthStore } from '../auth.store';
+import { requestSessionEnd } from '../sessionEnd';
 import { toBase64 } from '@/core/utils/base64';
 
 // Builds a fake JWT with a given `exp` claim. decodeJwtPayload/isJwtExpired
@@ -222,6 +223,46 @@ describe('useAuthStore', () => {
 
       expect(secureStorage.clear).toHaveBeenCalledTimes(1);
       expect(useAuthStore.getState().status).toBe('needsLogin');
+    });
+  });
+
+  // ── session end ──────────────────────────────────────────────────────────
+
+  describe('session end', () => {
+    it('tears down exactly as logout does when a token expires', async () => {
+      // The whole point: a refresh failure used to clear nothing and leave the
+      // database, so the next user of the device inherited the last one's rows.
+      useAuthStore.setState({ status: 'authenticated', userUuid: 'user-1', role: 'fhw' });
+
+      await requestSessionEnd('tokenExpired');
+
+      expect(secureStorage.clear).toHaveBeenCalledTimes(1);
+      expect(teardownDb).toHaveBeenCalledTimes(1);
+      expect(useAuthStore.getState()).toMatchObject({
+        status: 'needsLogin',
+        userUuid: null,
+        role: null,
+      });
+    });
+
+    it('does not call the server on a token expiry, only on logout', async () => {
+      // There is no session left to end server-side, and the device is very
+      // likely offline — that is usually why the refresh failed.
+      await requestSessionEnd('tokenExpired');
+
+      expect(sessionApi.logout).not.toHaveBeenCalled();
+    });
+
+    it('ends one session however many requests failed at once', async () => {
+      useAuthStore.setState({ status: 'authenticated', userUuid: 'user-1', role: 'fhw' });
+
+      await Promise.all([
+        requestSessionEnd('tokenExpired'),
+        requestSessionEnd('tokenExpired'),
+        requestSessionEnd('tokenExpired'),
+      ]);
+
+      expect(teardownDb).toHaveBeenCalledTimes(1);
     });
   });
 
