@@ -169,8 +169,12 @@ const IGNORED_KEYS = [
 /** Pagination control, read by the driver. Not data, so applyPull ignores them. */
 const CONTROL_KEYS = ['pageNo', 'totalCount'] as const;
 
-const KNOWN_KEYS: readonly string[] = [
-  'pullexecutedtime',
+/**
+ * The ten lists this file writes. Exported because the archive reader routes
+ * zip entries by filename onto these keys, and a second copy of the list that
+ * drifted from this one would drop a whole table without saying so.
+ */
+export const PULL_LIST_KEYS = [
   'patientlist',
   'patientAttributeTypeListMaster',
   'patientAttributesList',
@@ -181,6 +185,11 @@ const KNOWN_KEYS: readonly string[] = [
   'providerlist',
   'providerAttributeList',
   'visitAttributeList',
+] as const;
+
+const KNOWN_KEYS: readonly string[] = [
+  'pullexecutedtime',
+  ...PULL_LIST_KEYS,
   ...IGNORED_KEYS,
   ...CONTROL_KEYS,
 ];
