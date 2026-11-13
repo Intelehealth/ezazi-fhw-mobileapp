@@ -4,7 +4,7 @@ import { COMPLEX_IMAGE_AD } from '@/core/db/constants/obs';
 import { encounterRepo, obsRepo, patientRepo, visitRepo } from '@/core/db/repositories';
 import type { DbHandle } from '@/core/db/tx';
 
-import { collectDirty, isEmpty, observationsByEncounter } from '../collectDirty';
+import { collectDirty, isEmpty } from '../collectDirty';
 
 /**
  * The push queue. Children are reached THROUGH their parent, so the tests that
@@ -99,11 +99,4 @@ describe('collectDirty', () => {
     expect(entry.attributes).toEqual([]);
   });
 
-  it('maps observation uuids back to the encounter they rode with', () => {
-    seedClean();
-    const uuid = obsRepo.insert({ encounteruuid: ENC, conceptuuid: CONCEPT, value: 'x' }, db);
-    encounterRepo.markDirty(ENC, db);
-
-    expect(observationsByEncounter(collectDirty(db))).toEqual(new Map([[ENC, [uuid]]]));
-  });
 });

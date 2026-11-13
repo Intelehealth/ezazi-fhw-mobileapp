@@ -54,17 +54,3 @@ export function collectDirty(on: DbHandle): DirtySet {
 export function isEmpty(set: DirtySet): boolean {
   return set.patients.length === 0 && set.visits.length === 0 && set.encounters.length === 0;
 }
-
-/**
- * The observation uuids that rode with each encounter, keyed by encounter.
- * The push reply names encounters only, so this is what lets the ack clear the
- * right observation flags.
- */
-export function observationsByEncounter(set: DirtySet): Map<string, string[]> {
-  return new Map(
-    set.encounters.map(({ encounter, observations }) => [
-      encounter.uuid,
-      observations.map((entry) => entry.uuid),
-    ]),
-  );
-}
