@@ -41,23 +41,45 @@ describe('downloadArchive', () => {
     (File.downloadFileAsync as jest.Mock).mockResolvedValue(mockFile);
   });
 
-  it('builds the legacy pull route, with the cursor as the last segment', async () => {
+  it('builds the real archive route, character for character', async () => {
+    // Pinned against the request Arpan ran to produce our archive, 2026-11-16.
+    // Nothing else in this repo can catch a wrong route: it is only observable
+    // against a live server.
     await downloadArchive(EPOCH);
 
     expect(File.downloadFileAsync).toHaveBeenCalledWith(
-      'https://testezazi.intelehealth.org/EMR-Middleware/webapi/pull/pulldata/loc-1/2006-08-22%2022:21:48%20',
+      'https://testezazi.intelehealth.org/EMR-Middleware/webapi/pull/pulldata/loc-1/2006-08-22%2022:21:48/0/1000',
       mockFile,
       expect.anything(),
     );
   });
 
-  it('escapes the spaces in the cursor but not its colons', async () => {
-    // Retrofit's HttpUrl does exactly this to the legacy's raw string.
+  it('sends the page segments, which elcg does not', async () => {
+    // elcg's URL stops at the cursor. AMC sends /{page}/{limit}, and so does
+    // the real request. Without them the path is one the server never sees.
+    await downloadArchive(EPOCH);
+
+    const [url] = (File.downloadFileAsync as jest.Mock).mock.calls[0] as [string];
+    expect(url).toMatch(/\/0\/1000$/);
+  });
+
+  it('drops the cursor sentinel trailing space', async () => {
+    // PULL_EPOCH ends in a space. In elcg the cursor is the last segment so it
+    // sits harmlessly at the end; here it is a middle segment, and the space
+    // would encode to %20 directly before the page number.
+    await downloadArchive(EPOCH);
+
+    const [url] = (File.downloadFileAsync as jest.Mock).mock.calls[0] as [string];
+    expect(url).not.toContain('%20/0/');
+    expect(url).toContain('22:21:48/0/1000');
+  });
+
+  it('escapes the space inside the cursor but not its colons', async () => {
     // encodeURIComponent would escape the colons too and change the path.
     await downloadArchive(EPOCH);
 
     const [url] = (File.downloadFileAsync as jest.Mock).mock.calls[0] as [string];
-    expect(url).toContain('22:21:48');
+    expect(url).toContain('2006-08-22%2022:21:48');
     expect(url).not.toContain('%3A');
     expect(url).not.toContain(' ');
   });

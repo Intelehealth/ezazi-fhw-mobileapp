@@ -2,6 +2,7 @@ import { ApiError, failure, success } from '@ezazi/api-client';
 import { File, Paths } from 'expo-file-system';
 
 import { env } from '@/core/config/env';
+import { DEFAULT_PAGE_SIZE, FIRST_PAGE } from '@/core/db/sync/pullAllPages';
 import type { DownloadArchive } from '@/core/db/sync/transport';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { logger } from '@/core/utils/logger';
@@ -48,11 +49,21 @@ export function deleteArchive(): void {
 }
 
 function pullUrl(locationUuid: string, cursor: string): string {
-  // encodeURI, not encodeURIComponent: the cursor carries spaces AND colons,
-  // and the legacy hands the raw string to Retrofit, whose HttpUrl escapes the
-  // spaces but leaves colons alone. encodeURIComponent would escape both and
-  // change the path the server sees.
-  return `${env.SERVER_URL}/EMR-Middleware/webapi/pull/pulldata/${locationUuid}/${encodeURI(cursor)}`;
+  // Page segments, which elcg does NOT send — its URL stops at the cursor.
+  // AMC sends them, and so does the real request that produced our archive
+  // (Arpan, 2026-11-16). The archive is always the first page.
+  const page = `${String(FIRST_PAGE)}/${String(DEFAULT_PAGE_SIZE)}`;
+
+  // trim(), because PULL_EPOCH carries a trailing space. In elcg the cursor is
+  // the LAST segment, so that space sits harmlessly at the end of the URL;
+  // here it is a middle segment and the space would encode to %20 right before
+  // the page number, making a path the server has never seen.
+  //
+  // encodeURI, not encodeURIComponent: the cursor carries spaces and colons,
+  // and encodeURIComponent would escape the colons too.
+  const watermark = encodeURI(cursor.trim());
+
+  return `${env.SERVER_URL}/EMR-Middleware/webapi/pull/pulldata/${locationUuid}/${watermark}/${page}`;
 }
 
 export const downloadArchive: DownloadArchive = async (cursor) => {

@@ -181,21 +181,20 @@ describe('NEPAL_CLIENT_CONFIG', () => {
         .toBe('https://erevamp.intelehealth.org:3030');
     });
 
-    it('serverUrl matches the legacy endpoint.properties, tier for tier', () => {
-      // ELCG_NEPAL_{DEV,STAGE,PROD}_SERVER_URL. Production is a different host
-      // from dev and stage here, unlike the default client.
+    it('serverUrl points at the revamp backend, not the legacy host', () => {
+      // Same shared backend as the default client today, and the same reason
+      // authGatewayUrl is shared: this is the revamp's own deployment, not the
+      // Java app's. endpoint.properties says nezazi; that is elcg's.
       expect(NEPAL_CLIENT_CONFIG.servers.development.serverUrl)
-        .toBe('https://nezazi.intelehealth.org');
+        .toBe('https://erevamp.intelehealth.org');
       expect(NEPAL_CLIENT_CONFIG.servers.preview.serverUrl)
-        .toBe('https://nezazi.intelehealth.org');
-      expect(NEPAL_CLIENT_CONFIG.servers.production.serverUrl)
-        .toBe('https://nepalezazi.intelehealth.org');
+        .toBe('https://erevamp.intelehealth.org');
     });
 
-    it('serverUrl is not the auth gateway, and carries no port or trailing slash', () => {
-      // Paths are appended directly, so a trailing slash doubles the separator.
-      Object.values(NEPAL_CLIENT_CONFIG.servers).forEach(({ serverUrl, authGatewayUrl }) => {
-        expect(serverUrl).not.toBe(authGatewayUrl);
+    it('serverUrl carries no port and no trailing slash', () => {
+      // Paths are appended directly, so a trailing slash doubles the separator,
+      // and the port is the auth gateway's alone — the sync routes are on 443.
+      Object.values(NEPAL_CLIENT_CONFIG.servers).forEach(({ serverUrl }) => {
         expect(serverUrl).not.toMatch(/:\d+$/);
         expect(serverUrl).not.toMatch(/\/$/);
       });

@@ -185,21 +185,21 @@ describe('DEFAULT_CLIENT_CONFIG', () => {
         .toBe('https://erevamp.intelehealth.org:3030');
     });
 
-    it('serverUrl matches the legacy endpoint.properties, tier for tier', () => {
-      // EZAZI_DEFAULT_{DEV,STAGE,PROD}_SERVER_URL. Typed wrong, every sync call
-      // goes to the wrong site's data, and nothing else here would catch it.
+    it('serverUrl points at the revamp backend, not the legacy host', () => {
+      // Confirmed against the request that produced our archive. The legacy's
+      // endpoint.properties says testezazi here; that is the Java app's
+      // backend, not ours. Typed wrong, every sync call reaches another
+      // deployment's data and nothing else here would catch it.
       expect(DEFAULT_CLIENT_CONFIG.servers.development.serverUrl)
-        .toBe('https://testezazi.intelehealth.org');
+        .toBe('https://erevamp.intelehealth.org');
       expect(DEFAULT_CLIENT_CONFIG.servers.preview.serverUrl)
-        .toBe('https://testezazi.intelehealth.org');
-      expect(DEFAULT_CLIENT_CONFIG.servers.production.serverUrl)
-        .toBe('https://ezazi.intelehealth.org');
+        .toBe('https://erevamp.intelehealth.org');
     });
 
-    it('serverUrl is not the auth gateway, and carries no port or trailing slash', () => {
-      // Paths are appended directly, so a trailing slash doubles the separator.
-      Object.values(DEFAULT_CLIENT_CONFIG.servers).forEach(({ serverUrl, authGatewayUrl }) => {
-        expect(serverUrl).not.toBe(authGatewayUrl);
+    it('serverUrl carries no port and no trailing slash', () => {
+      // Paths are appended directly, so a trailing slash doubles the separator,
+      // and the port is the auth gateway's alone — the sync routes are on 443.
+      Object.values(DEFAULT_CLIENT_CONFIG.servers).forEach(({ serverUrl }) => {
         expect(serverUrl).not.toMatch(/:\d+$/);
         expect(serverUrl).not.toMatch(/\/$/);
       });

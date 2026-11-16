@@ -17,9 +17,17 @@ export interface ServerUrls {
    *   {serverUrl}/EMR-Middleware/webapi/push/pushdata
    *   {serverUrl}/openmrs/ws/rest/v1/...
    *
-   * NOT derivable from `authGatewayUrl`, which is a different host and port.
-   * Values come from the legacy's `endpoint.properties`, whose client × server
-   * flavours map one-to-one onto ours.
+   * Its own field, not derived from `authGatewayUrl`. On the revamp backend
+   * the two happen to share a host and differ only by port (`:3030` for auth),
+   * but that is a fact about one deployment, not a rule — the legacy's hosts
+   * are unrelated to its auth gateway, and `location.api.ts` already shows
+   * what deriving one from the other costs: a regex that strips a port.
+   *
+   * Development and preview are `erevamp.intelehealth.org`, the revamp's own
+   * backend — confirmed by Arpan 2026-11-16 against the request that produced
+   * our archive. Production still carries the legacy's host from
+   * `endpoint.properties` and is UNVERIFIED, like every other production URL
+   * in these files.
    */
   serverUrl: string;
 }

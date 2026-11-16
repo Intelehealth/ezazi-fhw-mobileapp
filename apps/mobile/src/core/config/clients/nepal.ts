@@ -29,7 +29,7 @@ export const NEPAL_CLIENT_CONFIG: ClientConfig = {
       portalUrl: 'http://localhost:3002',
       webrtcUrl: 'http://localhost:3003',
       configUrl: 'http://localhost:3004',
-      serverUrl: 'https://nezazi.intelehealth.org',
+      serverUrl: 'https://erevamp.intelehealth.org',
     },
     // Shared eRevamp staging auth-gateway (EZ-1097 login integration testing).
     // portal/webrtc/config still placeholders — replace when those are confirmed.
@@ -38,7 +38,7 @@ export const NEPAL_CLIENT_CONFIG: ClientConfig = {
       portalUrl: 'https://staging-portal.nepal.example.org',
       webrtcUrl: 'https://staging-webrtc.nepal.example.org',
       configUrl: 'https://staging-config.nepal.example.org',
-      serverUrl: 'https://nezazi.intelehealth.org',
+      serverUrl: 'https://erevamp.intelehealth.org',
     },
     // Placeholder hosts — replace with the real Nepal production endpoints.
     production: {
