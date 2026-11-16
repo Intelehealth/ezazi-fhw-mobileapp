@@ -47,13 +47,21 @@ function resolveRecaptchaSiteKey(): string {
 export const env = {
   APP_ENV: appEnv,
   AUTH_GATEWAY_URL: import.meta.env.VITE_AUTH_GATEWAY_URL || '',
+  /*
+   * The eLCG portal service (elcg-backend-service/portal, port 3004 by
+   * default) — origin only, no path: its routes live at the root, e.g.
+   * `{PORTAL_URL}/openmrs/getPriorityVisits`. See services/http.ts's
+   * portalHttpClient.
+   */
   PORTAL_URL: import.meta.env.VITE_PORTAL_URL || '',
   CONFIG_URL: import.meta.env.VITE_CONFIG_URL || '',
-  // The OpenMRS REST API itself (`{host}/openmrs/ws/rest/v1`) — NOT
-  // PORTAL_URL, which is EMR-Middleware's own `/portal-api` -> `/api`
-  // (see vite.config.ts's dev proxy). services/profile.service.ts's
-  // provider/person/attribute calls are direct OpenMRS calls, confirmed
-  // against the real erevamp.intelehealth.org host (see .env).
+  /*
+   * The OpenMRS REST API itself (`{host}/openmrs/ws/rest/v1`) — NOT
+   * PORTAL_URL above, which is the portal service's own API.
+   * services/profile.service.ts's provider/person/attribute calls are
+   * direct OpenMRS calls, confirmed against the real
+   * erevamp.intelehealth.org host (see .env).
+   */
   OPENMRS_URL: import.meta.env.VITE_OPENMRS_URL || '',
   RECAPTCHA_SITE_KEY: resolveRecaptchaSiteKey(),
   // Sub-path this app is served under when deployed behind a reverse proxy

@@ -36,6 +36,21 @@ vi.mock('../../../hooks/queries/useProviderProfile', () => ({
   useProviderProfile: () => providerProfile,
 }));
 
+/*
+ * The visit lists need a QueryClient and have their own suites; this file
+ * only checks that the sections render inside the shell.
+ */
+vi.mock('../../../hooks/queries/useDashboardVisits', async () => {
+  const { buildDashboardVisits, buildVisitListState } =
+    await import('../../fixtures/visit-list');
+  return {
+    useDashboardVisits: () =>
+      buildDashboardVisits({
+        priority: buildVisitListState({ totalCount: 3 }),
+      }),
+  };
+});
+
 vi.mock('../../../store/hooks', () => ({
   useAppSelector: vi.fn(),
   useAppDispatch: vi.fn(),

@@ -22,9 +22,22 @@ import { getValidAccessToken, refreshAccessToken } from './session.service';
  * session-expired modal take over; nothing is cleared or redirected here.
  */
 
-/** Authenticated client — auth-gateway/portal calls that need a bearer token. */
+/** Authenticated client — auth-gateway calls that need a bearer token. */
 export const httpClient: AxiosInstance = createApiClient({
   baseURL: env.AUTH_GATEWAY_URL,
+  getAuthToken: () => getValidAccessToken(),
+  onUnauthorized: failedToken => refreshAccessToken(failedToken),
+});
+
+/**
+ * Authenticated client for the portal service (env.PORTAL_URL) — the
+ * dashboard's visit lists (services/visit.service.ts). The portal verifies
+ * the same auth-gateway access token, so it gets httpClient's exact token
+ * plumbing: a 401 is answered by the one shared silent refresh, and only a
+ * rejected refresh token ends the session.
+ */
+export const portalHttpClient: AxiosInstance = createApiClient({
+  baseURL: env.PORTAL_URL,
   getAuthToken: () => getValidAccessToken(),
   onUnauthorized: failedToken => refreshAccessToken(failedToken),
 });

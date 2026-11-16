@@ -114,7 +114,9 @@ describe('CaseSectionComponent', () => {
 
   it('calls onToggle on Enter or Space, but not on other keys', () => {
     const { onToggle } = renderSection();
-    const header = screen.getByText('Priority cases (2)').closest('[role="button"]')!;
+    const header = screen
+      .getByText('Priority cases (2)')
+      .closest('[role="button"]')!;
 
     fireEvent.keyDown(header, { key: 'a' });
     expect(onToggle).not.toHaveBeenCalled();
@@ -135,5 +137,95 @@ describe('CaseSectionComponent', () => {
     expect(
       screen.getByLabelText('In-progress high priority cases')
     ).toBeInTheDocument();
+  });
+
+  it('shows a loading message instead of the table while the first page loads', () => {
+    renderSection({ rows: [], count: 0, isLoading: true });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Loading cases…');
+    expect(
+      screen.queryByText('No any priority cases.')
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the error with a Retry button when the section failed to load', () => {
+    const onRetry = vi.fn();
+    renderSection({
+      rows: [],
+      count: 0,
+      errorMessage: 'Unable to reach the server.',
+      onRetry,
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Unable to reach the server.'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps showing loaded rows when a background refresh fails', () => {
+    renderSection({ errorMessage: 'Unable to reach the server.' });
+
+    expect(screen.getByText('ELCG-1042')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it("pages over the server's total and asks for more rows past the loaded ones", () => {
+    const onLoadMore = vi.fn();
+    renderSection({ count: 12, hasMore: true, onLoadMore });
+
+    expect(screen.getByText('1 – 5 of 12')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading more cases…');
+  });
+
+  it('does not ask for more rows while a search is filtering the loaded ones', () => {
+    const onLoadMore = vi.fn();
+    renderSection({ count: 12, hasMore: true, onLoadMore });
+
+    fireEvent.change(screen.getByPlaceholderText('Search priority cases'), {
+      target: { value: 'ELCG' },
+    });
+
+    expect(screen.getByText('1 – 2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+    expect(onLoadMore).not.toHaveBeenCalled();
+  });
+
+  it('offers Retry when loading the next rows failed', () => {
+    const onLoadMore = vi.fn();
+    const { rerender } = renderSection({
+      count: 12,
+      hasMore: true,
+      onLoadMore,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    rerender(
+      <CaseSectionComponent
+        icon={<span />}
+        title="Priority cases"
+        helpText="In-progress high priority cases"
+        count={12}
+        rows={ROWS}
+        variant="active"
+        emptyMessage="No any priority cases."
+        searchPlaceholder="Search priority cases"
+        isExpanded
+        onToggle={vi.fn()}
+        hasMore
+        loadMoreErrorMessage="Could not load more cases."
+        onLoadMore={onLoadMore}
+      />
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not load more cases.'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onLoadMore).toHaveBeenCalledTimes(2);
   });
 });

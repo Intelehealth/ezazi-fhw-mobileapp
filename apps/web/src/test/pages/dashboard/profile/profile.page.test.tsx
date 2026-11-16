@@ -126,6 +126,17 @@ describe('ProfilePage', () => {
     expect(dispatch).toHaveBeenCalledTimes(1);
   });
 
+  it('does not show the patient search on this page', () => {
+    mockAuthState(USER);
+    vi.mocked(useAppDispatch).mockReturnValue(vi.fn());
+
+    renderProfilePage();
+
+    expect(
+      screen.queryByPlaceholderText('Search by patient name or ID')
+    ).not.toBeInTheDocument();
+  });
+
   it('falls back to "unknown user" when there is no signed-in user', () => {
     mockAuthState(null);
     vi.mocked(useAppDispatch).mockReturnValue(vi.fn());

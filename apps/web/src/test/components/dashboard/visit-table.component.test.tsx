@@ -83,7 +83,9 @@ describe('VisitTableComponent', () => {
     // instead of role for that reason.
     const { container } = render(
       <VisitTableComponent
-        rows={[{ ...ROW, patient: { ...ROW.patient, avatarUrl: 'broken.jpg' } }]}
+        rows={[
+          { ...ROW, patient: { ...ROW.patient, avatarUrl: 'broken.jpg' } },
+        ]}
         variant="active"
         emptyMessage="empty"
       />
@@ -115,7 +117,9 @@ describe('VisitTableComponent', () => {
     );
 
     expect(screen.getByText('Out Of Time')).toBeInTheDocument();
-    expect(screen.getByTitle('Labour exceeded protocol window')).toBeInTheDocument();
+    expect(
+      screen.getByTitle('Labour exceeded protocol window')
+    ).toBeInTheDocument();
   });
 
   it('shows the reason tooltip from referTypeOtherReason when there is no out-of-time reason', () => {
@@ -133,7 +137,9 @@ describe('VisitTableComponent', () => {
       />
     );
 
-    expect(screen.getByTitle('Referred for specialist care')).toBeInTheDocument();
+    expect(
+      screen.getByTitle('Referred for specialist care')
+    ).toBeInTheDocument();
   });
 
   it('falls back to "-" for in-labour duration, cervix and descent plots when unset', () => {
@@ -153,5 +159,38 @@ describe('VisitTableComponent', () => {
     );
 
     expect(screen.getAllByText('-')).toHaveLength(3);
+  });
+
+  it('shows "-" for age when the patient has no known birthdate', () => {
+    render(
+      <VisitTableComponent
+        rows={[{ ...ROW, patient: { ...ROW.patient, age: null } }]}
+        variant="active"
+        emptyMessage="empty"
+      />
+    );
+
+    expect(screen.queryByText('nully')).not.toBeInTheDocument();
+    expect(screen.queryByText('27y')).not.toBeInTheDocument();
+    expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+  });
+
+  it('stripes rows like Angular (1st, 3rd… grey) and highlights unseen visits', () => {
+    const rows = ['a', 'b', 'c', 'd'].map((id, i) => ({
+      ...ROW,
+      uuid: id,
+      patient: { ...ROW.patient, identifier: `ID-${id}` },
+      isUnseen: i === 3,
+    }));
+    render(
+      <VisitTableComponent rows={rows} variant="active" emptyMessage="empty" />
+    );
+
+    const rowClass = (id: string) =>
+      screen.getByText(`ID-${id}`).closest('tr')?.className;
+    expect(rowClass('a')).toContain('bg-[#F7F7FA]');
+    expect(rowClass('b')).toContain('bg-white');
+    expect(rowClass('c')).toContain('bg-[#F7F7FA]');
+    expect(rowClass('d')).toContain('bg-[#E6FFF3]');
   });
 });

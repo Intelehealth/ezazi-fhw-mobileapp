@@ -43,6 +43,21 @@ vi.mock('../../hooks/queries/useProviderProfile', () => ({
   }),
 }));
 
+/* The dashboard's visit lists need a QueryClient; their own suites cover them. */
+vi.mock('../../hooks/queries/useDashboardVisits', async () => {
+  const { buildDashboardVisits, buildVisitListState } =
+    await import('../fixtures/visit-list');
+  const loading = buildVisitListState({ isLoading: true });
+  return {
+    useDashboardVisits: () =>
+      buildDashboardVisits({
+        priority: loading,
+        'in-progress': loading,
+        completed: loading,
+      }),
+  };
+});
+
 /* The change-password form's mutation needs a QueryClient; its own suite covers it. */
 vi.mock('../../hooks/mutations/useChangePassword', () => ({
   useChangePassword: () => ({ mutate: vi.fn(), isPending: false }),
@@ -128,7 +143,9 @@ describe('AppRoutes', () => {
     await renderAtPath('/dashboard/change-password');
 
     expect(await screen.findByText('Change password')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter old password')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter old password')
+    ).toBeInTheDocument();
   });
 
   it('renders the nurse profile screen at /dashboard/hw-profile', async () => {
@@ -158,6 +175,16 @@ describe('AppRoutes', () => {
 
     expect(await screen.findByText('Loading profile…')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/dashboard/profile');
+  });
+
+  it("renders a visit's WHO Labour Care Guide at /dashboard/elcg/:visitUuid", async () => {
+    mockIsAuthenticated(true, ['ORGANIZATIONAL: DOCTOR']);
+
+    await renderAtPath('/dashboard/elcg/visit-1');
+
+    expect(
+      await screen.findByRole('heading', { name: 'WHO LABOUR CARE GUIDE VIEW' })
+    ).toBeInTheDocument();
   });
 
   it('redirects an unauthenticated visitor away from a protected route to login', async () => {

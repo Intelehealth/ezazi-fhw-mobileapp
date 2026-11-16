@@ -134,4 +134,28 @@ describe('http', () => {
     expect(options.getAuthToken).toBeUndefined();
     expect(options.onUnauthorized).toBeUndefined();
   });
+
+  it('builds the portal client against PORTAL_URL with the same token provider and 401 handler as httpClient', async () => {
+    const { env } = await import('../../config/env');
+    await import('../../services/http');
+
+    const portalCall = createApiClient.mock.calls.find(
+      ([opts]) => (opts as { baseURL: string }).baseURL === env.PORTAL_URL
+    );
+    expect(portalCall).toBeDefined();
+
+    const options = portalCall![0] as {
+      getAuthToken: () => Promise<string | null>;
+      onUnauthorized: (failedToken?: string) => Promise<string | null>;
+    };
+
+    getValidAccessToken.mockResolvedValue('fresh-token');
+    await expect(options.getAuthToken()).resolves.toBe('fresh-token');
+
+    refreshAccessToken.mockResolvedValue('replacement-token');
+    await expect(options.onUnauthorized('stale-token')).resolves.toBe(
+      'replacement-token'
+    );
+    expect(refreshAccessToken).toHaveBeenCalledWith('stale-token');
+  });
 });
