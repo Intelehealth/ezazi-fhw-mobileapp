@@ -42,13 +42,21 @@ describe('useAuthStore', () => {
 
   // ── bootstrap ────────────────────────────────────────────────────────────
 
+  /** Only the keys a test names are present; every other key reads as absent. */
+  function stored(values: Record<string, string>): void {
+    (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
+      Promise.resolve(values[key] ?? null),
+    );
+  }
+
+  /** What Setup leaves behind. Logout does not touch these. */
+  const SET_UP = { locationUuid: 'loc-1', basicCredential: 'dXNlcjpwYXNz' };
+
   describe('bootstrap', () => {
     it('sets status to authenticated when a non-expired token and userUuid are stored', async () => {
       jest.useFakeTimers();
       const token = fakeJwt(Math.floor(Date.now() / 1000) + 3600);
-      (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
-        Promise.resolve(key === 'accessToken' ? token : key === 'userUuid' ? 'user-1' : null),
-      );
+      stored({ accessToken: token, userUuid: 'user-1', ...SET_UP });
 
       const bootstrapping = useAuthStore.getState().bootstrap();
       await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
@@ -62,9 +70,7 @@ describe('useAuthStore', () => {
     it('sets status to needsLogin when the stored token is expired', async () => {
       jest.useFakeTimers();
       const token = fakeJwt(Math.floor(Date.now() / 1000) - 3600);
-      (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
-        Promise.resolve(key === 'accessToken' ? token : key === 'userUuid' ? 'user-1' : null),
-      );
+      stored({ accessToken: token, userUuid: 'user-1', ...SET_UP });
 
       const bootstrapping = useAuthStore.getState().bootstrap();
       await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
@@ -74,17 +80,45 @@ describe('useAuthStore', () => {
       jest.useRealTimers();
     });
 
-    it('sets status to needsLogin when the token is missing but a prior session left userUuid/refreshToken', async () => {
+    it('sends a logged-out but still set-up device to Login', async () => {
+      // The bug this replaced: bootstrap asked the SESSION keys, which
+      // endSession had just deleted. So an in-session logout went to Login and
+      // a cold start after that same logout went to Setup — same device, same
+      // action, two destinations.
       jest.useFakeTimers();
-      (secureStorage.get as jest.Mock).mockImplementation((key: string) =>
-        Promise.resolve(key === 'userUuid' ? 'user-1' : null),
-      );
+      stored(SET_UP);
 
       const bootstrapping = useAuthStore.getState().bootstrap();
       await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
       await bootstrapping;
 
       expect(useAuthStore.getState().status).toBe('needsLogin');
+      jest.useRealTimers();
+    });
+
+    it('sends a device to Setup when the setup keys are absent, whatever the session left behind', async () => {
+      jest.useFakeTimers();
+      stored({ userUuid: 'user-1', refreshToken: 'refresh-1' });
+
+      const bootstrapping = useAuthStore.getState().bootstrap();
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
+      await bootstrapping;
+
+      expect(useAuthStore.getState().status).toBe('needsSetup');
+      jest.useRealTimers();
+    });
+
+    it('treats a half-written setup as not set up', async () => {
+      // Both land in the same pass, so one without the other means that pass
+      // was interrupted. Login would then have no credential to sync with.
+      jest.useFakeTimers();
+      stored({ locationUuid: 'loc-1' });
+
+      const bootstrapping = useAuthStore.getState().bootstrap();
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_MS);
+      await bootstrapping;
+
+      expect(useAuthStore.getState().status).toBe('needsSetup');
       jest.useRealTimers();
     });
 
@@ -197,22 +231,32 @@ describe('useAuthStore', () => {
       });
     });
 
-    it('deletes the database, so clinical data does not outlive the session', async () => {
-      // Without this the next user of the device inherits the previous one's rows.
+    it('leaves the database alone, so the next login does not re-download the archive', async () => {
+      // Logout follows the legacy and destroys nothing. The pull cursor lives
+      // in this database, so deleting it here would make every logout cost a
+      // full re-import of the location's data. Reset app is the destructive one.
       (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: true, data: undefined });
 
       await useAuthStore.getState().logout();
 
-      expect(teardownDb).toHaveBeenCalledTimes(1);
+      expect(teardownDb).not.toHaveBeenCalled();
     });
 
-    it('deletes the database even when the server logout call fails', async () => {
+    it('leaves the database alone even when the server logout call fails', async () => {
       // Offline logout is the common case for a field worker.
       (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: false, error: new Error('offline') });
 
       await useAuthStore.getState().logout();
 
-      expect(teardownDb).toHaveBeenCalledTimes(1);
+      expect(teardownDb).not.toHaveBeenCalled();
+    });
+
+    it('keeps the setup keys, so the device is still set up afterwards', async () => {
+      (sessionApi.logout as jest.Mock).mockResolvedValue({ ok: true, data: undefined });
+
+      await useAuthStore.getState().logout();
+
+      expect(secureStorage.clearAll).not.toHaveBeenCalled();
     });
 
     it('clears local state when the server logout call succeeds', async () => {
@@ -229,15 +273,15 @@ describe('useAuthStore', () => {
   // ── session end ──────────────────────────────────────────────────────────
 
   describe('session end', () => {
-    it('tears down exactly as logout does when a token expires', async () => {
-      // The whole point: a refresh failure used to clear nothing and leave the
-      // database, so the next user of the device inherited the last one's rows.
+    it('ends the session exactly as logout does when a token expires', async () => {
+      // The whole point: a refresh failure used to clear nothing at all, so the
+      // secrets and the background work both outlived the session on that path.
       useAuthStore.setState({ status: 'authenticated', userUuid: 'user-1', role: 'fhw' });
 
       await requestSessionEnd('tokenExpired');
 
       expect(secureStorage.clearSession).toHaveBeenCalledTimes(1);
-      expect(teardownDb).toHaveBeenCalledTimes(1);
+      expect(teardownDb).not.toHaveBeenCalled();
       expect(useAuthStore.getState()).toMatchObject({
         status: 'needsLogin',
         userUuid: null,
@@ -262,7 +306,9 @@ describe('useAuthStore', () => {
         requestSessionEnd('tokenExpired'),
       ]);
 
-      expect(teardownDb).toHaveBeenCalledTimes(1);
+      // clearSession, not teardownDb: the teardown no longer runs at all, so
+      // the keystore wipe is the only thing left that ending a session does once.
+      expect(secureStorage.clearSession).toHaveBeenCalledTimes(1);
     });
   });
 

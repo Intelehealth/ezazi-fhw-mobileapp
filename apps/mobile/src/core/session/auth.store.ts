@@ -5,7 +5,6 @@ import { sessionApi, type LoginResponse } from '@/core/session/session.api';
 import { logApiError } from '@/core/api/errors/logApiError';
 import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
-import { teardownDb } from '@/core/db/teardown';
 import { setSessionEndHandler, type SessionEndReason } from '@/core/session/sessionEnd';
 import { isJwtExpired } from '@/core/utils/jwt';
 import { logger } from '@/core/utils/logger';
@@ -45,10 +44,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Errors inside syncConfig are swallowed by the store; we never let them surface here.
     void useFeatureConfigStore.getState().syncConfig();
     try {
-      const [accessToken, refreshToken, userUuid] = await Promise.all([
+      const [accessToken, userUuid, locationUuid, basicCredential] = await Promise.all([
         secureStorage.get('accessToken'),
-        secureStorage.get('refreshToken'),
         secureStorage.get('userUuid'),
+        secureStorage.get('locationUuid'),
+        secureStorage.get('basicCredential'),
         new Promise<void>((resolve) => setTimeout(resolve, SPLASH_MIN_MS)),
       ]);
 
@@ -58,12 +58,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      // Leftover userUuid/refreshToken from a prior login (even with a
-      // missing/expired access token) means this device has been through
-      // Setup before — send it to Login, not Setup. Nothing is cleared here:
-      // only logout() and a failed background refresh ever wipe storage.
-      const hasPriorSession = !!refreshToken || !!userUuid;
-      set({ status: hasPriorSession ? 'needsLogin' : 'needsSetup' });
+      // The SETUP keys answer "has this device been set up", because they are
+      // the ones logout leaves alone. Asking the session keys — as this did —
+      // meant asking about values endSession had just deleted, so an in-session
+      // logout went to Login while a cold start after it went to Setup.
+      const isSetUp = !!locationUuid && !!basicCredential;
+      set({ status: isSetUp ? 'needsLogin' : 'needsSetup' });
     } catch {
       // SecureStore can throw on certain Android keystores (e.g. first-boot,
       // locked device, or manufacturer keystore errors). Nothing was read, so
@@ -119,20 +119,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 /**
  * The ONE teardown, whatever ended the session. A token expiring used to run
- * none of it: `client.ts` returned before its own catch, so the database, the
- * secrets and the background work all outlived the session on that path.
+ * none of it: `client.ts` returned before its own catch, so the secrets and
+ * the background work both outlived the session on that path.
+ *
+ * It does NOT delete the database. Logout follows the legacy
+ * (`HomeActivity.java:1635-1646`), which clears nothing and walks to Login —
+ * only Reset app destroys the local store. The practical reason is the first
+ * sync: the archive is the whole location's data, and the pull cursor lives in
+ * that database, so deleting it here would re-download everything on the next
+ * login. See ARCHITECTURE_RULES §6 "DB lifecycle".
  */
 async function endSession(): Promise<void> {
   await secureStorage.clearSession();
-  // Clinical data must not outlive the session: closes the connection,
-  // deletes the .db file and invalidates both memos. Never throws.
-  await teardownDb();
-  // Forget DB readiness, so the next login re-runs schema init.
+  // Not teardown — only readiness. The schema survives, so the next login's
+  // Home mount re-runs ensureSchema() (idempotent, two no-op migrations) and,
+  // more to the point, re-checks whether the first sync still has to happen.
   useDbBootstrapStore.getState().reset();
   // Moving OFF 'authenticated' is what stops the monitor service and the
   // backbone alarm: App.tsx gates useMonitorService on this very value, and
-  // its cleanup calls stopAll(). ARPAN'S CALL: both reasons land on Login,
-  // on the grounds that the device has already been through Setup once.
+  // its cleanup calls stopAll(). Both reasons land on Login, because the
+  // device is still set up — the setup keys were not touched.
   useAuthStore.setState({ status: 'needsLogin', userUuid: null, role: null });
 }
 
