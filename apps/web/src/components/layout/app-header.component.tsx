@@ -13,10 +13,10 @@ interface AppHeaderComponentProps {
 
 /**
  * Ports main-container.component.html's sticky top bar — "Search by
- * patient name or ID" box, notification bell, and the "Hello, {name} 👋"
- * greeting. The search box is live (see patient-search.component.tsx); the
- * bell is visual only: the Angular version's notification-menu wiring
- * depends on a notification service that doesn't exist in this app yet.
+ * patient name or ID" box and the "Hello, {name} 👋" greeting. The search
+ * box is live (see patient-search.component.tsx). The Angular notification
+ * bell is left out until this app has the notification service its menu
+ * depends on.
  */
 export function AppHeaderComponent({
   userName,
@@ -36,13 +36,6 @@ export function AppHeaderComponent({
       {!isNurse && showPatientSearch && <PatientSearchComponent />}
 
       <div className="ml-auto flex shrink-0 items-center gap-3">
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl bg-[#D7D4EA] text-[#2E1E91]"
-        >
-          🔔
-        </button>
         {/* Ports main-container.component.html's greeting-links-to-profile
             behavior — the avatar + "Hello, {name}" both route to My Profile,
             same destination as the sidebar's own profile row. */}

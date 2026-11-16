@@ -104,4 +104,20 @@ describe('ContactTabsComponent', () => {
     expect(screen.getByPlaceholderText('Enter Email ID')).toBeInTheDocument();
     expect(screen.getByText('Please enter valid email')).toBeInTheDocument();
   });
+
+  it('shows the mobile number as plain digits, without the country mask dash', () => {
+    render(
+      <ContactTabsComponent
+        active="phone"
+        onActiveChange={vi.fn()}
+        phoneValue="+919876543210"
+        onPhoneChange={vi.fn()}
+        emailRegistration={registration()}
+      />
+    );
+
+    expect(screen.getByPlaceholderText('Enter Mobile Number')).toHaveValue(
+      '9876543210'
+    );
+  });
 });

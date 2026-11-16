@@ -265,4 +265,141 @@ describe('mapVisitToRow', () => {
     expect(row.provider).toBe('-');
     expect(row.stage).toBe(1);
   });
+
+  it('counts an unreadable Visit Risk score as no alerts', () => {
+    const row = mapVisitToRow(
+      visit({
+        attributes: [
+          {
+            value_reference: 'high',
+            uuid: 'a-risk',
+            voided: false,
+            attribute_type: { name: 'Visit Risk', uuid: 't-risk' },
+          },
+        ],
+      }),
+      CONTEXT
+    );
+
+    expect(row.alertCount).toBe(0);
+  });
+
+  it('skips voided encounters and ones that arrive without their obs', () => {
+    const row = mapVisitToRow(
+      visit({
+        encounters: [
+          encounter('Stage1_Hour1_1', [obs('PULSE', 130, { comments: 'R' })], {
+            voided: true,
+          }),
+          encounter('Stage1_Hour1_2', [], {
+            obs: null as unknown as PortalObs[],
+          }),
+        ],
+      }),
+      CONTEXT
+    );
+
+    expect(row.alarmingReadings).toEqual([]);
+  });
+
+  it('shows a red-flagged reading with no value as "-", and clears plots recorded empty', () => {
+    const row = mapVisitToRow(
+      visit({
+        encounters: [
+          encounter('Stage1_Hour1_1', [
+            obs('Cervix 0 cm, 1 cm, 2 cm, 3 cm, 4 cm, 5 cm', 6),
+            obs('Descent 0-5', '3'),
+          ]),
+          encounter('Stage1_Hour2_1', [
+            obs('Baseline FHR', null, { comments: 'R' }),
+            obs('Cervix 0 cm, 1 cm, 2 cm, 3 cm, 4 cm, 5 cm', null),
+            obs('Descent 0-5', null),
+          ]),
+        ],
+      }),
+      CONTEXT
+    );
+
+    expect(row.alarmingReadings).toEqual([{ key: 'Baseline FHR', value: '-' }]);
+    expect(row.cervixPlotX).toBeNull();
+    expect(row.descentPlotO).toBeNull();
+  });
+
+  it('reads an "OTHER" birth outcome in capitals, and any other outcome without a reason', () => {
+    const completedWith = (outcome: string) =>
+      mapVisitToRow(
+        visit({
+          encounters: [
+            encounter('Visit Complete', [
+              obs('Birth Outcome', outcome),
+              obs('Birth Outcome Other', 'Twins'),
+            ]),
+          ],
+        }),
+        CONTEXT
+      );
+
+    expect(completedWith('OTHER').birthOutcomeOther).toBe('Twins');
+    expect(completedWith('Live Birth').birthOutcomeOther).toBeUndefined();
+  });
+
+  it('leaves out details a completion recorded without a value', () => {
+    const birth = mapVisitToRow(
+      visit({
+        encounters: [
+          encounter('Visit Complete', [obs('Birth Outcome', null)], {
+            encounter_datetime: 'not a date',
+          }),
+        ],
+      }),
+      CONTEXT
+    );
+    expect(birth.birthOutcome).toBeUndefined();
+    expect(birth.dateTimeOfBirth).toBeUndefined();
+
+    const referral = mapVisitToRow(
+      visit({
+        encounters: [encounter('Visit Complete', [obs('Refer Type', null)])],
+      }),
+      CONTEXT
+    );
+    expect(referral.completeReason).toBe('Ended');
+    expect(referral.referTypeOtherReason).toBeUndefined();
+  });
+
+  it('reads a referral other than "Other" with no reason', () => {
+    const row = mapVisitToRow(
+      visit({
+        encounters: [
+          encounter('Visit Complete', [
+            obs('Refer Type', 'Referred to higher centre'),
+          ]),
+        ],
+      }),
+      CONTEXT
+    );
+
+    expect(row.completeReason).toBe('Referred to higher centre');
+    expect(row.referTypeOtherReason).toBeUndefined();
+  });
+
+  it('copes with a visit sent without encounters, attributes or a start time', () => {
+    const row = mapVisitToRow(
+      visit({
+        encounters: undefined as unknown as PortalEncounter[],
+        attributes: undefined as unknown as PortalVisit['attributes'],
+        date_started: null as unknown as string,
+      }),
+      CONTEXT
+    );
+
+    expect(row).toMatchObject({
+      stage: 1,
+      alertCount: 0,
+      provider: '-',
+      isUnseen: true,
+      completeReason: 'Ended',
+    });
+    expect(row.inLabourDuration).toBeUndefined();
+  });
 });

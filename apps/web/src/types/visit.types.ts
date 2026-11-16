@@ -108,3 +108,84 @@ export interface VisitCountResponse {
   data: VisitCountRow[];
   message: string;
 }
+
+/*
+ * The visit as the OpenMRS REST API returns it directly — camelCase, unlike
+ * the portal's snake_case tree above — for the WHO Labour Care Guide screen
+ * (partogram.component.ts loads it with VisitService.fetchVisitDetails).
+ */
+
+export interface OpenMrsConceptRef {
+  uuid: string;
+  display: string;
+}
+
+/** A coded value arrives as its answer concept; text and numbers as themselves. */
+export type OpenMrsValue =
+  string | number | boolean | { uuid?: string; display: string } | null;
+
+export interface OpenMrsVisitObs {
+  uuid: string;
+  display: string;
+  value: OpenMrsValue;
+  /** LCG alert flag — 'R' (red) or 'Y' (yellow) on an out-of-range reading. */
+  comment: string | null;
+  obsDatetime: string;
+  concept: OpenMrsConceptRef;
+  creator: {
+    uuid: string;
+    person: { uuid: string; display: string } | null;
+  } | null;
+}
+
+export interface OpenMrsEncounterProvider {
+  display: string;
+  provider: {
+    uuid: string;
+    person: { uuid: string; display: string } | null;
+  } | null;
+}
+
+export interface OpenMrsVisitEncounter {
+  uuid: string;
+  /** e.g. "Stage1_Hour2_1 02/11/2026" — names the stage, hour and slot. */
+  display: string;
+  encounterDatetime: string;
+  encounterType: { display: string };
+  obs: OpenMrsVisitObs[];
+  encounterProviders: OpenMrsEncounterProvider[];
+}
+
+export interface OpenMrsAttribute {
+  uuid: string;
+  value: OpenMrsValue;
+  attributeType: { uuid?: string; display: string };
+}
+
+/** GET {OPENMRS_URL}/visit/{uuid}?v=custom:(…) */
+export interface OpenMrsVisitDetail {
+  uuid: string;
+  display: string;
+  startDatetime: string;
+  stopDatetime: string | null;
+  location: { display: string } | null;
+  encounters: OpenMrsVisitEncounter[];
+  patient: {
+    uuid: string;
+    identifiers: { identifier: string }[];
+    attributes: OpenMrsAttribute[];
+    person: {
+      display: string;
+      gender: string;
+      age: number | null;
+      birthdate: string | null;
+    };
+  };
+  attributes: OpenMrsAttribute[];
+}
+
+/** POST {OPENMRS_URL}/visit/{uuid}/attribute[/{attributeUuid}] */
+export interface VisitAttributePayload {
+  attributeType: string;
+  value: string;
+}

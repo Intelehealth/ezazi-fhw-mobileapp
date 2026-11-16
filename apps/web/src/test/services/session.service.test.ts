@@ -445,6 +445,18 @@ describe('cross-tab lock without the Web Locks API (plain-http origins)', () => 
     expect(post).toHaveBeenCalledTimes(1);
   });
 
+  it('claims again when its claim is cleared before the read-back', async () => {
+    fakeClockAndTimers();
+
+    const refreshing = refreshAccessToken('access-1');
+    /* E.g. another tab finishing its own refresh releases the key. */
+    localStorage.removeItem(LOCK_KEY);
+    await vi.advanceTimersByTimeAsync(500);
+
+    await expect(refreshing).resolves.toBe('access-2');
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
   it('leaves a claim that another tab took over in the meantime alone', async () => {
     post.mockImplementation(async () => {
       localStorage.setItem(LOCK_KEY, `other-tab:${Date.now()}`);

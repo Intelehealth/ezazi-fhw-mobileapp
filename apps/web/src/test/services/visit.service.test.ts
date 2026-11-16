@@ -1,10 +1,11 @@
 import { AxiosError, AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { visitService } from '../../services/visit.service';
-import { portalHttpClient } from '../../services/http';
+import { openMrsHttpClient, portalHttpClient } from '../../services/http';
 
 vi.mock('../../services/http', () => ({
   portalHttpClient: { get: vi.fn() },
+  openMrsHttpClient: { get: vi.fn(), post: vi.fn() },
 }));
 
 /*
@@ -30,6 +31,8 @@ const PAGE = { count: 0, totalCount: 0, data: [], success: true as const };
 
 beforeEach(() => {
   vi.mocked(portalHttpClient.get).mockReset();
+  vi.mocked(openMrsHttpClient.get).mockReset();
+  vi.mocked(openMrsHttpClient.post).mockReset();
   env.PORTAL_URL = 'https://portal.test';
 });
 
@@ -164,11 +167,118 @@ describe('visitService.getVisitCounts', () => {
     );
   });
 
+  it('rejects a 200 whose body is not the counts envelope (e.g. an HTML page)', async () => {
+    vi.mocked(portalHttpClient.get).mockResolvedValue({
+      data: '<!doctype html><html></html>',
+    });
+
+    const result = await visitService.getVisitCounts();
+
+    expect(!result.ok && result.error.code).toBe('UNEXPECTED_RESPONSE');
+  });
+
   it('maps a failed request into a failure result instead of throwing', async () => {
     vi.mocked(portalHttpClient.get).mockRejectedValue(new Error('boom'));
 
     const result = await visitService.getVisitCounts();
 
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('visitService.getVisitDetails', () => {
+  it("GETs the visit from OpenMRS with VisitService.fetchVisitDetails's representation", async () => {
+    const visit = { uuid: 'visit-1', encounters: [] };
+    vi.mocked(openMrsHttpClient.get).mockResolvedValue({ data: visit });
+
+    const result = await visitService.getVisitDetails('visit-1');
+
+    expect(openMrsHttpClient.get).toHaveBeenCalledWith('/visit/visit-1', {
+      params: {
+        v: expect.stringMatching(
+          /^custom:\(location:\(display\),uuid,display,startDatetime,stopDatetime,encounters:\(.*obs:\(display,uuid,value,comment,obsDatetime,/
+        ),
+      },
+    });
+    expect(result).toEqual({ ok: true, data: visit });
+  });
+
+  it('works without a portal address — the visit comes from OpenMRS', async () => {
+    env.PORTAL_URL = '';
+    vi.mocked(openMrsHttpClient.get).mockResolvedValue({
+      data: { uuid: 'visit-1', encounters: [] },
+    });
+
+    const result = await visitService.getVisitDetails('visit-1');
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects a response that is not a visit', async () => {
+    vi.mocked(openMrsHttpClient.get).mockResolvedValue({
+      data: '<!doctype html>',
+    });
+
+    const result = await visitService.getVisitDetails('visit-1');
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('UNEXPECTED_RESPONSE');
+  });
+
+  it('maps a failed request into a failure result instead of throwing', async () => {
+    vi.mocked(openMrsHttpClient.get).mockRejectedValue(
+      httpError(404, {
+        error: { message: "Object with given uuid doesn't exist" },
+      })
+    );
+
+    const result = await visitService.getVisitDetails('missing');
+
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('visitService visit attributes', () => {
+  const payload = { attributeType: 'type-1', value: 'abc' };
+
+  it('POSTs a new attribute to the visit', async () => {
+    vi.mocked(openMrsHttpClient.post).mockResolvedValue({
+      data: { uuid: 'attr-1' },
+    });
+
+    const result = await visitService.addVisitAttribute('visit-1', payload);
+
+    expect(openMrsHttpClient.post).toHaveBeenCalledWith(
+      '/visit/visit-1/attribute',
+      payload
+    );
+    expect(result).toEqual({ ok: true, data: { uuid: 'attr-1' } });
+  });
+
+  it('POSTs an update to an existing attribute', async () => {
+    vi.mocked(openMrsHttpClient.post).mockResolvedValue({
+      data: { uuid: 'attr-1' },
+    });
+
+    await visitService.updateVisitAttribute('visit-1', 'attr-1', payload);
+
+    expect(openMrsHttpClient.post).toHaveBeenCalledWith(
+      '/visit/visit-1/attribute/attr-1',
+      payload
+    );
+  });
+
+  it('maps a failed write into a failure result instead of throwing', async () => {
+    vi.mocked(openMrsHttpClient.post).mockRejectedValue(httpError(500, {}));
+
+    const added = await visitService.addVisitAttribute('visit-1', payload);
+    const updated = await visitService.updateVisitAttribute(
+      'visit-1',
+      'attr-1',
+      payload
+    );
+
+    expect(added.ok).toBe(false);
+    expect(updated.ok).toBe(false);
   });
 });
