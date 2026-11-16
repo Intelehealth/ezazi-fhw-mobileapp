@@ -6,7 +6,7 @@ import { requestSessionEnd } from '@/core/session/sessionEnd';
 
 jest.mock('@/core/config/env', () => ({ env: { AUTH_GATEWAY_URL: 'https://auth.example.test' } }));
 jest.mock('@/core/services/storage/secure-storage', () => ({
-  secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
+  secureStorage: { get: jest.fn(), set: jest.fn(), remove: jest.fn(), clearSession: jest.fn(), clearAll: jest.fn() },
 }));
 jest.mock('@/core/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn() } }));
 jest.mock('@/core/session/sessionEnd', () => ({ requestSessionEnd: jest.fn() }));
@@ -27,7 +27,7 @@ describe('apiClient (auth-gateway client)', () => {
   beforeEach(() => {
     (secureStorage.get as jest.Mock).mockReset();
     (secureStorage.set as jest.Mock).mockReset();
-    (secureStorage.clear as jest.Mock).mockReset();
+    (secureStorage.clearSession as jest.Mock).mockReset();
     (logger.info as jest.Mock).mockReset();
     (logger.warn as jest.Mock).mockReset();
     postSpy = jest.spyOn(axios, 'post').mockReset();
@@ -98,7 +98,7 @@ describe('apiClient (auth-gateway client)', () => {
       // logger.info, not .warn — must never trigger React Native's LogBox on screen.
       expect(logger.info).toHaveBeenCalled();
       expect(logger.warn).not.toHaveBeenCalled();
-      expect(secureStorage.clear).toHaveBeenCalledTimes(1);
+      expect(secureStorage.clearSession).toHaveBeenCalledTimes(1);
       expect(requestSessionEnd).toHaveBeenCalledWith('tokenExpired');
       expect(result).toBeNull();
     });

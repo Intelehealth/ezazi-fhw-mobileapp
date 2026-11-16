@@ -123,7 +123,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
  * secrets and the background work all outlived the session on that path.
  */
 async function endSession(): Promise<void> {
-  await secureStorage.clear();
+  await secureStorage.clearSession();
   // Clinical data must not outlive the session: closes the connection,
   // deletes the .db file and invalidates both memos. Never throws.
   await teardownDb();

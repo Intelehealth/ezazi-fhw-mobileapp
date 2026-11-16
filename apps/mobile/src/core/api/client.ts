@@ -41,7 +41,7 @@ async function refreshAccessToken(): Promise<string | null> {
       logger.info('Token refresh failed', err);
       // Kept even though the handler clears too: the transport must not need
       // a store to be loaded before the secrets come off the device.
-      await secureStorage.clear();
+      await secureStorage.clearSession();
       await requestSessionEnd('tokenExpired');
       return null;
     } finally {

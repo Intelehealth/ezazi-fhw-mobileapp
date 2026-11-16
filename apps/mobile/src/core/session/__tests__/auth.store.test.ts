@@ -6,7 +6,7 @@ import { logApiError } from '@/core/api/errors/logApiError';
 const mockSyncConfig = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('@/core/services/storage/secure-storage', () => ({
-  secureStorage: { get: jest.fn(), set: jest.fn(), clear: jest.fn() },
+  secureStorage: { get: jest.fn(), set: jest.fn(), remove: jest.fn(), clearSession: jest.fn(), clearAll: jest.fn() },
 }));
 jest.mock('@/core/session/session.api', () => ({
   sessionApi: { login: jest.fn(), logout: jest.fn() },
@@ -189,7 +189,7 @@ describe('useAuthStore', () => {
 
       await useAuthStore.getState().logout();
 
-      expect(secureStorage.clear).toHaveBeenCalledTimes(1);
+      expect(secureStorage.clearSession).toHaveBeenCalledTimes(1);
       expect(useAuthStore.getState()).toMatchObject({
         status: 'needsLogin',
         userUuid: null,
@@ -221,7 +221,7 @@ describe('useAuthStore', () => {
 
       await useAuthStore.getState().logout();
 
-      expect(secureStorage.clear).toHaveBeenCalledTimes(1);
+      expect(secureStorage.clearSession).toHaveBeenCalledTimes(1);
       expect(useAuthStore.getState().status).toBe('needsLogin');
     });
   });
@@ -236,7 +236,7 @@ describe('useAuthStore', () => {
 
       await requestSessionEnd('tokenExpired');
 
-      expect(secureStorage.clear).toHaveBeenCalledTimes(1);
+      expect(secureStorage.clearSession).toHaveBeenCalledTimes(1);
       expect(teardownDb).toHaveBeenCalledTimes(1);
       expect(useAuthStore.getState()).toMatchObject({
         status: 'needsLogin',
