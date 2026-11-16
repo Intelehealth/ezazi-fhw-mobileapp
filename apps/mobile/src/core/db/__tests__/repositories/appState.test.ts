@@ -1,5 +1,10 @@
 import { APP_STATE_ID } from '../../init';
-import { getPullCursor, setPullCursor } from '../../repositories/appState';
+import {
+  getPullCursor,
+  hasNeverPulled,
+  PULL_EPOCH,
+  setPullCursor,
+} from '../../repositories/appState';
 import { appState } from '../../schema';
 import { transact, type DbHandle } from '../../tx';
 import { createTestDb, type TestDb } from '../helpers/testDb';
@@ -45,5 +50,45 @@ describe('appState repository', () => {
     ).toThrow('apply failed');
 
     expect(getPullCursor(db)).toBe(EPOCH);
+  });
+
+  it('exports the sentinel the column defaults to, character for character', () => {
+    // Including the trailing space: it goes straight into the pull URL.
+    expect(PULL_EPOCH).toBe(EPOCH);
+  });
+
+  describe('hasNeverPulled', () => {
+    it('is true on a fresh install', () => {
+      expect(hasNeverPulled(db)).toBe(true);
+    });
+
+    it('is false once a pull has moved the cursor', () => {
+      setPullCursor(RETURNED, db);
+
+      expect(hasNeverPulled(db)).toBe(false);
+    });
+
+    it('stays true when an apply rolled back', () => {
+      // The archive must be redone, not skipped: the cursor and the rows move
+      // in one transaction, so a rollback means nothing landed.
+      expect(() =>
+        transact((tx) => {
+          setPullCursor(RETURNED, tx);
+          throw new Error('apply failed');
+        }, db),
+      ).toThrow('apply failed');
+
+      expect(hasNeverPulled(db)).toBe(true);
+    });
+
+    it('is true when the bookkeeping row is missing, not a second kind of empty', () => {
+      // Reachable only before ensureSchema. The honest answer is still
+      // "nothing has been pulled" — getPullCursor used to return '' here,
+      // which gave that state two spellings.
+      db.delete(appState).run();
+
+      expect(getPullCursor(db)).toBe(EPOCH);
+      expect(hasNeverPulled(db)).toBe(true);
+    });
   });
 });
