@@ -1,6 +1,7 @@
 import { teardownDb } from '@/core/db/teardown';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { sessionApi } from '@/core/session/session.api';
+import { hashPassword } from '@/core/session/credentials';
 import { logApiError } from '@/core/api/errors/logApiError';
 
 const mockSyncConfig = jest.fn().mockResolvedValue(undefined);
@@ -10,6 +11,11 @@ jest.mock('@/core/services/storage/secure-storage', () => ({
 }));
 jest.mock('@/core/session/session.api', () => ({
   sessionApi: { login: jest.fn(), logout: jest.fn() },
+  // Readable stand-in for base64, so assertions show which values went in.
+  basicAuthHeader: (username: string, password: string) => `Basic ${username}:${password}`,
+}));
+jest.mock('@/core/session/credentials', () => ({
+  hashPassword: jest.fn((password: string) => Promise.resolve(`hashed(${password})`)),
 }));
 jest.mock('@/core/api/errors/logApiError', () => ({
   logApiError: jest.fn(),
@@ -158,17 +164,23 @@ describe('useAuthStore', () => {
   // ── login ────────────────────────────────────────────────────────────────
 
   describe('login', () => {
-    it('persists tokens and marks the store authenticated on success', async () => {
+    const succeeds = () =>
       (sessionApi.login as jest.Mock).mockResolvedValue({
         ok: true,
         data: {
           accessToken: 'access-1',
           refreshToken: 'refresh-1',
           sessionId: 'session-1',
-          user: { uuid: 'user-1', username: 'nurse1', roles: ['fhw'] },
+          user: { uuid: 'user-1', username: 'nurse1', display: 'Nurse One', roles: ['fhw'] },
           provider: { uuid: 'provider-1' },
         },
       });
+
+    const written = (key: string): unknown =>
+      (secureStorage.set as jest.Mock).mock.calls.find(([k]) => k === key)?.[1];
+
+    it('persists tokens and marks the store authenticated on success', async () => {
+      succeeds();
 
       const result = await useAuthStore.getState().login('nurse1', 'fixture-pw1');
 
@@ -180,6 +192,70 @@ describe('useAuthStore', () => {
         status: 'authenticated',
         userUuid: 'provider-1',
       });
+    });
+
+    it('mints the basic credential, because this is the only moment the password exists', async () => {
+      succeeds();
+
+      await useAuthStore.getState().login('nurse1', 'fixture-pw1');
+
+      expect(secureStorage.set).toHaveBeenCalledWith(
+        'basicCredential',
+        'Basic nurse1:fixture-pw1',
+      );
+    });
+
+    it('leaves the whole credentials row for Home, hashed', async () => {
+      // The database does not exist yet, so the row cannot be written here.
+      succeeds();
+
+      await useAuthStore.getState().login('nurse1', 'fixture-pw1');
+
+      expect(JSON.parse(written('pendingCredentials') as string)).toEqual({
+        username: 'nurse1',
+        password: 'hashed(fixture-pw1)',
+        creator_uuid_cred: 'user-1',
+        chwname: 'Nurse One',
+        provider_uuid_cred: 'provider-1',
+      });
+    });
+
+    it('puts the hash in the row, never the password', async () => {
+      succeeds();
+
+      await useAuthStore.getState().login('nurse1', 'fixture-pw1');
+
+      const pending = JSON.parse(written('pendingCredentials') as string) as { password: string };
+      expect(hashPassword).toHaveBeenCalledWith('fixture-pw1');
+      expect(pending.password).not.toBe('fixture-pw1');
+    });
+
+    it('stores no location when Login supplies none, so logout keeps the stored one', async () => {
+      succeeds();
+
+      await useAuthStore.getState().login('nurse1', 'fixture-pw1');
+
+      expect(written('locationUuid')).toBeUndefined();
+      expect(written('locationName')).toBeUndefined();
+    });
+
+    it('stores the location uuid and its name when Setup supplies one', async () => {
+      succeeds();
+
+      await useAuthStore
+        .getState()
+        .login('nurse1', 'fixture-pw1', { uuid: 'loc-1', display: 'Ward A' });
+
+      expect(secureStorage.set).toHaveBeenCalledWith('locationUuid', 'loc-1');
+      expect(secureStorage.set).toHaveBeenCalledWith('locationName', 'Ward A');
+    });
+
+    it('writes nothing to storage when the login fails', async () => {
+      (sessionApi.login as jest.Mock).mockResolvedValue({ ok: false, error: { kind: 'unauthorized' } });
+
+      await useAuthStore.getState().login('nurse1', 'wrong', { uuid: 'loc-1', display: 'Ward A' });
+
+      expect(secureStorage.set).not.toHaveBeenCalled();
     });
 
     it('returns the failed result and logs it without changing auth state', async () => {

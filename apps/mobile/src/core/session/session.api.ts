@@ -20,6 +20,20 @@ import { toBase64 } from '@/core/utils/base64';
 
 const http = createRequestMethods(apiClient);
 
+/**
+ * `Basic base64(username:password)` — the same value as Android's
+ * `base64Utils.encoded()`.
+ *
+ * Exported because this is the only moment the password exists. The legacy
+ * mints it once at `SetupActivity.java:511-512`, keeps it, and every later
+ * sync call reuses it; login itself never needs the password again (JWT
+ * online, a salted hash offline). We store it for the same reason, so this
+ * has exactly one definition rather than the store recomputing it.
+ */
+export function basicAuthHeader(username: string, password: string): string {
+  return `Basic ${toBase64(`${username}:${password}`)}`;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -66,14 +80,12 @@ export const sessionApi = {
   check: () => http.get('/auth/check'),
 
   // EZ-932
-  // Authorization: Basic <base64(username:password)> — matches Android's base64Utils.encoded().
   // rememberme is hardcoded true: Android always passes true here too (no UI toggle exists).
   login: (body: LoginRequest) => {
-    const authHeader = `Basic ${toBase64(`${body.username}:${body.password}`)}`;
     return http.post<LoginResponse>(
       '/auth/login',
       { username: body.username, password: body.password, rememberme: true },
-      { headers: { Authorization: authHeader } },
+      { headers: { Authorization: basicAuthHeader(body.username, body.password) } },
     );
   },
 

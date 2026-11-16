@@ -19,5 +19,8 @@ export * as patientRepo from './patient';
 export * as providerRepo from './provider';
 export * as providerAttributeRepo from './providerAttribute';
 export * as rtcConnectionRepo from './rtcConnection';
+export * as userCredentialsRepo from './userCredentials';
 export * as visitRepo from './visit';
 export * as visitAttributeRepo from './visitAttribute';
+
+export type { UserCredentialsRow } from './userCredentials';

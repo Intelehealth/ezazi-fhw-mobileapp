@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { RootStackParamList } from '@/navigation/types';
 import { PasswordField } from '@/features/auth/components/PasswordField';
 import { LocationPickerModal, type FieldAnchor } from '@/features/auth/components/LocationPickerModal';
-import { useLocationStore } from '@/features/auth/stores/location.store';
+import { useLocationStore, type LoginLocation } from '@/features/auth/stores/location.store';
 import {
   authFormStyles,
   LOGO_ASPECT,
@@ -68,6 +68,8 @@ export const SetupScreen: React.FC = () => {
   // LOCATION came up empty; kept separate so it survives that, but always
   // rendered through the single slot above the button (see banner ?? below).
   const [locationBanner, setLocationBanner]                 = useState<ErrorBanner | null>(null);
+  // The form field holds the display name; this holds the uuid that goes with it.
+  const [selectedLocation, setSelectedLocation]             = useState<LoginLocation | null>(null);
   const [isLocationPickerVisible, setLocationPickerVisible] = useState(false);
   const [locationAnchor, setLocationAnchor]                 = useState<FieldAnchor | null>(null);
   const [locationFieldY, setLocationFieldY]                 = useState<number | null>(null);
@@ -124,7 +126,7 @@ export const SetupScreen: React.FC = () => {
   // sessionApi, persisting tokens, and marking the store authenticated.
   // This screen only reacts to the result: a toast, or an error banner.
   const onValidSubmit = async (data: SetupFormValues) => {
-    const result = await login(data.username, data.password);
+    const result = await login(data.username, data.password, selectedLocation ?? undefined);
 
     if (result.ok) {
       // Every user sees this — the only user-facing feedback on success.
@@ -335,6 +337,10 @@ export const SetupScreen: React.FC = () => {
       isLoading={isLocationsLoading}
       anchor={locationAnchor}
       onSelect={(location) => {
+        // The whole object, not just the display name: the uuid is what every
+        // sync call is keyed on, and the field is editable={false}, so picking
+        // is the only way it can be filled.
+        setSelectedLocation(location);
         setValue('location', location.display, { shouldValidate: false });
         clearErrors('location');
         setLocationPickerVisible(false);

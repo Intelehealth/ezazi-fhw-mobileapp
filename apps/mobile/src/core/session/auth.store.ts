@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import type { ApiResult } from '@ezazi/api-client';
 import { secureStorage } from '@/core/services/storage/secure-storage';
-import { sessionApi, type LoginResponse } from '@/core/session/session.api';
+import { sessionApi, basicAuthHeader, type LoginResponse } from '@/core/session/session.api';
+import { hashPassword } from '@/core/session/credentials';
+import type { UserCredentialsRow } from '@/core/db/repositories';
 import { logApiError } from '@/core/api/errors/logApiError';
 import { useFeatureConfigStore } from '@/core/config/featureConfig.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
@@ -10,6 +12,19 @@ import { isJwtExpired } from '@/core/utils/jwt';
 import { logger } from '@/core/utils/logger';
 
 export type AuthStatus = 'unknown' | 'needsSetup' | 'needsLogin' | 'authenticated';
+
+/**
+ * The location Setup captured. Declared here rather than imported, because
+ * `features/auth`'s `LoginLocation` is a feature type and core may not import
+ * a feature — it satisfies this structurally.
+ *
+ * The NAME is stored beside the uuid on Arpan's call: the legacy keeps both
+ * (`SetupActivity.java:555-557`), and a uuid alone cannot be shown to anyone.
+ */
+export interface SetupLocation {
+  uuid: string;
+  display: string;
+}
 
 export const SPLASH_MIN_MS = 3_000;
 
@@ -20,8 +35,15 @@ interface AuthState {
   bootstrap: () => Promise<void>;
   /** Presentation (Setup/Login screens) calls this instead of sessionApi
    *  directly — see the boundaries/dependencies eslint rule + CLAUDE.md:
-   *  screens go through a store, never the data layer, for auth/session calls. */
-  login: (username: string, password: string) => Promise<ApiResult<LoginResponse>>;
+   *  screens go through a store, never the data layer, for auth/session calls.
+   *
+   *  `location` comes from Setup only. Login has no location field and needs
+   *  none: logout leaves the device set up, so the stored one still stands. */
+  login: (
+    username: string,
+    password: string,
+    location?: SetupLocation,
+  ) => Promise<ApiResult<LoginResponse>>;
   setAuthenticated: (userUuid: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -76,13 +98,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   /** Username/password login — EZ-1097. Persists tokens and marks the store
    *  authenticated on success; the caller maps a failed ApiResult to whatever
    *  it wants to show (field errors, an error banner, …). */
-  login: async (username: string, password: string) => {
+  login: async (username: string, password: string, location?: SetupLocation) => {
     const result = await sessionApi.login({ username, password });
 
     if (result.ok) {
       const { accessToken, refreshToken, sessionId, user, provider } = result.data;
       await secureStorage.set('accessToken', accessToken);
       await secureStorage.set('refreshToken', refreshToken);
+
+      // This is the only moment the password exists, so everything derived
+      // from it is minted here or not at all. The credential is what every
+      // sync call authenticates with.
+      await secureStorage.set('basicCredential', basicAuthHeader(username, password));
+
+      // The rest is a handoff. tbl_user_credentials cannot be written here —
+      // the database does not exist until Home runs ensureSchema() — so the
+      // whole row waits in the keystore and Home moves it in. The legacy had
+      // no such problem: its database always exists.
+      const pending: UserCredentialsRow = {
+        username: user.username,
+        password: await hashPassword(password),
+        creator_uuid_cred: user.uuid,
+        chwname: user.display,
+        provider_uuid_cred: provider.uuid,
+      };
+      await secureStorage.set('pendingCredentials', JSON.stringify(pending));
+
+      // Setup only. Written BEFORE setAuthenticated, so that by the time the
+      // status flips and Home mounts, buildPushBody has a locationUuid to use
+      // and bootstrap can see that this device is set up.
+      if (location) {
+        await secureStorage.set('locationUuid', location.uuid);
+        await secureStorage.set('locationName', location.display);
+      }
+
       // provider.uuid (not the auth-gateway's own user.uuid) — matches Android's ProviderDAO
       // identity and the offline DB schema's creatoruuid/provideruuid record-attribution fields.
       // No role is stored: Android doesn't persist one from login either.

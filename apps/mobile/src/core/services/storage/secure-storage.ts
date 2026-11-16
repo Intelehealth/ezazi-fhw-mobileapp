@@ -24,18 +24,19 @@ const SESSION_KEYS = {
  * Outlives logout. Captured once at Setup and reused by every later login, so
  * a returning user never re-picks a location.
  *
- * `passwordHash` is the odd one: it is a handoff, not a setting. The database
+ * `pendingCredentials` is the odd one: a handoff, not a setting. The database
  * does not exist until Home runs `ensureSchema()`, so login cannot write
- * `tbl_user_credentials` itself — it leaves the hash here and Home moves it
- * into the table, then removes it. It sits in this group because a logout
- * before reaching Home must not strand the row forever.
+ * `tbl_user_credentials` itself — it leaves the whole row here and Home moves
+ * it into the table, then removes this key. It sits in this group because a
+ * logout before reaching Home must not strand the row forever. It carries a
+ * salted hash, never a password.
  */
 const SETUP_KEYS = {
   locationUuid: 'setup.location_uuid',
   locationName: 'setup.location_name',
   basicCredential: 'setup.basic_credential',
   credentialSalt: 'setup.credential_salt',
-  passwordHash: 'setup.password_hash',
+  pendingCredentials: 'setup.pending_credentials',
 } as const;
 
 const KEYS = { ...SESSION_KEYS, ...SETUP_KEYS } as const;

@@ -18,6 +18,7 @@ const EXPECTED = [
   'providerAttributeRepo',
   'providerRepo',
   'rtcConnectionRepo',
+  'userCredentialsRepo',
   'visitAttributeRepo',
   'visitRepo',
 ] as const;
