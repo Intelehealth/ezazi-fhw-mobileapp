@@ -25,5 +25,10 @@ import type { ApiResult } from '@ezazi/api-client';
  * The caller owns the destination, so the fresh-download and crash-resume
  * paths look at the same place. AMC does the same — `DownloadMindMaps` takes
  * its destination as an argument and rebuilds the same constant to delete it.
+ *
+ * `cursor` is the watermark, passed in rather than read here, so the transport
+ * needs no database handle. On a first sync it is `PULL_EPOCH` — the legacy
+ * sends exactly that, because `SessionManager.getPullExcutedTime()` defaults
+ * to the same string rather than to an empty segment.
  */
-export type DownloadArchive = () => Promise<ApiResult<string>>;
+export type DownloadArchive = (cursor: string) => Promise<ApiResult<string>>;
