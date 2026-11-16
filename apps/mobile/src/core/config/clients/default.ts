@@ -44,6 +44,7 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
       portalUrl: 'http://localhost:3002',
       webrtcUrl: 'http://localhost:3003',
       configUrl: 'http://localhost:3004',
+      serverUrl: 'https://testezazi.intelehealth.org',
     },
     // Placeholder hosts — replace with this client's real staging endpoints.
     preview: {
@@ -51,6 +52,7 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
       portalUrl: 'https://staging-portal.ezazi.example.org',
       webrtcUrl: 'https://staging-webrtc.ezazi.example.org',
       configUrl: 'https://staging-config.ezazi.example.org',
+      serverUrl: 'https://testezazi.intelehealth.org',
     },
     // Placeholder hosts — replace with this client's real production endpoints.
     production: {
@@ -58,6 +60,7 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
       portalUrl: 'https://portal.ezazi.example.org',
       webrtcUrl: 'https://webrtc.ezazi.example.org',
       configUrl: 'https://config.ezazi.example.org',
+      serverUrl: 'https://ezazi.intelehealth.org',
     },
   },
   branding: {

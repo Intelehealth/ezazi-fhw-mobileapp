@@ -16,6 +16,8 @@ const servers = clientConfig.servers[APP_ENV] ?? clientConfig.servers.developmen
 
 export const env = {
   AUTH_GATEWAY_URL: servers.authGatewayUrl,
+  /** OpenMRS and the sync middleware — see ServerUrls.serverUrl. */
+  SERVER_URL: servers.serverUrl,
   PORTAL_URL: servers.portalUrl,
   WEBRTC_URL: servers.webrtcUrl,
   CONFIG_URL: servers.configUrl,

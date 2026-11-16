@@ -8,6 +8,20 @@ export interface ServerUrls {
   portalUrl: string;
   webrtcUrl: string;
   configUrl: string;
+  /**
+   * The clinical server — OpenMRS and the sync middleware both hang off it by
+   * path, exactly as the legacy builds them from one `BuildConfig.SERVER_URL`
+   * (`SyncDAO.java:106`, `UrlModifiers.java:10-25`):
+   *
+   *   {serverUrl}/EMR-Middleware/webapi/pull/pulldata/{locationUuid}/{cursor}
+   *   {serverUrl}/EMR-Middleware/webapi/push/pushdata
+   *   {serverUrl}/openmrs/ws/rest/v1/...
+   *
+   * NOT derivable from `authGatewayUrl`, which is a different host and port.
+   * Values come from the legacy's `endpoint.properties`, whose client × server
+   * flavours map one-to-one onto ours.
+   */
+  serverUrl: string;
 }
 
 /**

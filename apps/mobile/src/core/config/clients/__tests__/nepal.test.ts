@@ -152,7 +152,7 @@ describe('NEPAL_CLIENT_CONFIG', () => {
   describe('servers', () => {
     const URL_PATTERN = /^https?:\/\/.+/;
     const ENVS = ['development', 'preview', 'production'] as const;
-    const URL_KEYS = ['authGatewayUrl', 'portalUrl', 'webrtcUrl', 'configUrl'] as const;
+    const URL_KEYS = ['authGatewayUrl', 'portalUrl', 'webrtcUrl', 'configUrl', 'serverUrl'] as const;
 
     it('all three environment tiers are present', () => {
       ENVS.forEach(env => {
@@ -160,7 +160,7 @@ describe('NEPAL_CLIENT_CONFIG', () => {
       });
     });
 
-    it('every environment has all four URL keys', () => {
+    it('every environment has all five URL keys', () => {
       ENVS.forEach(env => {
         URL_KEYS.forEach(key => {
           expect(NEPAL_CLIENT_CONFIG.servers[env][key]).toBeDefined();
@@ -179,6 +179,26 @@ describe('NEPAL_CLIENT_CONFIG', () => {
     it('development authGatewayUrl points to the shared eRevamp staging gateway', () => {
       expect(NEPAL_CLIENT_CONFIG.servers.development.authGatewayUrl)
         .toBe('https://erevamp.intelehealth.org:3030');
+    });
+
+    it('serverUrl matches the legacy endpoint.properties, tier for tier', () => {
+      // ELCG_NEPAL_{DEV,STAGE,PROD}_SERVER_URL. Production is a different host
+      // from dev and stage here, unlike the default client.
+      expect(NEPAL_CLIENT_CONFIG.servers.development.serverUrl)
+        .toBe('https://nezazi.intelehealth.org');
+      expect(NEPAL_CLIENT_CONFIG.servers.preview.serverUrl)
+        .toBe('https://nezazi.intelehealth.org');
+      expect(NEPAL_CLIENT_CONFIG.servers.production.serverUrl)
+        .toBe('https://nepalezazi.intelehealth.org');
+    });
+
+    it('serverUrl is not the auth gateway, and carries no port or trailing slash', () => {
+      // Paths are appended directly, so a trailing slash doubles the separator.
+      Object.values(NEPAL_CLIENT_CONFIG.servers).forEach(({ serverUrl, authGatewayUrl }) => {
+        expect(serverUrl).not.toBe(authGatewayUrl);
+        expect(serverUrl).not.toMatch(/:\d+$/);
+        expect(serverUrl).not.toMatch(/\/$/);
+      });
     });
 
     it('development portal/webrtc/config URLs point to localhost', () => {
