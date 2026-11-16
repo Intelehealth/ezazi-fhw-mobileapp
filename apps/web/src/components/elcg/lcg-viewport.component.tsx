@@ -74,6 +74,7 @@ export function LcgViewportComponent({
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
+    /* v8 ignore next -- @preserve: the frame is always mounted by now. */
     if (!frame) return;
     setLayoutWidth(innerWidth(frame));
     if (typeof ResizeObserver === 'undefined') return;
@@ -89,15 +90,16 @@ export function LcgViewportComponent({
     appliedZoom.current = zoom;
     const frame = frameRef.current;
     const content = contentRef.current;
+    /* v8 ignore next -- @preserve: both are always mounted by now. */
     if (!frame || !content) return;
-    /* Centre within the side padding, which keeps the guide off the frame's border. */
+    /* Centre within the frame, inside the right padding. */
     setPanX((innerWidth(frame) - content.getBoundingClientRect().width) / 2);
   }, [zoom]);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    const frame = frameRef.current;
+    const frame = event.currentTarget;
     const target = event.target as HTMLElement;
-    if (!frame || event.button !== 0) return;
+    if (event.button !== 0) return;
     if (target.closest('button')) return;
 
     const pageScroller = findPageScroller(frame);
@@ -138,8 +140,11 @@ export function LcgViewportComponent({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      /* No top padding: the guide's top border sits on the frame's top line, as in pan-zoom. */
-      className={`touch-pan-y overflow-hidden border border-black px-4 pb-4 ${
+      /*
+       * No top or left padding: the guide's top and left borders sit on the
+       * frame's lines, as in pan-zoom.
+       */
+      className={`touch-pan-y overflow-hidden border border-black pr-4 pb-4 ${
         isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'
       }`}
     >

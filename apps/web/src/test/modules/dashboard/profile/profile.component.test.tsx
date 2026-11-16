@@ -507,6 +507,22 @@ describe('ProfileComponent', () => {
     expect(photo.src).toBe(new URL(userIcon, window.location.href).href);
   });
 
+  it('shows NA for the signature when none has been set', async () => {
+    vi.mocked(profileService.getProvider).mockResolvedValue(
+      success({
+        ...PROVIDER,
+        attributes: PROVIDER.attributes.filter(
+          attr => attr.attributeType.display !== 'textOfSign'
+        ),
+      })
+    );
+
+    renderProfile();
+
+    const signature = await screen.findByText('Signature');
+    expect(signature.parentElement).toHaveTextContent('SignatureNA');
+  });
+
   it('shows the combined "Other (specify)" qualification in view mode', async () => {
     vi.mocked(profileService.getProvider).mockResolvedValue(
       success({

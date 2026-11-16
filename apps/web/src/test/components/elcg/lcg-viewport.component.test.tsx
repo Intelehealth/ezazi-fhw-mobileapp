@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { LcgViewportComponent } from '../../../components/elcg/lcg-viewport.component';
 
@@ -168,5 +168,112 @@ describe('LcgViewportComponent', () => {
     );
 
     expect(frame.className).not.toContain('cursor-grabbing');
+  });
+
+  it('ignores presses with any button but the main one', () => {
+    const { frame } = renderInScrollingPage();
+
+    fireEvent(frame, pointer('pointerdown', { x: 200, y: 200, button: 2 }));
+    fireEvent(frame, pointer('pointermove', { x: 150, y: 200 }));
+
+    expect(frame.className).not.toContain('cursor-grabbing');
+    expect(panX()).toBe('translateX(0px)');
+  });
+
+  it('scrolls a pane set to overflow-y: scroll', () => {
+    const { page, frame } = renderInScrollingPage();
+    page.style.overflowY = 'scroll';
+
+    drag(frame, { x: 200, y: 200 }, { x: 200, y: 180 });
+
+    expect(page.scrollTop).toBe(70);
+  });
+
+  it('scrolls the document when no pane around the guide scrolls', () => {
+    render(
+      <LcgViewportComponent zoom={1}>
+        <p>guide</p>
+      </LcgViewportComponent>
+    );
+    const frame = screen.getByTestId('lcg-viewport');
+    const scrollingElement = Object.getOwnPropertyDescriptor(
+      Document.prototype,
+      'scrollingElement'
+    );
+
+    try {
+      for (const scroller of [document.body, null]) {
+        Object.defineProperty(document, 'scrollingElement', {
+          configurable: true,
+          value: scroller,
+        });
+        const target = scroller ?? document.documentElement;
+        target.scrollTop = 100;
+
+        drag(frame, { x: 200, y: 200 }, { x: 200, y: 160 });
+
+        expect(target.scrollTop).toBe(140);
+      }
+    } finally {
+      delete (document as { scrollingElement?: unknown }).scrollingElement;
+      if (scrollingElement) {
+        Object.defineProperty(
+          Document.prototype,
+          'scrollingElement',
+          scrollingElement
+        );
+      }
+    }
+  });
+
+  it('re-lays the guide out whenever the frame is resized', () => {
+    const observers: { callback: () => void; disconnect: () => void }[] = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        disconnect = vi.fn();
+        constructor(public callback: () => void) {
+          observers.push(this);
+        }
+        observe() {}
+      }
+    );
+    let width = 900;
+    const clientWidth = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth'
+    );
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.dataset.testid === 'lcg-viewport' ? width : 0;
+      },
+    });
+
+    try {
+      const { unmount } = render(
+        <LcgViewportComponent zoom={1}>
+          <p>guide</p>
+        </LcgViewportComponent>
+      );
+      const content = screen.getByText('guide').parentElement as HTMLElement;
+      expect(content.style.width).toBe('900px');
+
+      width = 1300;
+      act(() => observers[0].callback());
+      expect(content.style.width).toBe('1300px');
+
+      unmount();
+      expect(observers[0].disconnect).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      if (clientWidth) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          'clientWidth',
+          clientWidth
+        );
+      }
+    }
   });
 });

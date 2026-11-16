@@ -58,6 +58,19 @@ vi.mock('../../hooks/queries/useDashboardVisits', async () => {
   };
 });
 
+/* The ELCG visit fetch needs a QueryClient; its own suite covers it. */
+vi.mock('../../hooks/queries/useElcgVisit', async () => {
+  const { buildElcgView } = await import('../fixtures/elcg-view');
+  return {
+    useElcgVisit: () => ({
+      view: buildElcgView(),
+      isLoading: false,
+      error: null,
+      retry: () => {},
+    }),
+  };
+});
+
 /* The change-password form's mutation needs a QueryClient; its own suite covers it. */
 vi.mock('../../hooks/mutations/useChangePassword', () => ({
   useChangePassword: () => ({ mutate: vi.fn(), isPending: false }),

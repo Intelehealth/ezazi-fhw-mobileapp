@@ -53,3 +53,62 @@ export function formatDayMonthYearTime(
   if (!date) return null;
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${formatTime(value)}`;
 }
+
+const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T/;
+const DAY_MONTH_YEAR =
+  /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?)?$/;
+
+/**
+ * The dates the FHW app records on a labour visit, in the formats
+ * partogram.component.ts accepts (moment, strict): ISO 8601, or
+ * `DD/MM/YYYY`, `DD/MM/YYYY HH:mm` and `DD/MM/YYYY hh:mm A`. A date with no
+ * time is local midnight, as moment reads it. Null for anything else.
+ */
+export function parseClinicalDate(
+  value: string | null | undefined
+): Date | null {
+  const text = value?.trim();
+  if (!text) return null;
+
+  const dateOnly = ISO_DATE_ONLY.exec(text);
+  if (dateOnly) {
+    const [, year, month, day] = dateOnly.map(Number);
+    return validLocalDate(year, month, day, 0, 0);
+  }
+  if (ISO_DATE_TIME.test(text)) return parseDate(text);
+
+  const dayMonthYear = DAY_MONTH_YEAR.exec(text);
+  if (!dayMonthYear) return null;
+  const [, day, month, year, hourText, minuteText, meridiem] = dayMonthYear;
+  let hours = hourText ? Number(hourText) : 0;
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    hours = (hours % 12) + (/p/i.test(meridiem) ? 12 : 0);
+  }
+  return validLocalDate(
+    Number(year),
+    Number(month),
+    Number(day),
+    hours,
+    minuteText ? Number(minuteText) : 0
+  );
+}
+
+/** The local date, or null when a part overflows (31/02, 25:00…) instead of rolling over. */
+function validLocalDate(
+  year: number,
+  month: number,
+  day: number,
+  hours: number,
+  minutes: number
+): Date | null {
+  const date = new Date(year, month - 1, day, hours, minutes);
+  const matches =
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day &&
+    date.getHours() === hours &&
+    date.getMinutes() === minutes;
+  return matches ? date : null;
+}

@@ -10,8 +10,7 @@ import type {
 /**
  * Small, empty ELCG views for component tests — two first-stage hours (4
  * sub-columns) and one second-stage hour (4 sub-columns) — with helpers to
- * place values. Independent of elcg.mock-data.ts, which goes away once the
- * screen reads the real visit.
+ * place values.
  */
 
 export const STAGE1_COLUMNS = 4;

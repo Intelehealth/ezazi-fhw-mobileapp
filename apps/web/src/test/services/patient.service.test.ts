@@ -62,6 +62,18 @@ describe('patientService.recentVisits', () => {
     });
   });
 
+  it('asks for the representation the caller names', async () => {
+    vi.mocked(openMrsHttpClient.get).mockResolvedValue({
+      data: { results: [] },
+    });
+
+    await patientService.recentVisits('pat-1', 'custom:(uuid)');
+
+    expect(openMrsHttpClient.get).toHaveBeenCalledWith('/visit', {
+      params: { patient: 'pat-1', v: 'custom:(uuid)' },
+    });
+  });
+
   it('maps a rejected request into a failure result instead of throwing', async () => {
     vi.mocked(openMrsHttpClient.get).mockRejectedValue(
       new Error('network down')

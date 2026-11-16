@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CLIENT_ID } from '../../../config/clients';
 import { INTEL_CARD_CLASS } from '../../../components/elcg/lcg-card.component';
 import { LcgTableComponent } from '../../../components/elcg/lcg-table.component';
@@ -7,7 +7,8 @@ import { LcgViewportComponent } from '../../../components/elcg/lcg-viewport.comp
 import { SharedDecisionMakingComponent } from '../../../components/elcg/shared-decision-making.component';
 import { VisitCompleteDetailsComponent } from '../../../components/elcg/visit-complete-details.component';
 import { WebrtcControlsComponent } from '../../../components/elcg/webrtc-controls.component';
-import { ELCG_MOCK_VIEW } from './elcg.mock-data';
+import { useElcgVisit } from '../../../hooks/queries/useElcgVisit';
+import { getApiErrorMessage } from '../../../utils/error-message';
 import type { ElcgView } from './elcg.types';
 
 /**
@@ -35,6 +36,42 @@ function shareOnWhatsApp(view: ElcgView) {
   );
 }
 
+const LOAD_FAILED_MESSAGE = 'Could not load this visit. Please try again.';
+
+/**
+ * Loading / failure placeholder in place of the guide. `role` makes screen
+ * readers announce it: "status" politely, "alert" at once.
+ */
+function GuideMessage({
+  message,
+  isError = false,
+  onRetry,
+}: {
+  message: string;
+  isError?: boolean;
+  onRetry?: () => void;
+}) {
+  return (
+    <div
+      role={isError ? 'alert' : 'status'}
+      className={`flex flex-col items-center gap-3 py-16 text-center text-sm ${
+        isError ? 'text-red-600' : 'text-[#7F7B92]'
+      }`}
+    >
+      <p className="m-0">{message}</p>
+      {isError && onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="cursor-pointer rounded-md border border-[#2E1E91] px-4 py-1.5 font-bold text-[#2E1E91]"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface ElcgComponentProps {
   visitUuid: string;
 }
@@ -44,19 +81,42 @@ interface ElcgComponentProps {
  * the toolbar, the zoomable guide, the Shared Decision Making history and,
  * once the visit is complete, its completion details.
  *
- * Design only for now: the guide renders ELCG_MOCK_VIEW (see
- * elcg.mock-data.ts), and the actions that need the API or a modal not yet
- * ported — past visits, print, adding/viewing decisions, Stage 3, video call
- * and chat — are left unwired. Zoom and WhatsApp sharing work as in Angular.
+ * The visit comes from OpenMRS (see hooks/queries/useElcgVisit.ts). The
+ * actions that need a modal or screen not yet ported — past visits, print,
+ * adding/viewing decisions, Stage 3, video call and chat — are left unwired.
+ * Zoom and WhatsApp sharing work as in Angular.
  */
 export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
-  const view = useMemo<ElcgView>(
-    () => ({ ...ELCG_MOCK_VIEW, visitUuid }),
-    [visitUuid]
-  );
+  const { view, isLoading, error, retry } = useElcgVisit(visitUuid);
   const [zoomIndex, setZoomIndex] = useState(DEFAULT_ZOOM_INDEX);
   /* Bumped by Reset: remounting the viewport drops its pan, like pan-zoom's resetView(). */
   const [viewResets, setViewResets] = useState(0);
+
+  /*
+   * A completed visit opens on its completion details, as Angular scrolls to
+   * `#vcd` once it has read the Visit Complete encounter.
+   */
+  const hasCompletionReason = Boolean(view?.completion?.reason);
+  useEffect(() => {
+    if (!hasCompletionReason) return;
+    document.getElementById('vcd')?.scrollIntoView?.();
+  }, [hasCompletionReason]);
+
+  if (!view) {
+    return (
+      <div className={`${INTEL_CARD_CLASS} p-6`}>
+        {isLoading || !error ? (
+          <GuideMessage message="Loading visit…" />
+        ) : (
+          <GuideMessage
+            message={getApiErrorMessage(error, LOAD_FAILED_MESSAGE)}
+            isError
+            onRetry={retry}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     /* partogram.component.html's outer `.intel-card` > `.card-body`. */

@@ -35,6 +35,16 @@ const HISTORY: LcgDecisionHistory = {
       },
       ...SIGNED,
     },
+    {
+      uuid: 'i-2',
+      value: {
+        type: 'Ringer lactate',
+        infusionRate: '30',
+        infusionStatus: 'stop',
+      },
+      ...SIGNED,
+    },
+    { uuid: 'i-3', value: 'NO', ...SIGNED },
   ],
 };
 
@@ -75,8 +85,27 @@ describe('SharedDecisionMakingComponent', () => {
       screen.getByText('CONTINUE IV - Other Dextrose 5% (20 drops/minute)')
     ).toBeInTheDocument();
     expect(
+      screen.getByText('STOP IV - Ringer lactate (30 drops/minute)')
+    ).toBeInTheDocument();
+    expect(screen.getByText('NO')).toBeInTheDocument();
+    expect(
       screen.getByRole('button', { name: 'Hide all' })
     ).toBeInTheDocument();
+  });
+
+  it('toggles a panel from the keyboard with Enter or Space', () => {
+    render(<SharedDecisionMakingComponent history={HISTORY} canAdd />);
+    const header = screen.getByText('Assessment').closest('[role="button"]');
+    if (!(header instanceof HTMLElement)) throw new Error('No panel header');
+
+    fireEvent.keyDown(header, { key: 'Tab' });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.keyDown(header, { key: 'Enter' });
+    expect(header).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.keyDown(header, { key: ' ' });
+    expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('adds to a panel without toggling it', async () => {

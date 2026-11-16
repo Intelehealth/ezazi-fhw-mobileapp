@@ -203,6 +203,41 @@ describe('LcgTableComponent', () => {
     expect(within(rowOf('IV fluids')).getByText('NO')).toBeInTheDocument();
   });
 
+  it('writes a plain oxytocin note as is, and an unsigned IV fluid without a signature', () => {
+    renderTable(
+      buildElcgView({
+        medication: {
+          oxytocin: entryValues({
+            0: [{ uuid: 'oxy-1', value: 'NO', initial: '', obsDatetime: '' }],
+          }),
+          medicine: entryValues(),
+          ivFluids: entryValues({
+            2: [
+              {
+                uuid: 'iv-1',
+                value: {
+                  type: 'Ringer lactate',
+                  infusionRate: '20',
+                  infusionStatus: 'continue',
+                },
+                initial: '',
+                obsDatetime: localIso(2026, 10, 2, 9, 0),
+              },
+            ],
+          }),
+        },
+      })
+    );
+
+    expect(
+      within(rowOf('Oxytocin (U/L, drops/min)')).getByText('NO')
+    ).toBeInTheDocument();
+    expect(rowOf('IV fluids')).toHaveTextContent(
+      'Type : Ringer lactateInfusion Rate : 20 drops/minuteInfusion Status : continue'
+    );
+    expect(rowOf('IV fluids')).not.toHaveTextContent('(');
+  });
+
   it("lists an hour's assessments and opens them in full", async () => {
     const onViewAssessment = vi.fn();
     const view = buildElcgView();
@@ -233,6 +268,33 @@ describe('LcgTableComponent', () => {
       screen.getByRole('button', { name: 'View stage 1 hour 2 assessment' })
     );
     expect(onViewAssessment).toHaveBeenCalledWith(1, 1);
+  });
+
+  it("opens a second-stage hour's plan, and shows who recorded that hour", async () => {
+    const onViewPlan = vi.fn();
+    const view = buildElcgView();
+    view.stage2.hours[0] = buildHour({
+      subColumns: 4,
+      hasEncounter: true,
+      initials: 'Dr. Joshi',
+      plans: [
+        {
+          uuid: 'p-1',
+          value: 'Prepare for delivery',
+          initial: 'Dr. Joshi',
+          obsDatetime: localIso(2026, 10, 2, 11, 30),
+        },
+      ],
+    });
+    renderTable(view, { onViewPlan });
+
+    expect(rowOf('PLAN')).toHaveTextContent('Prepare for delivery');
+    expect(rowOf('INITIALS')).toHaveTextContent('Dr. Joshi');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View stage 2 hour 1 plan' })
+    );
+    expect(onViewPlan).toHaveBeenCalledWith(2, 0);
   });
 
   it('writes the birth outcome down the second stage once the visit is complete', () => {
@@ -284,5 +346,45 @@ describe('LcgTableComponent', () => {
     expect(
       screen.queryByText('Referred to higher centre')
     ).not.toBeInTheDocument();
+  });
+
+  it('explains an "Other" birth outcome and a mother\'s death on hover', () => {
+    renderTable(
+      buildElcgView({
+        completion: {
+          reason: {
+            kind: 'newborn',
+            birthOutcome: 'Other',
+            birthOutcomeOther: 'Twin delivery',
+            motherDeceasedReason: 'Postpartum haemorrhage',
+          },
+          birth: null,
+          hasStage3: false,
+        },
+      })
+    );
+
+    expect(screen.getByText('OTHER')).toBeInTheDocument();
+    expect(screen.getByText('Mother Status: Death')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('tooltip').map(tooltip => tooltip.textContent)
+    ).toEqual(['Twin delivery', 'Postpartum haemorrhage']);
+  });
+
+  it('explains an "other" completion on hover', () => {
+    renderTable(
+      buildElcgView({
+        completion: {
+          reason: { kind: 'other', reason: 'Patient left against advice' },
+          birth: null,
+          hasStage3: false,
+        },
+      })
+    );
+
+    expect(screen.getByText('OTHER')).toBeInTheDocument();
+    expect(screen.getByRole('tooltip')).toHaveTextContent(
+      'Patient left against advice'
+    );
   });
 });

@@ -62,6 +62,25 @@ describe('VisitTableComponent', () => {
     expect(screen.getByText('Newborn')).toBeInTheDocument();
   });
 
+  it('explains an "Other" birth outcome on hover', () => {
+    render(
+      <VisitTableComponent
+        rows={[
+          {
+            ...ROW,
+            birthOutcome: 'Other',
+            birthOutcomeOther: 'Twin delivery',
+            completeReason: 'Newborn',
+          },
+        ]}
+        variant="completed"
+        emptyMessage="empty"
+      />
+    );
+
+    expect(screen.getByTitle('Twin delivery')).toHaveTextContent('ⓘ');
+  });
+
   it('calls onRowClick with the clicked row', () => {
     const onRowClick = vi.fn();
     render(

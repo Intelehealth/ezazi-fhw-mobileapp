@@ -4,6 +4,7 @@ import {
   formatDateTime,
   formatDayMonthYearTime,
   formatTime,
+  parseClinicalDate,
 } from '../../utils/date-format';
 
 describe('formatDateTime', () => {
@@ -64,5 +65,37 @@ describe('formatDayMonthYearTime', () => {
 
   it.each([null, undefined, '', 'not a date'])('returns null for %j', value => {
     expect(formatDayMonthYearTime(value)).toBeNull();
+  });
+});
+
+describe('parseClinicalDate', () => {
+  it.each([
+    ['02/11/2026', new Date(2026, 10, 2)],
+    ['02/11/2026 07:05', new Date(2026, 10, 2, 7, 5)],
+    ['02/11/2026 07:05 PM', new Date(2026, 10, 2, 19, 5)],
+    ['02/11/2026 12:30 am', new Date(2026, 10, 2, 0, 30)],
+    ['2026-11-02', new Date(2026, 10, 2)],
+  ])('reads %j in local time', (text, expected) => {
+    expect(parseClinicalDate(text)).toEqual(expected);
+  });
+
+  it('reads an ISO date-time as the moment it names', () => {
+    expect(parseClinicalDate('2026-11-02T01:35:00.000Z')?.toISOString()).toBe(
+      '2026-11-02T01:35:00.000Z'
+    );
+  });
+
+  it.each([
+    null,
+    undefined,
+    '',
+    'I',
+    'Unknown',
+    '31/02/2026',
+    '02/11/2026 25:00',
+    '02/11/2026 13:00 PM',
+    '11-02-2026',
+  ])('returns null for %j', value => {
+    expect(parseClinicalDate(value)).toBeNull();
   });
 });

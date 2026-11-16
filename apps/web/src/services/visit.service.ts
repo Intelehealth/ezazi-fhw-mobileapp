@@ -6,9 +6,12 @@ import {
   type ApiResult,
 } from '@ezazi/api-client';
 import { env } from '../config/env';
-import { portalHttpClient } from './http';
+import { openMrsHttpClient, portalHttpClient } from './http';
 import type { CaseSectionKey } from '../modules/dashboard/dashboard.types';
 import type {
+  OpenMrsAttribute,
+  OpenMrsVisitDetail,
+  VisitAttributePayload,
   VisitCountResponse,
   VisitCountRow,
   VisitListParams,
@@ -46,10 +49,17 @@ function portalNotConfigured(): ApiError {
   );
 }
 
+/** VisitService.fetchVisitDetails's own `v=custom:(...)` representation string. */
+const VISIT_DETAIL_REPRESENTATION =
+  'custom:(location:(display),uuid,display,startDatetime,stopDatetime,encounters:(display,uuid,encounterDatetime,encounterType:(display),obs:(display,uuid,value,comment,obsDatetime,concept:(uuid,display),creator:(uuid,person:(uuid,display))),encounterProviders:(display,provider:(uuid,attributes,person:(uuid,display,gender,age)))),patient:(uuid,identifiers:(identifier),attributes,person:(display,gender,age,birthdate,attributes)),attributes)';
+
 /**
- * Ports VisitService.getPriorityVisits / getInProgressVisits /
- * getCompletedVisits and the legacy getVisitCounts — now served by the
- * portal service's `/openmrs/*` routes instead of mindmap's.
+ * Ports intelehealth-doctor-webapp's VisitService. The dashboard's visit
+ * lists (getPriorityVisits / getInProgressVisits / getCompletedVisits and the
+ * legacy getVisitCounts) are served by the portal service's `/openmrs/*`
+ * routes instead of mindmap's. A single visit and its attributes — the WHO
+ * Labour Care Guide screen — come from the OpenMRS REST API itself, as in
+ * Angular: the portal has no single-visit route.
  */
 export const visitService = {
   /** GET {PORTAL_URL}/openmrs/get{Priority,InProgress,Completed}Visits — one page of a dashboard section. */
@@ -94,6 +104,57 @@ export const visitService = {
         return failure(unexpectedResponse());
       }
       return success(data.data);
+    } catch (error) {
+      return failure(mapAxiosError(error));
+    }
+  },
+
+  /** GET {OPENMRS_URL}/visit/{uuid}?v=… — VisitService.fetchVisitDetails: the visit with every encounter and obs. */
+  async getVisitDetails(
+    visitUuid: string
+  ): Promise<ApiResult<OpenMrsVisitDetail>> {
+    try {
+      const { data } = await openMrsHttpClient.get<OpenMrsVisitDetail>(
+        `/visit/${visitUuid}`,
+        { params: { v: VISIT_DETAIL_REPRESENTATION } }
+      );
+      if (!data || !Array.isArray(data.encounters)) {
+        return failure(unexpectedResponse());
+      }
+      return success(data);
+    } catch (error) {
+      return failure(mapAxiosError(error));
+    }
+  },
+
+  /** POST {OPENMRS_URL}/visit/{uuid}/attribute — VisitService.postAttribute. */
+  async addVisitAttribute(
+    visitUuid: string,
+    payload: VisitAttributePayload
+  ): Promise<ApiResult<OpenMrsAttribute>> {
+    try {
+      const { data } = await openMrsHttpClient.post<OpenMrsAttribute>(
+        `/visit/${visitUuid}/attribute`,
+        payload
+      );
+      return success(data);
+    } catch (error) {
+      return failure(mapAxiosError(error));
+    }
+  },
+
+  /** POST {OPENMRS_URL}/visit/{uuid}/attribute/{attributeUuid} — VisitService.updateAttribute. */
+  async updateVisitAttribute(
+    visitUuid: string,
+    attributeUuid: string,
+    payload: VisitAttributePayload
+  ): Promise<ApiResult<OpenMrsAttribute>> {
+    try {
+      const { data } = await openMrsHttpClient.post<OpenMrsAttribute>(
+        `/visit/${visitUuid}/attribute/${attributeUuid}`,
+        payload
+      );
+      return success(data);
     } catch (error) {
       return failure(mapAxiosError(error));
     }

@@ -35,14 +35,19 @@ export const patientService = {
     }
   },
 
-  /** GET {OPENMRS_URL}/visit?patient={uuid}&v=full — VisitService.recentVisits, newest visit first. */
+  /**
+   * GET {OPENMRS_URL}/visit?patient={uuid}&v=… — VisitService.recentVisits,
+   * newest visit first. The search flow asks for the `full` representation
+   * like the Angular one; callers that only count visits pass `custom:(uuid)`.
+   */
   async recentVisits(
-    patientUuid: string
+    patientUuid: string,
+    representation = 'full'
   ): Promise<ApiResult<OpenMrsPatientVisit[]>> {
     try {
       const { data } = await openMrsHttpClient.get<{
         results: OpenMrsPatientVisit[];
-      }>('/visit', { params: { patient: patientUuid, v: 'full' } });
+      }>('/visit', { params: { patient: patientUuid, v: representation } });
       return success(data.results);
     } catch (error) {
       return failure(mapAxiosError(error));
