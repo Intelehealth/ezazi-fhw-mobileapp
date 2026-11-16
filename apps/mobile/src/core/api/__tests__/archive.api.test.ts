@@ -3,7 +3,7 @@ import { File } from 'expo-file-system';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 
 jest.mock('@/core/config/env', () => ({
-  env: { SERVER_URL: 'https://testezazi.intelehealth.org' },
+  env: { SERVER_URL: 'https://erevamp.intelehealth.org' },
 }));
 jest.mock('@/core/services/storage/secure-storage', () => ({
   secureStorage: { get: jest.fn(), set: jest.fn(), remove: jest.fn(), clearSession: jest.fn(), clearAll: jest.fn() },
@@ -48,7 +48,7 @@ describe('downloadArchive', () => {
     await downloadArchive(EPOCH);
 
     expect(File.downloadFileAsync).toHaveBeenCalledWith(
-      'https://testezazi.intelehealth.org/EMR-Middleware/webapi/pull/pulldata/loc-1/2006-08-22%2022:21:48/0/1000',
+      'https://erevamp.intelehealth.org/EMR-Middleware/webapi/pull/pulldata/loc-1/2006-08-22%2022:21:48/0/1000',
       mockFile,
       expect.anything(),
     );
