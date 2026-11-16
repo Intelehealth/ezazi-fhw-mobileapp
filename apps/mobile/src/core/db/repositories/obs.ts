@@ -309,8 +309,9 @@ export function listByEncounterExcludingDoctors(
 
 /**
  * The push-side dirty query. No voided filter — voided rows must still reach
- * the server. The two complex-image concepts are excluded because they sync
- * through the image path instead.
+ * the server. The two complex-image concepts are excluded because this app
+ * does NOT store obs images at all (decided 2026-11-16); the legacy never
+ * created one either. There is no image path for them to sync through.
  */
 export function listUnsyncedByEncounter(encounterUuid: string, on: DbHandle): Obs[] {
   return on
