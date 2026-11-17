@@ -2,6 +2,7 @@ import axios from 'axios';
 import { env } from '@/core/config/env';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { requestSessionEnd } from '@/core/session/sessionEnd';
+import { logApiTraffic } from '@/core/utils/logging/apiLogger';
 import { logger } from '@/core/utils/logger';
 import { createApiClient } from '@ezazi/api-client';
 import { trackApiActivity } from './trackApiActivity';
@@ -59,5 +60,8 @@ const apiClient = createApiClient({
 });
 
 trackApiActivity(apiClient);
+// After trackApiActivity, so a 401 retry is logged as its own request — that
+// is what makes a silent refresh visible instead of looking like one slow call.
+logApiTraffic(apiClient, 'auth');
 
 export { apiClient };

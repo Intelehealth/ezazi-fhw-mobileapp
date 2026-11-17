@@ -3,6 +3,7 @@ import type { ConfigResponse } from '@/core/config/config.types';
 import { createApiClient, ApiError, failure } from '@ezazi/api-client';
 import { createRequestMethods } from '@/core/api/responseHandler';
 import { trackApiActivity } from '@/core/api/trackApiActivity';
+import { logApiTraffic } from '@/core/utils/logging/apiLogger';
 import type { ApiResult } from '@ezazi/api-client';
 
 /**
@@ -11,6 +12,7 @@ import type { ApiResult } from '@ezazi/api-client';
  */
 const configClient = createApiClient({ baseURL: env.CONFIG_URL, timeout: 30_000 });
 trackApiActivity(configClient);
+logApiTraffic(configClient, 'config');
 const http = createRequestMethods(configClient);
 
 function hasRequiredShape(data: unknown): data is ConfigResponse {

@@ -1,7 +1,9 @@
 import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 
+import { logger } from '@/core/utils/logger';
+
 import migrations from '../../../drizzle/migrations';
-import { getDb } from './index';
+import { DATABASE_NAME, getDb } from './index';
 import { appState } from './schema';
 
 /** `tbl_app_state` is a single row, always this id. */
@@ -47,6 +49,11 @@ export function resetSchemaInit(): void {
 }
 
 async function runSchemaInit(): Promise<void> {
+  // The database FILE is created by this getDb(), not by anything earlier —
+  // the handle is lazy, so a logged-out device has no database at all. This
+  // line is therefore the moment it comes into existence, which is otherwise
+  // invisible: success was silent and only a failure was ever logged.
+  const started = Date.now();
   const db = getDb();
 
   // 1. Structure: tables, indexes and tbl_app_state (0000).
@@ -54,4 +61,6 @@ async function runSchemaInit(): Promise<void> {
 
   // 2. Bookkeeping row, so the hydration resolver always has something to read.
   await db.insert(appState).values({ id: APP_STATE_ID }).onConflictDoNothing();
+
+  logger.info('[db] schema ready', { database: DATABASE_NAME, ms: Date.now() - started });
 }
