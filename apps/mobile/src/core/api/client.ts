@@ -2,10 +2,8 @@ import axios from 'axios';
 import { env } from '@/core/config/env';
 import { secureStorage } from '@/core/services/storage/secure-storage';
 import { requestSessionEnd } from '@/core/session/sessionEnd';
-import { logApiTraffic } from '@/core/utils/logging/apiLogger';
 import { logger } from '@/core/utils/logger';
-import { createApiClient } from '@ezazi/api-client';
-import { trackApiActivity } from './trackApiActivity';
+import { createAppApiClient } from './createAppApiClient';
 
 /**
  * Shared axios instance for auth-gateway calls. Per-module API files import this
@@ -52,16 +50,11 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshInFlight;
 }
 
-const apiClient = createApiClient({
+const apiClient = createAppApiClient('auth', {
   baseURL: env.AUTH_GATEWAY_URL,
   timeout: 15000,
   getAuthToken: () => secureStorage.get('accessToken'),
   onUnauthorized: refreshAccessToken,
 });
-
-trackApiActivity(apiClient);
-// After trackApiActivity, so a 401 retry is logged as its own request — that
-// is what makes a silent refresh visible instead of looking like one slow call.
-logApiTraffic(apiClient, 'auth');
 
 export { apiClient };

@@ -40,6 +40,49 @@ const NO_GETDB_IN_REPOSITORIES = {
 
 const DB_RULES = [NO_ZOD_UUID, NO_DB_CLOSE, NO_DIRECT_TRANSACTION];
 
+/**
+ * Rejected dependencies — ARCHITECTURE_RULES §9, "DO NOT re-propose".
+ *
+ * Extracted into a constant for the same reason DB_RULES was: ESLint REPLACES
+ * `no-restricted-imports` in an override rather than merging it, so the one
+ * file that is allowed to call createApiClient has to re-list everything else.
+ * Nothing here changed when that entry was added — only where it lives.
+ */
+const REJECTED_DEPENDENCIES = [
+  {
+    group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
+    message:
+      'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
+  },
+  {
+    group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
+    message:
+      "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
+  },
+  {
+    group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
+    message:
+      'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
+  },
+  {
+    group: ['@ezazi/clinical-rules/*'],
+    message:
+      "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
+  },
+];
+
+/**
+ * One factory owns every axios instance, so a new `*.api.ts` inherits the
+ * progress spinner and the debug traffic log by construction. Without this a
+ * client created directly is silently invisible to both, and nothing fails.
+ */
+const NO_DIRECT_API_CLIENT = {
+  name: '@ezazi/api-client',
+  importNames: ['createApiClient'],
+  message:
+    'Use createAppApiClient() from core/api — it is the one place an axios instance is made, so every client gets trackApiActivity and the debug traffic log. Importing createApiClient directly produces a client invisible to both, and nothing fails (ARCHITECTURE_RULES §9).',
+};
+
 // ARCHITECTURE_RULES §11. Composed into every no-restricted-syntax entry below: a second
 // 'no-restricted-syntax' key in `rules` silently replaced this rule (fixed 2026-10-14).
 const ONE_BACKGROUND_EVENT = {
@@ -117,30 +160,7 @@ module.exports = {
     // must not come back. Prose in a doc stops nobody; this does.
     'no-restricted-imports': [
       'error',
-      {
-        patterns: [
-          {
-            group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
-            message:
-              'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
-          },
-          {
-            group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
-            message:
-              "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
-          },
-          {
-            group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
-            message:
-              'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
-          },
-          {
-            group: ['@ezazi/clinical-rules/*'],
-            message:
-              "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
-          },
-        ],
-      },
+      { paths: [NO_DIRECT_API_CLIENT], patterns: REJECTED_DEPENDENCIES },
     ],
 
     // ── Background services: one onBackgroundEvent, app-wide (ARCHITECTURE_RULES §11) ──
@@ -268,6 +288,16 @@ module.exports = {
       files: ['src/core/db/tx.ts'],
       rules: {
         'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID],
+      },
+    },
+    {
+      // The factory itself, and tests that mock or assert on createApiClient.
+      // The rejected-dependency patterns are re-listed because an override
+      // REPLACES no-restricted-imports; dropping them here would quietly let
+      // these files import WatermelonDB.
+      files: ['src/core/api/createAppApiClient.ts', 'src/**/__tests__/**'],
+      rules: {
+        'no-restricted-imports': ['error', { patterns: REJECTED_DEPENDENCIES }],
       },
     },
   ],

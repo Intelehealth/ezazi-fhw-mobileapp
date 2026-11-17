@@ -51,11 +51,20 @@ function size(response: AxiosResponse): string | undefined {
  * sits outside the refresh-on-401 interceptor: a retried request is then
  * logged on its own, which is what makes a silent refresh visible.
  *
- * No-op outside development. The interceptors are not registered at all
- * rather than registered and muted, so production pays nothing.
+ * **Debug builds only, and `__DEV__` is what guarantees it.** `APP_ENV` alone
+ * does not: it comes from `EXPO_PUBLIC_APP_ENV`, which `env.ts` defaults to
+ * `'development'` when unset, so a LOCAL release build reads `.env` and an EAS
+ * *preview* build reports `'preview'` — both would have logged. `__DEV__` is
+ * false in every release bundle whatever the env says, and being a
+ * compile-time constant it lets the minifier drop this whole body. It is the
+ * same gate expo-sqlite uses for its own devtools client
+ * (`SQLiteDevToolsClient.ts:45`).
+ *
+ * The interceptors are not registered at all rather than registered and muted,
+ * so a release build pays nothing per request either.
  */
 export function logApiTraffic(instance: AxiosInstance, label: string): void {
-  if (env.APP_ENV === 'production') return;
+  if (!__DEV__ || env.APP_ENV === 'production') return;
 
   instance.interceptors.request.use(
     (config) => {

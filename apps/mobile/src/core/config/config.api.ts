@@ -1,18 +1,15 @@
 import { env } from '@/core/config/env';
 import type { ConfigResponse } from '@/core/config/config.types';
-import { createApiClient, ApiError, failure } from '@ezazi/api-client';
+import { ApiError, failure } from '@ezazi/api-client';
 import { createRequestMethods } from '@/core/api/responseHandler';
-import { trackApiActivity } from '@/core/api/trackApiActivity';
-import { logApiTraffic } from '@/core/utils/logging/apiLogger';
+import { createAppApiClient } from '@/core/api/createAppApiClient';
 import type { ApiResult } from '@ezazi/api-client';
 
 /**
  * Unauthenticated — the config endpoint has no auth interceptor.
  * baseURL comes from clientConfig.servers[APP_ENV].configUrl via env.CONFIG_URL.
  */
-const configClient = createApiClient({ baseURL: env.CONFIG_URL, timeout: 30_000 });
-trackApiActivity(configClient);
-logApiTraffic(configClient, 'config');
+const configClient = createAppApiClient('config', { baseURL: env.CONFIG_URL, timeout: 30_000 });
 const http = createRequestMethods(configClient);
 
 function hasRequiredShape(data: unknown): data is ConfigResponse {
