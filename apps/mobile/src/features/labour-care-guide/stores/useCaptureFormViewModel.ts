@@ -23,10 +23,16 @@ export interface CaptureFormViewModel {
   form: CaptureFormApi;
   isFirstTab: boolean;
   isLastTab: boolean;
-  /** Back in the bottom bar: the previous tab. */
+  /** Back in the bottom bar: the previous tab; on the first tab of a read-only card, back to the Timeline. */
   goBack: () => void;
-  /** Next: the next tab without blocking; on the last tab, Save. */
+  /** Whether the bottom bar shows Back: from the second tab, and on every tab of a read-only card. */
+  showBack: boolean;
+  /** Next: the next tab without blocking; on the last tab, Save (Update on an edited card). */
   goNext: () => void;
+  /** The bottom button's label key: Android's Save / Update on the last tab, else Next. */
+  nextLabelKey: 'capture.next' | 'capture.save' | 'capture.update';
+  /** Saving, or the last tab of a read-only card (nothing to save; Kaveri, 2026-11-06). */
+  nextDisabled: boolean;
   /** Checks the rules and saves, or jumps to the first tab in error (last Next, Save & Exit). */
   save: () => void;
   saveState: SaveState;
@@ -43,7 +49,7 @@ interface CaptureFormInput {
   /** What is already saved on the card, loaded into the form for `edit` and `read`. */
   stored: readonly StoredObs[];
   onSaved: () => void;
-  /** Leave without saving: the last Next of a read-only card. */
+  /** Leave without saving: Back on the first tab of a read-only card. */
   onExit: () => void;
 }
 
@@ -95,9 +101,11 @@ export function useCaptureFormViewModel({
   };
 
   const trySave = () => {
-    if (readOnly) onExit();
-    else if (saveState !== 'saving') submit((values) => void save(values), jumpTo);
+    if (!readOnly && saveState !== 'saving') submit((values) => void save(values), jumpTo);
   };
+  const isFirstTab = tabIndex === 0;
+  // Android: "Save" on a new card, "Update" on an edited one (PartogramDataCaptureActivity 145).
+  const lastLabel = access === 'edit' ? 'capture.update' : 'capture.save';
 
   return {
     tabs,
@@ -105,10 +113,13 @@ export function useCaptureFormViewModel({
     setTabIndex,
     tabErrorCounts,
     form: api,
-    isFirstTab: tabIndex === 0,
+    isFirstTab,
     isLastTab,
-    goBack: () => setTabIndex((index) => Math.max(0, index - 1)),
+    goBack: () => (readOnly && isFirstTab ? onExit() : setTabIndex((index) => Math.max(0, index - 1))),
+    showBack: readOnly || !isFirstTab,
     goNext: () => (isLastTab ? trySave() : setTabIndex(tabIndex + 1)),
+    nextLabelKey: isLastTab && !readOnly ? lastLabel : 'capture.next',
+    nextDisabled: saveState === 'saving' || (readOnly && isLastTab),
     save: trySave,
     saveState,
     readOnly,

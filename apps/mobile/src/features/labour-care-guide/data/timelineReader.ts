@@ -1,8 +1,17 @@
-import { DECISION_PENDING_SET } from '@ezazi/clinical-rules';
-import type { TimelineVisitFacts } from '@ezazi/clinical-rules';
+import { DECISION_PENDING_SET, summarizeVisitOutcome } from '@ezazi/clinical-rules';
+import type { TimelineVisitFacts, VisitOutcomeObs, VisitOutcomeSummary } from '@ezazi/clinical-rules';
 
 import { LCG_SOS, encounterTypeName } from '@/core/db/constants/encounter';
-import { ENCOUNTER_TYPE, MISSED_ENCOUNTER, OBS_GRAVIDA, SOS_STAGE_HOUR } from '@/core/db/constants/obs';
+import {
+  END_2ND_STAGE_OTHER,
+  ENCOUNTER_TYPE,
+  MISSED_ENCOUNTER,
+  MOTHER_DECEASED,
+  MOTHER_DECEASED_FLAG,
+  OBS_GRAVIDA,
+  REFER_TYPE,
+  SOS_STAGE_HOUR,
+} from '@/core/db/constants/obs';
 import { DECISION_PENDING } from '@/core/db/constants/visit';
 import { encounterRepo, obsRepo, patientRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
 import type { DbHandle } from '@/core/db/tx';
@@ -14,6 +23,25 @@ export interface TimelineSnapshot {
   cards: TimelineCardRow[];
   visit: TimelineVisitFacts;
   currentCardName: string | null;
+  /** A completed visit's outcome (Android `getCompletedVisitType`); null while the visit is open. */
+  outcome: VisitOutcomeSummary | null;
+}
+
+// The outcome rows of the VISIT_COMPLETE encounter, by the package's concept key.
+const OUTCOME_KEY_BY_CONCEPT = new Map<string, keyof VisitOutcomeObs>([
+  [REFER_TYPE, 'REFER_TYPE'],
+  [MOTHER_DECEASED, 'MOTHER_DECEASED'],
+  [MOTHER_DECEASED_FLAG, 'MOTHER_DECEASED_FLAG'],
+  [END_2ND_STAGE_OTHER, 'END_2ND_STAGE_OTHER'],
+]);
+
+function readOutcome(visitCompleteUuid: string, on: DbHandle): VisitOutcomeSummary {
+  const obs: VisitOutcomeObs = {};
+  for (const row of obsRepo.listByEncounter(visitCompleteUuid, on)) {
+    const key = row.conceptuuid ? OUTCOME_KEY_BY_CONCEPT.get(row.conceptuuid) : undefined;
+    if (key && row.value !== null) obs[key] = row.value;
+  }
+  return summarizeVisitOutcome(obs);
 }
 
 // Rows that describe the card rather than record an observation.
@@ -60,13 +88,15 @@ export function readPatient(visitUuid: string, on: DbHandle): PatientRow | null 
 
 /** The visit's cards (oldest first) and open / holder / Decision Pending facts. */
 export function readTimeline(visitUuid: string, providerUuid: string | null, on: DbHandle): TimelineSnapshot {
+  const visitCompleteUuid = encounterRepo.findVisitCompleteUuid(visitUuid, on);
   return {
     cards: encounterRepo.findTimelineByVisit(visitUuid, on).map((row) => readCard(row, on)),
     visit: {
       decisionPending: visitAttributeRepo.findValue(visitUuid, DECISION_PENDING, on) === DECISION_PENDING_SET,
-      visitComplete: encounterRepo.findVisitCompleteUuid(visitUuid, on) !== null,
+      visitComplete: visitCompleteUuid !== null,
       isVisitHolder: providerUuid !== null && visitRepo.hasProviderAccess(visitUuid, providerUuid, on),
     },
     currentCardName: encounterRepo.findCurrentStageName(visitUuid, on),
+    outcome: visitCompleteUuid ? readOutcome(visitCompleteUuid, on) : null,
   };
 }

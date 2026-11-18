@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useId } from 'react';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import {
   StyleProp,
   StyleSheet,
@@ -25,6 +26,8 @@ import { Text } from './Text';
  * size 'compact'        → Figma in-card button (Timeline "Record Now"): 50 units tall on the
  *                         tablet frame, smaller label
  * showChevron           → chevron (›) right after the label, centred with it (Figma "Record Now")
+ * gradient              → Figma "Main CTA" left-to-right gradient on a primary button (Next / Save,
+ *                         Record Now, End First Stage); a disabled button keeps its flat disabled fill
  */
 
 type AppButtonVariant = 'primary' | 'outline' | 'secondary' | 'destructive';
@@ -48,6 +51,7 @@ interface AppButtonProps {
   size?: AppButtonSize;
   disabled?: boolean;
   disabledTone?: AppButtonDisabledTone;
+  gradient?: boolean;
   /** Placement only (margins) — never colors or sizing. */
   style?: StyleProp<ViewStyle>;
 }
@@ -61,8 +65,10 @@ export const AppButton: React.FC<AppButtonProps> = ({
   size = 'regular',
   disabled = false,
   disabledTone = 'neutral',
+  gradient = false,
   style,
 }) => {
+  const gradientId = `cta-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const { isTablet, fs, cornerRadius, scale, fromFigma } = useResponsive();
   const compact = size === 'compact';
   // Flat per phone/tablet, NOT run through scale() — a touch target doesn't
@@ -74,6 +80,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   const labelSize = compact ? (isTablet ? fromFigma(18) : fs('compactButton')) : fs('button');
   const disabledColor = disabledTone === 'brand' ? colors.onPrimary : colors.disabledText;
   const labelColor = disabled ? disabledColor : LABEL_COLOR[variant];
+  const showGradient = gradient && variant === 'primary' && !disabled;
 
   return (
     <TouchableOpacity
@@ -81,6 +88,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
         styles.base,
         { height, borderRadius: cornerRadius },
         styles[variant],
+        showGradient && styles.gradientClip,
         disabled && (disabledTone === 'brand' ? styles.disabledBrand : styles.disabled),
         style,
       ]}
@@ -90,6 +98,17 @@ export const AppButton: React.FC<AppButtonProps> = ({
       accessibilityLabel={label}
       activeOpacity={0.85}
     >
+      {showGradient && (
+        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} testID="app-button-gradient">
+          <Defs>
+            <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={colors.ctaGradientStart} />
+              <Stop offset="1" stopColor={colors.ctaGradientEnd} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill={`url(#${gradientId})`} />
+        </Svg>
+      )}
       <Text
         style={[styles.label, { color: labelColor, fontSize: labelSize }]}
       >
@@ -121,6 +140,11 @@ const styles = StyleSheet.create({
 
   primary: {
     backgroundColor: colors.primary,
+  },
+
+  // The gradient Rect is square-cornered; the button's own radius clips it.
+  gradientClip: {
+    overflow: 'hidden',
   },
 
   // Theme.EZazi.Button.White — gray_2 stroke, purple text

@@ -28,7 +28,6 @@ const stubForm = (overrides: Partial<CaptureFormApi> = {}): CaptureFormApi => ({
   fieldNotes: () => [],
   savedNotes: () => [],
   addNote: jest.fn(),
-  removeNote: jest.fn(),
   summary: [],
   ...overrides,
 });

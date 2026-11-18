@@ -1,4 +1,14 @@
-import { activeStageOf, buildCheckpoints, fullName, labourStageOf, type TimelineCardRow } from '../timelineModel';
+import {
+  activeStageOf,
+  buildCheckpoints,
+  endStageOf,
+  fullName,
+  labourStageOf,
+  outcomeView,
+  scrollTargetId,
+  type TimelineCardRow,
+} from '../timelineModel';
+import type { TimelineCheckpoint } from '../timeline.types';
 
 const NOW = Date.UTC(2026, 9, 23, 10, 0, 0);
 const at = (minutesAgo: number) => {
@@ -85,3 +95,58 @@ describe('patient and stage helpers', () => {
     expect(fullName({ patientUuid: 'p', openmrsId: null, firstName: 'Test', middleName: ' ', lastName: 'Patient', dateOfBirth: null, gravida: null })).toBe('Test Patient');
   });
 });
+
+describe('scrollTargetId', () => {
+  const card = (id: string, status: TimelineCheckpoint['status']) =>
+    ({ id, status, scheduledAt: '2026-11-06T10:00:00.000Z' }) as TimelineCheckpoint;
+
+  it('opens at the due card', () => {
+    expect(scrollTargetId([card('a', 'completed'), card('b', 'missed'), card('c', 'dueNow'), card('d', 'upcoming')])).toBe('c');
+  });
+
+  it('without a due card, at the newest card that is not upcoming', () => {
+    expect(scrollTargetId([card('a', 'completed'), card('b', 'missed'), card('c', 'upcoming')])).toBe('b');
+  });
+
+  it('nothing to scroll to: none', () => {
+    expect(scrollTargetId([])).toBeNull();
+    expect(scrollTargetId([card('a', 'upcoming')])).toBeNull();
+  });
+});
+
+describe('endStageOf (Android manageEndStageButtonText)', () => {
+  it('ends the stage of the current card, and nothing without a Stage 1/2 card (never Stage 1 by default)', () => {
+    expect(endStageOf('Stage1_Hour3_2')).toBe('stage1');
+    expect(endStageOf('Stage2_Hour1_1')).toBe('stage2');
+    expect(endStageOf(null)).toBeNull();
+    expect(endStageOf('Stage3_Hour1_1')).toBeNull();
+  });
+});
+
+describe('outcomeView (Android setVisitOutcome / updateOutOfTimeOutcomeText)', () => {
+  const summary = (outcome: string, motherDeceasedReason: string | null = null, otherComment: string | null = null) => ({
+    outcome,
+    hasMotherDeceased: motherDeceasedReason !== null,
+    motherDeceasedReason,
+    otherComment,
+  });
+
+  it('a plain outcome: "Mother Outcome", no reason, no View more', () => {
+    expect(outcomeView(summary('Shift to C-Section'))).toEqual({ kind: 'mother', outcome: 'Shift to C-Section', reason: null, more: null });
+  });
+
+  it('a reason or comment: "Outcome" with the reason, and View more', () => {
+    expect(outcomeView(summary('Mother Death', 'PPH'))).toMatchObject({ kind: 'outcome', reason: 'PPH' });
+    expect(outcomeView(summary('Other', null, 'Went home'))).toMatchObject({
+      kind: 'outcome',
+      reason: 'Went home',
+      more: { otherComment: 'Went home', motherDeceasedReason: null },
+    });
+  });
+
+  it('nothing stored, or the visit still open: nothing to show', () => {
+    expect(outcomeView(summary(''))).toBeNull();
+    expect(outcomeView(null)).toBeNull();
+  });
+});
+

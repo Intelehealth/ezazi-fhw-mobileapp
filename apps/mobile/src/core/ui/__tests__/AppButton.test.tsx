@@ -32,4 +32,19 @@ describe('AppButton', () => {
     expect(labelColor('Disabled')).toBe(colors.disabledText);
     expect(labelColor('Brand')).toBe(colors.onPrimary);
   });
+
+  it('draws the Figma Main CTA gradient only when asked, on an enabled primary button', () => {
+    const { rerender } = render(<AppButton label="Next" onPress={jest.fn()} gradient />);
+    expect(screen.getByTestId('app-button-gradient')).toBeTruthy();
+
+    rerender(<AppButton label="Next" onPress={jest.fn()} gradient disabled />);
+    expect(screen.queryByTestId('app-button-gradient')).toBeNull();
+
+    rerender(<AppButton label="Back" onPress={jest.fn()} gradient variant="secondary" />);
+    expect(screen.queryByTestId('app-button-gradient')).toBeNull();
+
+    rerender(<AppButton label="Next" onPress={jest.fn()} />);
+    expect(screen.queryByTestId('app-button-gradient')).toBeNull();
+  });
 });
+

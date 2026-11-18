@@ -1,5 +1,5 @@
 import { STAGE, findCard, getCardStatus, getUpcomingStep } from '@ezazi/clinical-rules';
-import type { CardState, StageId, TimelineVisitFacts } from '@ezazi/clinical-rules';
+import type { CardState, StageId, TimelineVisitFacts, VisitOutcomeSummary } from '@ezazi/clinical-rules';
 
 import { epochToIso, utcTimestampToIso } from '@/core/utils/datetime';
 
@@ -94,6 +94,51 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
 export function activeStageOf(currentCardName: string | null): LabourStage {
   const stage = currentCardName ? findCard(currentCardName)?.stage : undefined;
   return stage ? labourStageOf(stage) : 'stage1';
+}
+
+/**
+ * The card the Timeline opens scrolled to (plan: "FlatList opened scrolled to the due card"; Android's
+ * reversed list opens at the newest): the due card, else the newest card that is not upcoming. Null when
+ * there is none, e.g. an empty list.
+ */
+export function scrollTargetId(checkpoints: readonly TimelineCheckpoint[]): string | null {
+  const due = checkpoints.find((checkpoint) => checkpoint.status === 'dueNow');
+  if (due) return due.id;
+  const shown = checkpoints.filter((checkpoint) => checkpoint.status !== 'upcoming');
+  return shown.at(-1)?.id ?? null;
+}
+
+/**
+ * Which End Stage the button does (Android `manageEndStageButtonText`): Stage 1 or 2 from the current card's
+ * stage. Null otherwise (no Stage 1/2 card; Stage 3's End Third Stage is not built), where a tap does nothing,
+ * as Android's stage 0 — never treated as Stage 1 (audit H1).
+ */
+export function endStageOf(currentCardName: string | null): 'stage1' | 'stage2' | null {
+  const stage = currentCardName ? findCard(currentCardName)?.stage : undefined;
+  if (stage === STAGE.STAGE1) return 'stage1';
+  if (stage === STAGE.STAGE2) return 'stage2';
+  return null;
+}
+
+/** What a completed visit's Timeline shows in place of the action bar (Android `setVisitOutcome`). */
+export interface OutcomeView {
+  /** "Mother Outcome: X" for a plain outcome, "Outcome: X" when a reason or comment follows. */
+  kind: 'mother' | 'outcome';
+  outcome: string;
+  /** The comment and/or the mother's death reason, joined by "/" (Android `updateOutOfTimeOutcomeText`). */
+  reason: string | null;
+  /** "View more": Android's dialog content (`showContentDialog`), null when there is nothing more. */
+  more: { otherComment: string | null; motherDeceasedReason: string | null } | null;
+}
+
+export function outcomeView(summary: VisitOutcomeSummary | null): OutcomeView | null {
+  if (!summary || summary.outcome === '') return null;
+  const { otherComment, motherDeceasedReason } = summary;
+  if (otherComment === null && motherDeceasedReason === null) {
+    return { kind: 'mother', outcome: summary.outcome, reason: null, more: null };
+  }
+  const reason = otherComment !== null ? otherComment + (motherDeceasedReason !== null ? `/${motherDeceasedReason}` : '') : motherDeceasedReason;
+  return { kind: 'outcome', outcome: summary.outcome, reason, more: { otherComment, motherDeceasedReason } };
 }
 
 /** First, middle and last name joined, skipping blanks. */

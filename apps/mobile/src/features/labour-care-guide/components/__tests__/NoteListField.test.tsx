@@ -12,7 +12,7 @@ const FIELD = toTabViews(getCardLayout('Stage1_Hour1_1')!, 'default')
 describe('NoteListField', () => {
   it('adds a note with Android\'s first-letter capital, stored as typed, and empties the box', async () => {
     const onAdd = jest.fn();
-    render(<NoteListField field={FIELD} notes={[]} onAdd={onAdd} onRemove={jest.fn()} />);
+    render(<NoteListField field={FIELD} notes={[]} onAdd={onAdd} />);
     expect(screen.getByRole('button', { name: '+ Add' }).props.accessibilityState.disabled).toBe(true);
 
     fireEvent.changeText(screen.getByLabelText('Assessment'), 'progressing well'); // Android filter
@@ -22,10 +22,10 @@ describe('NoteListField', () => {
     await waitFor(() => expect(screen.getByLabelText('Assessment').props.value).toBe(''));
   });
 
-  it('lists the notes added on this card, each removable', () => {
-    const onRemove = jest.fn();
-    render(<NoteListField field={FIELD} notes={['Progressing well']} onAdd={jest.fn()} onRemove={onRemove} />);
-    fireEvent.press(screen.getByRole('button', { name: 'Remove Assessment note' }));
-    expect(onRemove).toHaveBeenCalledWith(0);
+  it('lists saved and new notes; none can be removed, as Android (open point 14)', () => {
+    render(<NoteListField field={FIELD} savedNotes={['Admitted']} notes={['Progressing well']} onAdd={jest.fn()} />);
+    expect(screen.getByText('Admitted')).toBeTruthy();
+    expect(screen.getByText('Progressing well')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Remove/ })).toBeNull();
   });
 });

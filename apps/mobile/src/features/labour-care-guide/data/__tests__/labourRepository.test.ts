@@ -1,7 +1,7 @@
-import { FIELD_ID, STAGE1_OUTCOME } from '@ezazi/clinical-rules';
+import { FIELD_ID, STAGE1_OUTCOME, STAGE2_OUTCOME } from '@ezazi/clinical-rules';
 
 import { encounterTypeName } from '@/core/db/constants/encounter';
-import { BASELINE_FHR, REFER_TYPE } from '@/core/db/constants/obs';
+import { BASELINE_FHR, END_2ND_STAGE_OTHER, MISSED_ENCOUNTER, MOTHER_DECEASED, MOTHER_DECEASED_FLAG, REFER_TYPE } from '@/core/db/constants/obs';
 import { DECISION_PENDING, VISIT_READ_STATUS, VISIT_RISK } from '@/core/db/constants/visit';
 import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
 import { seedDevPatient } from '@/core/db/seeds/devPatient';
@@ -10,7 +10,7 @@ import { SYNC_DIRTY, VOIDED_YES } from '@/core/db/syncFlags';
 import { transact, type DbHandle } from '@/core/db/tx';
 import { createTestDb, type TestDb } from '@/core/db/__tests__/helpers/testDb';
 
-import { captureSos, endStage1, readStoredCardObs, saveCard } from '../labourRepository';
+import { captureSos, endStage1, endStage2, readStoredCardObs, saveCard } from '../labourRepository';
 
 const WRITER = { providerUuid: 'provider-1', creatorUuid: 'user-1' };
 const NOW = Date.UTC(2026, 9, 23, 10, 0, 0);
@@ -129,6 +129,27 @@ describe('labour repository', () => {
       expect(encounterRepo.findUnsynced(db).map((row) => row.uuid)).toContain(dueCard);
     });
 
+    it('a card marked missed while it was being filled: the saved data wins, the marker is voided (audit M2)', () => {
+      // The next card fell due while the capture screen was open; the engine marked this one missed.
+      obsRepo.insertMissedEncounterMarker({ encounterUuid: dueCard, creator: 'user-1', creatorUuid: 'user-1' }, db);
+      expect(obsRepo.listObsUuidsByEncounterAndConcept(dueCard, MISSED_ENCOUNTER, db)).toHaveLength(1);
+
+      expect(save('140')).toEqual({ inserted: 4, updated: 0, voided: 1 });
+
+      expect(obsRepo.listObsUuidsByEncounterAndConcept(dueCard, MISSED_ENCOUNTER, db)).toHaveLength(0);
+      const marker = obsRepo.listUnsyncedByEncounter(dueCard, db).find((row) => row.conceptuuid === MISSED_ENCOUNTER)!;
+      expect(marker).toMatchObject({ voided: VOIDED_YES, sync: SYNC_DIRTY });
+      expect(obsRepo.hasRealObs(dueCard, db)).toBe(true);
+    });
+
+    it('a save that writes nothing leaves a missed marker alone', () => {
+      obsRepo.insertMissedEncounterMarker({ encounterUuid: dueCard, creator: 'user-1', creatorUuid: 'user-1' }, db);
+
+      saveCard({ visitUuid: DEV_VISIT_UUID, encounterUuid: dueCard, card: { values: {} }, writer: WRITER, now: NOW }, db);
+
+      expect(obsRepo.listObsUuidsByEncounterAndConcept(dueCard, MISSED_ENCOUNTER, db)).toHaveLength(1);
+    });
+
     it('refreshes VISIT_RISK after the save, as Android, and marks the visit for sync', () => {
       save('165'); // FHR red (1) + the seeded BP pair, both red (counted once: 1)
       expect(visitAttributeRepo.findValue(DEV_VISIT_UUID, VISIT_RISK, db)).toBe('2.0');
@@ -203,10 +224,59 @@ describe('labour repository', () => {
       expect(visitRepo.findDirty(db)[0]).toMatchObject({ uuid: DEV_VISIT_UUID, sync: SYNC_DIRTY });
     });
 
+    it('a completion clears Decision Pending, as Android on every path', () => {
+      visitAttributeRepo.upsertLocal(DEV_VISIT_UUID, DECISION_PENDING, 'true', db);
+      endStage1(DEV_VISIT_UUID, STAGE1_OUTCOME.SHIFT_TO_C_SECTION, {}, WRITER, NOW, db);
+      expect(visitAttributeRepo.findValue(DEV_VISIT_UUID, DECISION_PENDING, db)).toBe('false');
+    });
+
+    it('a visit is completed once: a second completion writes nothing, and no outcome row is orphaned (audit M7)', () => {
+      expect(endStage1(DEV_VISIT_UUID, STAGE1_OUTCOME.REFER_TO_ICU, {}, WRITER, NOW, db).kind).toBe('completeVisit');
+      const complete = encounterRepo.findVisitCompleteUuid(DEV_VISIT_UUID, db)!;
+
+      expect(endStage1(DEV_VISIT_UUID, STAGE1_OUTCOME.MOTHER_DEATH, { reason: 'PPH' }, WRITER, NOW, db)).toEqual({
+        kind: 'alreadyCompleted',
+      });
+
+      const rows = obsRepo.listByEncounter(complete, db);
+      expect(rows.map((row) => row.conceptuuid)).toEqual([REFER_TYPE]);
+      expect(obsRepo.listObsByVisitAndConcept(DEV_VISIT_UUID, MOTHER_DECEASED, db)).toEqual([]);
+    });
+
     it('a mother death needs a reason before anything is written', () => {
       expect(endStage1(DEV_VISIT_UUID, STAGE1_OUTCOME.MOTHER_DEATH, {}, WRITER, NOW, db)).toEqual({ kind: 'reasonRequired' });
       expect(encounterRepo.findVisitCompleteUuid(DEV_VISIT_UUID, db)).toBeNull();
       expect(VOIDED_YES).toBe(1);
     });
   });
+
+  describe('endStage2', () => {
+    it('Stage-3 & Early Postpartum writes nothing here (the delivery form does)', () => {
+      expect(endStage2(DEV_VISIT_UUID, STAGE2_OUTCOME.STAGE3_EARLY_POSTPARTUM, {}, WRITER, NOW, db)).toEqual({
+        kind: 'openDeliveryForm',
+      });
+      expect(encounterRepo.findVisitCompleteUuid(DEV_VISIT_UUID, db)).toBeNull();
+    });
+
+    it('Other completes the visit with REFER_TYPE "Other" and the comment', () => {
+      endStage2(DEV_VISIT_UUID, STAGE2_OUTCOME.OTHER, { otherComment: 'Family took her home' }, WRITER, NOW, db);
+
+      const complete = encounterRepo.findVisitCompleteUuid(DEV_VISIT_UUID, db)!;
+      const rows = obsRepo.listByEncounter(complete, db);
+      expect(rows.find((row) => row.conceptuuid === REFER_TYPE)?.value).toBe('Other');
+      expect(rows.find((row) => row.conceptuuid === END_2ND_STAGE_OTHER)?.value).toBe('Family took her home');
+      expect(visitRepo.findActiveVisitsByProvider(WRITER.providerUuid, db)).toEqual([]);
+    });
+
+    it('Mother Death writes the flag and the reason; without a reason nothing is written', () => {
+      expect(endStage2(DEV_VISIT_UUID, STAGE2_OUTCOME.MOTHER_DEATH, {}, WRITER, NOW, db)).toEqual({ kind: 'reasonRequired' });
+      expect(encounterRepo.findVisitCompleteUuid(DEV_VISIT_UUID, db)).toBeNull();
+
+      endStage2(DEV_VISIT_UUID, STAGE2_OUTCOME.MOTHER_DEATH, { reason: 'PPH' }, WRITER, NOW, db);
+      const rows = obsRepo.listByEncounter(encounterRepo.findVisitCompleteUuid(DEV_VISIT_UUID, db)!, db);
+      expect(rows.find((row) => row.conceptuuid === MOTHER_DECEASED_FLAG)?.value).toBe('YES');
+      expect(rows.find((row) => row.conceptuuid === MOTHER_DECEASED)?.value).toBe('PPH');
+    });
+  });
 });
+

@@ -8,7 +8,6 @@ import { colors, spacing } from '@/core/config/theme';
 import { ControlTextInput } from '@/core/ui/ControlTextInput';
 import { FormField } from '@/core/ui/FormField';
 import { useControlSizes } from '@/core/ui/hooks/useControlSizes';
-import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 
 import type { FieldView } from '../domain/captureFieldView';
@@ -16,22 +15,22 @@ import type { FieldView } from '../domain/captureFieldView';
 interface NoteListFieldProps {
   field: FieldView; // Assessment or Plan
   notes: readonly string[]; // added on this card, not yet saved
-  savedNotes?: readonly string[]; // already saved on this card (Show): listed first, never removable
+  savedNotes?: readonly string[]; // already saved on this card (Show): listed first
   onAdd: (text: string) => void;
-  onRemove: (index: number) => void;
   readOnly?: boolean;
 }
 
 /**
  * Assessment or Plan (Android "Add Assessment" / "Add Plan"): type a note, Add, and it joins the list.
  * Typing keeps Android's characters with the first letter upper-case; the note is stored as typed.
+ * No note can be removed, saved or not, as in Android (Kaveri, 2026-11-06, open point 14); text typed
+ * but not added is not saved, as Android's Cancel.
  */
 export const NoteListField: React.FC<NoteListFieldProps> = ({
   field,
   notes,
   savedNotes = [],
   onAdd,
-  onRemove,
   readOnly = false,
 }) => {
   const { t } = useTranslation();
@@ -56,9 +55,6 @@ export const NoteListField: React.FC<NoteListFieldProps> = ({
         {notes.map((note, index) => (
           <View key={`${index}-${note}`} style={[styles.note, { borderRadius: sizes.radius }]}>
             <Text style={[styles.noteText, { fontSize: sizes.text }]}>{note}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('capture.notes.remove', { label })} onPress={() => onRemove(index)}>
-              <AppIcon name="close" color={colors.icon} size={sizes.icon} />
-            </Pressable>
           </View>
         ))}
         {!readOnly && (

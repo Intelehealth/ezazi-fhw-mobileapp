@@ -225,7 +225,14 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
 
         {/* Record Now opens an empty card, Show a submitted one; only for the visit holder, as Android. */}
         {openLabelKey && (
-          <AppButton label={t(openLabelKey)} onPress={onOpen} size="compact" showChevron style={sizes.buttonGap} />
+          <AppButton
+            label={t(openLabelKey)}
+            onPress={onOpen}
+            size="compact"
+            showChevron
+            gradient={openLabelKey === 'timeline.checkpoint.recordNow'} // Figma Main CTA; Show stays flat
+            style={sizes.buttonGap}
+          />
         )}
       </View>
     </View>

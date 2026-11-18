@@ -96,7 +96,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             )}
           </View>
 
-          <Text style={[styles.title, { fontSize: isTablet ? scale(20) : 18 }]}>{title}</Text>
+          {title !== '' && <Text style={[styles.title, { fontSize: isTablet ? scale(20) : 18 }]}>{title}</Text>}
           <Text style={[styles.message, { fontSize: isTablet ? scale(14) : 14 }]}>{message}</Text>
 
           {note && (

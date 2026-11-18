@@ -313,11 +313,10 @@
       "sosDueNowBody": "Tap here to capture the SOS observations"
     },
     "sosDialog": {
-      "title": "Capture SOS observation?",
-      "message": "This will open the SOS observation form so you can record the patient's current condition.",
-      "note": "Continue only if an SOS assessment is needed.",
+      "title": "SOS Data Entry!",
+      "message": "Are you sure to capture the data now?",
       "cancel": "Cancel",
-      "confirm": "Capture SOS"
+      "confirm": "Yes"
     },
     "actions": {
       "sos": "SOS",
@@ -335,6 +334,47 @@
       "message": "Are you sure you want to End Stage 1?",
       "cancel": "Cancel",
       "confirm": "Yes"
+    },
+    "endStageFlow": {
+      "yes": "Yes",
+      "no": "No",
+      "cancel": "Cancel",
+      "okay": "Okay",
+      "stage1Title": "Select an option",
+      "stage1NothingSelected": "Please select item",
+      "stage2Title": "Additional Information",
+      "stage2NothingSelected": "Please select an option",
+      "otherCommentPlaceholder": "Enter Other Comment",
+      "confirm": {
+        "referOtherHospital": "Are you sure you want to \"Refer to other hospital\"?",
+        "selfDischarge": "Are you sure patient wants to \"Self discharge against Medical Advice\"?",
+        "shiftToCSection": "Are you sure patient wants to \"Shift to C-Section\"?",
+        "referToIcu": "Are you sure patient wants to \"Refer to high dependency unit / ICU\"?",
+        "other": "Are you sure you want to complete visit now with \"{{text}}\"?"
+      },
+      "refer": {
+        "title": "Refer Section",
+        "hospitalName": "Hospital Name",
+        "hospitalNamePlaceholder": "Enter Hospital Name",
+        "doctorName": "Doctor Name",
+        "doctorNamePlaceholder": "Enter Doctor Name",
+        "note": "Note",
+        "notePlaceholder": "Enter Note"
+      },
+      "motherDeath": {
+        "title": "Mother Death",
+        "placeholder": "Enter Reason",
+        "required": "Please enter reason"
+      },
+      "deliveryFormLater": "The Women Delivery Details form is not available yet."
+    },
+    "outcome": {
+      "mother": "Mother Outcome: {{outcome}}",
+      "outcome": "Outcome: {{outcome}}",
+      "reason": "Reason: {{reason}}",
+      "viewMore": "View more",
+      "motherDeceasedReason": "Mother Deceased Reason:",
+      "otherComment": "Other Comment:"
     },
     "a11y": {
       "close": "Close timeline",
@@ -355,6 +395,8 @@
     "selectPlaceholder": "Select",
     "back": "Back",
     "next": "Next",
+    "save": "Save",
+    "update": "Update",
     "leave": {
       "title": "Are you sure you want to close patient observation?",
       "message": "Are you sure you want to close the patient observation?",
@@ -384,8 +426,7 @@
     },
     "notes": {
       "placeholder": "Enter here",
-      "add": "+ Add",
-      "remove": "Remove {{label}} note"
+      "add": "+ Add"
     },
     "summary": {
       "title": "Observation summary"
@@ -536,7 +577,16 @@
       "selfDischarge": "Self discharge against Medical Advice",
       "shiftToCSection": "Shift to C-Section",
       "referToIcu": "Refer to high dependency unit / ICU",
-      "motherDeath": "Mother Death"
+      "motherDeath": "Mother Death",
+      "stage2": {
+        "stage3EarlyPostpartum": "Stage-3 & Early Postpartum",
+        "referOtherHospital": "Refer to other Hospital",
+        "selfDischarge": "Self discharge against Medical Advice",
+        "shiftToCSection": "Shift to C-Section",
+        "referToIcu": "Refer to high dependency unit / ICU",
+        "motherDeath": "Mother Death",
+        "other": "Other"
+      }
     },
     "validation": {
       "baselineFhr": {

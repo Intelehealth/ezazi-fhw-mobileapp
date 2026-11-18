@@ -126,8 +126,6 @@ describe('useCaptureForm', () => {
 
     act(() => result.current.api.addNote('plan', 'Review in 1 hour'));
     expect(result.current.api.fieldNotes('plan')).toEqual(['Review in 1 hour']);
-    act(() => result.current.api.removeNote('plan', 0));
-    expect(result.current.api.fieldNotes('plan')).toEqual([]);
   });
 
   it('blocks Save on Android\'s rules, names the first tab in error and counts errors per tab', async () => {

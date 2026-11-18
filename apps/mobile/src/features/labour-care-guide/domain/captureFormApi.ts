@@ -53,10 +53,9 @@ export interface CaptureFormApi {
   removeMedicine: (index: number) => void;
 
   fieldNotes: (id: NoteFieldId) => readonly string[];
-  /** Notes already saved on this card (Show), listed above new ones and never removable. */
+  /** Notes already saved on this card (Show), listed above new ones. No note can be removed (Android). */
   savedNotes: (id: NoteFieldId) => readonly string[];
   addNote: (id: NoteFieldId, text: string) => void;
-  removeNote: (id: NoteFieldId, index: number) => void;
 
   summary: readonly SummarySection[];
 }

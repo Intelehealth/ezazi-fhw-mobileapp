@@ -16,6 +16,8 @@ interface CaptureActionBarProps {
   onChat: () => void;
   onRx: () => void;
   onNext: () => void;
+  /** Next, or Save / Update on the last tab (i18n key). */
+  nextLabelKey?: string;
   nextDisabled: boolean;
 }
 
@@ -39,6 +41,7 @@ export const CaptureActionBar: React.FC<CaptureActionBarProps> = ({
   onChat,
   onRx,
   onNext,
+  nextLabelKey = 'capture.next',
   nextDisabled,
 }) => {
   const { t } = useTranslation();
@@ -82,10 +85,11 @@ export const CaptureActionBar: React.FC<CaptureActionBarProps> = ({
         )}
       </View>
       <AppButton
-        label={t('capture.next')}
+        label={t(nextLabelKey)}
         onPress={onNext}
         disabled={nextDisabled}
         disabledTone="brand"
+        gradient
         style={{ marginTop: isTablet ? fromFigma(16) : spacing.md }}
       />
     </View>

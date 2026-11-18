@@ -1,6 +1,6 @@
 import '@/core/i18n';
 import { act, renderHook } from '@testing-library/react-native';
-import { STAGE1_OUTCOME } from '@ezazi/clinical-rules';
+import { STAGE1_OUTCOME, STAGE2_OUTCOME } from '@ezazi/clinical-rules';
 
 import { onTablesChanged } from '@/core/db';
 import { scanAndRearm } from '@/core/services/monitor/cardScheduler';
@@ -8,7 +8,7 @@ import { useAuthStore } from '@/core/session/auth.store';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import { readWriterIdentity } from '@/core/session/writerIdentity';
 
-import { captureSos, endStage1 } from '../../data/labourRepository';
+import { captureSos, endStage1, endStage2 } from '../../data/labourRepository';
 import { readTimeline, type TimelineSnapshot } from '../../data/timelineReader';
 import { useTimelineViewModel } from '../useTimelineViewModel';
 
@@ -16,7 +16,7 @@ jest.mock('@/core/db', () => ({ getDb: jest.fn(() => 'db-handle'), onTablesChang
 jest.mock('@/core/session/writerIdentity', () => ({ readWriterIdentity: jest.fn() }));
 jest.mock('@/core/services/monitor/cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../../data/timelineReader', () => ({ readTimeline: jest.fn() }));
-jest.mock('../../data/labourRepository', () => ({ captureSos: jest.fn(), endStage1: jest.fn() }));
+jest.mock('../../data/labourRepository', () => ({ captureSos: jest.fn(), endStage1: jest.fn(), endStage2: jest.fn() }));
 jest.mock('@/core/utils/logger', () => ({ logger: { error: jest.fn(), info: jest.fn(), debug: jest.fn() } }));
 
 const VISIT = 'visit-1';
@@ -37,6 +37,7 @@ const snapshot = (minutesAgo: number): TimelineSnapshot => ({
   ],
   visit: { decisionPending: false, visitComplete: false, isVisitHolder: true },
   currentCardName: 'Stage1_Hour1_1',
+  outcome: null,
 });
 
 let tablesChanged: () => void;
@@ -138,6 +139,45 @@ describe('useTimelineViewModel', () => {
     (readWriterIdentity as jest.Mock).mockRejectedValue(new Error('keystore'));
     await expect(result.current!.startStage2()).resolves.toBe(false);
     expect(endStage1).not.toHaveBeenCalled();
+    expect(scanAndRearm).not.toHaveBeenCalled();
+  });
+
+  it('completes a Stage 1 visit with the chosen outcome and re-arms the card alarm', async () => {
+    (readWriterIdentity as jest.Mock).mockResolvedValue(WRITER);
+    (endStage1 as jest.Mock).mockReturnValue({ kind: 'completeVisit', visitCompleteTime: 't', obs: [] });
+    const { result } = renderHook(() => useTimelineViewModel(VISIT));
+
+    await expect(result.current!.endStage1(STAGE1_OUTCOME.REFER_TO_ICU, {})).resolves.toMatchObject({ kind: 'completeVisit' });
+    expect(endStage1).toHaveBeenCalledWith(VISIT, STAGE1_OUTCOME.REFER_TO_ICU, {}, WRITER, NOW.getTime(), 'db-handle');
+    expect(scanAndRearm).toHaveBeenCalledWith('stageChange');
+  });
+
+  it('writes nothing for a nurse who does not hold the visit, on a completed visit, or in another stage (audit H1)', async () => {
+    (readWriterIdentity as jest.Mock).mockResolvedValue(WRITER);
+    const { result } = renderHook(() => useTimelineViewModel(VISIT));
+
+    (readTimeline as jest.Mock).mockReturnValue({ ...snapshot(10), visit: { ...snapshot(10).visit, isVisitHolder: false } });
+    await expect(result.current!.endStage1(STAGE1_OUTCOME.REFER_TO_ICU, {})).resolves.toBeNull();
+    (readTimeline as jest.Mock).mockReturnValue({ ...snapshot(10), visit: { ...snapshot(10).visit, visitComplete: true } });
+    await expect(result.current!.startStage2()).resolves.toBe(false);
+    (readTimeline as jest.Mock).mockReturnValue(snapshot(10)); // Stage 1: End Stage 2 does nothing
+    await expect(result.current!.endStage2(STAGE2_OUTCOME.OTHER, { otherComment: 'x' })).resolves.toBeNull();
+    (readTimeline as jest.Mock).mockReturnValue({ ...snapshot(10), currentCardName: null }); // no stage card
+    await expect(result.current!.endStage1(STAGE1_OUTCOME.REFER_TO_ICU, {})).resolves.toBeNull();
+
+    expect(endStage1).not.toHaveBeenCalled();
+    expect(endStage2).not.toHaveBeenCalled();
+    expect(scanAndRearm).not.toHaveBeenCalled();
+  });
+
+  it('End Stage 2 runs only in Stage 2; Stage-3 opens the delivery form without re-arming', async () => {
+    (readWriterIdentity as jest.Mock).mockResolvedValue(WRITER);
+    (readTimeline as jest.Mock).mockReturnValue({ ...snapshot(10), currentCardName: 'Stage2_Hour1_1' });
+    (endStage2 as jest.Mock).mockReturnValue({ kind: 'openDeliveryForm' });
+    const { result } = renderHook(() => useTimelineViewModel(VISIT));
+
+    expect(result.current?.endStage).toBe('stage2');
+    await expect(result.current!.endStage2(STAGE2_OUTCOME.STAGE3_EARLY_POSTPARTUM, {})).resolves.toEqual({ kind: 'openDeliveryForm' });
     expect(scanAndRearm).not.toHaveBeenCalled();
   });
 

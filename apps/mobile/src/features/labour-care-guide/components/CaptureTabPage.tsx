@@ -70,7 +70,6 @@ export const CaptureTabPage: React.FC<CaptureTabPageProps> = ({ tab, form, readO
             savedNotes={form.savedNotes(id)}
             readOnly={readOnly}
             onAdd={(text) => form.addNote(id, text)}
-            onRemove={(index) => form.removeNote(id, index)}
           />
         );
       }

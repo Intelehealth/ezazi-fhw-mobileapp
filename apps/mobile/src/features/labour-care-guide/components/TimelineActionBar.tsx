@@ -16,6 +16,8 @@ interface TimelineActionBarProps {
   /** The end-stage button's label: Android's "End First Stage", "End Second Stage" … for the active stage. */
   endStageLabel: string;
   onEndStage: () => void;
+  /** Android disables End Stage for a nurse who does not hold the visit. */
+  endStageDisabled?: boolean;
 }
 
 type ActionKey = 'sos' | 'chat' | 'videoCall' | 'rx';
@@ -40,6 +42,7 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
   onRx,
   endStageLabel,
   onEndStage,
+  endStageDisabled = false,
 }) => {
   const { t } = useTranslation();
   const { isTablet, fs, fromFigma } = useResponsive();
@@ -89,6 +92,9 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
       <AppButton
         label={endStageLabel}
         onPress={onEndStage}
+        disabled={endStageDisabled}
+        disabledTone="brand"
+        gradient
         style={{ marginTop: isTablet ? fromFigma(16) : spacing.md }}
       />
     </View>

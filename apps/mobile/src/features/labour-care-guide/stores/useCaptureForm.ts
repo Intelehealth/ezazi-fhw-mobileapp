@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -100,15 +100,22 @@ export function useCaptureForm(
   });
   const values = form.watch();
   const submitted = form.formState.isSubmitted;
-  const [typingErrors, setTypingErrors] = useState<Partial<Record<string, string>>>({});
-  const [rangeErrors, setRangeErrors] = useState<Partial<Record<FieldId, string>>>({});
   const ranges = useMemo(() => getValidationRanges(profile), [profile]);
 
+  // Live messages (typing checks and ranges while typing) are react-hook-form errors too (CLAUDE.md
+  // tripwire 9; audit M8), kept under `root` so the zod Save errors on the fields never overwrite them.
+  // A submit replaces them with the Save errors, which carry the same range messages.
+  const liveKey = (kind: 'typing' | 'range', key: string) => `${kind}_${key.replace(/\./g, '_')}`;
+  const setLive = (kind: 'typing' | 'range', key: string, message: string | undefined) => {
+    const name = `root.${liveKey(kind, key)}` as const;
+    if (message) form.setError(name, { type: kind, message });
+    else form.clearErrors(name);
+  };
+  const liveError = (kind: 'typing' | 'range', key: string): string | undefined =>
+    (form.formState.errors.root as Record<string, { message?: string }> | undefined)?.[liveKey(kind, key)]?.message;
+
   const showTyping = (key: string, check: TypingCheck) =>
-    setTypingErrors((current) => ({
-      ...current,
-      [key]: check.kind === 'warn' || check.kind === 'clear' ? errorMessage(check.error, t) : undefined,
-    }));
+    setLive('typing', key, check.kind === 'warn' || check.kind === 'clear' ? errorMessage(check.error, t) : undefined);
 
   const fieldValue = (id: FieldId) => values.values[id] ?? '';
   const writeValue = (id: FieldId, value: string) =>
@@ -129,7 +136,7 @@ export function useCaptureForm(
     const current = form.getValues();
     const card = toCardInput({ ...current, values: { ...current.values, [id]: value } }, layout);
     const error = leaving || isComplete(id, value) ? getCardErrors(card, profile).find((e) => e.id === id) : undefined;
-    setRangeErrors((errors) => ({ ...errors, [id]: error ? errorMessage(error, t) : undefined }));
+    setLive('range', id, error ? errorMessage(error, t) : undefined);
   };
 
   const setValue = (id: FieldId, typed: string) => {
@@ -198,8 +205,8 @@ export function useCaptureForm(
 
   const errors = form.formState.errors;
   const fieldError = (id: FieldId | InfusionInputId): string | undefined =>
-    typingErrors[id] ??
-    rangeErrors[id as FieldId] ??
+    liveError('typing', id) ??
+    liveError('range', id) ??
     (id === FIELD_ID.MEDICINE ? errors.medicine?.message : errors.values?.[id as FieldId]?.message);
 
   const savedNotes = useMemo(() => savedNotesFrom(stored), [stored]);
@@ -212,8 +219,8 @@ export function useCaptureForm(
     infusionAnswer: (id) => values[id],
     infusionErrors: (id) => ({
       [id]: errors[id]?.message,
-      [INFUSION_INPUT_ID.STRENGTH]: typingErrors[`${id}.${INFUSION_INPUT_ID.STRENGTH}`],
-      [INFUSION_INPUT_ID.INFUSION_RATE]: typingErrors[`${id}.${INFUSION_INPUT_ID.INFUSION_RATE}`],
+      [INFUSION_INPUT_ID.STRENGTH]: liveError('typing', `${id}.${INFUSION_INPUT_ID.STRENGTH}`),
+      [INFUSION_INPUT_ID.INFUSION_RATE]: liveError('typing', `${id}.${INFUSION_INPUT_ID.INFUSION_RATE}`),
     }),
     setInfusionAnswer: (id, answer) => form.setValue(id, { ...values[id], answer }, { shouldValidate: submitted }),
     setInfusionInput,
@@ -241,10 +248,6 @@ export function useCaptureForm(
     addNote: (id, text) => {
       setNotes(id, [...values.notes[id], text]);
       setAddedAt(id, [...values.addedAt[id], utcIsoTimestamp()]);
-    },
-    removeNote: (id, index) => {
-      setNotes(id, values.notes[id].filter((_, i) => i !== index));
-      dropAt(id, index);
     },
     summary,
   };

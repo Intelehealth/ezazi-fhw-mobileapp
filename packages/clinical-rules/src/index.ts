@@ -15,6 +15,10 @@ export {
   ALERT_CODE,
   MOTHER_DECEASED_YES,
   STAGE1_OUTCOME,
+  STAGE2_OUTCOME,
+  STAGE2_OTHER_CONCEPT_KEY,
+  REFER_TYPE_OTHER_VALUE,
+  OUTCOME_TEXT_MAX_LENGTH,
   OUTCOME_CONCEPT_KEY,
   outcomeLabelKey,
   fieldLabelKey,
@@ -24,6 +28,7 @@ export {
   validationMessageKey,
 } from './constants';
 export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId, AlertCode, Stage1OutcomeId, OutcomeConceptKey } from './constants';
+export type { Stage2OutcomeId } from './constants';
 
 export {
   STAGE1_SCHEDULE,
@@ -146,6 +151,12 @@ export { STAGE1_OUTCOMES, VISIT_COMPLETE_BACKDATE_MINUTES } from './outcomes/sta
 export type { OutcomeDefinition } from './outcomes/stage1Outcomes';
 export { decideEndStage1 } from './outcomes/decideEndStage1';
 export type { OutcomeDetails, OutcomeObs, EndStage1Decision } from './outcomes/decideEndStage1';
+export { STAGE2_OUTCOMES } from './outcomes/stage2Outcomes';
+export type { Stage2OutcomeDefinition } from './outcomes/stage2Outcomes';
+export { decideEndStage2 } from './outcomes/decideEndStage2';
+export type { EndStage2Decision, EndStage2Details, Stage2OutcomeObs } from './outcomes/decideEndStage2';
+export { summarizeVisitOutcome, MOTHER_DEATH_OUTCOME_LABEL } from './outcomes/visitOutcome';
+export type { VisitOutcomeObs, VisitOutcomeSummary } from './outcomes/visitOutcome';
 
 export { buildNewCardObs } from './save/newCardObs';
 export type { ObsDraft, CardNotes } from './save/newCardObs';

@@ -94,12 +94,12 @@ describe('CardCaptureScreen', () => {
     expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
   });
 
-  it('saves on the last Next and goes back to the Timeline', async () => {
+  it('saves on the last tab\'s Save (Android) and goes back to the Timeline', async () => {
     (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     const { navigation } = setup();
 
     fireEvent.press(screen.getByRole('tab', { name: 'Shared decision' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(navigation.goBack).toHaveBeenCalled());
     expect(saveCard).toHaveBeenCalledWith(expect.objectContaining({ encounterUuid: 'card-1' }), 'db-handle');
@@ -129,16 +129,22 @@ describe('CardCaptureScreen', () => {
     expect(saveCard).toHaveBeenCalled();
   });
 
-  it('shows a read-only card without asking to save, and its last Next goes back', () => {
+  it('shows a read-only card without asking to save; its last Next is disabled; Back on the first tab leaves', () => {
     (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     const { leave, navigation } = setup('read');
 
     const event = leave();
     expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(screen.queryByText('Are you sure you want to close patient observation?')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(navigation.goBack).toHaveBeenCalledTimes(1);
 
     fireEvent.press(screen.getByRole('tab', { name: 'Shared decision' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Next' }));
-    expect(navigation.goBack).toHaveBeenCalled();
+    const next = screen.getByRole('button', { name: 'Next' });
+    expect(next.props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(next);
+    expect(navigation.goBack).toHaveBeenCalledTimes(1);
     expect(saveCard).not.toHaveBeenCalled();
   });
 });

@@ -7,7 +7,9 @@ import {
   buildEditedCardObs,
   buildNewCardObs,
   computeVisitRisk,
+  DECISION_PENDING_CLEARED,
   decideEndStage1,
+  decideEndStage2,
   decideSos,
   encodeMedicine,
   formatVisitRisk,
@@ -18,12 +20,16 @@ import type {
   CardNotes,
   ConceptKey,
   EndStage1Decision,
+  EndStage2Decision,
+  EndStage2Details,
   FieldId,
   ObsDraft,
   OutcomeConceptKey,
   OutcomeDetails,
   SosBlockReason,
   Stage1OutcomeId,
+  Stage2OutcomeId,
+  Stage2OutcomeObs,
   StoredObs,
 } from '@ezazi/clinical-rules';
 
@@ -38,7 +44,9 @@ import { newUuid } from '@/core/db/uuid';
 import type { WriterIdentity } from '@/core/session/writerIdentity';
 import { localIsoTimestamp, utcIsoTimestamp } from '@/core/utils/datetime';
 
-const CONCEPTS = obsConcepts as unknown as Readonly<Record<ConceptKey | OutcomeConceptKey, string>>;
+const CONCEPTS = obsConcepts as unknown as Readonly<
+  Record<ConceptKey | OutcomeConceptKey | Stage2OutcomeObs['conceptKey'], string>
+>;
 
 const FIELD_BY_CONCEPT = new Map<string, FieldId>(
   (Object.entries(FIELD_CONCEPT_KEY) as [FieldId, ConceptKey][]).map(([fieldId, key]) => [CONCEPTS[key], fieldId]),
@@ -46,7 +54,7 @@ const FIELD_BY_CONCEPT = new Map<string, FieldId>(
 
 const obsRow = (
   encounterUuid: string,
-  conceptKey: ConceptKey | OutcomeConceptKey,
+  conceptKey: ConceptKey | OutcomeConceptKey | Stage2OutcomeObs['conceptKey'],
   value: string,
   comment: string | null,
   writer: WriterIdentity,
@@ -167,12 +175,19 @@ export function saveCard(input: SaveCardInput, on: DbHandle): { inserted: number
         tx,
       );
     }
-    if (voidUuids.length > 0) obsRepo.markVoided([...voidUuids], tx);
+    // The card was marked missed while its capture screen was open (the next card fell due): the saved data
+    // wins, as on Android, which decides "missed" only when it draws the timeline (Kaveri, 2026-11-06, audit M2).
+    const missedMarkers =
+      insert.length + update.length > 0
+        ? obsRepo.listObsUuidsByEncounterAndConcept(input.encounterUuid, obsConcepts.MISSED_ENCOUNTER, tx)
+        : [];
+    const toVoid = [...voidUuids, ...missedMarkers];
+    if (toVoid.length > 0) obsRepo.markVoided(toVoid, tx);
     encounterRepo.markDirty(input.encounterUuid, tx);
     refreshVisitRisk(input.visitUuid, input.now, tx);
     visitRepo.markDirty(input.visitUuid, tx);
     visitAttributeRepo.markRead(input.visitUuid, tx);
-    return { inserted: insert.length, updated: update.length, voided: voidUuids.length };
+    return { inserted: insert.length, updated: update.length, voided: toVoid.length };
   }, on);
 }
 
@@ -229,6 +244,42 @@ export function captureSos(visitUuid: string, writer: WriterIdentity, now: numbe
   }, on);
 }
 
+/** Decision Pending "false" on a stage change or a completion, as Android; the visit then needs a sync. */
+function clearDecisionPending(visitUuid: string, on: DbHandle): void {
+  if (visitAttributeRepo.upsertLocal(visitUuid, DECISION_PENDING, DECISION_PENDING_CLEARED, on) !== null) {
+    visitRepo.markDirty(visitUuid, on);
+  }
+}
+
+/**
+ * Completes a visit (Android `VisitCompletionHelper.insertVisitCompleteEncounter` + the outcome obs), shared by
+ * End Stage 1 and 2, in the caller's transaction: a new VISIT_COMPLETE encounter and its obs under that same
+ * uuid, the visit's end date, marked read, Decision Pending "false". False when the visit is already complete:
+ * nothing is written (Android can write a second one; and the obs must never be orphaned by the encounter
+ * dedupe, which would keep the old uuid; Kaveri, 2026-11-06).
+ */
+function completeVisit(
+  visitUuid: string,
+  completion: { visitCompleteTime: string; obs: readonly Stage2OutcomeObs[] },
+  writer: WriterIdentity,
+  now: number,
+  tx: DbHandle,
+): boolean {
+  if (encounterRepo.findVisitCompleteUuid(visitUuid, tx)) return false;
+  const uuid = newUuid();
+  encounterRepo.insertVisitComplete(
+    { uuid, visitUuid, providerUuid: writer.providerUuid, encounterTime: completion.visitCompleteTime },
+    tx,
+  );
+  obsRepo.insertMany(completion.obs.map((o) => obsRow(uuid, o.conceptKey, o.value, null, writer)), tx);
+  visitRepo.closeVisit(visitUuid, localIsoTimestamp(now), tx);
+  visitAttributeRepo.markRead(visitUuid, tx);
+  clearDecisionPending(visitUuid, tx);
+  return true;
+}
+
+export type EndStageResult<D> = D | { kind: 'alreadyCompleted' };
+
 /** Writes one End Stage 1 choice (`decideEndStage1`): Stage 2's first card, or the visit's completion. */
 export function endStage1(
   visitUuid: string,
@@ -237,11 +288,11 @@ export function endStage1(
   writer: WriterIdentity,
   now: number,
   on: DbHandle,
-): EndStage1Decision {
+): EndStageResult<EndStage1Decision> {
   const decision = decideEndStage1(outcome, details, now);
   if (decision.kind === 'reasonRequired') return decision;
 
-  transact((tx) => {
+  return transact((tx): EndStageResult<EndStage1Decision> => {
     if (decision.kind === 'startStage2') {
       const { start } = decision;
       writeCard(
@@ -258,17 +309,29 @@ export function endStage1(
       if (visitAttributeRepo.upsertLocal(visitUuid, DECISION_PENDING, start.decisionPending, tx) !== null) {
         visitRepo.markDirty(visitUuid, tx);
       }
-      return;
+      return decision;
     }
-
-    const uuid = newUuid();
-    encounterRepo.insertVisitComplete(
-      { uuid, visitUuid, providerUuid: writer.providerUuid, encounterTime: decision.visitCompleteTime },
-      tx,
-    );
-    obsRepo.insertMany(decision.obs.map((o) => obsRow(uuid, o.conceptKey, o.value, null, writer)), tx);
-    visitRepo.closeVisit(visitUuid, localIsoTimestamp(now), tx);
-    visitAttributeRepo.markRead(visitUuid, tx);
+    return completeVisit(visitUuid, decision, writer, now, tx) ? decision : { kind: 'alreadyCompleted' };
   }, on);
-  return decision;
+}
+
+/**
+ * Writes one End Stage 2 choice (`decideEndStage2`): a referral, Mother Death or "Other" completes the visit as
+ * End Stage 1. "Stage-3 & Early Postpartum" writes nothing here: the delivery form does (not built yet).
+ */
+export function endStage2(
+  visitUuid: string,
+  outcome: Stage2OutcomeId,
+  details: EndStage2Details,
+  writer: WriterIdentity,
+  now: number,
+  on: DbHandle,
+): EndStageResult<EndStage2Decision> {
+  const decision = decideEndStage2(outcome, details, now);
+  if (decision.kind !== 'completeVisit') return decision;
+  return transact(
+    (tx): EndStageResult<EndStage2Decision> =>
+      completeVisit(visitUuid, decision, writer, now, tx) ? decision : { kind: 'alreadyCompleted' },
+    on,
+  );
 }

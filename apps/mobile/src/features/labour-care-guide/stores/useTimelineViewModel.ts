@@ -1,17 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MS_PER_MINUTE, STAGE1_OUTCOME } from '@ezazi/clinical-rules';
+import type {
+  EndStage1Decision,
+  EndStage2Decision,
+  EndStage2Details,
+  OutcomeDetails,
+  Stage1OutcomeId,
+  Stage2OutcomeId,
+  VisitOutcomeSummary,
+} from '@ezazi/clinical-rules';
 
 import { getDb, onTablesChanged } from '@/core/db';
 import { encounter, obs, visit, visitAttribute } from '@/core/db/schema';
 import { useAuthStore } from '@/core/session/auth.store';
 import { scanAndRearm } from '@/core/services/monitor/cardScheduler';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
-import { readWriterIdentity } from '@/core/session/writerIdentity';
+import { readWriterIdentity, type WriterIdentity } from '@/core/session/writerIdentity';
 import { logger } from '@/core/utils/logger';
 
-import { captureSos as writeSosCard, endStage1, type SosResult } from '../data/labourRepository';
+import {
+  captureSos as writeSosCard,
+  endStage1,
+  endStage2,
+  type EndStageResult,
+  type SosResult,
+} from '../data/labourRepository';
 import { readTimeline, type TimelineSnapshot } from '../data/timelineReader';
-import { activeStageOf, buildCheckpoints } from '../domain/timelineModel';
+import { activeStageOf, buildCheckpoints, endStageOf } from '../domain/timelineModel';
 import type { LabourStage, TimelineCheckpoint } from '../domain/timeline.types';
 
 const CLOCK_TICK_MS = MS_PER_MINUTE;
@@ -27,6 +42,17 @@ export interface TimelineViewModel {
    * (`cancelStage1ConfirmationDialog`). The other End Stage 1 choices come later. False when nothing was written.
    */
   startStage2: () => Promise<boolean>;
+  /** Which End Stage the button does; null: a tap does nothing (Android stage 0). */
+  endStage: 'stage1' | 'stage2' | null;
+  /** Completed (VISIT_COMPLETE): no End Stage button, no quick actions, the outcome instead (Android). */
+  visitComplete: boolean;
+  /** Only the nurse holding the visit may end a stage (Android: the button is disabled otherwise). */
+  isVisitHolder: boolean;
+  outcome: VisitOutcomeSummary | null;
+  /** One End Stage 1 choice (not Move to Stage 2, see startStage2); null when nothing could be written. */
+  endStage1: (outcome: Stage1OutcomeId, details: OutcomeDetails) => Promise<EndStageResult<EndStage1Decision> | null>;
+  /** One End Stage 2 choice; null when nothing could be written. */
+  endStage2: (outcome: Stage2OutcomeId, details: EndStage2Details) => Promise<EndStageResult<EndStage2Decision> | null>;
 }
 
 /**
@@ -72,22 +98,51 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
     }
   }, [visitUuid, dbReady]);
 
-  const startStage2 = useCallback(async (): Promise<boolean> => {
-    if (!dbReady) return false;
-    try {
-      const writer = await readWriterIdentity();
-      if (!writer) return false;
-      // Read now, not from the snapshot: a second tap must not start Stage 2 twice.
-      if (activeStageOf(readTimeline(visitUuid, providerUuid, getDb()).currentCardName) !== 'stage1') return false;
-      const started = endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, Date.now(), getDb()).kind === 'startStage2';
-      // The next card is now 15 min away, sooner than the Stage 1 alarm: arm it again (Android re-arms here too).
-      if (started) void scanAndRearm('stageChange');
-      return started;
-    } catch (error: unknown) {
-      logger.error('[timeline] Stage 2 start failed', error);
-      return false;
-    }
-  }, [visitUuid, providerUuid, dbReady]);
+  /**
+   * Runs one End Stage write after re-reading the visit (not the snapshot): only in that stage, only by the
+   * visit holder, never on a completed visit, so a second tap or a stale screen writes nothing (audit H1).
+   * Any stage change or completion re-arms the card alarm (Android re-arms / cancels here too).
+   */
+  const runEndStage = useCallback(
+    async <R extends { kind: string }>(stage: 'stage1' | 'stage2', write: (writer: WriterIdentity) => R): Promise<R | null> => {
+      if (!dbReady) return null;
+      try {
+        const writer = await readWriterIdentity();
+        if (!writer) return null;
+        const current = readTimeline(visitUuid, providerUuid, getDb());
+        if (endStageOf(current.currentCardName) !== stage || current.visit.visitComplete || !current.visit.isVisitHolder) {
+          return null;
+        }
+        const result = write(writer);
+        if (result.kind === 'startStage2' || result.kind === 'completeVisit') void scanAndRearm('stageChange');
+        return result;
+      } catch (error: unknown) {
+        logger.error('[timeline] End Stage write failed', stage, error);
+        return null;
+      }
+    },
+    [visitUuid, providerUuid, dbReady],
+  );
+
+  const startStage2 = useCallback(
+    async (): Promise<boolean> =>
+      (await runEndStage('stage1', (writer) =>
+        endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, Date.now(), getDb()),
+      ))?.kind === 'startStage2',
+    [runEndStage, visitUuid],
+  );
+
+  const completeStage1 = useCallback(
+    (outcome: Stage1OutcomeId, details: OutcomeDetails) =>
+      runEndStage('stage1', (writer) => endStage1(visitUuid, outcome, details, writer, Date.now(), getDb())),
+    [runEndStage, visitUuid],
+  );
+
+  const completeStage2 = useCallback(
+    (outcome: Stage2OutcomeId, details: EndStage2Details) =>
+      runEndStage('stage2', (writer) => endStage2(visitUuid, outcome, details, writer, Date.now(), getDb())),
+    [runEndStage, visitUuid],
+  );
 
   return useMemo(() => {
     if (!snapshot) return null;
@@ -96,6 +151,12 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
       activeStage: activeStageOf(snapshot.currentCardName),
       captureSos,
       startStage2,
+      endStage: endStageOf(snapshot.currentCardName),
+      visitComplete: snapshot.visit.visitComplete,
+      isVisitHolder: snapshot.visit.isVisitHolder,
+      outcome: snapshot.outcome,
+      endStage1: completeStage1,
+      endStage2: completeStage2,
     };
-  }, [snapshot, now, captureSos, startStage2]);
+  }, [snapshot, now, captureSos, startStage2, completeStage1, completeStage2]);
 }

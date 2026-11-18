@@ -113,15 +113,42 @@ describe('useCaptureFormViewModel', () => {
     expect(result.current.form.infusionAnswer('oxytocin').answer).toBe('no');
   });
 
-  it('leaves a read-only card on the last Next without saving', async () => {
+  it('read-only: Next moves between tabs and is disabled on the last tab; nothing is saved (Kaveri, 2026-11-06)', async () => {
     const { result, onExit, onSaved } = setup('read', STORED);
     expect(result.current.readOnly).toBe(true);
+    act(() => result.current.goNext());
+    expect(result.current.tabIndex).toBe(1);
+    expect(result.current.nextDisabled).toBe(false);
+
     act(() => result.current.setTabIndex(3));
+    expect(result.current).toMatchObject({ nextDisabled: true, nextLabelKey: 'capture.next' });
     act(() => result.current.goNext());
 
-    expect(onExit).toHaveBeenCalled();
+    expect(onExit).not.toHaveBeenCalled();
     expect(saveCard).not.toHaveBeenCalled();
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it('read-only: Back is shown on every tab, and on the first tab it returns to the Timeline', () => {
+    const { result, onExit } = setup('read', STORED);
+    act(() => result.current.setTabIndex(2));
+    act(() => result.current.goBack());
+    expect(result.current.tabIndex).toBe(1);
+    act(() => result.current.goBack());
+    expect(result.current).toMatchObject({ tabIndex: 0, showBack: true });
+    act(() => result.current.goBack());
+    expect(onExit).toHaveBeenCalledTimes(1);
+  });
+
+  it("last tab says Android's Save on a new card and Update on an edited one; Next elsewhere", () => {
+    const fresh = setup('write', []);
+    expect(fresh.result.current).toMatchObject({ nextLabelKey: 'capture.next', showBack: false });
+    act(() => fresh.result.current.setTabIndex(3));
+    expect(fresh.result.current).toMatchObject({ nextLabelKey: 'capture.save', nextDisabled: false });
+
+    const edited = setup('edit', STORED);
+    act(() => edited.result.current.setTabIndex(3));
+    expect(edited.result.current.nextLabelKey).toBe('capture.update');
   });
 
   it('does not turn a read-only card\'s missing Medication answers into "No"', () => {

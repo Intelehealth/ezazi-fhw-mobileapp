@@ -136,13 +136,14 @@ const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, lay
       </TabPager>
 
       <CaptureActionBar
-        showBack={!viewModel.isFirstTab}
+        showBack={viewModel.showBack}
         onBack={viewModel.goBack}
         onVideoCall={() => logger.debug('[capture] Video Call tapped')}
         onChat={() => logger.debug('[capture] Chat tapped')}
         onRx={() => logger.debug('[capture] Rx tapped')}
         onNext={viewModel.goNext}
-        nextDisabled={viewModel.saveState === 'saving'}
+        nextLabelKey={viewModel.nextLabelKey}
+        nextDisabled={viewModel.nextDisabled}
       />
 
       <ConfirmDialog

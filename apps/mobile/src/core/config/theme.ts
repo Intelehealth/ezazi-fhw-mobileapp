@@ -205,6 +205,10 @@ export const colors = {
   primaryDark: clientConfig.theme.primaryDark,
   secondary: clientConfig.theme.secondary,
   onPrimary: palette.white,
+  // Figma "Main CTA" fill (Next, Record Now, End First Stage; file 8kkAB3TRzBFY2mSRJzkTiy, 251:709 / 251:555):
+  // left to right. Android draws these buttons flat in colorPrimary.
+  ctaGradientStart: '#2E1E91',
+  ctaGradientEnd: '#3922CF',
   black: palette.colorBlack,
   error: palette.error_red,
   // Network-error banner only (core/ui/ApiErrorBanner) — a separate, exact
