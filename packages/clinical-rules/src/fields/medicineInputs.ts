@@ -122,17 +122,11 @@ export const MEDICINE_STRENGTH_OPTIONS: readonly string[] = deepFreeze([
   '650  mg',
 ]);
 
-/** Dose unit (`R.array.dose_units`). */
-export const MEDICINE_DOSE_UNIT_OPTIONS: readonly string[] = deepFreeze([
-  'mL',
-  'mg',
-  'ug',
-  '%',
-  'IU',
-  'Tab',
-  'Cap',
-  'Drop',
-]);
+/**
+ * Dose unit (`R.array.dose_units`): Android's active items. Android has mg, ug, % and IU commented out
+ * (arrays_ezazi.xml), and RN offered them by mistake until 2026-11-06 (Kaveri: Android's 4).
+ */
+export const MEDICINE_DOSE_UNIT_OPTIONS: readonly string[] = deepFreeze(['mL', 'Tab', 'Cap', 'Drop']);
 
 /** Route (`R.array.medicine_routes`). */
 export const MEDICINE_ROUTE_OPTIONS: readonly string[] = deepFreeze([
@@ -145,13 +139,15 @@ export const MEDICINE_ROUTE_OPTIONS: readonly string[] = deepFreeze([
   'Intradermal (ID)',
 ]);
 
-/** Frequency (`R.array.medicine_frequencies`). */
+/**
+ * Frequency (`R.array.medicine_frequencies`). Deviation (Kaveri, 2026-11-06): Android lists
+ * "Single Dose, Stat Dose" twice; shown once here. The stored text is the same, so data matches Android.
+ */
 export const MEDICINE_FREQUENCY_OPTIONS: readonly string[] = deepFreeze([
   'Once daily (OD)',
   'Twice daily (BD)',
   'Thrice daily (TID)',
   'Four times in a day (QID)',
-  'Single Dose, Stat Dose',
   'Single Dose, Stat Dose',
   'As required (SOS)',
 ]);

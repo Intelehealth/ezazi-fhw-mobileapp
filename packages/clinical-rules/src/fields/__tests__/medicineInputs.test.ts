@@ -21,11 +21,13 @@ const ANDROID = {
     '750 mg', '-', '2000 mg', '5%', '0.9%', '10 IU/mL', '5 IU/mL', '25 mg/mL', '30 mg/mL', '125 ug', '5 mg/mL', '1 mg/mL',
     '2%', '4 mg/mL', '100 mg/mL', '500  mg/mL', '500 mg/100 mL mg/mL', '20 mg/mL', '40 mg/mL', '10 mg/mL', '200 ug',
     '400  mg', '650  mg'],
-  doseUnit: ['mL', 'mg', 'ug', '%', 'IU', 'Tab', 'Cap', 'Drop'],
+  // Android's active items (mg, ug, %, IU are commented out in arrays_ezazi.xml).
+  doseUnit: ['mL', 'Tab', 'Cap', 'Drop'],
   route: ['Oral', 'Sublingual (SL)', 'Intravenous (IV)', 'IV Infusion', 'Intramuscular (IM)', 'Subcutaneous (SC)',
     'Intradermal (ID)'],
+  // Android lists 'Single Dose, Stat Dose' twice; shown once (Kaveri, 2026-11-06).
   frequency: ['Once daily (OD)', 'Twice daily (BD)', 'Thrice daily (TID)', 'Four times in a day (QID)',
-    'Single Dose, Stat Dose', 'Single Dose, Stat Dose', 'As required (SOS)'],
+    'Single Dose, Stat Dose', 'As required (SOS)'],
   durationUnit: ['Minute', 'Minutes', 'Hour', 'Hours', 'Day', 'Days'],
 };
 
