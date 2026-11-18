@@ -8,6 +8,7 @@ interface CardAlarmModule {
   start(): void;
   stop(): void;
   isRunning(): boolean;
+  nextDueAt(): number;
   armCards(dueAt: number, mainAt: number, watchdogAt: number): AlarmKind;
   disarmCards(): void;
   armBattery(at: number): AlarmKind;

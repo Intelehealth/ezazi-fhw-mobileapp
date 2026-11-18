@@ -17,6 +17,10 @@ export const CARD_MAX_RESCANS = 2;
 // After that (a visit whose scan keeps failing), try again in a minute rather than give up.
 export const CARD_RETRY_DELAY_MS = 60_000;
 
+// The 5-minute battery wake also creates a card this overdue (a failed main wake-up then costs seconds, not
+// the 2-minute watchdog; Kaveri, 2026-11-06). The margin keeps it out of the way of a main wake-up in progress.
+export const CARD_OVERDUE_ON_BATTERY_WAKE_MS = 3000;
+
 // The JS task the native CardScanService runs (modules/card-alarm, CardScanService.TASK_NAME).
 export const CARD_SCAN_TASK = 'CardScan';
 

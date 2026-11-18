@@ -33,6 +33,9 @@ class CardAlarmModule : Module() {
 
     Function("isRunning") { CardAlarmState.isRunning(context) }
 
+    /** The due time the card alarms are armed for (epoch ms); 0 when none. */
+    Function("nextDueAt") { CardAlarmState.nextDueAt(context).toDouble() }
+
     /** Next card: the alarm clock at [mainAt], the watchdog at [watchdogAt]. Ignored when logged out. */
     Function("armCards") { dueAt: Double, mainAt: Double, watchdogAt: Double ->
       if (!CardAlarmState.isRunning(context)) return@Function "stopped"

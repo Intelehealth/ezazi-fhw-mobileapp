@@ -1,8 +1,9 @@
 import { handleBatteryWake } from '@/core/services/batteryGuard/batteryGuard';
 import { logger } from '@/core/utils/logger';
 
+import { cardAlarm } from './cardAlarmNative';
 import { scanAndRearm, type WakeReason } from './cardScheduler';
-import { CARD_MAX_WAIT_MS } from './constants';
+import { CARD_MAX_WAIT_MS, CARD_OVERDUE_ON_BATTERY_WAKE_MS } from './constants';
 
 interface CardScanTaskData {
   reason?: string;
@@ -25,6 +26,11 @@ export async function runCardScanTask(data: CardScanTaskData = {}): Promise<void
   try {
     if (reason === 'battery') {
       await handleBatteryWake();
+      // A card the main wake-up and the watchdog have not created yet: create it now.
+      const cardDueAt = cardAlarm?.nextDueAt() ?? 0;
+      if (cardDueAt > 0 && Date.now() >= cardDueAt + CARD_OVERDUE_ON_BATTERY_WAKE_MS) {
+        await scanAndRearm('battery', cardDueAt);
+      }
       return;
     }
     const wait = dueAt - Date.now();

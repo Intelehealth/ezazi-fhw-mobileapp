@@ -1,10 +1,12 @@
 import { handleBatteryWake } from '@/core/services/batteryGuard/batteryGuard';
 
+import { cardAlarm } from '../cardAlarmNative';
 import { runCardScanTask } from '../cardScanTask';
 import { scanAndRearm } from '../cardScheduler';
 
 jest.mock('@/core/services/batteryGuard/batteryGuard', () => ({ handleBatteryWake: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('../cardAlarmNative', () => ({ cardAlarm: { nextDueAt: jest.fn(() => 0) } }));
 jest.mock('@/core/utils/logger', () => ({ logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 
 const NOW = Date.UTC(2026, 10, 6, 10, 0, 0);
@@ -46,10 +48,33 @@ describe('runCardScanTask', () => {
     expect(scanAndRearm).toHaveBeenNthCalledWith(2, 'boot', 0);
   });
 
-  it('the battery alarm runs the battery check, not a card scan', async () => {
+  it('the battery alarm runs the battery check, and no card scan while no card is overdue', async () => {
+    (cardAlarm!.nextDueAt as jest.Mock).mockReturnValue(NOW + 60_000);
     await runCardScanTask({ reason: 'battery', dueAt: NOW });
 
     expect(handleBatteryWake).toHaveBeenCalledTimes(1);
+    expect(scanAndRearm).not.toHaveBeenCalled();
+  });
+
+  it('the battery alarm also creates a card the main wake-up missed (more than 3 s overdue)', async () => {
+    (cardAlarm!.nextDueAt as jest.Mock).mockReturnValue(NOW - 3000);
+    await runCardScanTask({ reason: 'battery', dueAt: NOW });
+
+    expect(handleBatteryWake).toHaveBeenCalledTimes(1);
+    expect(scanAndRearm).toHaveBeenCalledWith('battery', NOW - 3000);
+  });
+
+  it('leaves a card that is only just due to the main wake-up in progress', async () => {
+    (cardAlarm!.nextDueAt as jest.Mock).mockReturnValue(NOW - 2999);
+    await runCardScanTask({ reason: 'battery', dueAt: NOW });
+
+    expect(scanAndRearm).not.toHaveBeenCalled();
+  });
+
+  it('nothing armed (no visit, or logged out): no card scan', async () => {
+    (cardAlarm!.nextDueAt as jest.Mock).mockReturnValue(0);
+    await runCardScanTask({ reason: 'battery', dueAt: NOW });
+
     expect(scanAndRearm).not.toHaveBeenCalled();
   });
 
