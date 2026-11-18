@@ -2,7 +2,7 @@
 export interface StepperBounds {
   min: number;
   max: number;
-  base: number; // what - or + fills an empty field with
+  base: number; // what + fills an empty field with
   step: number;
   fractionDigits: number;
 }
@@ -16,10 +16,13 @@ export function readStepperValue(text: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-/** The text after a - (`direction` -1) or + (1) press: the base when empty, else one step, kept in bounds. */
+/**
+ * The text after a - (`direction` -1) or + (1) press: one step, kept in bounds. On an empty field + fills
+ * the base and - does nothing (Kaveri, 2026-11-06, open point 13).
+ */
 export function stepValue(text: string, direction: 1 | -1, bounds: StepperBounds): string {
   const current = readStepperValue(text);
-  if (current === null) return formatStepped(bounds.base, bounds.fractionDigits);
+  if (current === null) return direction === 1 ? formatStepped(bounds.base, bounds.fractionDigits) : text;
   const next = Math.min(bounds.max, Math.max(bounds.min, current + direction * bounds.step));
   return formatStepped(next, bounds.fractionDigits);
 }
@@ -36,9 +39,9 @@ export function sanitizeStepperText(text: string, bounds: StepperBounds): string
   return `${kept}.${rest.join('').slice(0, bounds.fractionDigits)}`;
 }
 
-/** Whether - and + can still move the value. An empty field can always start at the base. */
+/** Whether - and + can still move the value. An empty field starts with + only. */
 export function stepperLimits(text: string, bounds: StepperBounds): { canDecrease: boolean; canIncrease: boolean } {
   const current = readStepperValue(text);
-  if (current === null) return { canDecrease: true, canIncrease: true };
+  if (current === null) return { canDecrease: false, canIncrease: true };
   return { canDecrease: current > bounds.min, canIncrease: current < bounds.max };
 }

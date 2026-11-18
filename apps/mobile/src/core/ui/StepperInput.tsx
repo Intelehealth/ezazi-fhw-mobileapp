@@ -25,8 +25,8 @@ interface StepperInputProps {
 }
 
 /**
- * A number entered with - and + or by typing (Figma "BASELINE FHR", "PULSE"). The first press
- * on an empty field fills the base; presses stay within min and max; typing is not clamped,
+ * A number entered with - and + or by typing (Figma "BASELINE FHR", "PULSE"). On an empty field +
+ * fills the base and - is disabled; presses stay within min and max; typing is not clamped,
  * so validation can flag an out-of-range value.
  */
 export const StepperInput: React.FC<StepperInputProps> = ({

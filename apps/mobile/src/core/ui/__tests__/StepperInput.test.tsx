@@ -23,6 +23,14 @@ describe('StepperInput', () => {
     expect(onChange).toHaveBeenLastCalledWith('110');
   });
 
+  it('disables - while empty, so it does nothing (open point 13)', () => {
+    const onChange = setup();
+    const minus = screen.getByRole('button', { name: 'Decrease Baseline FHR' });
+    expect(minus.props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(minus);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('steps from the value', () => {
     const onChange = setup({ value: '120' });
     fireEvent.press(screen.getByRole('button', { name: 'Decrease Baseline FHR' }));

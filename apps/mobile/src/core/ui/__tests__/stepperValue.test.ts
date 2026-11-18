@@ -4,9 +4,9 @@ const FHR = { min: 50, max: 200, base: 110, step: 1, fractionDigits: 0 };
 const TEMPERATURE = { min: 90, max: 110, base: 95, step: 0.1, fractionDigits: 1 };
 
 describe('stepValue', () => {
-  it('fills the base on the first press of an empty field, either way', () => {
+  it('on an empty field + fills the base and - does nothing (open point 13)', () => {
     expect(stepValue('', 1, FHR)).toBe('110');
-    expect(stepValue('', -1, FHR)).toBe('110');
+    expect(stepValue('', -1, FHR)).toBe('');
   });
 
   it('moves one step and stays within min and max', () => {
@@ -45,6 +45,6 @@ describe('readStepperValue / stepperLimits', () => {
   it('blocks - at the minimum and + at the maximum', () => {
     expect(stepperLimits('50', FHR)).toEqual({ canDecrease: false, canIncrease: true });
     expect(stepperLimits('200', FHR)).toEqual({ canDecrease: true, canIncrease: false });
-    expect(stepperLimits('', FHR)).toEqual({ canDecrease: true, canIncrease: true });
+    expect(stepperLimits('', FHR)).toEqual({ canDecrease: false, canIncrease: true }); // empty: + only
   });
 });
