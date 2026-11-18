@@ -165,15 +165,22 @@ module.exports = {
               to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
             },
             message:
-              'Feature isolation: {{from.feature}} must not import {{target.feature}} internals. Share via core/* or @ezazi/*, never feature-to-feature. See MOBILE_STACK section 6.',
+              'Feature isolation: {{ from.captured.feature }} must not import {{ to.captured.feature }} internals. Share via core/* or @ezazi/*, never feature-to-feature. See MOBILE_STACK section 6.',
           },
           {
             // ...but a feature may import its OWN folder. This rule follows the
             // broad disallow above on purpose - the plugin is last-write-wins,
             // so the narrower same-feature carve-out re-permits it.
             from: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
+            // `captured` + `from.captured.*` is the plugin's (v7) syntax; the earlier `feature: '{{from.feature}}'`
+            // was never resolved, so this carve-out re-allowed every feature (2026-11-06 Kaveri, audit M5).
             allow: {
-              to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] }, feature: '{{from.feature}}' } },
+              to: {
+                element: {
+                  types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] },
+                  captured: { feature: '{{ from.captured.feature }}' },
+                },
+              },
             },
           },
           {
