@@ -39,17 +39,31 @@ describe('MedicineField', () => {
     expect(screen.getByText('ADD MEDICINE')).toBeTruthy();
   });
 
-  it('keeps Add disabled until Android\'s required inputs are filled, then adds', async () => {
+  it('keeps Add disabled until Android\'s required inputs and Duration with its unit are filled, then adds', async () => {
     const { onAdd } = setup({ answer: 'yes', medicines: [] });
-    expect(screen.getByRole('button', { name: 'Add' }).props.accessibilityState.disabled).toBe(true);
+    const addDisabled = () => screen.getByRole('button', { name: 'Add' }).props.accessibilityState.disabled;
+    expect(addDisabled()).toBe(true);
 
     pick('Medicine*', 'Tablet Paracetamol 650 mg');
     fireEvent.changeText(screen.getByLabelText('Dose*'), '1');
+    await waitFor(() => expect(addDisabled()).toBe(true)); // Duration and its unit still empty (open point 19)
+    fireEvent.changeText(screen.getByLabelText('Duration*'), '3');
+    pick('Duration Unit*', 'Days');
+    await waitFor(() => expect(addDisabled()).toBe(false));
     fireEvent.press(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() =>
       expect(onAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Paracetamol', form: 'Tablet', strength: '650 mg', dosageUnit: 'Tab', route: 'Oral', dosage: '1' }),
+        expect.objectContaining({
+          name: 'Paracetamol',
+          form: 'Tablet',
+          strength: '650 mg',
+          dosageUnit: 'Tab',
+          route: 'Oral',
+          dosage: '1',
+          duration: '3',
+          durationUnit: 'Days',
+        }),
       ),
     );
   });

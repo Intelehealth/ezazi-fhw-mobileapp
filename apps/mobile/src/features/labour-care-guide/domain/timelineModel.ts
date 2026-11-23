@@ -90,6 +90,22 @@ export function buildCheckpoints(rows: readonly TimelineCardRow[], visit: Timeli
   return checkpoints;
 }
 
+/**
+ * The stage heading drawn above each checkpoint, or null when it continues the stage above it. Android
+ * labels the first card of each stage ("Stage 1", "Stage 2"; TimelineAdapter tvStage); an SOS card belongs
+ * to the stage it was captured in, the one of the card before it.
+ */
+export function stageHeadings(checkpoints: readonly TimelineCheckpoint[], fallback: LabourStage): (LabourStage | null)[] {
+  let current: LabourStage | null = null;
+  return checkpoints.map((checkpoint) => {
+    const stage = checkpoint.cardName ? findCard(checkpoint.cardName)?.stage : undefined;
+    const own: LabourStage = stage ? labourStageOf(stage) : (current ?? fallback);
+    const heading = own === current ? null : own;
+    current = own;
+    return heading;
+  });
+}
+
 /** The stage the stepper highlights: the stage of the visit's highest card. */
 export function activeStageOf(currentCardName: string | null): LabourStage {
   const stage = currentCardName ? findCard(currentCardName)?.stage : undefined;

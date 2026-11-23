@@ -28,6 +28,7 @@ import {
 import { readTimeline, type TimelineSnapshot } from '../data/timelineReader';
 import { activeStageOf, buildCheckpoints, endStageOf } from '../domain/timelineModel';
 import type { LabourStage, TimelineCheckpoint } from '../domain/timeline.types';
+import { nowMs } from '@/core/utils/datetime';
 
 const CLOCK_TICK_MS = MS_PER_MINUTE;
 const WATCHED_TABLES = [encounter, obs, visit, visitAttribute];
@@ -48,6 +49,11 @@ export interface TimelineViewModel {
   visitComplete: boolean;
   /** Only the nurse holding the visit may end a stage (Android: the button is disabled otherwise). */
   isVisitHolder: boolean;
+  /**
+   * Whether SOS can be captured now (`decideSos`): the visit holder, no Decision Pending, a stage card to
+   * attach it to. The button is disabled otherwise (Kaveri, 2026-11-18).
+   */
+  sosAvailable: boolean;
   outcome: VisitOutcomeSummary | null;
   /** One End Stage 1 choice (not Move to Stage 2, see startStage2); null when nothing could be written. */
   endStage1: (outcome: Stage1OutcomeId, details: OutcomeDetails) => Promise<EndStageResult<EndStage1Decision> | null>;
@@ -63,7 +69,7 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
   const providerUuid = useAuthStore((state) => state.userUuid);
   const dbReady = useDbBootstrapStore((state) => state.phase === 'ready');
   const [snapshot, setSnapshot] = useState<TimelineSnapshot | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => nowMs());
 
   useEffect(() => {
     if (!dbReady) return undefined;
@@ -79,7 +85,7 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
   }, [visitUuid, providerUuid, dbReady]);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    const timer = setInterval(() => setNow(nowMs()), CLOCK_TICK_MS);
     return () => clearInterval(timer);
   }, []);
 
@@ -89,7 +95,7 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
     try {
       const writer = await readWriterIdentity();
       if (!writer) return null;
-      const result = writeSosCard(visitUuid, writer, Date.now(), getDb());
+      const result = writeSosCard(visitUuid, writer, nowMs(), getDb());
       if (result.kind === 'blocked') logger.info('[timeline] SOS not created', result.reason);
       return result;
     } catch (error: unknown) {
@@ -127,20 +133,20 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
   const startStage2 = useCallback(
     async (): Promise<boolean> =>
       (await runEndStage('stage1', (writer) =>
-        endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, Date.now(), getDb()),
+        endStage1(visitUuid, STAGE1_OUTCOME.MOVE_TO_STAGE2, {}, writer, nowMs(), getDb()),
       ))?.kind === 'startStage2',
     [runEndStage, visitUuid],
   );
 
   const completeStage1 = useCallback(
     (outcome: Stage1OutcomeId, details: OutcomeDetails) =>
-      runEndStage('stage1', (writer) => endStage1(visitUuid, outcome, details, writer, Date.now(), getDb())),
+      runEndStage('stage1', (writer) => endStage1(visitUuid, outcome, details, writer, nowMs(), getDb())),
     [runEndStage, visitUuid],
   );
 
   const completeStage2 = useCallback(
     (outcome: Stage2OutcomeId, details: EndStage2Details) =>
-      runEndStage('stage2', (writer) => endStage2(visitUuid, outcome, details, writer, Date.now(), getDb())),
+      runEndStage('stage2', (writer) => endStage2(visitUuid, outcome, details, writer, nowMs(), getDb())),
     [runEndStage, visitUuid],
   );
 
@@ -154,6 +160,11 @@ export function useTimelineViewModel(visitUuid: string): TimelineViewModel | nul
       endStage: endStageOf(snapshot.currentCardName),
       visitComplete: snapshot.visit.visitComplete,
       isVisitHolder: snapshot.visit.isVisitHolder,
+      sosAvailable:
+        !snapshot.visit.visitComplete &&
+        snapshot.visit.isVisitHolder &&
+        !snapshot.visit.decisionPending &&
+        endStageOf(snapshot.currentCardName) !== null,
       outcome: snapshot.outcome,
       endStage1: completeStage1,
       endStage2: completeStage2,

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { ScrollView, StyleSheet, Vibration, View, type LayoutChangeEvent } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { STAGE1_OUTCOME, STAGE2_OUTCOME } from '@ezazi/clinical-rules';
@@ -15,10 +15,12 @@ import { TimelineCheckpointCard } from '../components/TimelineCheckpointCard';
 import { TimelineActionBar } from '../components/TimelineActionBar';
 import { EndStage1ChoiceDialog, EndStage2Dialog, MotherDeathDialog, ReferHospitalDialog } from '../components/EndStageDialogs';
 import { VisitOutcomePanel } from '../components/VisitOutcomePanel';
-import { outcomeView, scrollTargetId } from '../domain/timelineModel';
+import { outcomeView, scrollTargetId, stageHeadings } from '../domain/timelineModel';
 import { useTimelineViewModel } from '../stores/useTimelineViewModel';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Timeline'>;
+
+const SOS_VIBRATION_MS = 1000;
 
 type EndStageId = 'stage1' | 'stage2';
 type ConfirmableOutcome = 'referOtherHospital' | 'selfDischarge' | 'shiftToCSection' | 'referToIcu' | 'other';
@@ -50,6 +52,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
   if (!viewModel) return <View style={styles.screen} />;
   const { checkpoints, activeStage } = viewModel;
   const targetId = scrolledOnOpen.current ? null : scrollTargetId(checkpoints);
+  const headings = stageHeadings(checkpoints, activeStage);
   const scrollToTarget = (event: LayoutChangeEvent) => {
     if (scrolledOnOpen.current) return;
     scrolledOnOpen.current = true;
@@ -125,13 +128,26 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Figma 251:408: the active stage's name over its cards. */}
-        <Text style={[styles.stageHeading, isTablet && { fontSize: fromFigma(32), marginBottom: fromFigma(14) }]}>
-          {t('timeline.stageHeading', { label: t(`timeline.stages.${activeStage}`) }).toUpperCase()}
-        </Text>
+        {checkpoints.length === 0 && (
+          <Text style={[styles.stageHeading, isTablet && { fontSize: fromFigma(32), marginBottom: fromFigma(14) }]}>
+            {t('timeline.stageHeading', { label: t(`timeline.stages.${activeStage}`) }).toUpperCase()}
+          </Text>
+        )}
         {checkpoints.map((checkpoint, index) => (
+          <React.Fragment key={checkpoint.id}>
+            {/* Figma 251:408 heading, over the first card of each stage (Android TimelineAdapter tvStage). */}
+            {headings[index] && (
+              <Text
+                style={[
+                  styles.stageHeading,
+                  index > 0 && styles.laterStageHeading,
+                  isTablet && { fontSize: fromFigma(32), marginBottom: fromFigma(14) },
+                ]}
+              >
+                {t('timeline.stageHeading', { label: t(`timeline.stages.${headings[index]}`) }).toUpperCase()}
+              </Text>
+            )}
           <View
-            key={checkpoint.id}
             testID={`timeline-card-${checkpoint.id}`}
             onLayout={checkpoint.id === targetId ? scrollToTarget : undefined}
           >
@@ -147,6 +163,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
               }}
             />
           </View>
+          </React.Fragment>
         ))}
       </ScrollView>
 
@@ -155,7 +172,12 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         view && <VisitOutcomePanel view={view} />
       ) : (
         <TimelineActionBar
-          onSos={() => setSosConfirmVisible(true)}
+          onSos={() => {
+            // Android vibrates for a second as SOS is tapped, before its question (TimelineVisitSummaryActivity 243-246).
+            Vibration.vibrate(SOS_VIBRATION_MS);
+            setSosConfirmVisible(true);
+          }}
+          sosDisabled={!viewModel.sosAvailable}
           onChat={() => logger.debug('[timeline] Chat tapped')}
           onVideoCall={() => logger.debug('[timeline] Video call tapped')}
           onRx={() => logger.debug('[timeline] Rx tapped')}
@@ -260,5 +282,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primaryTextDarkFigma,
     marginBottom: spacing.sm,
+  },
+  // A later stage's heading, set apart from the cards above it.
+  laterStageHeading: {
+    marginTop: spacing.lg,
   },
 });

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getDb, onTablesChanged } from '@/core/db';
 import { obs, patient } from '@/core/db/schema';
 import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
-import { ageInYears } from '@/core/utils/datetime';
+import { ageInYears, nowMs } from '@/core/utils/datetime';
 import { logger } from '@/core/utils/logger';
 
 import { readPatient } from '../data/timelineReader';
@@ -43,7 +43,7 @@ export function usePatientHeaderViewModel(visitUuid: string): PatientSummary | n
             id: row.patientUuid,
             name: fullName(row),
             ezId: row.openmrsId ?? '',
-            ageYears: ageInYears(row.dateOfBirth, Date.now()) ?? 0,
+            ageYears: ageInYears(row.dateOfBirth, nowMs()), // null: no date of birth, no age shown
             // The slot always shows; its value comes from registration later (field still to be confirmed).
             gravidaLabel: row.gravida
               ? t('timeline.gravidaShort', { gravida: row.gravida })

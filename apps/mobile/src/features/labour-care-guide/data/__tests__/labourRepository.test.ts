@@ -3,7 +3,7 @@ import { FIELD_ID, STAGE1_OUTCOME, STAGE2_OUTCOME } from '@ezazi/clinical-rules'
 import { encounterTypeName } from '@/core/db/constants/encounter';
 import { BASELINE_FHR, END_2ND_STAGE_OTHER, MISSED_ENCOUNTER, MOTHER_DECEASED, MOTHER_DECEASED_FLAG, REFER_TYPE } from '@/core/db/constants/obs';
 import { DECISION_PENDING, VISIT_READ_STATUS, VISIT_RISK } from '@/core/db/constants/visit';
-import { encounterRepo, obsRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
+import { encounterRepo, obsRepo, providerRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
 import { seedDevPatient } from '@/core/db/seeds/devPatient';
 import { DEV_VISIT_UUID } from '@/core/db/seeds/devPatient.data';
 import { SYNC_DIRTY, VOIDED_YES } from '@/core/db/syncFlags';
@@ -148,6 +148,18 @@ describe('labour repository', () => {
       saveCard({ visitUuid: DEV_VISIT_UUID, encounterUuid: dueCard, card: { values: {} }, writer: WRITER, now: NOW }, db);
 
       expect(obsRepo.listObsUuidsByEncounterAndConcept(dueCard, MISSED_ENCOUNTER, db)).toHaveLength(1);
+    });
+
+    it("leaves a doctor's rows out of the edit read, so a nurse never rewrites them (Android getOBSByEncounterUUID)", () => {
+      save('140');
+      providerRepo.upsertMany([{ uuid: 'doc-provider', useruuid: 'doc-user', role: 'Organizational: Doctor' }], db);
+      obsRepo.insertMany(
+        [{ encounteruuid: dueCard, conceptuuid: BASELINE_FHR, value: '150', comment: null, creator: 'doc-user', creatoruuid: 'doc-user', voided: 0 }],
+        db,
+      );
+
+      const stored = readStoredCardObs(dueCard, db).filter((row) => row.fieldId === FIELD_ID.BASELINE_FHR);
+      expect(stored.map((row) => row.value)).toEqual(['140']);
     });
 
     it('refreshes VISIT_RISK after the save, as Android, and marks the visit for sync', () => {

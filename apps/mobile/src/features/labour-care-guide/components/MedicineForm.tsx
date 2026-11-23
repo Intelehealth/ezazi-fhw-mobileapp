@@ -1,19 +1,23 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import {
   MEDICINE_CATALOGUE,
   MEDICINE_DOSE_UNIT_OPTIONS,
   MEDICINE_DURATION_UNIT_OPTIONS,
   MEDICINE_FORM_OPTIONS,
+  MEDICINE_ADD_REQUIRED_FIELDS,
   MEDICINE_FREQUENCY_OPTIONS,
-  MEDICINE_REQUIRED_FIELDS,
   MEDICINE_ROUTE_OPTIONS,
   MEDICINE_STRENGTH_OPTIONS,
   catalogueLabel,
+  filterDigits,
   filterFreeText,
   findCatalogueMedicine,
+  javaTrim,
 } from '@ezazi/clinical-rules';
 import type { MedicineEntry } from '@ezazi/clinical-rules';
 
@@ -44,8 +48,15 @@ const EMPTY: MedicineDraft = {
 const asOptions = (values: readonly string[]): ChoiceOption[] => values.map((value) => ({ value, label: value }));
 const NAME_OPTIONS = asOptions(MEDICINE_CATALOGUE.map(catalogueLabel));
 
-// Android `Medicine.isValidMedicine`: Add stays disabled until these are filled.
-const isComplete = (draft: MedicineDraft) => MEDICINE_REQUIRED_FIELDS.every((key) => (draft[key] ?? '').trim() !== '');
+// Add stays disabled until Android's `Medicine.isValidMedicine` parts and RN's Duration and its unit are filled
+// (MEDICINE_ADD_REQUIRED_FIELDS), each after Java's trim.
+const medicineSchema = z
+  .object(Object.fromEntries(Object.keys(EMPTY).map((key) => [key, z.string()])) as Record<keyof MedicineDraft, z.ZodString>)
+  .superRefine((draft, ctx) => {
+    for (const key of MEDICINE_ADD_REQUIRED_FIELDS) {
+      if (javaTrim(draft[key] ?? '') === '') ctx.addIssue({ code: 'custom', path: [key], message: 'required' });
+    }
+  });
 
 interface MedicineFormProps {
   initial?: MedicineEntry; // set when editing a medicine already in the list
@@ -60,19 +71,20 @@ interface MedicineFormProps {
 export const MedicineForm: React.FC<MedicineFormProps> = ({ initial, onSubmit, onCancel }) => {
   const { t } = useTranslation();
   const sizes = useControlSizes();
-  const { control, handleSubmit, setValue, watch } = useForm<MedicineDraft>({
+  const { control, handleSubmit, setValue, formState, watch } = useForm<MedicineDraft>({
     defaultValues: { ...EMPTY, ...initial, remark: initial?.remark ?? '' },
+    resolver: zodResolver(medicineSchema),
+    mode: 'onChange',
   });
-  const draft = watch();
 
   const pickName = (label: string) => {
     const medicine = findCatalogueMedicine(label);
-    setValue('name', medicine ? medicine.name : filterFreeText(label));
+    setValue('name', medicine ? medicine.name : filterFreeText(label), { shouldValidate: true });
     if (!medicine) return;
-    setValue('form', medicine.form);
-    setValue('strength', medicine.strength);
-    setValue('dosageUnit', medicine.dosageUnit);
-    setValue('route', medicine.route);
+    setValue('form', medicine.form, { shouldValidate: true });
+    setValue('strength', medicine.strength, { shouldValidate: true });
+    setValue('dosageUnit', medicine.dosageUnit, { shouldValidate: true });
+    setValue('route', medicine.route, { shouldValidate: true });
   };
 
   const picker = (key: keyof MedicineDraft, values: readonly string[], freeText = false) => (
@@ -103,7 +115,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({ initial, onSubmit, o
           <ControlTextInput
             label={t(`capture.medicine.${key}`)}
             value={field.value}
-            onChangeText={(text) => field.onChange(text.replace(/[^0-9]/g, ''))}
+            onChangeText={(text) => field.onChange(filterDigits(text))}
             keyboardType="number-pad"
           />
         </FormField>
@@ -118,7 +130,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({ initial, onSubmit, o
         <PickerField
           label={t('capture.medicine.name')}
           options={NAME_OPTIONS}
-          value={draft.name || null}
+          value={watch('name') || null}
           onChange={pickName}
           placeholder={t('capture.selectPlaceholder')}
           freeText
@@ -158,7 +170,7 @@ export const MedicineForm: React.FC<MedicineFormProps> = ({ initial, onSubmit, o
         <AppButton
           label={t('capture.medicine.add')}
           size="compact"
-          disabled={!isComplete(draft)}
+          disabled={!formState.isValid}
           disabledTone="brand"
           onPress={handleSubmit((values) => onSubmit({ ...values, remark: values.remark || undefined }))}
           style={styles.half}

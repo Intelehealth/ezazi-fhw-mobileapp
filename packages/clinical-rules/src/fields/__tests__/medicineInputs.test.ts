@@ -11,7 +11,7 @@ import {
   catalogueLabel,
   findCatalogueMedicine,
 } from '../medicineInputs';
-import { MEDICINE_REQUIRED_FIELDS } from '../../storage/medicineText';
+import { MEDICINE_ADD_REQUIRED_FIELDS, MEDICINE_REQUIRED_FIELDS } from '../../storage/medicineText';
 
 // Literal copies of Android res/values/arrays_ezazi.xml (whitelabel-master b3ddd15), kept
 // independent of the data file: duplicates and spellings are Android's own.
@@ -67,6 +67,10 @@ describe('medicine catalogue', () => {
   it('returns null for a medicine typed by hand', () => {
     expect(findCatalogueMedicine('Paracetamol')).toBeNull();
     expect(findCatalogueMedicine('')).toBeNull();
+  });
+
+  it("RN also requires Duration and its unit, which Android marks * but never checks (open point 19)", () => {
+    expect(MEDICINE_ADD_REQUIRED_FIELDS).toEqual([...MEDICINE_REQUIRED_FIELDS, 'duration', 'durationUnit']);
   });
 
   it('fills every part a picked medicine needs except the dose the nurse enters', () => {

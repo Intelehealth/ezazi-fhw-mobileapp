@@ -1,6 +1,6 @@
 import '@/core/i18n';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { ScrollView } from 'react-native';
+import { ScrollView, Vibration } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 
@@ -28,6 +28,7 @@ const viewModel = {
   endStage: 'stage1' as 'stage1' | 'stage2' | null,
   visitComplete: false,
   isVisitHolder: true,
+  sosAvailable: true,
   outcome: null as null | { outcome: string; hasMotherDeceased: boolean; motherDeceasedReason: string | null; otherComment: string | null },
   endStage1,
   endStage2,
@@ -79,6 +80,24 @@ describe('TimelineScreen', () => {
     scrollTo.mockRestore();
   });
 
+  it('puts a stage heading over the first card of each stage; an SOS card stays under its stage', () => {
+    const at = new Date().toISOString();
+    (useTimelineViewModel as jest.Mock).mockReturnValue({
+      ...viewModel,
+      activeStage: 'stage2',
+      checkpoints: [
+        { id: 'a', cardName: 'Stage1_Hour1_1', scheduledAt: at, status: 'completed', access: 'read' },
+        { id: 's', isSos: true, scheduledAt: at, status: 'completed', access: 'read' },
+        { id: 'b', cardName: 'Stage2_Hour1_1', scheduledAt: at, status: 'dueNow', access: 'write' },
+      ],
+    });
+    render(<TimelineScreen {...props} />);
+
+    expect(screen.getByText('STAGE 1')).toBeTruthy();
+    expect(screen.getByText('STAGE 2')).toBeTruthy();
+    expect(screen.getAllByText(/^STAGE /)).toHaveLength(2);
+  });
+
   it('opens the due card for capture from Record Now', () => {
     (useTimelineViewModel as jest.Mock).mockReturnValue({
       ...viewModel,
@@ -103,6 +122,22 @@ describe('TimelineScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Yes' }));
     expect(captureSos).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('SOS Data Entry!')).toBeNull();
+  });
+
+  it('SOS vibrates for a second as Android, and is disabled while it cannot be captured', () => {
+    const vibrate = jest.spyOn(Vibration, 'vibrate').mockImplementation(() => undefined);
+    const { rerender } = render(<TimelineScreen {...props} />);
+    fireEvent.press(screen.getByRole('button', { name: 'Send SOS alert' }));
+    expect(vibrate).toHaveBeenCalledWith(1000);
+    fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+
+    (useTimelineViewModel as jest.Mock).mockReturnValue({ ...viewModel, sosAvailable: false });
+    rerender(<TimelineScreen {...props} />);
+    const sos = screen.getByRole('button', { name: 'Send SOS alert' });
+    expect(sos.props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(sos);
+    expect(screen.queryByText('SOS Data Entry!')).toBeNull();
+    vibrate.mockRestore();
   });
 
   it('writes nothing when the SOS confirm is cancelled', () => {

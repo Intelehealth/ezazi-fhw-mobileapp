@@ -20,7 +20,7 @@ describe('CaptureValueField', () => {
   it('draws option buttons with Android\'s labels and stores Android\'s value', () => {
     const onChange = setup('companion');
     expect(screen.getByText('COMPANION')).toBeTruthy();
-    fireEvent.press(screen.getByRole('radio', { name: 'Woman declines' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Woman Declines' }));
     expect(onChange).toHaveBeenCalledWith('D');
   });
 

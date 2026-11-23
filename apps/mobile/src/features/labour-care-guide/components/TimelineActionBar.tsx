@@ -10,6 +10,8 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 interface TimelineActionBarProps {
   onSos: () => void;
+  /** SOS cannot be captured now (not the visit holder, Decision Pending): the button is disabled. */
+  sosDisabled?: boolean;
   onChat: () => void;
   onVideoCall: () => void;
   onRx: () => void;
@@ -37,6 +39,7 @@ const ACTIONS: readonly { key: ActionKey; Icon: React.FC<IconProps>; weight: num
  */
 export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
   onSos,
+  sosDisabled = false,
   onChat,
   onVideoCall,
   onRx,
@@ -73,12 +76,21 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
       <View style={[styles.quickActions, isTablet && { gap: fromFigma(16) }]}>
         {ACTIONS.map(({ key, Icon, weight }) => {
           const isSos = key === 'sos';
+          const disabled = isSos && sosDisabled;
           return (
             <TouchableOpacity
               key={key}
-              style={[styles.pill, pillStyle, isTablet ? { flex: weight } : styles.flex1, isSos && styles.sosPill]}
+              style={[
+                styles.pill,
+                pillStyle,
+                isTablet ? { flex: weight } : styles.flex1,
+                isSos && styles.sosPill,
+                disabled && styles.disabledPill,
+              ]}
               onPress={onPress[key]}
+              disabled={disabled}
               accessibilityRole="button"
+              accessibilityState={{ disabled }}
               accessibilityLabel={t(`timeline.a11y.${key}`)}
               activeOpacity={0.8}
             >
@@ -129,6 +141,9 @@ const styles = StyleSheet.create({
   sosPill: {
     backgroundColor: colors.timelineSos,
     borderWidth: 0,
+  },
+  disabledPill: {
+    opacity: 0.4,
   },
   pillLabel: {
     color: colors.timelineActionText,

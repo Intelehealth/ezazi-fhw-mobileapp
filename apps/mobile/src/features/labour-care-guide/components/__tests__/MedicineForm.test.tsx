@@ -76,18 +76,22 @@ describe('MedicineForm', () => {
     expect(shown('Route*')).toBe('Oral');
   });
 
-  it('keeps Add disabled until the dose is given, keeps only digits in it, then adds', async () => {
+  it('keeps Add disabled until the dose, Duration and its unit are given, keeps only digits, then adds', async () => {
     const { onSubmit } = setup();
     pick('Medicine*', 'Tablet Paracetamol 650 mg');
     expect(addDisabled()).toBe(true);
 
     fireEvent.changeText(screen.getByLabelText('Dose*'), '2 tabs');
     expect(screen.getByLabelText('Dose*').props.value).toBe('2');
-    expect(addDisabled()).toBe(false);
+    // Android stops here; RN also requires Duration and its unit (open point 19, Kaveri 2026-11-18).
+    await waitFor(() => expect(addDisabled()).toBe(true));
+    fireEvent.changeText(screen.getByLabelText('Duration*'), '3');
+    pick('Duration Unit*', 'Days');
+    await waitFor(() => expect(addDisabled()).toBe(false));
 
     fireEvent.press(screen.getByRole('button', { name: 'Add' }));
 
-    // Frequency and duration are not required, as Android; an empty remark is left out.
+    // Frequency is not required, as Android; an empty remark is left out.
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith({
         name: 'Paracetamol',
@@ -97,8 +101,8 @@ describe('MedicineForm', () => {
         dosageUnit: 'Tab',
         frequency: '',
         route: 'Oral',
-        duration: '',
-        durationUnit: '',
+        duration: '3',
+        durationUnit: 'Days',
         remark: undefined,
       }),
     );
@@ -124,7 +128,7 @@ describe('MedicineForm', () => {
     expect(shown('Duration Unit*')).toBe('Days');
     expect(screen.getByLabelText('Duration*').props.value).toBe('3');
     expect(screen.getByLabelText('Remark').props.value).toBe('After food');
-    expect(addDisabled()).toBe(false);
+    await waitFor(() => expect(addDisabled()).toBe(false));
 
     pick('Route*', 'Intravenous (IV)');
     fireEvent.changeText(screen.getByLabelText('Remark'), 'with water');

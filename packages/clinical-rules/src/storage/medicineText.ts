@@ -30,6 +30,16 @@ export const MEDICINE_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = deepFr
   'route',
 ]);
 
+/**
+ * What RN requires before a medicine can be added: Android's `isValidMedicine` parts plus Duration and its
+ * unit, which Android marks with * but never checks (Kaveri, 2026-11-18; open point 19).
+ */
+export const MEDICINE_ADD_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = deepFreeze([
+  ...MEDICINE_REQUIRED_FIELDS,
+  'duration',
+  'durationUnit',
+]);
+
 /** The text Android stores for one medicine. */
 export function encodeMedicine(entry: MedicineEntry): string {
   const remark = entry.remark ? ` | ${entry.remark}` : '';

@@ -100,4 +100,15 @@ describe('TimelineCheckpointCard', () => {
     expect(screen.getByText(/\(in 30 min\)$/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Record Now' })).toBeNull();
   });
+
+  it("shows Android's edit marker only on the editable card, and it opens the card", () => {
+    const onOpen = renderCard({ status: 'completed', access: 'edit', showEditIcon: true, recordedAt: at(-5) });
+    fireEvent.press(screen.getByRole('button', { name: 'Edit observation' }));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('no edit marker on a read-only card', () => {
+    renderCard({ status: 'completed', access: 'read', showEditIcon: false, recordedAt: at(-5) });
+    expect(screen.queryByRole('button', { name: 'Edit observation' })).toBeNull();
+  });
 });

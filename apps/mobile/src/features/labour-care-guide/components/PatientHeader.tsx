@@ -114,7 +114,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                 ]}
                 numberOfLines={1}
               >
-                {t('timeline.identityLine', { ezId: patient.ezId, age: patient.ageYears, gravida: patient.gravidaLabel })}
+                {patient.ageYears === null
+                  ? t('timeline.identityLineNoAge', { ezId: patient.ezId, gravida: patient.gravidaLabel })
+                  : t('timeline.identityLine', { ezId: patient.ezId, age: patient.ageYears, gravida: patient.gravidaLabel })}
               </Text>
             </>
           )}

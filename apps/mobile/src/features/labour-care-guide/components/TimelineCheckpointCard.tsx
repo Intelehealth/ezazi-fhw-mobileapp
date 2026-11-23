@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
 import { AppButton } from '@/core/ui/AppButton';
@@ -221,6 +221,18 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
           </View>
 
           {checkpoint.status === 'upcoming' && <LockKeyholeBadgeIcon size={sizes.lockBadge} />}
+          {/* Android's edit button (TimelineAdapter ivEdit): the newest submitted card while it can still be edited. */}
+          {checkpoint.showEditIcon && (
+            <Pressable
+              onPress={onOpen}
+              accessibilityRole="button"
+              accessibilityLabel={t('timeline.a11y.editCard')}
+              hitSlop={12}
+              testID="timeline-edit-icon"
+            >
+              <AppIcon name="edit" size={sizes.lockBadge} color={colors.primary} />
+            </Pressable>
+          )}
         </View>
 
         {/* Record Now opens an empty card, Show a submitted one; only for the visit holder, as Android. */}

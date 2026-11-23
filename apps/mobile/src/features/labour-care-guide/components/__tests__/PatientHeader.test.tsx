@@ -2,7 +2,13 @@ import '@/core/i18n';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { PatientHeader, type HeaderNavigation } from '../PatientHeader';
 
-const PATIENT = { id: 'p1', name: 'Live Test Patient', ezId: 'EZ-DEV-0002', ageYears: 29, gravidaLabel: 'G-' };
+const PATIENT: { id: string; name: string; ezId: string; ageYears: number | null; gravidaLabel: string } = {
+  id: 'p1',
+  name: 'Live Test Patient',
+  ezId: 'EZ-DEV-0002',
+  ageYears: 29,
+  gravidaLabel: 'G-',
+};
 
 const renderHeader = (navigation: HeaderNavigation, patient: typeof PATIENT | null = PATIENT) => {
   const handlers = { onNavigate: jest.fn(), onViewLcg: jest.fn(), onViewPostpartumReport: jest.fn() };
@@ -17,6 +23,11 @@ describe('PatientHeader', () => {
 
     expect(screen.getByText('Live Test Patient')).toBeTruthy();
     expect(screen.getByText('EZ-DEV-0002 · 29 years · G-')).toBeTruthy();
+  });
+
+  it('leaves the age out when there is no date of birth (not "0 years")', () => {
+    renderHeader('close', { ...PATIENT, ageYears: null });
+    expect(screen.getByText('EZ-DEV-0002 · G-')).toBeTruthy();
   });
 
   it('closes from the Timeline variant, which has no back button', () => {

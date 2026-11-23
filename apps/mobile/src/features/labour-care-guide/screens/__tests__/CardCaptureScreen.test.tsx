@@ -105,6 +105,22 @@ describe('CardCaptureScreen', () => {
     expect(saveCard).toHaveBeenCalledWith(expect.objectContaining({ encounterUuid: 'card-1' }), 'db-handle');
   });
 
+  it('a failed save says "Not saved" and keeps the card open with what was typed', async () => {
+    (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
+    saveCard.mockImplementationOnce(() => {
+      throw new Error('disk full');
+    });
+    const { navigation } = setup();
+
+    fireEvent.press(screen.getByRole('tab', { name: 'Shared decision' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('The observation could not be saved. Please try again.')).toBeTruthy();
+    expect(navigation.goBack).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByRole('button', { name: 'Okay' }));
+    expect(screen.queryByText('Not saved')).toBeNull();
+  });
+
   it('asks before leaving; Continue keeps the form open', () => {
     (useCardCaptureViewModel as jest.Mock).mockReturnValue({ header: HEADER, layout: LAYOUT, stored: [] });
     const { leave } = setup();

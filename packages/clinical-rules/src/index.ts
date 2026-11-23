@@ -99,7 +99,7 @@ export { FIELD_CONTROLS, getFieldControl } from './fields/fieldControls';
 export type { FieldControl } from './fields/fieldControls';
 export { getStepperSpec } from './fields/stepper';
 export type { StepperSpec } from './fields/stepper';
-export { filterFreeText } from './fields/textInput';
+export { filterFreeText, filterDigits } from './fields/textInput';
 export type {
   FieldFrequency,
   OptionDefinition,
@@ -165,7 +165,9 @@ export type { StoredObs, CardEdit, ObsRewrite } from './save/editedCardObs';
 
 export { encodeInfusion, decodeInfusion } from './storage/infusionJson';
 export type { InfusionEntry } from './storage/infusionJson';
-export { encodeMedicine, decodeMedicine, MEDICINE_REQUIRED_FIELDS } from './storage/medicineText';
+export { encodeMedicine, decodeMedicine, MEDICINE_REQUIRED_FIELDS, MEDICINE_ADD_REQUIRED_FIELDS } from './storage/medicineText';
+// Java's String.trim() (what Android trims stored values with): the app must match values the same way.
+export { javaTrim } from './internal/javaTrim';
 export type { MedicineEntry } from './storage/medicineText';
 export { isNoResponse } from './storage/noResponse';
 

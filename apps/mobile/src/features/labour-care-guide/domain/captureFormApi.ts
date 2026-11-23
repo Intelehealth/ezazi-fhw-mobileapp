@@ -1,3 +1,4 @@
+import type { FIELD_ID } from '@ezazi/clinical-rules';
 import type {
   FieldId,
   InfusionAnswer,
@@ -7,8 +8,8 @@ import type {
   StepperSpec,
 } from '@ezazi/clinical-rules';
 
-export type InfusionFieldId = 'oxytocin' | 'ivFluids';
-export type NoteFieldId = 'assessment' | 'plan';
+export type InfusionFieldId = typeof FIELD_ID.OXYTOCIN | typeof FIELD_ID.IV_FLUIDS;
+export type NoteFieldId = typeof FIELD_ID.ASSESSMENT | typeof FIELD_ID.PLAN;
 
 /** Stepper bounds of the Oxytocin strength and the infusion rate. */
 export interface InfusionBounds {

@@ -4,6 +4,7 @@ import {
   FIELD_ID,
   RISK_FIELD_IDS,
   isNoResponse,
+  javaTrim,
   buildEditedCardObs,
   buildNewCardObs,
   computeVisitRisk,
@@ -106,20 +107,23 @@ function addedAtLookup(input: SaveCardInput): (draft: ObsDraft) => string | unde
   const add = (id: keyof NonNullable<SaveCardInput['addedAt']>, values: readonly string[]) =>
     values.forEach((value, index) => {
       const at = input.addedAt?.[id]?.[index];
-      if (at) pending.push({ concept: FIELD_CONCEPT_KEY[id], value: value.trim(), at });
+      if (at) pending.push({ concept: FIELD_CONCEPT_KEY[id], value: javaTrim(value), at });
     });
   add(FIELD_ID.MEDICINE, (input.card[FIELD_ID.MEDICINE]?.medicines ?? []).map(encodeMedicine));
   add(FIELD_ID.ASSESSMENT, input.notes?.[FIELD_ID.ASSESSMENT] ?? []);
   add(FIELD_ID.PLAN, input.notes?.[FIELD_ID.PLAN] ?? []);
   return (draft) => {
-    const index = pending.findIndex((entry) => entry.concept === draft.conceptKey && entry.value === draft.value.trim());
+    const index = pending.findIndex((entry) => entry.concept === draft.conceptKey && entry.value === javaTrim(draft.value));
     return index < 0 ? undefined : pending.splice(index, 1)[0].at;
   };
 }
 
-/** A card's saved obs that belong to a field, newest first, voided ones left out: what Save and Show read. */
+/**
+ * A card's saved obs that belong to a field, newest first, voided ones left out: what Save and Show read.
+ * Doctor-written rows are left out, as Android's `getOBSByEncounterUUID`, so a nurse never rewrites them.
+ */
 export function readStoredCardObs(encounterUuid: string, on: DbHandle): StoredObs[] {
-  return obsRepo.listByEncounterNewestFirst(encounterUuid, on).flatMap((row) => {
+  return obsRepo.listByEncounterExcludingDoctors(encounterUuid, on).flatMap((row) => {
     const fieldId = row.conceptuuid ? FIELD_BY_CONCEPT.get(row.conceptuuid) : undefined;
     return fieldId && row.voided === VOIDED_NO
       ? [{ uuid: row.uuid, fieldId, value: row.value ?? '', createdAt: row.created_date ?? '' }]

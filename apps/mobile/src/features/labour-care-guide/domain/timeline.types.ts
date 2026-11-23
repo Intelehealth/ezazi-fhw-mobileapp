@@ -34,7 +34,7 @@ export interface PatientSummary {
   id: string;
   name: string;
   ezId: string;
-  ageYears: number;
+  ageYears: number | null; // null without a date of birth: the age is left out (Kaveri, 2026-11-18)
   /** Obstetric gravida/para shorthand, e.g. "G1". */
   gravidaLabel: string;
 }

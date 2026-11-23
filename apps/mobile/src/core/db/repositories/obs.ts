@@ -324,7 +324,8 @@ export function listByEncounterExcludingDoctors(
         ),
       ),
     )
-    .orderBy(desc(obs.created_date))
+    // Same second (no millis, Android's format): insert order, as listByEncounterNewestFirst.
+    .orderBy(desc(obs.created_date), desc(sql`rowid`))
     .all();
 }
 

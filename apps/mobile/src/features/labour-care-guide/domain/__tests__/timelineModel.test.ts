@@ -6,6 +6,7 @@ import {
   labourStageOf,
   outcomeView,
   scrollTargetId,
+  stageHeadings,
   type TimelineCardRow,
 } from '../timelineModel';
 import type { TimelineCheckpoint } from '../timeline.types';
@@ -147,6 +148,28 @@ describe('outcomeView (Android setVisitOutcome / updateOutOfTimeOutcomeText)', (
   it('nothing stored, or the visit still open: nothing to show', () => {
     expect(outcomeView(summary(''))).toBeNull();
     expect(outcomeView(null)).toBeNull();
+  });
+});
+
+describe('stageHeadings (Android TimelineAdapter tvStage)', () => {
+  const at = '2026-11-18T10:00:00.000Z';
+  it('a heading over the first card of each stage; SOS and the upcoming card continue their stage', () => {
+    expect(
+      stageHeadings(
+        [
+          { id: '1', cardName: 'Stage1_Hour1_1', scheduledAt: at, status: 'completed' },
+          { id: '2', cardName: 'Stage1_Hour1_2', scheduledAt: at, status: 'missed' },
+          { id: 's', isSos: true, scheduledAt: at, status: 'completed' },
+          { id: '3', cardName: 'Stage2_Hour1_1', scheduledAt: at, status: 'dueNow' },
+          { id: 'u', cardName: 'Stage2_Hour1_2', scheduledAt: at, status: 'upcoming' },
+        ],
+        'stage2',
+      ),
+    ).toEqual(['stage1', null, null, 'stage2', null]);
+  });
+
+  it('a list that starts with an SOS card takes the active stage', () => {
+    expect(stageHeadings([{ id: 's', isSos: true, scheduledAt: at, status: 'completed' }], 'stage1')).toEqual(['stage1']);
   });
 });
 

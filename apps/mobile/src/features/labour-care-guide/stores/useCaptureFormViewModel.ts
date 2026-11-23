@@ -12,6 +12,7 @@ import { toCardInput, type CaptureFormValues } from '../domain/captureForm';
 import { toTabViews, type TabView } from '../domain/captureFieldView';
 import type { CaptureFormApi } from '../domain/captureFormApi';
 import { useCaptureForm } from './useCaptureForm';
+import { nowMs } from '@/core/utils/datetime';
 
 export type SaveState = 'idle' | 'saving' | 'failed';
 
@@ -36,6 +37,8 @@ export interface CaptureFormViewModel {
   /** Checks the rules and saves, or jumps to the first tab in error (last Next, Save & Exit). */
   save: () => void;
   saveState: SaveState;
+  /** Closes the "not saved" message; everything typed stays on the card for another try. */
+  dismissSaveError: () => void;
   /** An older submitted card: shown as saved, nothing can be changed or saved (Android READ). */
   readOnly: boolean;
 }
@@ -86,7 +89,7 @@ export function useCaptureFormViewModel({
       const writer = await readWriterIdentity();
       if (!writer) throw new Error('no logged-in writer');
       const card = toCardInput(values, layout);
-      saveCard({ visitUuid, encounterUuid, card, notes: values.notes, addedAt: values.addedAt, writer, now: Date.now() }, getDb());
+      saveCard({ visitUuid, encounterUuid, card, notes: values.notes, addedAt: values.addedAt, writer, now: nowMs() }, getDb());
       setSaveState('idle');
       onSaved();
     } catch (error: unknown) {
@@ -122,6 +125,7 @@ export function useCaptureFormViewModel({
     nextDisabled: saveState === 'saving' || (readOnly && isLastTab),
     save: trySave,
     saveState,
+    dismissSaveError: () => setSaveState('idle'),
     readOnly,
   };
 }

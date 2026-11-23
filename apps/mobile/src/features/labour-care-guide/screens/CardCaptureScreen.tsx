@@ -146,6 +146,17 @@ const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, lay
         nextDisabled={viewModel.nextDisabled}
       />
 
+      {/* A failed save (Kaveri, 2026-11-18): say so and keep the card open; Android has no message here. */}
+      <ConfirmDialog
+        visible={viewModel.saveState === 'failed'}
+        tone="danger"
+        title={t('capture.saveFailed.title')}
+        message={t('capture.saveFailed.message')}
+        confirmLabel={t('timeline.endStageFlow.okay')}
+        onConfirm={viewModel.dismissSaveError}
+        onClose={viewModel.dismissSaveError}
+      />
+
       <ConfirmDialog
         visible={askToLeave}
         tone="warning"
