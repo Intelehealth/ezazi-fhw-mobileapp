@@ -17,6 +17,8 @@ internal object CardAlarmState {
   private const val PREFS = "card_alarm"
   private const val KEY_RUNNING = "running"
   private const val KEY_NEXT_DUE_AT = "nextDueAt"
+  private const val KEY_CHANNEL_NAME = "channelName"
+  private const val KEY_NOTIFICATION_TITLE = "notificationTitle"
   private const val LOG_FILE = "card-wakes.log"
   private const val LOG_MAX_BYTES = 256 * 1024L
 
@@ -30,6 +32,16 @@ internal object CardAlarmState {
   }
 
   fun nextDueAt(context: Context) = prefs(context).getLong(KEY_NEXT_DUE_AT, 0L)
+
+  /** The scan service's channel name and notification title in the app's language (en.json), set by JS. */
+  fun setTexts(context: Context, channelName: String, notificationTitle: String) {
+    prefs(context).edit().putString(KEY_CHANNEL_NAME, channelName).putString(KEY_NOTIFICATION_TITLE, notificationTitle).apply()
+  }
+
+  // English until JS has set them once (e.g. a wake-up after a reboot, before the app was opened).
+  fun channelName(context: Context) = prefs(context).getString(KEY_CHANNEL_NAME, null) ?: "Labour card check"
+
+  fun notificationTitle(context: Context) = prefs(context).getString(KEY_NOTIFICATION_TITLE, null) ?: "Checking labour cards"
 
   fun setNextDueAt(context: Context, dueAt: Long) {
     prefs(context).edit().putLong(KEY_NEXT_DUE_AT, dueAt).apply()

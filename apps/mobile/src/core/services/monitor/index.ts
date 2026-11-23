@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import notifee from 'react-native-notify-kit';
+import { i18n } from '@/core/i18n';
 import { logger } from '@/core/utils/logger';
 
 import { cardAlarm } from './cardAlarmNative';
@@ -18,6 +19,7 @@ async function cancelLegacyMonitor(): Promise<void> {
 
 function startMonitor(): void {
   try {
+    cardAlarm?.setTexts(i18n.t('monitor.channelName'), i18n.t('monitor.notificationTitle'));
     cardAlarm?.start();
   } catch (error) {
     logger.error('[monitor] start failed', error);

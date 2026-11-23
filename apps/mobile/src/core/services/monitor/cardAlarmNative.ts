@@ -8,6 +8,7 @@ interface CardAlarmModule {
   start(): void;
   stop(): void;
   isRunning(): boolean;
+  setTexts(channelName: string, notificationTitle: string): void;
   nextDueAt(): number;
   armCards(dueAt: number, mainAt: number, watchdogAt: number): AlarmKind;
   disarmCards(): void;

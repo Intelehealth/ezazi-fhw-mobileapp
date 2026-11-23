@@ -5,8 +5,7 @@ import {
   minutesUntil,
   localIsoTimestamp,
   utcIsoTimestamp,
-  utcTimestampToIso,
-} from '../datetime';
+  utcTimestampToIso, nowMs } from '../datetime';
 
 /**
  * Pins the wire format. The server parses these with Java's
@@ -107,3 +106,12 @@ describe('ageInYears', () => {
     expect(ageInYears(null, NOW)).toBeNull();
   });
 });
+
+describe('nowMs', () => {
+  it('is the current epoch ms, so every "now" follows the one clock (and jest fake timers)', () => {
+    jest.useFakeTimers({ now: Date.UTC(2026, 10, 18, 9, 30, 0) });
+    expect(nowMs()).toBe(Date.UTC(2026, 10, 18, 9, 30, 0));
+    jest.useRealTimers();
+  });
+});
+

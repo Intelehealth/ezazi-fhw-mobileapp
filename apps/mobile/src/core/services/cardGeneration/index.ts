@@ -6,6 +6,7 @@ import { logger } from '@/core/utils/logger';
 
 import { alertNewCards } from './newCardAlert';
 import { scanAllVisits, type ScanResult } from './scan';
+import { nowMs } from '@/core/utils/datetime';
 
 export type { ScanResult } from './scan';
 
@@ -45,7 +46,7 @@ function start(now: number): Promise<ScanResult | null> {
  * latest time), so a card that falls due while a scan is running is never missed. Null when nobody is
  * logged in.
  */
-export function runCardScan(now: number = Date.now()): Promise<ScanResult | null> {
+export function runCardScan(now: number = nowMs()): Promise<ScanResult | null> {
   if (!current) return start(now);
   if (now <= currentNow) return current;
   nextNow = Math.max(nextNow, now);

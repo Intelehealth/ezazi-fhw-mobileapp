@@ -55,12 +55,12 @@ class CardScanService : HeadlessJsTaskService() {
     val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       manager.createNotificationChannel(
-        NotificationChannel(CHANNEL_ID, "Labour card check", NotificationManager.IMPORTANCE_MIN),
+        NotificationChannel(CHANNEL_ID, CardAlarmState.channelName(this), NotificationManager.IMPORTANCE_MIN),
       )
     }
     val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
       .setSmallIcon(applicationInfo.icon)
-      .setContentTitle("Checking labour cards")
+      .setContentTitle(CardAlarmState.notificationTitle(this))
       .setPriority(NotificationCompat.PRIORITY_MIN)
       .setSilent(true)
       .build()

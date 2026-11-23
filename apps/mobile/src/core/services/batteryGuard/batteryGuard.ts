@@ -16,6 +16,7 @@ import {
   ONGOING_THRESHOLD_PERCENT,
   SOUND_MILESTONE_PERCENTS,
 } from './constants';
+import { nowMs } from '@/core/utils/datetime';
 
 /**
  * Low-battery alert — separate state (own channels, notification id and AsyncStorage keys) from the card
@@ -36,12 +37,12 @@ const CHECK_INTERVAL_MS = 5 * 60_000;
 async function ensureChannels(): Promise<void> {
   await notifee.createChannel({
     id: BATTERY_SILENT_CHANNEL_ID,
-    name: 'Battery warnings',
+    name: i18n.t('batteryGuard.channel.silent'),
     importance: AndroidImportance.LOW,
   });
   await notifee.createChannel({
     id: BATTERY_ALERT_CHANNEL_ID,
-    name: 'Battery warnings (urgent)',
+    name: i18n.t('batteryGuard.channel.urgent'),
     importance: AndroidImportance.DEFAULT,
     sound: 'default',
     vibration: true,
@@ -50,7 +51,7 @@ async function ensureChannels(): Promise<void> {
 
 function armNextCheck(): void {
   try {
-    cardAlarm?.armBattery(Date.now() + CHECK_INTERVAL_MS);
+    cardAlarm?.armBattery(nowMs() + CHECK_INTERVAL_MS);
   } catch (error) {
     logger.error('[batteryGuard] arming the next check failed', error);
   }

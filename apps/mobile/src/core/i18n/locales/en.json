@@ -279,10 +279,15 @@
     "notification": {
       "title": "Low Battery",
       "body": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly."
+    },
+    "channel": {
+      "silent": "Battery warnings",
+      "urgent": "Battery warnings (urgent)"
     }
   },
   "timeline": {
     "identityLine": "{{ezId}} · {{age}} years · {{gravida}}",
+    "identityLineNoAge": "{{ezId}} · {{gravida}}",
     "viewLcg": "View LCG",
     "postpartumReport": "Postpartum Report",
     "stages": {
@@ -384,7 +389,8 @@
       "sos": "Send SOS alert",
       "chat": "Open chat",
       "videoCall": "Start video call",
-      "rx": "Open prescription"
+      "rx": "Open prescription",
+      "editCard": "Edit observation"
     },
     "gravidaShort": "G{{gravida}}",
     "gravidaMissing": "G-"
@@ -430,6 +436,10 @@
     },
     "summary": {
       "title": "Observation summary"
+    },
+    "saveFailed": {
+      "title": "Not saved",
+      "message": "The observation could not be saved. Please try again."
     }
   },
   "partogram": {
@@ -465,17 +475,17 @@
       "companion": {
         "yes": "Yes",
         "no": "No",
-        "womanDeclines": "Woman declines"
+        "womanDeclines": "Woman Declines"
       },
       "painRelief": {
         "yes": "Yes",
         "no": "No",
-        "womanDeclines": "Woman declines"
+        "womanDeclines": "Woman Declines"
       },
       "oralFluid": {
         "yes": "Yes",
         "no": "No",
-        "womanDeclines": "Woman declines"
+        "womanDeclines": "Woman Declines"
       },
       "posture": {
         "supine": "Supine",
@@ -641,5 +651,9 @@
     "a11y": {
       "close": "Close dialog"
     }
+  },
+  "monitor": {
+    "channelName": "Labour card check",
+    "notificationTitle": "Checking labour cards"
   }
 }

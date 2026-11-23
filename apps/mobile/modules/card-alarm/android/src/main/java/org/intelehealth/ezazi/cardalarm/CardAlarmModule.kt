@@ -33,6 +33,11 @@ class CardAlarmModule : Module() {
 
     Function("isRunning") { CardAlarmState.isRunning(context) }
 
+    /** The scan service's notification texts, from the app's translations. */
+    Function("setTexts") { channelName: String, notificationTitle: String ->
+      CardAlarmState.setTexts(context, channelName, notificationTitle)
+    }
+
     /** The due time the card alarms are armed for (epoch ms); 0 when none. */
     Function("nextDueAt") { CardAlarmState.nextDueAt(context).toDouble() }
 

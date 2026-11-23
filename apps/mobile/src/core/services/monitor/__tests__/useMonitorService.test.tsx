@@ -1,3 +1,4 @@
+import '@/core/i18n';
 import { act, renderHook } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 import notifee from 'react-native-notify-kit';
@@ -10,7 +11,9 @@ jest.mock('react-native-notify-kit', () => ({
   __esModule: true,
   default: { cancelTriggerNotifications: jest.fn().mockResolvedValue(undefined) },
 }));
-jest.mock('../cardAlarmNative', () => ({ cardAlarm: { start: jest.fn(), stop: jest.fn(), readWakeLog: jest.fn(() => []) } }));
+jest.mock('../cardAlarmNative', () => ({
+  cardAlarm: { start: jest.fn(), stop: jest.fn(), setTexts: jest.fn(), readWakeLog: jest.fn(() => []) },
+}));
 jest.mock('../cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../cardScanTask', () => ({ runCardScanTask: jest.fn() }));
 jest.mock('@/core/utils/logger', () => ({ logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
@@ -41,6 +44,8 @@ describe('useMonitorService', () => {
     renderHook(() => useMonitorService(true));
 
     expect(native.start).toHaveBeenCalledTimes(1);
+    // The scan service's notification texts come from en.json (no hard-coded English in Kotlin).
+    expect(native.setTexts).toHaveBeenCalledWith('Labour card check', 'Checking labour cards');
     expect(notifee.cancelTriggerNotifications).toHaveBeenCalledWith(['labour-monitor-trigger', 'battery-guard-trigger']);
     expect(scanAndRearm).toHaveBeenCalledWith('login');
   });

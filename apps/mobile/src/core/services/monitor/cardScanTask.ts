@@ -4,6 +4,7 @@ import { logger } from '@/core/utils/logger';
 import { cardAlarm } from './cardAlarmNative';
 import { scanAndRearm, type WakeReason } from './cardScheduler';
 import { CARD_MAX_WAIT_MS, CARD_OVERDUE_ON_BATTERY_WAKE_MS } from './constants';
+import { nowMs } from '@/core/utils/datetime';
 
 interface CardScanTaskData {
   reason?: string;
@@ -28,12 +29,12 @@ export async function runCardScanTask(data: CardScanTaskData = {}): Promise<void
       await handleBatteryWake();
       // A card the main wake-up and the watchdog have not created yet: create it now.
       const cardDueAt = cardAlarm?.nextDueAt() ?? 0;
-      if (cardDueAt > 0 && Date.now() >= cardDueAt + CARD_OVERDUE_ON_BATTERY_WAKE_MS) {
+      if (cardDueAt > 0 && nowMs() >= cardDueAt + CARD_OVERDUE_ON_BATTERY_WAKE_MS) {
         await scanAndRearm('battery', cardDueAt);
       }
       return;
     }
-    const wait = dueAt - Date.now();
+    const wait = dueAt - nowMs();
     if ((reason === 'main' || reason === 'catchUp') && wait > 0) await sleep(Math.min(wait, CARD_MAX_WAIT_MS));
     await scanAndRearm(reason, dueAt);
   } catch (error) {

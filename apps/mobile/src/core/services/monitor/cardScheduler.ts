@@ -3,6 +3,7 @@ import { logger } from '@/core/utils/logger';
 
 import { cardAlarm } from './cardAlarmNative';
 import { CARD_MAX_RESCANS, CARD_PRE_WAKE_MS, CARD_RETRY_DELAY_MS, CARD_WATCHDOG_DELAY_MS } from './constants';
+import { nowMs } from '@/core/utils/datetime';
 
 export type WakeReason =
   | 'main'
@@ -52,13 +53,13 @@ async function scanThenArm(reason: WakeReason, dueAt: number): Promise<void> {
   let failed = false;
   try {
     for (let attempt = 0; attempt <= CARD_MAX_RESCANS; attempt += 1) {
-      const scanAt = Date.now();
+      const scanAt = nowMs();
       result = await runCardScan(scanAt);
       if (attempt === 0) {
         const late = dueAt > 0 ? `${scanAt - dueAt}ms` : '-';
         logWake(`scan reason=${reason} due=${dueAt} vsDue=${late} cards=${result?.cardsCreated ?? 0} next=${result?.nextDueAt ?? '-'}`);
       }
-      if (result === null || result.nextDueAt === null || result.nextDueAt > Date.now()) break;
+      if (result === null || result.nextDueAt === null || result.nextDueAt > nowMs()) break;
     }
   } catch (error) {
     failed = true;
@@ -67,7 +68,7 @@ async function scanThenArm(reason: WakeReason, dueAt: number): Promise<void> {
   } finally {
     // Always, so a failing scan can never end the chain of alarms.
     try {
-      arm(result, failed, Date.now());
+      arm(result, failed, nowMs());
     } catch (error) {
       logger.error('[monitor] arming the next card alarm failed', error);
     }

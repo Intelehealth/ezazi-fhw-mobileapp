@@ -13,6 +13,11 @@ dayjs.extend(utc);
 
 // ── Storage ──────────────────────────────────────────────────────────────────
 
+/** The current time in epoch ms: every "now" in app code comes from here (date rule: all date code via datetime.ts). */
+export function nowMs(): number {
+  return Date.now();
+}
+
 /**
  * What the legacy app writes to every `modified_date` and sends on push:
  * Java's `yyyy-MM-dd'T'HH:mm:ss.SSSZ`, in LOCAL time rather than UTC. dayjs's
