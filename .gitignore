@@ -32,6 +32,11 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 
+# Claude Code — .claude/settings.json is shared (it carries the Figma MCP
+# write-tool deny list); settings.local.json holds personal overrides and stays
+# on the machine that made it.
+.claude/settings.local.json
+
 # package-lock.json is intentionally NOT ignored. It must be committed so that
 # every dev machine and CI get identical dependency versions. CI
 # (.github/workflows/*-ci.yml) uses actions/setup-node with `cache: 'npm'` and
