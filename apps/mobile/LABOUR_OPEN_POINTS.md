@@ -104,6 +104,8 @@ A decision that shapes the architecture, a data format or a rule many files foll
 
 | Date | Point | Decision (who) |
 |---|---|---|
+| 2026-11-24 | End Stage 1 and 2 dialogs: follow the Figma "Complete Stage" design (Backend-Developer-file, section Stage 3 & 4) instead of Android's dialogs. The Figma file "Backend-Developer-file" is the design source from now on | Module owner |
+| 2026-11-24 | Toasts: Android's system toast, as Android (Figma has no toast design) | Module owner |
 | 2026-11-18 | Point 3, notes on an edited card: kept as Android (rewritten as they are, new ones added, none removed) | Module owner |
 | 2026-11-18 | Point 19, medicine Duration and Duration unit: required (stricter than Android, which marks them * but does not check) | Module owner |
 | 2026-11-18 | Leaving a capture card: always ask "Are you sure you want to close patient observation?" with Save & Exit (Android asks nothing and discards; Phase 0 decision kept) | Module owner |
