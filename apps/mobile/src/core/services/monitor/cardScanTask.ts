@@ -40,4 +40,12 @@ export async function runCardScanTask(data: CardScanTaskData = {}): Promise<void
   } catch (error) {
     logger.error('[monitor] card scan task failed', reason, error);
   }
+  // The battery check also runs on every card wake (CARD_ENGINE_ALARM_PLAN step 8), after the card so it
+  // never delays it. This re-arms the 5-minute check after boot, app update and exact-alarm re-grant,
+  // which cancel it; after logout the guard's running flag is off and nothing is re-armed.
+  try {
+    await handleBatteryWake();
+  } catch (error) {
+    logger.error('[monitor] battery check on card wake failed', reason, error);
+  }
 }

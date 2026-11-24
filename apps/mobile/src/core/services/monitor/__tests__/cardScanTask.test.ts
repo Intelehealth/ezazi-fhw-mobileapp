@@ -78,6 +78,40 @@ describe('runCardScanTask', () => {
     expect(scanAndRearm).not.toHaveBeenCalled();
   });
 
+  it('every card wake also runs the battery check, after the card scan', async () => {
+    const order: string[] = [];
+    (scanAndRearm as jest.Mock).mockImplementationOnce(async () => void order.push('scan'));
+    (handleBatteryWake as jest.Mock).mockImplementationOnce(async () => void order.push('battery'));
+
+    await runCardScanTask({ reason: 'boot', dueAt: 0 });
+
+    expect(order).toEqual(['scan', 'battery']);
+  });
+
+  it.each(['main', 'watchdog', 'catchUp', 'boot', 'update', 'clock', 'exactAccess'])(
+    '%s wake re-arms the battery check',
+    async (reason) => {
+      await runCardScanTask({ reason, dueAt: NOW });
+
+      expect(handleBatteryWake).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('a failed card scan still runs the battery check', async () => {
+    (scanAndRearm as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+
+    await runCardScanTask({ reason: 'watchdog', dueAt: NOW });
+
+    expect(handleBatteryWake).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failed battery check does not reject', async () => {
+    (handleBatteryWake as jest.Mock).mockRejectedValueOnce(new Error('battery service'));
+
+    await expect(runCardScanTask({ reason: 'boot', dueAt: 0 })).resolves.toBeUndefined();
+    expect(scanAndRearm).toHaveBeenCalledWith('boot', 0);
+  });
+
   it('never rejects, so the service always ends', async () => {
     (scanAndRearm as jest.Mock).mockRejectedValueOnce(new Error('boom'));
 
