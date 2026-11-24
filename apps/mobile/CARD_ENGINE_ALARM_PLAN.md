@@ -18,7 +18,7 @@ Five independent reviews, then the decisive claims re-checked in code:
 | D. How reliable apps do it | AOSP Clock (DeskClock), xDrip+, Dexcom, Medisafe, Mediteo, Samsung developer docs, dontkillmyapp |
 | E. RN delay chain | `clinical-rules` time helpers, `cardGeneration`, `monitor`, `batteryGuard` |
 
-## 2. What is still wrong in Android's new design (it is not a model to copy as is)
+## 2. Timing gaps found in Android's new design
 
 | # | Problem | Effect |
 |---|---|---|
