@@ -48,6 +48,36 @@ const ONE_BACKGROUND_EVENT = {
     'onBackgroundEvent may only be registered once, in index.js — a second registration replaces the first and silently kills the other alarm chains. Add an `else if` branch for your trigger id there (ARCHITECTURE_RULES §11).',
 };
 
+// ── UI_CONVENTIONS and LABOUR_CONVENTIONS rules (added 2026-11-24) ──
+// On rule ids nothing above uses (`@typescript-eslint/no-restricted-imports`, `no-restricted-properties`), so they
+// can never replace the rules above. An override still REPLACES its own rule id: each override lists the full set.
+const RN_TEXT = {
+  group: ['react-native'],
+  importNames: ['Text'],
+  message: "Import Text from '@/core/ui/Text' - it sets the app font (UI_CONVENTIONS section 2).",
+};
+const RN_MODAL = {
+  group: ['react-native'],
+  importNames: ['Modal'],
+  message:
+    'Use a shared dialog (ConfirmDialog, PickerField) instead of a new Modal, so every dialog looks and closes the same way (UI_CONVENTIONS sections 4-6).',
+};
+const ONE_CARD_WRITER = {
+  object: 'encounterRepo',
+  property: 'insertCard',
+  message: 'Only writeCard (core/db/card.ts) writes a card: it writes the encounter and its marker together (LABOUR_CONVENTIONS section 3).',
+};
+const ONE_SOS_WRITER = {
+  object: 'encounterRepo',
+  property: 'insertSos',
+  message: 'Only captureSos (labourRepository) writes an SOS card (LABOUR_CONVENTIONS section 3).',
+};
+const NO_DATE_NOW = {
+  object: 'Date',
+  property: 'now',
+  message: "Use nowMs() from '@/core/utils/datetime' and pass `now` down - one clock read per action (LABOUR_CONVENTIONS section 4).",
+};
+
 /** @type {import("eslint").Linter.Config} */
 // Rejected dependencies; composed into the no-restricted-imports rule and its date-utils override.
 const REJECTED_IMPORTS = [
@@ -231,6 +261,10 @@ module.exports = {
     // ── core/db invariants (DB_CONVENTIONS — D16a) ──
     // Defined at the top of this file and composed per-override below.
     'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES],
+
+    // ── UI_CONVENTIONS / LABOUR_CONVENTIONS (constants above; exemptions in the last overrides) ──
+    '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL] }],
+    'no-restricted-properties': ['error', ONE_CARD_WRITER, ONE_SOS_WRITER],
   },
   overrides: [
     {
@@ -279,6 +313,47 @@ module.exports = {
       // The two files allowed to use the date libraries.
       files: ['src/core/utils/datetime.ts', 'src/core/utils/calendar.ts'],
       rules: { 'no-restricted-imports': ['error', { patterns: REJECTED_IMPORTS }] },
+    },
+
+    // ── UI_CONVENTIONS / LABOUR_CONVENTIONS exemptions. General first; later entries win. ──
+    {
+      // One clock read per action: labour and the card services read the time through nowMs().
+      files: ['src/features/labour-care-guide/**', 'src/core/services/**', 'src/core/db/card.ts'],
+      excludedFiles: ['src/**/__tests__/**'],
+      rules: { 'no-restricted-properties': ['error', ONE_CARD_WRITER, ONE_SOS_WRITER, NO_DATE_NOW] },
+    },
+    {
+      // The one card writer.
+      files: ['src/core/db/card.ts'],
+      rules: { 'no-restricted-properties': ['error', ONE_SOS_WRITER, NO_DATE_NOW] },
+    },
+    {
+      // The one SOS writer.
+      files: ['src/features/labour-care-guide/data/labourRepository.ts'],
+      rules: { 'no-restricted-properties': ['error', ONE_CARD_WRITER, NO_DATE_NOW] },
+    },
+    {
+      // The app's Text wrapper.
+      files: ['src/core/ui/Text.tsx'],
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_MODAL] }] },
+    },
+    {
+      // The shared dialogs, and the older ones that still draw their own (UI_CONVENTIONS section 14).
+      files: [
+        'src/core/ui/ConfirmDialog.tsx',
+        'src/core/ui/PickerField.tsx',
+        'src/features/auth/components/PasswordResetSuccessDialog.tsx',
+        'src/features/labour-care-guide/components/EndStageDialogs.tsx',
+        'src/core/ui/LowBatteryDialog.tsx',
+        'src/core/ui/PermissionDeniedDialog.tsx',
+        'src/features/auth/components/LocationPickerModal.tsx',
+      ],
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT] }] },
+    },
+    {
+      // Tests build fixtures with the writers and fake clocks, and query react-native's Text and Modal.
+      files: ['src/**/__tests__/**'],
+      rules: { 'no-restricted-properties': 'off', '@typescript-eslint/no-restricted-imports': 'off' },
     },
   ],
   ignorePatterns: [

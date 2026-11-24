@@ -17,7 +17,8 @@ differ from itself or from Android.
 - Every user-visible text is in `en.json`, including notification titles, channel names and the native scan service's
   texts (passed with `cardAlarm.setTexts`). Hindi and Nepali show English until translations arrive.
 - "Now" comes from `nowMs()` in `core/utils/datetime.ts` in labour, the card engine, the monitor, the battery guard and
-  the seeds. Files owned by the sync work (`jwt.ts`, `logger.ts`, the sync status store) are left to their owner.
+  the seeds, and in `jwt.ts` and the sync status store (2026-11-24). `logger.ts` keeps its own clock read; it belongs
+  to the app-wide logging code.
 - The medicine form is react-hook-form + zod.
 - `FIELD_ID` constants, `javaTrim` and `filterDigits` come from `@ezazi/clinical-rules`.
 - The missing unit tests are added.

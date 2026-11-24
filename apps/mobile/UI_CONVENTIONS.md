@@ -189,3 +189,14 @@ smaller.
 - [ ] Loading, empty, error and read-only states all drawn
 - [ ] Touch targets 48 dp; contrast AA; readable at 2× font size
 - [ ] Icon buttons labelled; QA locators set
+
+## 16. What tools enforce
+
+| Rule | Enforced by |
+|---|---|
+| `Text` only from `core/ui/Text` | eslint `@typescript-eslint/no-restricted-imports` |
+| `Modal` only in the shared dialogs, the End Stage dialogs, and the older dialogs that still draw their own (low battery, permissions, password success, location picker) | eslint `@typescript-eslint/no-restricted-imports` |
+| No hex colours, no bare numbers in styles, no hard-coded text, `ToastAndroid` only through `showToast` | **Not enforced yet.** Review only |
+| Figma match, contrast, touch size, font scaling, the three devices | Review and device checks (§15) |
+
+`npm run lint` also runs `eslint-rules.test.cjs`, which checks the `Text` and `Modal` rules fire where they should.

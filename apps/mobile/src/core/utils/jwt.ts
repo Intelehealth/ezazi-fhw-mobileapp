@@ -1,4 +1,5 @@
 import { fromBase64 } from '@/core/utils/base64';
+import { nowMs } from '@/core/utils/datetime';
 
 interface JwtPayload {
   exp?: number;
@@ -32,5 +33,5 @@ export function decodeJwtPayload(token: string): JwtPayload | null {
 export function isJwtExpired(token: string): boolean {
   const payload = decodeJwtPayload(token);
   if (!payload?.exp) return true;
-  return Date.now() >= payload.exp * 1000;
+  return nowMs() >= payload.exp * 1000;
 }
