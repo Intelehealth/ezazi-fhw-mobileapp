@@ -315,7 +315,19 @@
   },
   "patient": {
     "errors": {
-      "_comment": "Validation messages for both registration screens. Created empty on purpose: the personal and address chats each add their own keys and MERGE into this object. Whichever ran first would otherwise create it and the second would replace it, silently dropping the first's messages. Delete this key once either chat has added a real one."
+      "firstNameRequired": "Please enter first name",
+      "lastNameRequired": "Please enter last name",
+      "dobRequired": "Please select date of birth",
+      "ageMinimum": "Age must be greater than 13 years",
+      "mobileLength": "Length must be 10 digits",
+      "provinceRequired": "Please select province",
+      "provinceInvalid": "Please select province",
+      "districtRequired": "Please select district",
+      "districtInvalid": "Please select district",
+      "cityVillageRequired": "Please enter city/village",
+      "cityVillageInvalid": "Please enter a valid city/village name",
+      "postalCodeLength": "Please enter {{length}} digits valid postal code",
+      "saveFailed": "Could not save the patient. Please try again."
     },
     "common": {
       "steps": {
