@@ -74,7 +74,7 @@ Kept from Android, they are right: the alarm is only a hint and due-ness is alwa
 9. **Splash:** exact-alarm access and notifications **required** before the app can be used (Android blocks on exact alarms since `da07197`; notifications carry the new-card sound).
 10. **Lateness log:** each wake records due time and actual scan time (last 100, AsyncStorage, no clinical data). The Home debug badge shows the next due time and the last lateness, so device runs measure it directly.
 
-## 5. Decisions for Kaveri
+## 5. Decisions needed
 
 | # | Decision | Recommended | Why |
 |---|---|---|---|
@@ -83,7 +83,7 @@ Kept from Android, they are right: the alarm is only a hint and due-ness is alwa
 | D3 | Exact alarms and notifications required on splash | **Yes** | Android requires exact alarms; without notifications the new-card sound is lost |
 | D4 | Battery guard every 5 min instead of 1 | **Yes** | Frees the screen-off alarm allowance; battery level changes slowly |
 | D5 | Optional one-time guidance after login: set eZAZI to "Unrestricted" battery and add it to Samsung "Never sleeping apps" (deep link Samsung documents), not blocking | **Yes** | The only protection against Samsung putting the app to sleep; no Play-policy risk |
-| D5 (2026-11-06) | **Removed for now (Kaveri):** too many prompts. Device tests ran with eZAZI in neither list and cards came within milliseconds; the only remaining risk is Samsung putting an app unused for days to sleep. Decide after the device testing; meanwhile a tablet-setup checklist item. The native functions (`openBatterySettings`, `openSamsungNeverSleeping`, `isIgnoringBatteryOptimizations`) stay in `modules/card-alarm` for that decision. | — | — |
+| D5 (2026-11-06) | **Removed for now:** too many prompts. Device tests ran with eZAZI in neither list and cards came within milliseconds; the only remaining risk is Samsung putting an app unused for days to sleep. Decide after the device testing; meanwhile a tablet-setup checklist item. The native functions (`openBatterySettings`, `openSamsungNeverSleeping`, `isIgnoringBatteryOptimizations`) stay in `modules/card-alarm` for that decision. | — | — |
 
 Not needed: changing the card-time rule (writing the due time instead of the creation time). The pre-wake makes the creation time equal the due time already.
 

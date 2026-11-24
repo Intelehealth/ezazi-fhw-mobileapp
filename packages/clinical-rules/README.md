@@ -62,8 +62,8 @@ Ported from the Android app in production (`elcg-fhw-mobileapp` @ `ezazi_sprint_
 | Card name matched with `toLowerCase().contains("stage1")` | Exact name from the card table | Names come from the app's constants |
 | A `hour ≥ 21 → Stage 2` branch | Not ported | Unreachable: Stage 1's limit card is `Stage1_Hour15_2`, so hour 16 is never generated |
 | A card type missing from the device's uuid table is silently skipped | Always returns the card | Mobile resolves names from constants, which hold all 58 cards |
-| Times are formatted in the device language, so a Marathi, Bengali or Assamese phone may write native digits (`२०२६-…`) | Always English digits (`2026-…`); native digits are still read | Data in the DB is English only (decided 2026-10-15, Kaveri) |
-| Stage 1's first card has no `NORMAL` marker (`AdmissionWriter`, Nepal's `PatientDetailActivity`) | `getStageStart('stage1')` gives the marker too; SOS cards are unchanged | Marked like the timer cards (decided 2026-10-27, Kaveri). Android's e-partogram shows `ENCOUNTER_TYPE` in row 24, so that card's column now shows `NORMAL` like the rest |
+| Times are formatted in the device language, so a Marathi, Bengali or Assamese phone may write native digits (`२०२६-…`) | Always English digits (`2026-…`); native digits are still read | Data in the DB is English only (decided 2026-10-15) |
+| Stage 1's first card has no `NORMAL` marker (`AdmissionWriter`, Nepal's `PatientDetailActivity`) | `getStageStart('stage1')` gives the marker too; SOS cards are unchanged | Marked like the timer cards (decided 2026-10-27). Android's e-partogram shows `ENCOUNTER_TYPE` in row 24, so that card's column now shows `NORMAL` like the rest |
 
 ## Card status on the timeline
 
@@ -76,8 +76,8 @@ Ported from the Android app in production (`elcg-fhw-mobileapp` @ `ezazi_sprint_
 The app passes plain facts (newest or not, has real obs, has the marker, Decision Pending, visit complete, visit holder). "Upcoming" is not a stored card: show it with `getUpcomingStep`.
 
 **Deviations from Android:**
-- **The missed marker is written by the card engine, for every stage** (decided 2026-10-23, Kaveri). Android writes it while drawing the timeline.
-- **Android's `isNewEncounterCreated` screen flag is not ported** (Kaveri, confirmed 2026-10-27). It makes the newest filled card read-only until the timeline screen is reopened after a timer-created card; here the newest filled card stays editable.
+- **The missed marker is written by the card engine, for every stage** (decided 2026-10-23). Android writes it while drawing the timeline.
+- **Android's `isNewEncounterCreated` screen flag is not ported** (confirmed 2026-10-27). It makes the newest filled card read-only until the timeline screen is reopened after a timer-created card; here the newest filled card stays editable.
 
 ## SOS cards (Stages 1, 2 and 4, one shared rule)
 
@@ -97,7 +97,7 @@ From `TimelineVisitSummaryActivity.collectEmergencyData` (1440–1544), the SOS 
 
 **Rules reproduced:**
 - **When it's blocked.** Blocked on a completed visit (Android hides the button) and for a nurse who doesn't hold the visit (button disabled). Nothing happens when there's no latest card or its name is not a stage card (Android returns silently).
-- **Deviation, blocked during Decision Pending** (decided 2026-10-15, Kaveri: no activity after Decision Pending). Android allows it, and the SOS card is "missed" at once.
+- **Deviation, blocked during Decision Pending** (decided 2026-10-15: no activity after Decision Pending). Android allows it, and the SOS card is "missed" at once.
 - **No count limit.**
 - **The label.**
   - X and Y come from the latest card's stage digit and hour. Stage 4 keeps Android's digit **3** (`Stage3_Hour2_SOS1`), because the server, web and print read it.
@@ -131,12 +131,12 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
   - status options, IV fluid types ("Other IV Fluid*" is a text box stored as type `Other` + `otherType`) and sub-input labels: `INFUSION_*`; their limits are in `INFUSION_INPUT_LIMITS`;
   - both open with Yes/No, defaulting to No. **Medicine does too**, so a Save writes `"No"` for all three once their section is shown; an empty card may be saved.
 - **Free text** (Supervisor Doctor, IV "Other"): Android keeps only ASCII letters, digits, punctuation and space, and upper-cases the first letter: `filterFreeText`.
-  - **Deviation, Android bug not ported** (decided 2026-10-15, Kaveri): once Supervisor Doctor's text ends in `.`, Android limits the box to 4 characters (`Dr. Rao` saves as `Dr.`).
+  - **Deviation, Android bug not ported** (decided 2026-10-15): once Supervisor Doctor's text ends in `.`, Android limits the box to 4 characters (`Dr. Rao` saves as `Dr.`).
   - Android capitalises only text typed at the very start; `filterFreeText` capitalises the first character of the whole text.
 
 **Concepts:** every field's `conceptKey` is the name of a constant in `apps/mobile/src/core/db/constants/obs.ts`; a mobile test fails if one is missing.
 
-**Deviation:** Android also uses the card's encounter type when choosing fields. A regular card carrying a legacy `"SOS"` type would show every field. Here, a regular card always uses `getCardLayout` and an SOS card `getSosLayout`. This only differs for legacy or malformed rows. **Decision pending (Kaveri, 2026-10-27): kept as is until decided.**
+**Deviation:** Android also uses the card's encounter type when choosing fields. A regular card carrying a legacy `"SOS"` type would show every field. Here, a regular card always uses `getCardLayout` and an SOS card `getSosLayout`. This only differs for legacy or malformed rows. **Decision pending (2026-10-27): kept as is until decided.**
 
 ## Saving format (same as Android)
 
@@ -156,11 +156,11 @@ From `PartogramConstants.getSectionParamInfoMasterMap` (120–481) and `Partogra
 ### Building the obs to save
 
 - `buildNewCardObs(input, notes)`: the obs Android's `saveObs` writes for a new card, in field order. A filled value gets its alert code in `comment`; "No" or the infusion JSON for Oxytocin and IV Fluids; "No" or one obs per medicine; one obs per note. Empty values write nothing; non-value rows leave `comment` null, as Android.
-- `buildEditedCardObs(stored, input, notes)`: re-saving a card as Android's EDIT save (decided 2026-10-31, Kaveri). It returns obs to insert, obs to rewrite in place by uuid, and obs uuids to void: every shown field rewrites its oldest live row with the new value and alert code (a cleared number saved empty), a field with no row gets a new one, Yes after "No" rewrites or voids the stale "No", the same infusion JSON is never written twice, saved medicines are left as they are and new or edited ones are new rows (the old row is not voided, as Android; open point), Medicine "No" voids every medicine, and saved notes are rewritten as they are with new ones added.
+- `buildEditedCardObs(stored, input, notes)`: re-saving a card as Android's EDIT save (decided 2026-10-31). It returns obs to insert, obs to rewrite in place by uuid, and obs uuids to void: every shown field rewrites its oldest live row with the new value and alert code (a cleared number saved empty), a field with no row gets a new one, Yes after "No" rewrites or voids the stale "No", the same infusion JSON is never written twice, saved medicines are left as they are and new or edited ones are new rows (the old row is not voided, as Android; open point), Medicine "No" voids every medicine, and saved notes are rewritten as they are with new ones added.
 
 Each draft carries the field's `conceptKey`; the app resolves it to the concept uuid and adds the encounter, creator and time in one `transact`.
 
-**Same as Android since 2026-10-31 (Kaveri):** an edited obs is updated in place. Whether to keep history instead (write-new, or void the old row) is still open; see `apps/mobile/LABOUR_OPEN_POINTS.md`. Medicines are matched by their stored text, since the app's medicine list keeps no row id; the result matches Android's `isRecordFromLocalDb` check.
+**Same as Android since 2026-10-31:** an edited obs is updated in place. Whether to keep history instead (write-new, or void the old row) is still open; see `apps/mobile/LABOUR_OPEN_POINTS.md`. Medicines are matched by their stored text, since the app's medicine list keeps no row id; the result matches Android's `isRecordFromLocalDb` check.
 
 ## Validation ranges (per client)
 
@@ -236,7 +236,7 @@ The form shows all ten parts Android's `NewMedicineFragment` has (decided 2026-1
 Options match ignoring case, as Java `equalsIgnoreCase`. Thresholds are the same for every client; they are not part of a range profile. Infusion, medicine and note rows are never coded: the app leaves their `comment` null, as Android does.
 
 **Deviations from Android:**
-- **Amniotic fluid is coded** (decided 2026-10-23, Kaveri): `M+++` and `B` are `'R'`, the others `'G'`. Android's rule is keyed on "Amniotic fluid meconium" but the field is named "Amniotic Fluid", so on Android it is always `'G'`.
+- **Amniotic fluid is coded** (decided 2026-10-23): `M+++` and `B` are `'R'`, the others `'G'`. Android's rule is keyed on "Amniotic fluid meconium" but the field is named "Amniotic Fluid", so on Android it is always `'G'`.
 - **Text that is not a number is `'G'`.** Android throws `NumberFormatException`; the input limits make it unreachable in practice.
 
 ## End Stage 1
@@ -249,7 +249,7 @@ Options match ignoring case, as Java `equalsIgnoreCase`. Thresholds are the same
 
 The app also sets the visit end date and marks the visit read, as Android does.
 
-**Deviation:** REFER_TYPE stores the English label whatever the phone's language (decided 2026-10-23, Kaveri); Android stores the label in the UI language.
+**Deviation:** REFER_TYPE stores the English label whatever the phone's language (decided 2026-10-23); Android stores the label in the UI language.
 
 ## Visit risk score
 

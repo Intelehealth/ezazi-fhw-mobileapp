@@ -54,7 +54,7 @@ Force stop; the tablet off; before the first unlock after a reboot; eZAZI in Sam
 exact alarms revoked. After any of these the next wake-up or app open creates one card, and the schedule
 continues from it (no backfill, as Android).
 
-<!-- 2026-11-06 Kaveri: superseded by the card-alarm redesign (dataSync service stopped after 6 h, 1-minute
+<!-- 2026-11-06: superseded by the card-alarm redesign (dataSync service stopped after 6 h, 1-minute
 alarm drifted up to a minute per card). The previous README, kept for history:
 
 # `core/services/monitor` — labour monitor
@@ -68,7 +68,7 @@ Keep a reliable clock running while a labour is being monitored, including when 
 the screen is locked or the device is in Doze. The clinical checks (Stage 1/2 observation intervals) will
 run on this clock.
 
-<!-- Superseded 2026-10-23 (Kaveri): the card engine now runs on the backbone tick. Original text:
+<!-- Superseded 2026-10-23: the card engine now runs on the backbone tick. Original text:
 **What it does today:** it only ticks and records the ticks. It does **not** evaluate anything clinical
 yet — `@ezazi/clinical-rules` is not imported, and no labour data is read.
 --&gt;
@@ -103,7 +103,7 @@ The heartbeat is for foreground freshness only. Anything that must happen on tim
 1. **Boot** (`index.js`): `registerMonitorForegroundServiceHandler()` — must be at boot so Android can re-invoke the runner after killing the process.
 2. **Login** (`App.tsx`): `useMonitorService(authStatus === 'authenticated')` starts the heartbeat, *then* the backbone — sequenced, not concurrent (concurrent starts dropped the heartbeat notification in testing).
 3. **Each backbone delivery**: dismiss the displayed trigger notification, record the tick in AsyncStorage, re-arm if the running flag is still `'true'`. Delivered in the background → `index.js`; in the foreground → the `onForegroundEvent` listener in `index.ts`.
-<!-- 2026-11-01 Kaveri: commented out — swiping the app away stopped card creation; only logout stops the monitor now. --&gt;
+<!-- 2026-11-01: commented out — swiping the app away stopped card creation; only logout stops the monitor now. --&gt;
 <!-- 4. **Logout / unmount**: stop the backbone (flag cleared *first*, then trigger cancelled), then the heartbeat. Each step is isolated, so one failing does not leave the other running. A startup still in flight is cancelled and undone. --&gt;
 4. **Logout** (`enabled` true → false): stop the backbone (flag cleared *first*, then trigger cancelled), then the heartbeat. Each step is isolated, so one failing does not leave the other running. A startup still in flight is undone. An unmount alone (the app swiped away from Recents) stops nothing: the process and the login live on, and cards must keep being created.
 
@@ -130,7 +130,7 @@ Recorded from the code comments written at the time. Devices: an emulator and a 
 | Debug badge on `HomeScreen` | Shown | Remove (or `__DEV__` only). |
 | `logger.debug` per tick | On | Already a no-op when `APP_ENV=production`. |
 
-<!-- Superseded 2026-10-23 (Kaveri): production trigger cadence was "15/30 min (Stage 2/1). These clear
+<!-- Superseded 2026-10-23: production trigger cadence was "15/30 min (Stage 2/1). These clear
 `IntervalTrigger`'s 15-min floor, so a plain `IntervalTrigger` can replace the re-arm chain." --&gt;
 
 ## Known gaps
