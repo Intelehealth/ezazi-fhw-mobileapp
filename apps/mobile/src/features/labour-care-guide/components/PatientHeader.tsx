@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
 import { AppIcon, type IconName } from '@/core/ui/icons';
-import { colors, dimens, spacing } from '@/core/config/theme';
+import { colors, dimens, fontSizes, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { PatientSummary } from '../domain/timeline.types';
 
@@ -46,7 +46,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   // The app draws edge to edge, so the header starts below the status bar's inset.
   const statusBarH = useSafeAreaInsets().top;
   const onPress: Record<ShortcutKey, () => void> = { viewLcg: onViewLcg, postpartumReport: onViewPostpartumReport };
-  const pillIconSize = isTablet ? fromFigma(24) : 16;
+  const pillIconSize = isTablet ? fromFigma(24) : dimens.patientPillIcon;
   const pillStyle = isTablet
     ? { height: fromFigma(50), paddingHorizontal: fromFigma(12), gap: fromFigma(9), borderRadius: fromFigma(15) }
     : styles.pillPhone;
@@ -133,7 +133,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
             activeOpacity={0.7}
           >
             {/* The glyph fills 14/24 of its box: 43 units puts it at the frame's ~25-unit cross. */}
-            <AppIcon name="close" size={isTablet ? fromFigma(43) : 26} color={colors.primaryTextDarkFigma} />
+            <AppIcon name="close" size={isTablet ? fromFigma(43) : dimens.headerCloseIcon} color={colors.primaryTextDarkFigma} />
           </TouchableOpacity>
         )}
       </View>
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   name: {
-    fontSize: 20,
+    fontSize: fontSizes.patientName.phone,
     fontWeight: '700',
     letterSpacing: -0.5,
     color: colors.primaryTextDarkFigma,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   pillPhone: {
     gap: spacing.xs,
-    borderRadius: 12,
+    borderRadius: radii.card,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },

@@ -3,13 +3,14 @@ import Svg, { Path } from 'react-native-svg';
 
 import { fitSquare } from './fitSquare';
 import type { IconProps } from './types';
+import { colors } from '@/core/config/theme';
 
 /**
  * "Outline / Medicine / Pill" — Timeline bottom action bar, Rx.
  * Figma export "Outline/Medicine/Pill.svg" (Ezazi Developer File, provided 2026-10-26).
  * Exported 34×34; viewBox trimmed to the pill, see fitSquare.
  */
-export const PillIcon: React.FC<IconProps> = ({ size = 34, color = '#2E1E91' }) => (
+export const PillIcon: React.FC<IconProps> = ({ size = 34, color = colors.colorPrimary }) => (
   <Svg {...fitSquare(size, 30.46, 30.46)} viewBox="1.77 1.77 30.46 30.46" fill="none">
     <Path
       fillRule="evenodd"

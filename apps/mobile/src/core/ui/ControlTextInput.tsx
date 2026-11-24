@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, spacing } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 
 import { controlLook } from './controlLook';
 import { useControlSizes } from './hooks/useControlSizes';
 
 interface ControlTextInputProps
-  extends Pick<TextInputProps, 'value' | 'placeholder' | 'keyboardType' | 'maxLength' | 'onSubmitEditing' | 'multiline' | 'numberOfLines'> {
+  extends Pick<TextInputProps, 'value' | 'placeholder' | 'keyboardType' | 'maxLength' | 'onSubmitEditing' | 'multiline' | 'numberOfLines' | 'testID'> {
   /** The field's name for screen readers. */
   label: string;
   onChangeText: (text: string) => void;
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   // Android's 5-line reason / comment boxes: text starts at the top.
   multiline: {
-    minHeight: 110,
+    minHeight: dimens.multilineInputMinHeight,
     textAlignVertical: 'top',
   },
 });

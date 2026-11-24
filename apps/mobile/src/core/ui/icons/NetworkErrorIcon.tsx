@@ -1,5 +1,6 @@
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
+import { colors } from '@/core/config/theme';
 
 interface NetworkErrorIconProps {
   size?: number;
@@ -18,7 +19,7 @@ interface NetworkErrorIconProps {
  * edges, so centering this (not stretching it) in its parent reproduces the
  * same effective padding.
  */
-export const NetworkErrorIcon: React.FC<NetworkErrorIconProps> = ({ size = 21.5, color = '#FFFFFF' }) => (
+export const NetworkErrorIcon: React.FC<NetworkErrorIconProps> = ({ size = 21.5, color = colors.white }) => (
   <Svg width={size} height={size} viewBox="0 0 21.5 21.5" fill="none">
     <Path
       fill={color}

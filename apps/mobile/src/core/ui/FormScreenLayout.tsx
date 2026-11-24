@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 
 /**
  * Shared form-screen skeleton: root → header → KeyboardAvoidingView → ScrollView(children).
@@ -57,6 +57,6 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: dimens.screenHPad,
-    paddingBottom: 48,
+    paddingBottom: spacing.xxl,
   },
 });

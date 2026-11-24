@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon, DangerTriangleIcon, LockKeyholeBadgeIcon } from '@/core/ui/icons';
-import { colors, dimens, spacing } from '@/core/config/theme';
+import { colors, dimens, letterSpacing, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { formatClockTime, formatDate } from '@/core/utils/calendar';
 import { minutesUntil } from '@/core/utils/datetime';
 import type { CheckpointStatus, TimelineCheckpoint } from '../domain/timeline.types';
+import { LABOUR_TEST_IDS } from '../testIds';
 
 interface TimelineCheckpointCardProps {
   checkpoint: TimelineCheckpoint;
@@ -121,19 +122,19 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
         checkIcon: fromFigma(28),
       }
     : {
-        dateColumn: { width: 76 },
+        dateColumn: { width: dimens.timelineDateColumn },
         date: { fontSize: fs('timelineDate') },
         time: { fontSize: fs('timelineTime'), marginTop: spacing.xs / 2 },
         rail: { width: dotSize, marginHorizontal: spacing.sm },
-        card: { padding: spacing.md, marginVertical: spacing.sm, borderRadius: 12 },
-        chip: { height: 22, paddingHorizontal: spacing.sm, borderRadius: 6 },
-        sosBadge: { height: 26, paddingHorizontal: spacing.sm, gap: spacing.xs, borderRadius: 6 },
-        sosIcon: 14,
+        card: { padding: spacing.md, marginVertical: spacing.sm, borderRadius: radii.card },
+        chip: { height: dimens.timelineChipHeight, paddingHorizontal: spacing.sm, borderRadius: radii.chip },
+        sosBadge: { height: dimens.timelineSosBadgeHeight, paddingHorizontal: spacing.sm, gap: spacing.xs, borderRadius: radii.chip },
+        sosIcon: dimens.timelineSosIcon,
         sosText: { fontSize: fs('timelineCardLabel') },
         chipText: { fontSize: fs('timelineCardLabel') },
         bodyGap: { marginTop: spacing.sm },
         buttonGap: { marginTop: spacing.md },
-        lockBadge: 30,
+        lockBadge: dimens.timelineLockBadge,
         checkIcon: Math.round(dotSize * 0.6),
       };
 
@@ -228,7 +229,7 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
               accessibilityRole="button"
               accessibilityLabel={t('timeline.a11y.editCard')}
               hitSlop={12}
-              testID="timeline-edit-icon"
+              testID={LABOUR_TEST_IDS.timeline.editIcon}
             >
               <AppIcon name="edit" size={sizes.lockBadge} color={colors.primary} />
             </Pressable>
@@ -244,6 +245,7 @@ export const TimelineCheckpointCard: React.FC<TimelineCheckpointCardProps> = ({
             showChevron
             gradient={openLabelKey === 'timeline.checkpoint.recordNow'} // Figma Main CTA; Show stays flat
             style={sizes.buttonGap}
+            testID={LABOUR_TEST_IDS.timeline.cardOpen(checkpoint.id)}
           />
         )}
       </View>
@@ -273,14 +275,14 @@ const styles = StyleSheet.create({
   },
   railLine: {
     flex: 1,
-    width: 2,
+    width: dimens.timelineRailLine,
     backgroundColor: colors.timelineRail,
   },
   railLineHidden: {
     backgroundColor: 'transparent',
   },
   dot: {
-    borderWidth: 1.5,
+    borderWidth: dimens.timelineDotBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -312,7 +314,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.caps,
   },
   body: {
     color: colors.timelineBody,

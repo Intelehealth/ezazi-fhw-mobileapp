@@ -62,6 +62,11 @@ const RN_MODAL = {
   message:
     'Use a shared dialog (ConfirmDialog, PickerField) instead of a new Modal, so every dialog looks and closes the same way (UI_CONVENTIONS sections 4-6).',
 };
+const RN_TOAST = {
+  group: ['react-native'],
+  importNames: ['ToastAndroid'],
+  message: "Use showToast() from '@/core/utils/toast' (UI_CONVENTIONS section 9).",
+};
 const ONE_CARD_WRITER = {
   object: 'encounterRepo',
   property: 'insertCard',
@@ -263,7 +268,7 @@ module.exports = {
     'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES],
 
     // ── UI_CONVENTIONS / LABOUR_CONVENTIONS (constants above; exemptions in the last overrides) ──
-    '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL] }],
+    '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL, RN_TOAST] }],
     'no-restricted-properties': ['error', ONE_CARD_WRITER, ONE_SOS_WRITER],
   },
   overrides: [
@@ -335,20 +340,22 @@ module.exports = {
     {
       // The app's Text wrapper.
       files: ['src/core/ui/Text.tsx'],
-      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_MODAL] }] },
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_MODAL, RN_TOAST] }] },
     },
     {
-      // The shared dialogs, and the older ones that still draw their own (UI_CONVENTIONS section 14).
+      // The toast helper.
+      files: ['src/core/utils/toast.ts'],
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL] }] },
+    },
+    {
+      // The shared dialogs; the End Stage dialogs (to become Figma's choice sheet); the location dropdown.
       files: [
         'src/core/ui/ConfirmDialog.tsx',
         'src/core/ui/PickerField.tsx',
-        'src/features/auth/components/PasswordResetSuccessDialog.tsx',
         'src/features/labour-care-guide/components/EndStageDialogs.tsx',
-        'src/core/ui/LowBatteryDialog.tsx',
-        'src/core/ui/PermissionDeniedDialog.tsx',
         'src/features/auth/components/LocationPickerModal.tsx',
       ],
-      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT] }] },
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_TOAST] }] },
     },
     {
       // Tests build fixtures with the writers and fake clocks, and query react-native's Text and Modal.

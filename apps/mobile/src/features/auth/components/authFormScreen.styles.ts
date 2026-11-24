@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, letterSpacing, spacing } from '@/core/config/theme';
 
 /**
  * Shared layout constants + StyleSheet for LoginScreen and SetupScreen —
@@ -12,7 +12,7 @@ import { colors, dimens } from '@/core/config/theme';
  */
 
 // Parent container padding.
-export const FORM_H_PAD = 30;
+export const FORM_H_PAD = dimens.authFormHPad;
 
 // assets/clients/default/setup_logo.png natural aspect ratio (width / height)
 export const LOGO_ASPECT = 364 / 144;
@@ -23,7 +23,7 @@ export const ILLUSTRATION_ASPECT = 267 / 177;
 export const authFormStyles = StyleSheet.create({
   content: {
     paddingHorizontal: FORM_H_PAD,
-    paddingBottom:     48,
+    paddingBottom:     spacing.xxl,
   },
 
   // Wraps logo + heading + first field in normal flow — the illustration is
@@ -41,12 +41,12 @@ export const authFormStyles = StyleSheet.create({
   title: {
     color:      colors.textPrimary,
     fontWeight: '700',
-    marginTop:  10,
+    marginTop:  dimens.authHeadingTop,
   },
 
   subtitle: {
     color:      colors.textSecondary,
-    marginTop:  6,
+    marginTop:  dimens.authSubtitleTop,
   },
 
   // Small gray caps label above each field — LOCATION / USERNAME / PASSWORD
@@ -54,18 +54,18 @@ export const authFormStyles = StyleSheet.create({
     color:            colors.fieldLabel,
     fontWeight:       '600',
     textTransform:    'uppercase',
-    letterSpacing:    0.5,
+    letterSpacing:    letterSpacing.caps,
     marginTop:        dimens.fieldGap,
     marginBottom:     dimens.labelGap,
   },
 
   firstFieldLabel: {
-    marginTop: 28,
+    marginTop: dimens.authFirstFieldTop,
   },
 
   forgotRow: {
     alignSelf: 'flex-end',
-    marginTop: 10,
+    marginTop: dimens.authForgotTop,
   },
 
   // Figma: color: var(--Primary-Color, #2E1E91); bold, no underline
@@ -77,6 +77,6 @@ export const authFormStyles = StyleSheet.create({
   // API error banner is core/ui/ApiErrorBanner — not local styles.
 
   loginButton: {
-    marginTop: 32,
+    marginTop: spacing.xl,
   },
 });

@@ -1,6 +1,7 @@
 import '@/core/i18n';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { LoginScreen } from '../LoginScreen';
+import { AUTH_TEST_IDS } from '../../testIds';
 import { useAuthStore } from '@/core/session/auth.store';
 import { showToast } from '@/core/utils/toast';
 
@@ -81,5 +82,19 @@ describe('LoginScreen', () => {
     fireEvent.press(screen.getByText('Forgot password?'));
 
     expect(mockNavigate).toHaveBeenCalledWith('ForgotPasswordRequest', { origin: 'Login' });
+  });
+
+  it('carries the QA locators from the auth registry', () => {
+    render(<LoginScreen />);
+
+    for (const id of [
+      AUTH_TEST_IDS.login.username,
+      AUTH_TEST_IDS.login.password,
+      `${AUTH_TEST_IDS.login.password}-toggle`,
+      AUTH_TEST_IDS.login.forgotPassword,
+      AUTH_TEST_IDS.login.submit,
+    ]) {
+      expect(screen.getByTestId(id)).toBeTruthy();
+    }
   });
 });

@@ -3,13 +3,14 @@ import Svg, { Path } from 'react-native-svg';
 
 import { fitSquare } from './fitSquare';
 import type { IconProps } from './types';
+import { colors } from '@/core/config/theme';
 
 /**
  * "Outline / Video, Audio, Sound / Videocamera" — Timeline bottom action bar, Video Call.
  * Figma export "Outline/Video, Audio, Sound/Videocamera.svg" (Ezazi Developer File, provided 2026-10-26).
  * Exported 29×29; viewBox trimmed to the camera, see fitSquare.
  */
-export const VideoCameraIcon: React.FC<IconProps> = ({ size = 29, color = '#2E1E91' }) => (
+export const VideoCameraIcon: React.FC<IconProps> = ({ size = 29, color = colors.colorPrimary }) => (
   <Svg {...fitSquare(size, 25.98, 21.15)} viewBox="1.51 3.93 25.98 21.15" fill="none">
     <Path
       fillRule="evenodd"

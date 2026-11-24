@@ -2,6 +2,7 @@
 export { AppIcon } from './AppIcon';
 export { iconPaths, type IconName } from './iconPaths';
 export { ChatRoundIcon } from './ChatRoundIcon';
+export { CheckCircleIcon } from './CheckCircleIcon';
 export { DangerTriangleIcon } from './DangerTriangleIcon';
 export { LockKeyholeBadgeIcon } from './LockKeyholeBadgeIcon';
 export { NetworkErrorIcon } from './NetworkErrorIcon';

@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, dimens, spacing } from '@/core/config/theme';
+import { colors, dimens, letterSpacing, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { AppIcon } from './icons';
 import { Text } from './Text';
@@ -54,6 +54,10 @@ interface AppButtonProps {
   gradient?: boolean;
   /** Placement only (margins) — never colors or sizing. */
   style?: StyleProp<ViewStyle>;
+  /** QA locator. */
+  testID?: string;
+  /** Screen-reader name when the visible label alone is too short ("OK"); defaults to the label. */
+  accessibilityLabel?: string;
 }
 
 export const AppButton: React.FC<AppButtonProps> = ({
@@ -67,6 +71,8 @@ export const AppButton: React.FC<AppButtonProps> = ({
   disabledTone = 'neutral',
   gradient = false,
   style,
+  testID,
+  accessibilityLabel,
 }) => {
   const gradientId = `cta-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const { isTablet, fs, cornerRadius, scale, fromFigma } = useResponsive();
@@ -95,8 +101,9 @@ export const AppButton: React.FC<AppButtonProps> = ({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       activeOpacity={0.85}
+      testID={testID}
     >
       {showGradient && (
         <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} testID="app-button-gradient">
@@ -115,13 +122,13 @@ export const AppButton: React.FC<AppButtonProps> = ({
         {label}
       </Text>
 
-      {showChevron && <AppIcon name="chevronRight" size={labelSize + 4} color={labelColor} />}
+      {showChevron && <AppIcon name="chevronRight" size={labelSize + dimens.buttonChevronGrowth} color={labelColor} />}
 
       {showArrow && (
         <View style={styles.arrowWrap}>
           <AppIcon
             name="arrowNext"
-            size={isTablet ? scale(28) : 24}
+            size={isTablet ? scale(28) : dimens.buttonArrowIcon}
             color={labelColor}
           />
         </View>
@@ -179,7 +186,7 @@ const styles = StyleSheet.create({
 
   label: {
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.button,
   },
 
   arrowWrap: {

@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, fontSizes, spacing } from '@/core/config/theme';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
@@ -16,6 +16,8 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
  */
 
 interface OtpInputProps {
+  /** QA locator of the input. */
+  testID?: string;
   length?: number;
   value: string;
   onChange: (val: string) => void;
@@ -23,6 +25,7 @@ interface OtpInputProps {
 }
 
 export const OtpInput: React.FC<OtpInputProps> = ({
+  testID,
   length = 6,
   value,
   onChange,
@@ -33,7 +36,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
   const inputRef = useRef<TextInput>(null);
 
   const cellH    = isTablet ? scale(dimens.otpCellHeight.tablet) : dimens.otpCellHeight.phone;
-  const fontSize = isTablet ? scale(24) : 20;
+  const fontSize = isTablet ? scale(24) : fontSizes.otpDigit.phone;
 
   const digits = Array.from({ length }, (_, i) => value[i] ?? '');
 
@@ -61,9 +64,10 @@ export const OtpInput: React.FC<OtpInputProps> = ({
         maxLength={length}
         caretHidden
         accessibilityLabel={t('common.a11y.otpInput')}
+        testID={testID}
       />
 
-      <View style={[styles.row, { gap: isTablet ? scale(12) : 8 }]}>
+      <View style={[styles.row, { gap: isTablet ? scale(12) : spacing.sm }]}>
         {digits.map((digit, i) => (
           <View
             key={i}
@@ -101,7 +105,7 @@ const styles = StyleSheet.create({
 
   cell: {
     flex:            1,
-    borderWidth:     1.5,
+    borderWidth:     dimens.otpCellBorder,
     borderColor:     colors.inputBorder,
     backgroundColor: colors.white,
     alignItems:      'center',
@@ -114,7 +118,7 @@ const styles = StyleSheet.create({
 
   cellActive: {
     borderColor: colors.primary,
-    borderWidth: 2,
+    borderWidth: dimens.otpCellActiveBorder,
   },
 
   cellError: {

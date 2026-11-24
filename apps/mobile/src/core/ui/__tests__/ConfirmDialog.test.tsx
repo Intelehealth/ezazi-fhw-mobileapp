@@ -1,5 +1,6 @@
 import '@/core/i18n';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Modal, Text } from 'react-native';
 import { ConfirmDialog } from '../ConfirmDialog';
 
 const setup = (overrides: Partial<React.ComponentProps<typeof ConfirmDialog>> = {}) => {
@@ -80,5 +81,53 @@ describe('ConfirmDialog', () => {
     expect(screen.queryByLabelText('Close dialog')).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('names its parts after its testID, for QA locators', () => {
+    setup({ testID: 'sos-dialog' });
+
+    expect(screen.getByTestId('sos-dialog')).toBeTruthy();
+    expect(screen.getByTestId('sos-dialog-close')).toBeTruthy();
+    expect(screen.getByTestId('sos-dialog-cancel')).toBeTruthy();
+    expect(screen.getByTestId('sos-dialog-confirm')).toBeTruthy();
+  });
+
+  it('success tone, content under the message, and the gradient primary button', () => {
+    render(
+      <ConfirmDialog visible tone="success" title="Successful" message="Your password has been updated." confirmLabel="Back to Login" onConfirm={jest.fn()} onClose={jest.fn()}>
+        <Text>Summary</Text>
+      </ConfirmDialog>,
+    );
+
+    expect(screen.getByText('Successful')).toBeTruthy();
+    expect(screen.getByText('Summary')).toBeTruthy();
+    expect(screen.getByTestId('app-button-gradient')).toBeTruthy();
+    expect(screen.getByLabelText('Close dialog')).toBeTruthy();
+  });
+
+  it('a gate hides the ✕ but Back still closes, and buttons can carry fuller screen-reader names', () => {
+    const onClose = jest.fn();
+    render(
+      <ConfirmDialog
+        visible
+        tone="warning"
+        title="Permissions Required"
+        message="Please grant them to continue."
+        cancelLabel="Close Now"
+        cancelAccessibilityLabel="Close app"
+        confirmLabel="Retry"
+        confirmAccessibilityLabel="Retry permission request"
+        onCancel={onClose}
+        onConfirm={jest.fn()}
+        onClose={onClose}
+        hideClose
+      />,
+    );
+
+    expect(screen.queryByLabelText('Close dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Close app' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry permission request' })).toBeTruthy();
+    screen.UNSAFE_getByType(Modal).props.onRequestClose();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

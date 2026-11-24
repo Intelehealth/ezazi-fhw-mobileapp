@@ -3,6 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { fitSquare } from './fitSquare';
 import type { IconProps } from './types';
+import { colors } from '@/core/config/theme';
 
 /**
  * "Outline / Essentional, UI / Danger Triangle" — Timeline bottom action bar, SOS.
@@ -10,7 +11,7 @@ import type { IconProps } from './types';
  * 2026-10-05). Exported 31×28; viewBox trimmed to the triangle (see fitSquare) rather
  * than forced into AppIcon's 24×24 slot that would distort its proportions.
  */
-export const DangerTriangleIcon: React.FC<IconProps> = ({ size = 30.46, color = '#FFFFFF' }) => (
+export const DangerTriangleIcon: React.FC<IconProps> = ({ size = 30.46, color = colors.white }) => (
   <Svg {...fitSquare(size, 30.46, 27.62)} viewBox="0 0 30.46 27.62" fill="none">
     <Path
       d="M15.2291 7.08333C15.8159 7.08333 16.2916 7.55903 16.2916 8.14583V15.2292C16.2916 15.816 15.8159 16.2917 15.2291 16.2917C14.6423 16.2917 14.1666 15.816 14.1666 15.2292V8.14583C14.1666 7.55903 14.6423 7.08333 15.2291 7.08333Z"

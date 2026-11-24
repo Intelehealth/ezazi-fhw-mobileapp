@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, spacing } from '@/core/config/theme';
+import { colors, letterSpacing, spacing } from '@/core/config/theme';
 
 import { useControlSizes } from './hooks/useControlSizes';
 import { useResponsive } from './hooks/useResponsive';
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.secondaryTextFigma,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.caps,
     marginBottom: spacing.sm,
   },
   errorRow: {

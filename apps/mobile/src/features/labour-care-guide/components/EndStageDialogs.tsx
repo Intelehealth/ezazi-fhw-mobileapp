@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -13,13 +13,16 @@ import {
 } from '@ezazi/clinical-rules';
 import type { OutcomeDetails, Stage1OutcomeId, Stage2OutcomeId } from '@ezazi/clinical-rules';
 
-import { colors, spacing } from '@/core/config/theme';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { AppButton } from '@/core/ui/AppButton';
 import { ChoiceButton } from '@/core/ui/ChoiceButton';
 import { ControlTextInput } from '@/core/ui/ControlTextInput';
+import { AppIcon } from '@/core/ui/icons';
 import { FormField } from '@/core/ui/FormField';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { Text } from '@/core/ui/Text';
+
+import { LABOUR_TEST_IDS } from '../testIds';
 
 /** The shared frame of the End Stage dialogs: title, body, an inline message, then No/Cancel and Yes. */
 const DialogShell: React.FC<{
@@ -31,13 +34,27 @@ const DialogShell: React.FC<{
   onCancel: () => void;
   onConfirm: () => void;
   children: React.ReactNode;
-}> = ({ visible, title, message, cancelLabel, confirmLabel, onCancel, onConfirm, children }) => {
-  const { isTablet, scale } = useResponsive();
+  testID: string;
+}> = ({ visible, title, message, cancelLabel, confirmLabel, onCancel, onConfirm, children, testID }) => {
+  const { t } = useTranslation();
+  const { isTablet, scale, fs } = useResponsive();
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { maxWidth: isTablet ? scale(360) : 400 }]}>
-          <Text style={[styles.title, { fontSize: isTablet ? scale(18) : 18 }]}>{title}</Text>
+        <View style={[styles.card, { maxWidth: isTablet ? scale(360) : dimens.dialogMaxWidth }]} testID={testID}>
+          {/* The ✕ and the device Back button do what Cancel does (UI_CONVENTIONS section 6). */}
+          <View style={styles.header}>
+            <Text style={[styles.title, styles.flex1, { fontSize: fs('dialogTitle') }]}>{title}</Text>
+            <TouchableOpacity
+              onPress={onCancel}
+              accessibilityRole="button"
+              accessibilityLabel={t('dialog.a11y.close')}
+              hitSlop={12}
+              testID={`${testID}-close`}
+            >
+              <AppIcon name="close" size={isTablet ? scale(dimens.dialogCloseIcon) : dimens.dialogCloseIcon} color={colors.dialogCloseIcon} />
+            </TouchableOpacity>
+          </View>
           <View style={styles.body}>{children}</View>
           {message ? (
             <Text style={styles.message} accessibilityLiveRegion="polite">
@@ -46,10 +63,10 @@ const DialogShell: React.FC<{
           ) : null}
           <View style={styles.actions}>
             <View style={styles.flex1}>
-              <AppButton label={cancelLabel} onPress={onCancel} variant="secondary" size="compact" />
+              <AppButton label={cancelLabel} onPress={onCancel} variant="secondary" size="compact" testID={`${testID}-cancel`} />
             </View>
             <View style={styles.flex1}>
-              <AppButton label={confirmLabel} onPress={onConfirm} size="compact" />
+              <AppButton label={confirmLabel} onPress={onConfirm} size="compact" gradient testID={`${testID}-confirm`} />
             </View>
           </View>
         </View>
@@ -88,6 +105,7 @@ export const EndStage1ChoiceDialog: React.FC<{
     <DialogShell
       visible={visible}
       title={t('timeline.endStageFlow.stage1Title')}
+      testID={LABOUR_TEST_IDS.endStage.stage1Dialog}
       message={form.formState.errors.choice?.message}
       cancelLabel={t('timeline.endStageFlow.cancel')}
       confirmLabel={t('timeline.endStageFlow.yes')}
@@ -102,6 +120,7 @@ export const EndStage1ChoiceDialog: React.FC<{
             {STAGE1_OUTCOMES.map((outcome) => (
               <ChoiceButton
                 key={outcome.id}
+                testID={LABOUR_TEST_IDS.endStage.stage1Option(outcome.id)}
                 label={t(outcome.labelKey, { defaultValue: outcome.androidLabel })}
                 state={{ selected: field.value === outcome.id }}
                 onPress={() => {
@@ -176,6 +195,7 @@ export const EndStage2Dialog: React.FC<{
     <DialogShell
       visible={visible}
       title={t('timeline.endStageFlow.stage2Title')}
+      testID={LABOUR_TEST_IDS.endStage.stage2Dialog}
       message={form.formState.errors.refer?.message}
       cancelLabel={t('timeline.endStageFlow.cancel')}
       confirmLabel={t('timeline.endStageFlow.yes')}
@@ -196,6 +216,7 @@ export const EndStage2Dialog: React.FC<{
                     label={label}
                     value={field.value}
                     placeholder={t('timeline.endStageFlow.otherCommentPlaceholder')}
+                    testID={LABOUR_TEST_IDS.endStage.stage2OtherComment}
                     multiline
                     numberOfLines={5}
                     maxLength={OUTCOME_TEXT_MAX_LENGTH}
@@ -222,7 +243,15 @@ export const EndStage2Dialog: React.FC<{
             else if (outcome.id === STAGE2_OUTCOME.MOTHER_DEATH) set({ motherDeath: !values.motherDeath });
             else set({ refer: outcome.id });
           };
-          return <ChoiceButton key={outcome.id} label={label} state={{ selected }} onPress={press} />;
+          return (
+            <ChoiceButton
+              key={outcome.id}
+              label={label}
+              state={{ selected }}
+              onPress={press}
+              testID={LABOUR_TEST_IDS.endStage.stage2Option(outcome.id)}
+            />
+          );
         })}
       </View>
     </DialogShell>
@@ -234,6 +263,12 @@ interface ReferForm {
   doctorName: string;
   note: string;
 }
+
+const REFER_FIELD_TEST_ID: Record<keyof ReferForm, string> = {
+  hospitalName: LABOUR_TEST_IDS.endStage.referHospital,
+  doctorName: LABOUR_TEST_IDS.endStage.referDoctor,
+  note: LABOUR_TEST_IDS.endStage.referNote,
+};
 
 const referSchema = z.object({ hospitalName: z.string(), doctorName: z.string(), note: z.string() });
 
@@ -266,6 +301,7 @@ export const ReferHospitalDialog: React.FC<{
             label={t(labelKey)}
             value={input.value}
             placeholder={t(placeholderKey)}
+            testID={REFER_FIELD_TEST_ID[name]}
             onChangeText={(text) => input.onChange(filterFreeText(text))}
           />
         )}
@@ -276,6 +312,7 @@ export const ReferHospitalDialog: React.FC<{
     <DialogShell
       visible={visible}
       title={t('timeline.endStageFlow.refer.title')}
+      testID={LABOUR_TEST_IDS.endStage.referDialog}
       cancelLabel={t('timeline.endStageFlow.no')}
       confirmLabel={t('timeline.endStageFlow.yes')}
       onCancel={close}
@@ -315,6 +352,7 @@ export const MotherDeathDialog: React.FC<{
     <DialogShell
       visible={visible}
       title={t('timeline.endStageFlow.motherDeath.title')}
+      testID={LABOUR_TEST_IDS.endStage.motherDeathDialog}
       message={error}
       cancelLabel={t('timeline.endStageFlow.no')}
       confirmLabel={t('timeline.endStageFlow.yes')}
@@ -330,6 +368,7 @@ export const MotherDeathDialog: React.FC<{
               label={t('timeline.endStageFlow.motherDeath.title')}
               value={field.value}
               placeholder={t('timeline.endStageFlow.motherDeath.placeholder')}
+              testID={LABOUR_TEST_IDS.endStage.motherDeathReason}
               multiline
               numberOfLines={5}
               maxLength={OUTCOME_TEXT_MAX_LENGTH}
@@ -356,9 +395,14 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     backgroundColor: colors.white,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     padding: spacing.lg,
     gap: spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
   title: {
     color: colors.primaryTextFigma,

@@ -3,11 +3,13 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import { colors, spacing } from '@/core/config/theme';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { AppButton } from '@/core/ui/AppButton';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { AppIcon, ChatRoundIcon, PillIcon, VideoCameraIcon, type IconProps } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
+
+import { LABOUR_TEST_IDS } from '../testIds';
 
 interface CaptureActionBarProps {
   showBack: boolean;
@@ -48,13 +50,13 @@ export const CaptureActionBar: React.FC<CaptureActionBarProps> = ({
   const { isTablet, fs, fromFigma } = useResponsive();
   const insets = useSafeAreaInsets();
   const onPress: Record<ActionKey, () => void> = { videoCall: onVideoCall, chat: onChat, rx: onRx };
-  const iconSize = isTablet ? fromFigma(30) : 18;
+  const iconSize = isTablet ? fromFigma(30) : dimens.actionBarIcon;
   const labelStyle = { fontSize: isTablet ? fromFigma(20) : fs('timelineActionLabel') };
   const pillStyle = isTablet
     ? { height: fromFigma(80), gap: fromFigma(12), borderRadius: fromFigma(16) }
-    : { height: 48, gap: spacing.xs, borderRadius: 12 };
+    : { height: dimens.actionBarPillHeight, gap: spacing.xs, borderRadius: radii.card };
 
-  const pill = (key: string, label: string, accessibilityLabel: string, icon: React.ReactNode, onTap: () => void) => (
+  const pill = (key: keyof typeof LABOUR_TEST_IDS.capture, label: string, accessibilityLabel: string, icon: React.ReactNode, onTap: () => void) => (
     <TouchableOpacity
       key={key}
       style={[styles.pill, pillStyle]}
@@ -62,6 +64,7 @@ export const CaptureActionBar: React.FC<CaptureActionBarProps> = ({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       activeOpacity={0.8}
+      testID={LABOUR_TEST_IDS.capture[key]}
     >
       {icon}
       <Text style={[styles.pillLabel, labelStyle]}>{label}</Text>
@@ -91,6 +94,7 @@ export const CaptureActionBar: React.FC<CaptureActionBarProps> = ({
         disabledTone="brand"
         gradient
         style={{ marginTop: isTablet ? fromFigma(16) : spacing.md }}
+        testID={LABOUR_TEST_IDS.capture.next}
       />
     </View>
   );

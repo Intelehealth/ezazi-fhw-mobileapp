@@ -3,18 +3,20 @@ import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from './Text';
 import { AppButton } from './AppButton';
-import { AppIcon, DangerTriangleIcon } from './icons';
-import { colors, spacing } from '@/core/config/theme';
+import { AppIcon, CheckCircleIcon, DangerTriangleIcon } from './icons';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
-/** `danger`: red triangle (Capture SOS); `warning`: orange circle (Save & Exit). */
-export type ConfirmDialogTone = 'danger' | 'warning';
+/** `danger`: red triangle (Capture SOS); `warning`: orange circle (Save & Exit); `success`: green check-circle. */
+export type ConfirmDialogTone = 'danger' | 'warning' | 'success';
 
 interface ConfirmDialogProps {
   visible: boolean;
   tone: ConfirmDialogTone;
   title: string;
   message: string;
+  /** Content under the message, e.g. a list (UI_CONVENTIONS §5). */
+  children?: React.ReactNode;
   /** Optional highlighted line under the message (Figma's purple info banner). */
   note?: string;
   /** Without a cancel label and handler the dialog has one button and no ✕ (a blocking gate). */
@@ -24,11 +26,19 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   /** The ✕ and the device Back button; defaults to onCancel. */
   onClose?: () => void;
+  /** A gate: no ✕; the device Back button still calls onClose. */
+  hideClose?: boolean;
+  /** Screen-reader names for the buttons when their labels alone are too short. */
+  cancelAccessibilityLabel?: string;
+  confirmAccessibilityLabel?: string;
+  /** QA locator; its parts get `-close`, `-cancel` and `-confirm`. */
+  testID?: string;
 }
 
 const TONE = {
   danger: { bg: colors.dialogDangerBg, icon: colors.timelineSos },
   warning: { bg: colors.dialogWarningBg, icon: colors.dialogWarningIcon },
+  success: { bg: colors.dialogSuccessBg, icon: colors.dialogSuccessIcon },
 } as const;
 
 // Figma's rings around the badge: diameter as a multiple of the badge's, and colour.
@@ -40,80 +50,100 @@ const RINGS = [
 ] as const;
 
 /**
- * The shared two-button confirmation (Figma "Modal": Capture SOS, Save & Exit) on React
- * Native `Modal`: tone badge with its rings, ✕, title, message, optional note, Cancel and
- * Confirm side by side; or one button and no ✕ for a gate that cannot be dismissed. Sizes are provisional until the modal frame can be read in Figma.
+ * Every app dialog (Figma "Modal", UI_CONVENTIONS §5) on React Native `Modal`: tone badge with its rings, ✕,
+ * title, message, optional content and note, then Cancel and the gradient Confirm side by side, or Confirm alone.
+ * Dialogs Figma does not draw (low battery, permissions) use it too, so every dialog looks the same.
  */
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   visible,
   tone,
   title,
   message,
+  children,
   note,
   cancelLabel,
   confirmLabel,
   onCancel,
   onConfirm,
   onClose = onCancel,
+  hideClose = false,
+  cancelAccessibilityLabel,
+  confirmAccessibilityLabel,
+  testID,
 }) => {
   const { t } = useTranslation();
-  const { isTablet, scale } = useResponsive();
+  const { isTablet, scale, fs } = useResponsive();
   const look = TONE[tone];
-  const badge = isTablet ? scale(44) : 40;
+  const badge = isTablet ? scale(44) : dimens.confirmDialogBadge;
+  const padding = isTablet ? scale(dimens.confirmDialogPadding) : dimens.confirmDialogPadding;
   const iconSize = Math.round(badge * 0.5);
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose ?? noop}>
       <View style={styles.backdrop}>
         {/* Figma's modal is near square on a tablet (~1.25 : 1): width about 15 times the title size. */}
-        <View style={[styles.card, { maxWidth: isTablet ? scale(300) : 360, padding: isTablet ? scale(20) : 20 }]}>
+        <View style={[styles.card, { maxWidth: isTablet ? scale(300) : dimens.confirmDialogMaxWidth, padding }]} testID={testID}>
           {/* Decorative rings behind the badge, clipped by the card. */}
           {RINGS.map((ring) => (
             <View
               key={ring.scale}
               pointerEvents="none"
-              style={[styles.ring, ringBox(badge * ring.scale, ring.color, isTablet ? scale(20) : 20, badge)]}
+              style={[styles.ring, ringBox(badge * ring.scale, ring.color, padding, badge)]}
             />
           ))}
 
           <View style={styles.topRow}>
             <View style={[styles.badge, { width: badge, height: badge, borderRadius: badge / 2, backgroundColor: look.bg }]}>
-              {tone === 'danger' ? (
-                <DangerTriangleIcon size={iconSize} color={look.icon} />
-              ) : (
-                <AppIcon name="dangerCircle" size={iconSize} color={look.icon} />
-              )}
+              {tone === 'danger' && <DangerTriangleIcon size={iconSize} color={look.icon} />}
+              {tone === 'warning' && <AppIcon name="dangerCircle" size={iconSize} color={look.icon} />}
+              {tone === 'success' && <CheckCircleIcon size={iconSize} color={look.icon} />}
             </View>
-            {onClose && (
+            {onClose && !hideClose && (
               <TouchableOpacity
                 onPress={onClose}
                 accessibilityRole="button"
                 accessibilityLabel={t('dialog.a11y.close')}
                 hitSlop={12}
+                testID={testID && `${testID}-close`}
               >
-                <AppIcon name="close" size={isTablet ? scale(22) : 20} color={colors.dialogCloseIcon} />
+                <AppIcon name="close" size={isTablet ? scale(22) : dimens.dialogCloseIcon} color={colors.dialogCloseIcon} />
               </TouchableOpacity>
             )}
           </View>
 
-          {title !== '' && <Text style={[styles.title, { fontSize: isTablet ? scale(20) : 18 }]}>{title}</Text>}
-          <Text style={[styles.message, { fontSize: isTablet ? scale(14) : 14 }]}>{message}</Text>
+          {title !== '' && <Text style={[styles.title, { fontSize: fs('confirmTitle') }]}>{title}</Text>}
+          <Text style={[styles.message, { fontSize: fs('confirmMessage') }]}>{message}</Text>
+          {children && <View style={styles.content}>{children}</View>}
 
           {note && (
             <View style={styles.note}>
-              <AppIcon name="infoCircle" size={isTablet ? scale(18) : 16} color={colors.primary} />
-              <Text style={[styles.noteText, { fontSize: isTablet ? scale(13) : 13 }]}>{note}</Text>
+              <AppIcon name="infoCircle" size={isTablet ? scale(18) : dimens.dialogNoteIcon} color={colors.primary} />
+              <Text style={[styles.noteText, { fontSize: fs('confirmNote') }]}>{note}</Text>
             </View>
           )}
 
           <View style={styles.actions}>
             {cancelLabel && onCancel && (
               <View style={styles.flex1}>
-                <AppButton label={cancelLabel} onPress={onCancel} variant="secondary" size="compact" />
+                <AppButton
+                  label={cancelLabel}
+                  onPress={onCancel}
+                  variant="secondary"
+                  size="compact"
+                  accessibilityLabel={cancelAccessibilityLabel}
+                  testID={testID && `${testID}-cancel`}
+                />
               </View>
             )}
             <View style={styles.flex1}>
-              <AppButton label={confirmLabel} onPress={onConfirm} size="compact" />
+              <AppButton
+                label={confirmLabel}
+                onPress={onConfirm}
+                size="compact"
+                gradient
+                accessibilityLabel={confirmAccessibilityLabel}
+                testID={testID && `${testID}-confirm`}
+              />
             </View>
           </View>
         </View>
@@ -148,7 +178,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     backgroundColor: colors.white,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   ring: {
@@ -173,6 +203,9 @@ const styles = StyleSheet.create({
     color: colors.secondaryTextFigma,
     marginTop: spacing.xs,
   },
+  content: {
+    marginTop: spacing.md,
+  },
   note: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -180,7 +213,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: 8,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.dialogNoteBorder,
     backgroundColor: colors.dialogNoteBg,

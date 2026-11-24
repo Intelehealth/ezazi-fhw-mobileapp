@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
-import { colors, spacing } from '@/core/config/theme';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { LABOUR_STAGES, type LabourStage } from '../domain/timeline.types';
 
@@ -56,8 +56,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bar: {
-    height: 4,
-    borderRadius: 3,
+    height: dimens.stageProgressHeight,
+    borderRadius: radii.progressBar,
     marginBottom: spacing.xs,
   },
   labelActive: {

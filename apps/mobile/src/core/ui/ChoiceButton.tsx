@@ -13,16 +13,19 @@ interface ChoiceButtonProps {
   onPress: () => void;
   /** Placement only (flex, width) — never colours or sizing. */
   style?: StyleProp<ViewStyle>;
+  /** QA locator. */
+  testID?: string;
 }
 
 /** One option button of SegmentedChoice and NumberChips, in the look of its state. */
-export const ChoiceButton: React.FC<ChoiceButtonProps> = ({ label, state, onPress, style }) => {
+export const ChoiceButton: React.FC<ChoiceButtonProps> = ({ label, state, onPress, style, testID }) => {
   const sizes = useControlSizes();
   const look = controlLook(state);
 
   return (
     <Pressable
       accessibilityRole="radio"
+      testID={testID}
       accessibilityLabel={label}
       accessibilityState={{ selected: !!state.selected, disabled: !!state.disabled || !!state.readOnly }}
       disabled={state.disabled || state.readOnly}

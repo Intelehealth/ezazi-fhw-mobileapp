@@ -9,7 +9,7 @@ import { iconPaths } from '@/core/ui/icons';
 import { splashHills } from '@/core/ui/illustrations/backgroundShapes';
 import { splashIllustration } from '@/core/ui/illustrations/splashIllustration';
 import { clientConfig } from '@/core/config/clients';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, fontSizes, letterSpacing, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
 import { askForExactAlarms, isExactAlarmAllowed } from '@/core/services/monitor/monitorAccess';
@@ -20,6 +20,7 @@ import {
   openAppSettings,
   requestAppPermissions,
 } from '@/core/utils/permissions';
+import { AUTH_TEST_IDS } from '../testIds';
 
 // ─── Permission state ─────────────────────────────────────────────────────────
 
@@ -149,13 +150,13 @@ export const SplashScreen: React.FC = () => {
   // (assets.splashLogo) use it as-is; others fall back to their normal logo
   // untinted, since not every client's mark is a flat-color image tinting
   // could recolor cleanly (e.g. Nepal's is a multi-color crest) ──
-  const WORDMARK_W = isTablet ? scale(200) : 140;
-  const WORDMARK_H = isTablet ? scale(84)  : 60;
+  const WORDMARK_W = isTablet ? scale(200) : dimens.splashWordmarkWidth;
+  const WORDMARK_H = isTablet ? scale(84)  : dimens.splashWordmarkHeight;
 
   // ── Illustration — sized by height only so its (taller-than-square) aspect
   // ratio isn't distorted; shared by both clients (see splashIllustration.ts) ──
   const ILLUSTRATION_ASPECT = 299 / 419; // splashIllustration.viewBox
-  const ILLUSTRATION_H = isTablet ? scale(340) : 230;
+  const ILLUSTRATION_H = isTablet ? scale(340) : dimens.splashIllustrationHeight;
   const ILLUSTRATION_W = ILLUSTRATION_H * ILLUSTRATION_ASPECT;
 
   const dialogVisible = permState === 'denied' || permState === 'never_ask_again';
@@ -181,8 +182,8 @@ export const SplashScreen: React.FC = () => {
           style={[
             styles.tagline,
             {
-              fontSize: isTablet ? scale(13) : 11,
-              lineHeight: isTablet ? scale(18) : 15,
+              fontSize: isTablet ? scale(13) : fontSizes.splashTagline.phone,
+              lineHeight: isTablet ? scale(18) : dimens.splashTaglineLineHeight,
             },
           ]}
         >
@@ -192,8 +193,8 @@ export const SplashScreen: React.FC = () => {
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Svg
-            width={12}
-            height={12}
+            width={dimens.splashHeartIcon}
+            height={dimens.splashHeartIcon}
             viewBox="0 0 24 24"
             style={[styles.dividerHeart, { transform: [{ rotate: '-18deg' }] }]}
           >
@@ -274,6 +275,7 @@ export const SplashScreen: React.FC = () => {
         onRetry={requestPermissions}
         onOpenSettings={openAppSettings}
         onClose={() => BackHandler.exitApp()}
+        testID={AUTH_TEST_IDS.splash.permissionsDialog}
       />
 
       {/* One button, no ✕: as Android, the app cannot be used without exact alarms. */}
@@ -284,6 +286,7 @@ export const SplashScreen: React.FC = () => {
         message={t('exactAlarmGate.message')}
         confirmLabel={t('exactAlarmGate.continue')}
         onConfirm={openExactAlarmSettings}
+        testID={AUTH_TEST_IDS.splash.alarmsDialog}
       />
 
     </View>
@@ -308,7 +311,7 @@ const styles = StyleSheet.create({
 
   topSection: {
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
   },
 
   midSpacer: {
@@ -319,26 +322,26 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
     textAlign: 'center',
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginTop: 12,
+    letterSpacing: letterSpacing.splashTagline,
+    marginTop: dimens.splashTaglineTop,
     opacity: 0.85,
   },
 
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: spacing.md,
   },
 
   dividerLine: {
-    width: 32,
+    width: dimens.splashDividerLine,
     height: 1,
     backgroundColor: colors.onPrimary,
     opacity: 0.35,
   },
 
   dividerHeart: {
-    marginHorizontal: 8,
+    marginHorizontal: spacing.sm,
   },
 
   hillContainer: {
@@ -366,8 +369,8 @@ const styles = StyleSheet.create({
 
   loadingText: {
     color: colors.onPrimary,
-    fontSize: 12,
-    marginTop: 8,
+    fontSize: fontSizes.splashLoading.phone,
+    marginTop: spacing.sm,
     opacity: 0.85,
   },
 });

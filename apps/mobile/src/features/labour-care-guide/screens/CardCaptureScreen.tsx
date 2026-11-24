@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 import { useTranslation } from 'react-i18next';
 import type { CardAccess, CardLayout, StoredObs } from '@ezazi/clinical-rules';
 
-import { colors, spacing } from '@/core/config/theme';
+import { colors, letterSpacing, spacing } from '@/core/config/theme';
 import { ConfirmDialog } from '@/core/ui/ConfirmDialog';
 import { TabPager } from '@/core/ui/TabPager';
 import { Text } from '@/core/ui/Text';
@@ -18,6 +18,7 @@ import { CaptureActionBar } from '../components/CaptureActionBar';
 import { CaptureTabPage } from '../components/CaptureTabPage';
 import { useCaptureFormViewModel } from '../stores/useCaptureFormViewModel';
 import { useCardCaptureViewModel } from '../stores/useCardCaptureViewModel';
+import { LABOUR_TEST_IDS } from '../testIds';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CardCapture'>;
 
@@ -155,6 +156,7 @@ const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, lay
         confirmLabel={t('timeline.endStageFlow.okay')}
         onConfirm={viewModel.dismissSaveError}
         onClose={viewModel.dismissSaveError}
+        testID={LABOUR_TEST_IDS.capture.saveFailedDialog}
       />
 
       <ConfirmDialog
@@ -166,6 +168,7 @@ const CaptureForm: React.FC<CaptureFormProps> = ({ visitUuid, encounterUuid, lay
         confirmLabel={t('capture.leave.saveAndExit')}
         onCancel={() => setAskToLeave(false)}
         onConfirm={saveAndExit}
+        testID={LABOUR_TEST_IDS.capture.leaveDialog}
       />
     </>
   );
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
   kicker: {
     color: colors.secondaryTextFigma,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.caps,
   },
   title: {
     color: colors.primaryTextDarkFigma,

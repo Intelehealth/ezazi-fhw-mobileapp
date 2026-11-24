@@ -18,10 +18,11 @@ import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { Text } from '@/core/ui/Text';
 import { commonStyles } from '@/core/ui/commonStyles';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
 import { logger } from '@/core/utils/logger';
+import { AUTH_TEST_IDS } from '../testIds';
 
 // CountDownTimer(60000, 1000) from OTPVerificationFragment.java
 const RESEND_COUNTDOWN_SEC = 60;
@@ -143,6 +144,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
           title={t('forgotPassword.verify.heading')}
           subtitle={t('forgotPassword.verify.instruction', { maskedPhone: maskPhone(phoneNumber) })}
           onBack={() => navigation.goBack()}
+          backTestID={AUTH_TEST_IDS.forgotVerify.back}
           firstFieldY={otpRowY}
         />
       }
@@ -159,6 +161,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
           name="otp"
           render={({ field: { value, onChange } }) => (
             <OtpInput
+            testID={AUTH_TEST_IDS.forgotVerify.otp}
               length={OTP_LENGTH}
               value={value}
               onChange={(val) => {
@@ -178,7 +181,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
       )}
 
       {/* ── API error banner — wrong-code/network/server failures from verifyOtp or resend ── */}
-      {!!banner && <ApiErrorBanner banner={banner} />}
+      {!!banner && <ApiErrorBanner banner={banner} testID={AUTH_TEST_IDS.forgotVerify.errorBanner} />}
 
       {verified && (
         <Text style={[styles.verifiedText, { fontSize: fs('error') }]}>
@@ -188,6 +191,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
 
       <AppButton
         label={t('forgotPassword.verify.submit')}
+        testID={AUTH_TEST_IDS.forgotVerify.submit}
         onPress={handleContinue}
         disabled={!isFormValid || isSubmitting || verified}
         style={styles.button}
@@ -208,6 +212,7 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
             disabled={isResending}
             accessibilityRole="button"
             accessibilityLabel={t('forgotPassword.verify.a11y.resendOtp')}
+            testID={AUTH_TEST_IDS.forgotVerify.resend}
           >
             <Text style={[commonStyles.link, { fontSize: fs('instruction') }]}>
               {t('forgotPassword.verify.resend')}
@@ -222,28 +227,28 @@ export const ForgotPasswordVerifyOtpScreen: React.FC<Props> = ({ navigation, rou
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   content: {
-    paddingTop: 40,
+    paddingTop: dimens.forgotPasswordContentTop,
   },
 
   errorText: {
-    marginTop: 6,
+    marginTop: dimens.otpMessageTop,
   },
 
   verifiedText: {
-    marginTop: 6,
+    marginTop: dimens.otpMessageTop,
     color: colors.success,
     fontWeight: '600',
   },
 
   button: {
-    marginTop: 48,
+    marginTop: spacing.xxl,
   },
 
   resendRow: {
     flexDirection: 'row',
     alignItems:    'center',
     justifyContent: 'center',
-    marginTop:     20,
+    marginTop:     dimens.otpResendTop,
     flexWrap:      'wrap',
   },
 

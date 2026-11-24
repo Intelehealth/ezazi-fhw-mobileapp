@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors, spacing } from '@/core/config/theme';
+import { colors, letterSpacing, spacing } from '@/core/config/theme';
 import { useControlSizes } from '@/core/ui/hooks/useControlSizes';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   heading: {
     color: colors.secondaryTextFigma,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.caps,
   },
   section: {
     color: colors.controlSelectedText,

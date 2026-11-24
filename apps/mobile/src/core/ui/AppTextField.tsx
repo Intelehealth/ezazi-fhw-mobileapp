@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 import { Text } from './Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    paddingHorizontal: 14,
+    paddingHorizontal: dimens.inputHPad,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
 
   leftSlot: {
-    marginRight: 10,
+    marginRight: dimens.inputSlotGap,
   },
 
   input: {
@@ -107,6 +107,6 @@ const styles = StyleSheet.create({
   // Figma — error sits left-aligned under the field
   errorText: {
     color: colors.error,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
 });

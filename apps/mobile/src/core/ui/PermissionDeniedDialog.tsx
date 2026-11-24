@@ -1,15 +1,12 @@
 import React from 'react';
-import {
-  Modal,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Text } from './Text';
-import { colors } from '@/core/config/theme';
+
+import { colors, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+
+import { ConfirmDialog } from './ConfirmDialog';
+import { Text } from './Text';
 
 interface Props {
   visible: boolean;
@@ -18,6 +15,8 @@ interface Props {
   onRetry: () => void;
   onOpenSettings: () => void;
   onClose: () => void;
+  /** QA locator; its buttons are `-cancel` and `-confirm`. */
+  testID?: string;
 }
 
 // Mirrors the legacy PermissionRequiredDialog
@@ -28,223 +27,71 @@ const PERMISSIONS_LIST = [
   { icon: '🔔', labelKey: 'permissions.notifications', reasonKey: 'permissions.notificationsReason' },
 ] as const;
 
+/**
+ * The permissions gate, as Android's PermissionRequiredDialog: why each permission is needed, "Close Now" and
+ * "Retry" (or "Open Settings" when one is permanently denied). Figma has no frame for it, so it is the app dialog
+ * (UI_CONVENTIONS §5) as a gate: no ✕; the device Back button closes the app, as Close Now does.
+ */
 export const PermissionDeniedDialog: React.FC<Props> = ({
   visible,
   isPermanentlyDenied,
   onRetry,
   onOpenSettings,
   onClose,
+  testID,
 }) => {
   const { t } = useTranslation();
-  const { cornerRadius } = useResponsive();
-
-  const primaryAction = isPermanentlyDenied ? onOpenSettings : onRetry;
-  const primaryLabel  = isPermanentlyDenied
-    ? t('permissions.openSettings')
-    : t('permissions.retry');
+  const { fs } = useResponsive();
 
   return (
-    <Modal
+    <ConfirmDialog
       visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
+      tone="warning"
+      title={t('permissions.title')}
+      message={isPermanentlyDenied ? t('permissions.descriptionPermanent') : t('permissions.descriptionDenied')}
+      note={isPermanentlyDenied ? t('permissions.settingsHint') : undefined}
+      cancelLabel={t('permissions.closeNow')}
+      cancelAccessibilityLabel={t('permissions.a11y.closeApp')}
+      confirmLabel={isPermanentlyDenied ? t('permissions.openSettings') : t('permissions.retry')}
+      confirmAccessibilityLabel={isPermanentlyDenied ? t('permissions.a11y.openSettings') : t('permissions.a11y.retry')}
+      onCancel={onClose}
+      onConfirm={isPermanentlyDenied ? onOpenSettings : onRetry}
+      onClose={onClose}
+      hideClose
+      testID={testID}
     >
-      <View style={styles.backdrop}>
-        <View style={[styles.card, { borderRadius: cornerRadius }]}>
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>{t('permissions.title')}</Text>
-          </View>
-
-          {/* Body */}
-          <View style={styles.body}>
-            <Text style={styles.description}>
-              {isPermanentlyDenied
-                ? t('permissions.descriptionPermanent')
-                : t('permissions.descriptionDenied')}
-            </Text>
-
-            <View style={styles.permList}>
-              {PERMISSIONS_LIST.map((p) => (
-                <View key={p.labelKey} style={styles.permRow}>
-                  <Text style={styles.permIcon}>{p.icon}</Text>
-                  <View style={styles.permText}>
-                    <Text style={styles.permLabel}>{t(p.labelKey)}</Text>
-                    <Text style={styles.permReason}>{t(p.reasonKey)}</Text>
-                  </View>
-                </View>
-              ))}
+      <View style={styles.list}>
+        {PERMISSIONS_LIST.map((p) => (
+          <View key={p.labelKey} style={styles.row}>
+            <Text style={{ fontSize: fs('confirmTitle') }}>{p.icon}</Text>
+            <View style={styles.text}>
+              <Text style={[styles.label, { fontSize: fs('confirmMessage') }]}>{t(p.labelKey)}</Text>
+              <Text style={[styles.reason, { fontSize: fs('confirmNote') }]}>{t(p.reasonKey)}</Text>
             </View>
-
-            {isPermanentlyDenied && (
-              <Text style={styles.settingsHint}>{t('permissions.settingsHint')}</Text>
-            )}
           </View>
-
-          {/* Actions — mirrors Android "Retry Again" / "Close Now" */}
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={[styles.btn, styles.btnOutline]}
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel={t('permissions.a11y.closeApp')}
-            >
-              <Text style={[styles.btnText, styles.btnTextOutline]}>
-                {t('permissions.closeNow')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnFilled]}
-              onPress={primaryAction}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isPermanentlyDenied
-                  ? t('permissions.a11y.openSettings')
-                  : t('permissions.a11y.retry')
-              }
-            >
-              <Text style={[styles.btnText, styles.btnTextFilled]}>
-                {primaryLabel}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-        </View>
+        ))}
       </View>
-    </Modal>
+    </ConfirmDialog>
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.dialogOverlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+  list: {
+    gap: spacing.sm,
   },
-
-  card: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: colors.white,
-    overflow: 'hidden',
-    elevation: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-      },
-    }),
-  },
-
-  header: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-
-  title: {
-    color: colors.white,
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-
-  body: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-
-  description: {
-    fontSize: 13,
-    color: colors.dialogText,
-    lineHeight: 19,
-    marginBottom: 14,
-  },
-
-  permList: {
-    gap: 10,
-  },
-
-  permRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: spacing.sm,
   },
-
-  permIcon: {
-    fontSize: 18,
-    lineHeight: 22,
-    width: 24,
-    textAlign: 'center',
-  },
-
-  permText: {
+  text: {
     flex: 1,
   },
-
-  permLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.dialogTextStrong,
+  label: {
+    fontWeight: '700',
+    color: colors.primaryTextFigma,
   },
-
-  permReason: {
-    fontSize: 12,
-    color: colors.dialogTextMuted,
-    lineHeight: 17,
-    marginTop: 1,
-  },
-
-  settingsHint: {
-    marginTop: 14,
-    fontSize: 12,
-    color: colors.primary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-
-  actions: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    marginTop: 16,
-  },
-
-  btn: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-
-  btnOutline: {
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: colors.border,
-  },
-
-  btnFilled: {
-    backgroundColor: colors.primary,
-  },
-
-  btnText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  btnTextOutline: {
-    color: colors.dialogTextMuted,
-  },
-
-  btnTextFilled: {
-    color: colors.white,
+  reason: {
+    color: colors.secondaryTextFigma,
   },
 });

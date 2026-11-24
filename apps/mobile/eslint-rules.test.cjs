@@ -54,6 +54,12 @@ test('Modal is used only by the shared dialogs', async () => {
   assert.ok(!(await ruleIds(code, 'src/core/ui/ConfirmDialog.tsx')).includes(TS_IMPORTS));
 });
 
+test('ToastAndroid only through the toast helper', async () => {
+  const code = "import { ToastAndroid } from 'react-native';\nexport { ToastAndroid };\n";
+  assert.ok((await ruleIds(code, LABOUR_SCREEN)).includes(TS_IMPORTS));
+  assert.ok(!(await ruleIds(code, 'src/core/utils/toast.ts')).includes(TS_IMPORTS));
+});
+
 test('the database rules still fire where the new overrides apply', async () => {
   const code = 'declare const db: { transaction(f: () => void): void };\ndb.transaction(() => undefined);\n';
   assert.ok((await ruleIds(code, LABOUR_REPOSITORY)).includes('no-restricted-syntax'));

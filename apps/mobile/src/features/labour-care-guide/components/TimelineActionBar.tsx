@@ -3,9 +3,11 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
+
+import { LABOUR_TEST_IDS } from '../testIds';
 import { AppButton } from '@/core/ui/AppButton';
 import { ChatRoundIcon, DangerTriangleIcon, PillIcon, VideoCameraIcon, type IconProps } from '@/core/ui/icons';
-import { colors, spacing } from '@/core/config/theme';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 interface TimelineActionBarProps {
@@ -54,7 +56,7 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
   const insets = useSafeAreaInsets();
   const onPress: Record<ActionKey, () => void> = { sos: onSos, chat: onChat, videoCall: onVideoCall, rx: onRx };
   // One visible size for all four icons: the Chat bubble's 30 units in its Figma slot.
-  const iconSize = isTablet ? fromFigma(30) : 18;
+  const iconSize = isTablet ? fromFigma(30) : dimens.actionBarIcon;
   const labelStyle = { fontSize: isTablet ? fromFigma(20) : fs('timelineActionLabel') };
   const pillStyle = isTablet
     ? { flexDirection: 'row' as const, height: fromFigma(80), gap: fromFigma(12), borderRadius: fromFigma(16) }
@@ -93,6 +95,7 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
               accessibilityState={{ disabled }}
               accessibilityLabel={t(`timeline.a11y.${key}`)}
               activeOpacity={0.8}
+              testID={LABOUR_TEST_IDS.timeline[key]}
             >
               <Icon size={iconSize} color={isSos ? colors.onPrimary : colors.primary} />
               <Text style={[styles.pillLabel, isSos && styles.sosLabel, labelStyle]}>{t(`timeline.actions.${key}`)}</Text>
@@ -108,6 +111,7 @@ export const TimelineActionBar: React.FC<TimelineActionBarProps> = ({
         disabledTone="brand"
         gradient
         style={{ marginTop: isTablet ? fromFigma(16) : spacing.md }}
+        testID={LABOUR_TEST_IDS.timeline.endStage}
       />
     </View>
   );
@@ -136,7 +140,7 @@ const styles = StyleSheet.create({
   pillPhone: {
     gap: spacing.xs,
     paddingVertical: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radii.card,
   },
   sosPill: {
     backgroundColor: colors.timelineSos,

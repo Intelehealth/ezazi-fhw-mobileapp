@@ -53,8 +53,9 @@ Record Now, End Stage, a dialog's primary button.
 | Samsung 8.7" tablet | Supported; the real test device (SM-X135) | About 600 dp wide: exactly on the tablet breakpoint. Samsung's "Screen zoom" can push it below 600 dp and into the phone layout, so check it at the default and at one zoom step up |
 | Samsung Galaxy Tab A11, 11" | Supported | Confirm its size on the device (`adb shell wm size`, `wm density`) before relying on numbers |
 
-- **Portrait only, on every device** (2026-11-24). On Android 16 an app targeting SDK 36 has its orientation lock
-  ignored on screens 600 dp and wider; the app must opt out of that, or tablets will rotate.
+- **Portrait is the design** (2026-11-24): every screen is built and checked in portrait. The app is not forced into
+  portrait on tablets: Android 16 ignores the app's portrait setting on screens 600 dp and wider, so a tablet may
+  rotate, and a screen must stay usable if it does. Phones stay portrait.
 - A device is a tablet from **600 dp** wide (app decision).
 - **Phone sizes come from theme tokens** (2026-11-24). Tablet sizes go through `useResponsive()`: `fs(key)` for font
   sizes, `scale(n)` for a tablet size, `fromFigma(n)` for a number read off the 800-wide Figma frame, `cornerRadius` for
@@ -65,8 +66,8 @@ Record Now, End Stage, a dialog's primary button.
 | Situation | Pattern | Source | Component |
 |---|---|---|---|
 | Confirm an action, or leaving a screen with unsaved input | Confirm dialog (§5) | Figma | `ConfirmDialog` |
-| Something the person must allow before going on (permission, Alarms & reminders) | Gate: a confirm dialog with one button and no ✕ | App decision (Figma has no gate) | `ConfirmDialog` without `cancelLabel` |
-| A completed action that needs acknowledging (password updated) | Success dialog (§5, success tone) | Figma | `PasswordResetSuccessDialog` |
+| Something the person must allow before going on (permissions, Alarms & reminders) | Gate: a confirm dialog with no ✕ | App decision (Figma has no gate) | `ConfirmDialog` with `hideClose`, or without `cancelLabel` for one button |
+| A completed action that needs acknowledging (password updated) | Success dialog (§5, success tone) | Figma | `ConfirmDialog` with `tone="success"` |
 | A save failed and the input must be kept | Confirm dialog ("Not saved"); the screen stays open | App decision | `ConfirmDialog` |
 | Choosing one outcome from several (End Stage) | Choice sheet (§6) | Figma | — |
 | A sign-in request failed (credentials, network, server) | Error banner above the main button (§7) | Figma | `ApiErrorBanner` |
@@ -94,8 +95,10 @@ Figma "Modal": 26 dialogs share one anatomy (for example `1:7100`, `1:7140`, `1:
    An acknowledgement has one full-width primary button. A success dialog that shows a summary card stacks two
    full-width buttons (`1:8490`).
 
-`ConfirmDialog` draws this with the danger and warning tones; the success tone is drawn by
-`PasswordResetSuccessDialog`. A new dialog of this kind uses these components, not a new `Modal`.
+`ConfirmDialog` draws this in all three tones. Content such as a list goes in its `children`, under the message; a
+gate sets `hideClose`; a short button label ("OK") can carry a fuller screen-reader name. Dialogs Figma does not
+draw (low battery, permissions) use it too, in the warning tone, so every dialog in the app looks the same. A new
+dialog uses `ConfirmDialog`, not a new `Modal`.
 
 ## 6. Other dialog types
 
@@ -168,7 +171,8 @@ smaller.
 - Choices carry their role (`radio`, `checkbox`) and state (`selected`, `checked`, `disabled`).
 - An error or an SOS result is announced to the screen reader; a dialog's title is read first when it opens.
 - Every screen sits in `ScreenLayout` or `FormScreenLayout`, so content stays clear of the system bars and the keyboard.
-- Elements QA automates carry a `testID`.
+- Elements QA automates carry a `testID`, kept in one registry per feature (sign-in: `src/features/auth/testIds.ts`; labour: `src/features/labour-care-guide/testIds.ts`). The shared button, choice, text box and dialog accept a `testID`; a dialog names its parts `<id>-close`, `<id>-cancel`, `<id>-confirm`; a password
+  field's eye toggle is `<id>-toggle`.
 
 ## 14. Known differences to close
 
@@ -182,7 +186,8 @@ smaller.
 
 ## 15. Before a screen is done
 
-- [ ] Checked on the phone, the 8.7" tablet and the 11" tablet, in portrait; matches its Figma frame on the tablets
+- [ ] Checked on the phone, the 8.7" tablet and the 11" tablet, in portrait (and still usable rotated on a tablet);
+  matches its Figma frame on the tablets
 - [ ] Every colour and size from the theme, phone sizes included; no hex, no bare numbers in styles
 - [ ] Every text in `en.json`; plural keys for counts
 - [ ] Feedback uses the pattern of §4, with the shared component; Back closes every dialog
@@ -195,8 +200,9 @@ smaller.
 | Rule | Enforced by |
 |---|---|
 | `Text` only from `core/ui/Text` | eslint `@typescript-eslint/no-restricted-imports` |
-| `Modal` only in the shared dialogs, the End Stage dialogs, and the older dialogs that still draw their own (low battery, permissions, password success, location picker) | eslint `@typescript-eslint/no-restricted-imports` |
-| No hex colours, no bare numbers in styles, no hard-coded text, `ToastAndroid` only through `showToast` | **Not enforced yet.** Review only |
+| `Modal` only in the shared dialogs, the End Stage dialogs and the location dropdown | eslint `@typescript-eslint/no-restricted-imports` |
+| `ToastAndroid` only in `core/utils/toast.ts` | eslint `@typescript-eslint/no-restricted-imports` |
+| No hex colours, no bare numbers in styles, no hard-coded text | **Not enforced yet.** Review only |
 | Figma match, contrast, touch size, font scaling, the three devices | Review and device checks (§15) |
 
-`npm run lint` also runs `eslint-rules.test.cjs`, which checks the `Text` and `Modal` rules fire where they should.
+`npm run lint` also runs `eslint-rules.test.cjs`, which checks the `Text`, `Modal` and `ToastAndroid` rules fire where they should.

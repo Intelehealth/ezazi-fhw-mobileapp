@@ -28,7 +28,7 @@ export const commonStyles = StyleSheet.create({
 
   instruction: {
     color: colors.darkGray,
-    lineHeight: 20,
+    lineHeight: dimens.instructionLineHeight,
   },
 
   errorText: {

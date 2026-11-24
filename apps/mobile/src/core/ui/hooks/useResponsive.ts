@@ -40,14 +40,14 @@ export function useResponsive() {
     : dimens.cornerRadius.phone;
 
   // Scale an arbitrary tablet-tier size (logo/illustration px, tablet-only
-  // paddings, …) the same way fs()/cornerRadius do. Phone values are the
-  // caller's own literal and pass through untouched — call as
-  // `isTablet ? scale(130) : 104`, never for the phone branch.
+  // paddings, …) the same way fs()/cornerRadius do. Phone values come from
+  // theme tokens (UI_CONVENTIONS §3) — call as
+  // `isTablet ? scale(130) : dimens.someSize`, never for the phone branch.
   const scale = (tabletValue: number): number =>
     isTablet ? Math.round(tabletValue * tabletScale) : tabletValue;
 
   // A size read straight off a tablet Figma frame, in Figma units: converted to dp
-  // and scaled like scale(). Tablet branch only, as scale(): `isTablet ? fromFigma(50) : 40`.
+  // and scaled like scale(). Tablet branch only, as scale(): `isTablet ? fromFigma(50) : dimens.someSize`.
   const fromFigma = (figmaUnits: number): number =>
     scale((figmaUnits * TABLET_SCALE_REFERENCE_WIDTH) / FIGMA_TABLET_FRAME_WIDTH);
 

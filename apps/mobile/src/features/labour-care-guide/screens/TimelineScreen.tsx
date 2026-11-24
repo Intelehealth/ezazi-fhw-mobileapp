@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { STAGE1_OUTCOME, STAGE2_OUTCOME } from '@ezazi/clinical-rules';
 import type { EndStage2Details, Stage1OutcomeId, Stage2OutcomeId } from '@ezazi/clinical-rules';
 import { logger } from '@/core/utils/logger';
-import { colors, spacing } from '@/core/config/theme';
+import { colors, fontSizes, spacing } from '@/core/config/theme';
 import { ConfirmDialog } from '@/core/ui/ConfirmDialog';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
@@ -17,6 +17,7 @@ import { EndStage1ChoiceDialog, EndStage2Dialog, MotherDeathDialog, ReferHospita
 import { VisitOutcomePanel } from '../components/VisitOutcomePanel';
 import { outcomeView, scrollTargetId, stageHeadings } from '../domain/timelineModel';
 import { useTimelineViewModel } from '../stores/useTimelineViewModel';
+import { LABOUR_TEST_IDS } from '../testIds';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Timeline'>;
 
@@ -148,7 +149,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
             )}
           <View
-            testID={`timeline-card-${checkpoint.id}`}
+            testID={LABOUR_TEST_IDS.timeline.card(checkpoint.id)}
             onLayout={checkpoint.id === targetId ? scrollToTarget : undefined}
           >
             <TimelineCheckpointCard
@@ -206,6 +207,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         confirmLabel={t('timeline.endStage1Dialog.confirm')}
         onCancel={() => setStep({ kind: 'none' })}
         onConfirm={confirmEndStage1}
+        testID={LABOUR_TEST_IDS.timeline.moveToStage2Dialog}
       />
       {/* Android's referral / "Other" confirmations: content only, Yes / Cancel. */}
       <ConfirmDialog
@@ -221,6 +223,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         confirmLabel={t('timeline.endStageFlow.yes')}
         onCancel={() => setStep({ kind: 'none' })}
         onConfirm={confirmOutcome}
+        testID={LABOUR_TEST_IDS.timeline.outcomeConfirmDialog}
       />
       <ReferHospitalDialog
         visible={step.kind === 'refer'}
@@ -240,6 +243,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         message={t('timeline.endStageFlow.deliveryFormLater')}
         confirmLabel={t('timeline.endStageFlow.okay')}
         onConfirm={() => setStep({ kind: 'none' })}
+        testID={LABOUR_TEST_IDS.timeline.deliveryLaterDialog}
       />
 
       <ConfirmDialog
@@ -251,6 +255,7 @@ export const TimelineScreen: React.FC<Props> = ({ navigation, route }) => {
         confirmLabel={t('timeline.sosDialog.confirm')}
         onCancel={() => setSosConfirmVisible(false)}
         onConfirm={confirmSos}
+        testID={LABOUR_TEST_IDS.timeline.sosDialog}
       />
     </View>
   );
@@ -278,7 +283,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   stageHeading: {
-    fontSize: 20,
+    fontSize: fontSizes.timelineStageHeading.phone,
     fontWeight: '700',
     color: colors.primaryTextDarkFigma,
     marginBottom: spacing.sm,

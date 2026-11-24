@@ -24,4 +24,14 @@ describe('TimelineActionBar', () => {
     expect(screen.getByText('SOS')).toBeTruthy();
     expect(screen.getByText('Video Call')).toBeTruthy();
   });
+
+  it('carries the QA locators from the labour registry', () => {
+    render(
+      <TimelineActionBar onSos={jest.fn()} onChat={jest.fn()} onVideoCall={jest.fn()} onRx={jest.fn()} onEndStage={jest.fn()} endStageLabel="End First Stage" />,
+    );
+
+    for (const id of ['timeline-sos', 'timeline-chat', 'timeline-video-call', 'timeline-rx', 'timeline-end-stage']) {
+      expect(screen.getByTestId(id)).toBeTruthy();
+    }
+  });
 });
