@@ -6,10 +6,14 @@ import { PatientPersonalInfoScreen } from '../PatientPersonalInfoScreen';
 // as LoginScreen.test.tsx. Continue's destination is temporary — item 4's code
 // chat replaces it with a validated submit — so nothing asserts on it here.
 const mockNavigate = jest.fn();
+const mockPopTo = jest.fn();
 
+// `popTo` and `usePreventRemove` are for the layout this screen renders, which
+// owns the discard path — the screen itself only uses `navigate`.
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
-  useNavigation: () => ({ navigate: mockNavigate }),
+  useNavigation: () => ({ navigate: mockNavigate, goBack: jest.fn(), popTo: mockPopTo }),
+  usePreventRemove: jest.fn(),
 }));
 
 // Every input carries an accessibilityLabel equal to its label, because the

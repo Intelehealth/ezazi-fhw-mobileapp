@@ -7,10 +7,14 @@ import { clientConfig } from '@/core/config/clients';
 // replaces it with the draft-writing Back — so nothing asserts on it here.
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+const mockPopTo = jest.fn();
 
+// `popTo` and `usePreventRemove` are for the layout this screen renders, which
+// owns the discard path — the screen itself only uses `goBack`.
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
-  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
+  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack, popTo: mockPopTo }),
+  usePreventRemove: jest.fn(),
 }));
 
 // The District block is the one piece of markup that depends on a form value,

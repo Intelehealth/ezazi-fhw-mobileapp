@@ -314,6 +314,9 @@
     }
   },
   "patient": {
+    "errors": {
+      "_comment": "Validation messages for both registration screens. Created empty on purpose: the personal and address chats each add their own keys and MERGE into this object. Whichever ran first would otherwise create it and the second would replace it, silently dropping the first's messages. Delete this key once either chat has added a real one."
+    },
     "common": {
       "steps": {
         "personal": "Personal",

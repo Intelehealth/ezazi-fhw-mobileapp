@@ -4,6 +4,17 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { RegistrationStepLayout } from '../RegistrationStepLayout';
 import type { RegistrationStep } from '../RegistrationStepper';
 
+// The layout owns the discard path, so it reaches for navigation and for the
+// hardware-back guard. `usePreventRemove` is stubbed rather than spread from
+// the real module: it registers against a route that does not exist here.
+const mockPopTo = jest.fn();
+
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), popTo: mockPopTo }),
+  usePreventRemove: jest.fn(),
+}));
+
 function renderLayout(currentStep: RegistrationStep = 'personal') {
   return render(
     <RegistrationStepLayout

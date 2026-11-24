@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -8,13 +8,19 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation, usePreventRemove } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { RootStackParamList } from '@/navigation/types';
 import { colors, dimens } from '@/core/config/theme';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { useRegistrationDraftStore } from '../stores/registrationDraft.store';
 import { DiscardRegistrationDialog } from './DiscardRegistrationDialog';
 import { RegistrationStepper, type RegistrationStep } from './RegistrationStepper';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /**
  * The chrome both registration steps sit in — title, step counter, X, stepper,
@@ -64,9 +70,56 @@ export const RegistrationStepLayout: React.FC<RegistrationStepLayoutProps> = ({
     ? scale(dimens.registrationCloseSize.tablet)
     : dimens.registrationCloseSize.phone;
 
-  // Placeholder, like the screens' value/onChangeText. The code chat swaps it
-  // for the draft store's discard: delete the photo, clear, then navigate.
-  const onDiscardConfirmed = () => setDiscardVisible(false);
+  const navigation = useNavigation<Nav>();
+  const discardRegistration = useRegistrationDraftStore((s) => s.discardRegistration);
+
+  // Set once the draft is actually gone. It does two jobs: it lifts the
+  // hardware-back guard so the navigation below is not caught by it, and it is
+  // what the effect waits on — navigating inside the confirm handler would run
+  // while the guard is still armed and be swallowed.
+  const [isLeaving, setIsLeaving] = useState(false);
+
+  /**
+   * Hardware back, on the FIRST step only.
+   *
+   * DELIBERATE DEVIATION, flagged rather than silently taken. The port doc says
+   * hardware back abandons the whole registration "from either step". That was
+   * true of the legacy because `AddNewPatientActivity` had no back stack —
+   * there was no step to pop, so system back could only mean "leave". Here
+   * step 2 sits on top of step 1, so on the address step hardware back and the
+   * on-screen Back button are the same gesture and both step back. Guarding it
+   * there would make the two buttons disagree, and the user still reaches the
+   * confirm with one more back.
+   */
+  const isFirstStep = currentStep === 'personal';
+
+  usePreventRemove(isFirstStep && !isLeaving, () => {
+    setDiscardVisible(true);
+  });
+
+  useEffect(() => {
+    if (!isLeaving) return;
+    // `popTo`, not `navigate` — tripwire 6: navigate() behaves like push() in
+    // Nav v7 and would stack a second Home behind the first. One call clears
+    // both registration screens whichever one we are on.
+    navigation.popTo('Home');
+  }, [isLeaving, navigation]);
+
+  /**
+   * The one exit that throws the registration away — raised by the X on either
+   * step, and by hardware back on the first.
+   *
+   * The store deletes the photo before it clears, because the file is named
+   * from the uuid and clearing first would lose the only thing that can find
+   * it. That ordering lives in `discardRegistration` precisely so this call
+   * site cannot get it wrong.
+   */
+  const onDiscardConfirmed = () => {
+    setDiscardVisible(false);
+    void discardRegistration().then(() => {
+      setIsLeaving(true);
+    });
+  };
 
   return (
     <View style={styles.root}>
