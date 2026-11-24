@@ -172,6 +172,55 @@ export const iconPaths = {
     fillRule: 'evenodd',
     d: 'M5 3a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h14v14H5V5zm2 9h2v3H7v-3zm4-4h2v7h-2V10zm4-3h2v10h-2V7z',
   },
+
+  // ── Patient registration ───────────────────────────────────────────────────
+  // All four PLACEHOLDER — hand-authored 24×24 filled outlines like locationPin
+  // / person / lock; the Figma file (1:23095, 1:23129) could not be exported.
+
+  // DATE OF BIRTH field — left slot.
+  calendar: {
+    fillRule: 'evenodd',
+    d:
+      'M6 4H18A3 3 0 0 1 21 7V19A3 3 0 0 1 18 22H6A3 3 0 0 1 3 19V7A3 3 0 0 1 6 4Z ' +
+      'M6.5 5.5H17.5A2 2 0 0 1 19.5 7.5V18.5A2 2 0 0 1 17.5 20.5H6.5A2 2 0 0 1 4.5 18.5V7.5A2 2 0 0 1 6.5 5.5Z ' +
+      'M4.5 9.25H19.5V10.75H4.5V9.25Z ' +
+      'M7.25 1.75H8.75V4H7.25V1.75Z ' +
+      'M15.25 1.75H16.75V4H15.25V1.75Z ' +
+      'M7 15A1 1 0 1 0 9 15A1 1 0 1 0 7 15Z ' +
+      'M11 15A1 1 0 1 0 13 15A1 1 0 1 0 11 15Z ' +
+      'M15 15A1 1 0 1 0 17 15A1 1 0 1 0 15 15Z',
+  },
+
+  // Avatar camera badge, and the chooser's "Camera" row.
+  camera: {
+    fillRule: 'evenodd',
+    d:
+      'M5 6H19A3 3 0 0 1 22 9V17A3 3 0 0 1 19 20H5A3 3 0 0 1 2 17V9A3 3 0 0 1 5 6Z ' +
+      'M5.5 7.5H18.5A2 2 0 0 1 20.5 9.5V16.5A2 2 0 0 1 18.5 18.5H5.5A2 2 0 0 1 3.5 16.5V9.5A2 2 0 0 1 5.5 7.5Z ' +
+      'M9.5 3.5H14.5L15.5 6H8.5L9.5 3.5Z ' +
+      'M12 9A4 4 0 1 0 12 17A4 4 0 1 0 12 9Z ' +
+      'M12 10.5A2.5 2.5 0 1 1 12 15.5A2.5 2.5 0 1 1 12 10.5Z',
+  },
+
+  // The chooser's "Gallery" row.
+  image: {
+    fillRule: 'evenodd',
+    d:
+      'M6.5 2.5H17.5A4 4 0 0 1 21.5 6.5V17.5A4 4 0 0 1 17.5 21.5H6.5A4 4 0 0 1 2.5 17.5V6.5A4 4 0 0 1 6.5 2.5Z ' +
+      'M7 4H17A3 3 0 0 1 20 7V17A3 3 0 0 1 17 20H7A3 3 0 0 1 4 17V7A3 3 0 0 1 7 4Z ' +
+      'M9 7.25A1.75 1.75 0 1 0 9 10.75A1.75 1.75 0 1 0 9 7.25Z ' +
+      'M5.5 18L10 11.5L13.5 16L15.5 13.5L19 18Z',
+  },
+
+  // DiscardRegistrationDialog — the amber glyph in its tinted circle.
+  warning: {
+    fillRule: 'evenodd',
+    d:
+      'M12 2.25L22.75 20.75H1.25Z ' +
+      'M12 4.96L20.39 19.39H3.61Z ' +
+      'M11.25 9.5H12.75V14.75H11.25V9.5Z ' +
+      'M11 17A1 1 0 1 0 13 17A1 1 0 1 0 11 17Z',
+  },
 } as const;
 
 export type IconName = keyof typeof iconPaths;

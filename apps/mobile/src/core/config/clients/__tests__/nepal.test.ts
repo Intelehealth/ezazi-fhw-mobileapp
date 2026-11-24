@@ -22,6 +22,30 @@ describe('NEPAL_CLIENT_CONFIG', () => {
     });
   });
 
+  // ── Address ──────────────────────────────────────────────────────────────
+
+  describe('address', () => {
+    it('country name is Nepal', () => {
+      expect(NEPAL_CLIENT_CONFIG.countryName).toBe('Nepal');
+    });
+
+    it('postal code length is 5 digits', () => {
+      expect(NEPAL_CLIENT_CONFIG.postalCodeLength).toBe(5);
+    });
+
+    it('postal code length is a positive integer', () => {
+      expect(NEPAL_CLIENT_CONFIG.postalCodeLength).toBeGreaterThan(0);
+      expect(Number.isInteger(NEPAL_CLIENT_CONFIG.postalCodeLength)).toBe(true);
+    });
+
+    // Guards the paste that would otherwise go unnoticed: countryCode is two
+    // characters and sits one line above, so 'NP' lands here too easily.
+    it('country name is a name, not an ISO code', () => {
+      expect(NEPAL_CLIENT_CONFIG.countryName.trim()).not.toBe('');
+      expect(NEPAL_CLIENT_CONFIG.countryName.length).toBeGreaterThan(2);
+    });
+  });
+
   // ── Phone ────────────────────────────────────────────────────────────────
 
   describe('phone', () => {

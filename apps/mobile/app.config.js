@@ -51,6 +51,8 @@ module.exports = {
       buildNumber: '1',
       infoPlist: {
         NSCameraUsageDescription: 'We need camera access to capture patient photos for ward verification.',
+        NSPhotoLibraryUsageDescription:
+          'We need photo access so you can attach an existing picture to a patient record.',
         NSFaceIDUsageDescription: 'Authenticate with Face ID to unlock the app.',
         NSLocationWhenInUseUsageDescription: 'Location helps us tag the facility you are working from.',
       },
@@ -95,6 +97,20 @@ module.exports = {
       'expo-localization',
       'expo-secure-store',
       'expo-local-authentication',
+      [
+        // Patient photo capture (registration). The strings below are the same
+        // text as ios.infoPlist carries, so the two cannot drift apart
+        // whichever one the config merge applies last. Android needs no
+        // permissions from this plugin that android.permissions does not
+        // already declare by hand — CAMERA and READ_MEDIA_IMAGES are there.
+        'expo-image-picker',
+        {
+          photosPermission:
+            'We need photo access so you can attach an existing picture to a patient record.',
+          cameraPermission:
+            'We need camera access to capture patient photos for ward verification.',
+        },
+      ],
       [
         'react-native-notify-kit',
         {

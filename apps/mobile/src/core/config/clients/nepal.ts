@@ -4,6 +4,10 @@ export const NEPAL_CLIENT_CONFIG: ClientConfig = {
   id: 'nepal',
   displayName: 'eLCG Nepal',
   countryCode: 'NP',
+  countryName: 'Nepal',
+  // 5, against India's 6. The port ships India only; this is kept correct
+  // for the day Nepal returns, not because anything reads it today.
+  postalCodeLength: 5,
   calendar: 'BS',
   locale: 'en',
   phone: {

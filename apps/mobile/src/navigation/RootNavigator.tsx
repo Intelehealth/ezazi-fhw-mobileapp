@@ -15,6 +15,8 @@ import { ForgotPasswordRequestOtpScreen } from '@/features/auth/screens/ForgotPa
 import { ForgotPasswordVerifyOtpScreen } from '@/features/auth/screens/ForgotPasswordVerifyOtpScreen';
 import { ForgotPasswordResetScreen } from '@/features/auth/screens/ForgotPasswordResetScreen';
 import { HomeScreen } from '@/features/home/screens/HomeScreen';
+import { PatientPersonalInfoScreen } from '@/features/patient/screens/PatientPersonalInfoScreen';
+import { PatientAddressInfoScreen } from '@/features/patient/screens/PatientAddressInfoScreen';
 import { TimelineScreen } from '@/features/labour-care-guide/screens/TimelineScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -69,6 +71,12 @@ export const RootNavigator: React.FC = () => {
           <Stack.Group screenOptions={brandAppBar}>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="PrivacyNotice" component={PrivacyNoticeScreen} />
+            {/* Patient registration, two steps. Inside the group, so both
+                inherit brandAppBar - a route that omits it renders with no
+                app bar at all. Each screen draws its own title, subtitle and
+                stepper inside RegistrationStepLayout, below the bar. */}
+            <Stack.Screen name="AddPatientPersonal" component={PatientPersonalInfoScreen} />
+            <Stack.Screen name="AddPatientAddress" component={PatientAddressInfoScreen} />
             {/* Has its own PatientHeader — opts out of the app bar */}
             <Stack.Screen name="Timeline" component={TimelineScreen} options={noHeader} />
           </Stack.Group>

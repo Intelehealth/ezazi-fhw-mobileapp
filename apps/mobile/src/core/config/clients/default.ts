@@ -11,6 +11,11 @@ export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
   // this is displayName's only consumer today (SplashScreen.tsx).
   displayName: 'Ezazi',
   countryCode: 'IN',
+  countryName: 'India',
+  // India is 6 digits, Nepal 5. One value drives the input's maxLength, the
+  // zod rule and the error message, so the three cannot drift the way the
+  // legacy's did - strings.xml said 5 digits while the code demanded 6.
+  postalCodeLength: 6,
   calendar: 'AD',
   locale: 'en',
   phone: {

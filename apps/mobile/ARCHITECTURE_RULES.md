@@ -83,6 +83,10 @@ Also SDK-managed (added 2026-10-05 with the low-battery alert, §11): `expo-batt
 
 Two more arrived on 2026-10-12 and are listed in (B) above: `expo-crypto` (`randomUUID()`, reached only through `core/db/uuid.ts`) and `expo-font` (required by `@expo-google-fonts/lato`; keep the direct entry rather than relying on `expo` hoisting it).
 
+Added 2026-11-24 with the patient-registration UI: `expo-linear-gradient` — the footer button's left-to-right fill, reached only through `features/patient/components/PatientRegistrationButton`. New-Arch clear (reactnative.directory `newArchitecture: true`); SDK 57 pins `~57.0.1`. **Needs `npx expo prebuild --clean -p android` before it runs on a device.**
+
+Also added 2026-11-24: `expo-image-picker` — what `core/ui/PhotoSourceDialog`'s Camera and Gallery rows launch. New-Arch clear (`newArchitecture: true`), installed at `~57.0.22`. Installed **early, with the gradient**, so one `prebuild --clean` covers both rather than two trips through RUNBOOK's two-phase `D:` → `X:` dance. **The package only — `src/core/services/photo/` and `capturePhoto(source, patientUuid)` are still work item 0's, and item 4's code chat is blocked until they land.**
+
 ### (C) Tooling — must be installed
 `typescript`, `eslint`, `@typescript-eslint/*`, `eslint-plugin-react(-hooks)`, **`eslint-plugin-boundaries`** (feature isolation), `prettier`, `jest`, `jest-expo`, `@testing-library/react-native`, `drizzle-kit`, `babel-plugin-inline-import`, `@react-native-community/cli`, `turbo` (root).
 

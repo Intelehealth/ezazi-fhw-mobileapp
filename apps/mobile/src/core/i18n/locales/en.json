@@ -312,5 +312,70 @@
       "videoCall": "Start video call",
       "rx": "Open prescription"
     }
+  },
+  "patient": {
+    "common": {
+      "steps": {
+        "personal": "Personal",
+        "address": "Address"
+      },
+      "stepCounter": "Step {{current}} of {{total}}",
+      "back": "Back",
+      "discard": {
+        "title": "Close patient registration?",
+        "body": "Are you sure you want to close the patient registration?",
+        "confirm": "Yes",
+        "dismiss": "No"
+      }
+    },
+    "personal": {
+      "title": "Personal Details",
+      "subtitle": "Basic details",
+      "addPicture": "Add a picture",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Enter first name",
+      "middleName": "Middle Name",
+      "middleNamePlaceholder": "Enter middle name",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Enter last name",
+      "gender": "Gender",
+      "genderValue": "Female",
+      "dateOfBirth": "Date of Birth",
+      "dateOfBirthPlaceholder": "DD-MM-YY",
+      "age": "Age",
+      "agePlaceholder": "Enter age",
+      "ageSuffix": "Years",
+      "mobileNumber": "Mobile Number",
+      "alternateMobileNumber": "Alternate Mobile Number",
+      "mobileNumberPlaceholder": "Enter Mobile Number",
+      "photoSource": {
+        "title": "Add a picture",
+        "camera": "Camera",
+        "gallery": "Gallery"
+      },
+      "submit": "Continue"
+    },
+    "address": {
+      "title": "Address",
+      "subtitle": "Add the patient's address details",
+      "country": "Country",
+      "state": "Province/State",
+      "statePlaceholder": "Select State",
+      "district": "District",
+      "districtPlaceholder": "Select District",
+      "village": "Village/Town/City",
+      "villagePlaceholder": "e.g. Pune",
+      "address1": "Address Line 1",
+      "address1Placeholder": "House / street",
+      "address2": "Address Line 2",
+      "address2Placeholder": "Landmark (optional)",
+      "postalCode": "Postal Code",
+      "postalCodePlaceholder": "e.g. 411038",
+      "submit": "Register Patient",
+      "a11y": {
+        "selectState": "Select province or state",
+        "selectDistrict": "Select district"
+      }
+    }
   }
 }

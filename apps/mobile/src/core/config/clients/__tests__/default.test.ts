@@ -22,6 +22,30 @@ describe('DEFAULT_CLIENT_CONFIG', () => {
     });
   });
 
+  // ── Address ──────────────────────────────────────────────────────────────
+
+  describe('address', () => {
+    it('country name is India', () => {
+      expect(DEFAULT_CLIENT_CONFIG.countryName).toBe('India');
+    });
+
+    it('postal code length is 6 digits', () => {
+      expect(DEFAULT_CLIENT_CONFIG.postalCodeLength).toBe(6);
+    });
+
+    it('postal code length is a positive integer', () => {
+      expect(DEFAULT_CLIENT_CONFIG.postalCodeLength).toBeGreaterThan(0);
+      expect(Number.isInteger(DEFAULT_CLIENT_CONFIG.postalCodeLength)).toBe(true);
+    });
+
+    // Guards the paste that would otherwise go unnoticed: countryCode is two
+    // characters and sits one line above, so 'IN' lands here too easily.
+    it('country name is a name, not an ISO code', () => {
+      expect(DEFAULT_CLIENT_CONFIG.countryName.trim()).not.toBe('');
+      expect(DEFAULT_CLIENT_CONFIG.countryName.length).toBeGreaterThan(2);
+    });
+  });
+
   // ── Phone ────────────────────────────────────────────────────────────────
 
   describe('phone', () => {

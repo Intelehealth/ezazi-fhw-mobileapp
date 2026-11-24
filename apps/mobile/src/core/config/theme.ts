@@ -136,6 +136,23 @@ const palette = {
   buttonSecondaryBorderFigma: '#D5D7DA', // Figma Component 1 / "secondary button" stroke
   buttonSecondaryTextFigma: '#414651', // Figma "Gray/700" — secondary button label
   appBarBorder: '#F3F4F4', // BrandAppBar bottom hairline (Privacy Notice design)
+
+  // ── Patient registration ───────────────────────────────────────────────────
+  // Figma "Backend Developer file" → Add patient flow, 1:23095, measured
+  // 2026-11-23. The field border is `borderFigma`, aliased in `colors` below.
+  registrationSuffix: '#615D75', // "Years" suffix inside the AGE field
+  registrationGradientEnd: '#3922CF', // second stop of the footer button gradient
+  registrationBadgeBg: '#EFE8FF', // camera badge circle over the avatar
+  registrationSubtitle: '#7B7690', // screen subtitle, and "Step 1 of 2"
+  registrationIcon: '#A1A1AA', // calendar glyph in the date field's left slot
+  stepperGreen: '#0FD197', // stepper ring and both step glyphs
+  stepperGreenTint: '#E5FFF3', // stepper circle fill — current and upcoming alike
+  stepperConnector: '#D6D5DC', // dashed line between the two stepper circles
+
+  // DiscardRegistrationDialog's glyph circle and its halo ring. Both are
+  // colorMediumAlert at alpha, in the #RRGGBBAA order this file already uses.
+  warningTint: '#FD8C3E1A', // warning @ 10%
+  warningHalo: '#FD8C3E0D', // warning @ 5%
 } as const;
 
 export const colors = {
@@ -175,6 +192,20 @@ export const colors = {
   riskLow: palette.colorNormalAlert,
   riskModerate: palette.colorMediumAlert,
   riskHigh: palette.red,
+
+  // Patient registration — a different skin from auth: white field fill, a
+  // violet border, a gradient footer button, a green stepper. Figma 1:23095.
+  registrationFieldBorder: palette.borderFigma, // #DED9F0 — field outline
+  registrationSuffix: palette.registrationSuffix, // "Years" inside the AGE field
+  registrationGradientEnd: palette.registrationGradientEnd, // gradient stop 2; stop 1 is `primary`
+  registrationBadgeBg: palette.registrationBadgeBg, // camera badge circle
+  registrationSubtitle: palette.registrationSubtitle, // subtitle + step counter
+  registrationIcon: palette.registrationIcon, // calendar glyph
+  stepperGreen: palette.stepperGreen, // ring + glyphs
+  stepperGreenTint: palette.stepperGreenTint, // circle fill
+  stepperConnector: palette.stepperConnector, // dashed connector
+  warningTint: palette.warningTint, // glyph circle behind a warning icon
+  warningHalo: palette.warningHalo, // the soft ring around it
 } as const;
 
 // ── dimens.xml equivalent — structural sizes shared across screens ───────────
@@ -189,6 +220,20 @@ export const dimens = {
   labelGap: 6, // gap between label and its input
   fieldGap: 20, // vertical gap between form fields
   timelineDotSize: { phone: 28, tablet: 34 }, // TimelineCheckpointCard — checkpoint circle
+
+  // ── Patient registration ───────────────────────────────────────────────────
+  // Phone / tablet-base pairs, read as `isTablet ? scale(X.tablet) : X.phone`.
+  // Tablet base is the Figma number ÷ 1.3333, the 800dp frame's tabletScale.
+  registrationHPad: { phone: 20, tablet: 30 }, // screen gutter — ScreenLayout's existing pair
+  registrationCloseSize: { phone: 34, tablet: 34 }, // header X hit target
+  registrationAvatar: { phone: 88, tablet: 88 }, // ProfilePhotoField circle
+  registrationPhotoBadge: { phone: 27, tablet: 27 }, // camera badge over the avatar
+  registrationPhotoCaptionGap: { phone: 11, tablet: 11 }, // avatar → "Add a picture"
+  registrationFieldIcon: { phone: 18, tablet: 18 }, // calendar glyph in a field slot
+  registrationCardRadius: { phone: 16, tablet: 18 }, // the white form card
+  registrationSectionGap: { phone: 20, tablet: 20 }, // header → stepper → card
+  registrationFooterGap: { phone: 30, tablet: 30 }, // card → pinned footer
+  stepperCircle: { phone: 56, tablet: 56 }, // RegistrationStepper — step circle
 } as const;
 
 export const spacing = {
@@ -219,6 +264,11 @@ export const fontSizes = {
   instruction: { phone: 14, tablet: 16 }, // forgot_password_instruction_size
   headerTitle: { phone: 18, tablet: 30 }, // wave-header title
 
+  // AppDropdown row text. Phone 15 is the value LocationPickerModal
+  // hardcoded before it was generalised, so SetupScreen renders
+  // unchanged; tablet follows the +2 step the pairs above use.
+  option: { phone: 15, tablet: 17 },
+
   // TimelineCheckpointCard / StageProgressBar / TimelineActionBar
   timelineStageLabel: { phone: 11, tablet: 13 }, // "1. Stage 1" stepper label
   timelineTime: { phone: 13, tablet: 15 }, // "9:30 AM" bold time
@@ -226,6 +276,11 @@ export const fontSizes = {
   timelineCardLabel: { phone: 11, tablet: 13 }, // "COMPLETED" / "MISSED" / "DUE NOW" / "UPCOMING" badge
   timelineCardBody: { phone: 13, tablet: 15 }, // checkpoint card description line
   timelineActionLabel: { phone: 11, tablet: 13 }, // SOS / Chat / Video Call / Rx captions
+
+  // Patient registration — the two sizes the pairs above do not cover; labels,
+  // inputs, errors and the button label all reuse the existing ones.
+  registrationTitle: { phone: 20, tablet: 24 }, // "Personal Details" / "Address"
+  registrationSubtitle: { phone: 14, tablet: 18 }, // subtitle, "Add a picture", stepper labels
 } as const;
 
 export const typography = {

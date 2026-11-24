@@ -46,11 +46,14 @@ describe('HomeScreen', () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it('opens the Privacy Notice when Add Patient is pressed', () => {
+  // Was PrivacyNotice. The consent step is skipped for now (settled
+  // 2026-11-23) and registration is entered straight from here, so this
+  // assertion is what pins that decision - see the comment on the button.
+  it('opens patient registration when Add Patient is pressed', () => {
     renderScreen();
 
     fireEvent.press(screen.getByRole('button', { name: 'Add Patient' }));
 
-    expect(mockNavigate).toHaveBeenCalledWith('PrivacyNotice');
+    expect(mockNavigate).toHaveBeenCalledWith('AddPatientPersonal');
   });
 });

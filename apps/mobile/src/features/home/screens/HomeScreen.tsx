@@ -52,10 +52,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />
       </View>
 
-      {/* Android flow: Add Patient → Privacy Notice consent → registration */}
+      {/* The legacy flow is Add Patient → Privacy Notice consent →
+          registration. The consent step is SKIPPED for now (settled
+          2026-11-23): that screen is getting consent work of its own,
+          being built elsewhere, so registration is entered straight from
+          here. The screen and its route stay in place - restoring the step
+          is this one destination changing back. */}
       <AppButton
         label={t('home.addPatient')}
-        onPress={() => navigation.navigate('PrivacyNotice')}
+        onPress={() => navigation.navigate('AddPatientPersonal')}
         style={styles.addPatientBtn}
       />
     </View>

@@ -44,6 +44,10 @@ export interface ClientConfig {
   displayName: string;
   /** ISO 3166-1 alpha-2, e.g. 'NP' — deployment/locale identity. */
   countryCode: string;
+  /** Country name as OpenMRS stores it, e.g. 'India'. The ISO code is countryCode. */
+  countryName: string;
+  /** Exact postal-code length. Drives the input's maxLength, the rule and the message. */
+  postalCodeLength: number;
   /** Default calendar system for date entry and display. */
   calendar: 'BS' | 'AD';
   /** Default i18n language, used before device-locale detection. */

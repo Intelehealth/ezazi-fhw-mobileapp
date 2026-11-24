@@ -21,6 +21,11 @@ export type RootStackParamList = {
 
   // App stack
   Home: undefined;
+  // Patient registration, two steps. Both take no params: the port is
+  // create-path only, and the draft (including the patient uuid) lives in
+  // registrationDraft.store, not in navigation. Edit mode adds a param here.
+  AddPatientPersonal: undefined;
+  AddPatientAddress: undefined;
   // All optional — TimelineScreen falls back to sample data when omitted
   // (no patient/checkpoint repository exists yet; see MOBILE_STACK.md §9).
   Timeline:
