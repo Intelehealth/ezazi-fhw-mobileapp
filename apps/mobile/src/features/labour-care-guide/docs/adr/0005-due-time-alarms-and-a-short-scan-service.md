@@ -8,8 +8,7 @@
 ## Context
 The first card engine ran on a 1-minute alarm with a long-running `dataSync` foreground service. On a 15-hour device
 run (2026-11-01) Android 15+ stopped the service after 6 hours, leaving 40–90 minute gaps, and the 1-minute alarm
-drifted up to a minute per card. PendingIntents grew to about 1,200. Android's own engine drifts about 15 minutes over
-Stage 1.
+drifted up to a minute per card. PendingIntents grew to about 1,200.
 
 ## Options considered
 - **Keep the 1-minute alarm and the foreground service.** Stopped after 6 h a day; not fixable from JS.

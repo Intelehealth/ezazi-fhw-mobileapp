@@ -2,7 +2,7 @@
 
 > **Status:** ☑ Built 2026-11-06 (go-ahead given); device testing in progress · **Revised:** 2026-11-06 (replaces the 2026-11-04 draft) · **Scope:** `apps/mobile/` only, no `packages/*` change
 >
-> **Why:** the RN monitor copies Android's old design (a `dataSync` foreground service + a 1-minute alarm). Android 15+ stops that service after 6 h (open point #22, 2026-11-01 run: 90 and 40 min gaps), its 5-second notification leaks PendingIntents (#23), and the 1-minute alarm makes every card 0–60 s late, which the rolling rule carries forward (~15 min by Stage 1's last card). Android's new design (whitelabel-master `ab6d625`…`da07197`, unchanged up to `9105fc5`) fixes the 6-hour limit but is still late, see §2.
+> **Why:** the RN monitor ran a `dataSync` foreground service + a 1-minute alarm. Android 15+ stops that service after 6 h (open point #22, 2026-11-01 run: 90 and 40 min gaps), its 5-second notification leaks PendingIntents (#23), and the 1-minute alarm makes every card 0–60 s late, which the rolling rule carries forward (~15 min by Stage 1's last card).
 >
 > **Must not change:** the clinical rule (next card when whole minutes since the latest card ≥ 30 / 15; card time = the moment it is created; no backfill), card names, missed markers, Decision Pending, SOS, the alert sound, logout stopping everything.
 
@@ -12,26 +12,28 @@ Five independent reviews, then the decisive claims re-checked in code:
 
 | Review | Read |
 |---|---|
-| A. Android's new scheduler, adversarial | `PartogramScheduler`, `PartogramAlarmReceiver`, `PartogramReconcileWorker`, `CardGenerationEngine`, `BootCompleteReceiver`, `DateTimeUtils`, manifest; Monte-Carlo of the delay |
+| A. Android's card scheduler (reference code) | `PartogramScheduler`, `PartogramAlarmReceiver`, `PartogramReconcileWorker`, `CardGenerationEngine`, `BootCompleteReceiver`, `DateTimeUtils`, manifest; a simulation of card timing |
 | B. Android OS rules | developer.android.com, AOSP `AlarmManagerService`, `DeviceIdleController`, `JobStatus`, `PowerManagerService`, Play policy |
 | C. notify-kit internals | `NotifeeAlarmManager`, `NotificationManager`, `HeadlessTask`, `NotifeeEventSubscriber`, reboot/permission receivers |
 | D. How reliable apps do it | AOSP Clock (DeskClock), xDrip+, Dexcom, Medisafe, Mediteo, Samsung developer docs, dontkillmyapp |
 | E. RN delay chain | `clinical-rules` time helpers, `cardGeneration`, `monitor`, `batteryGuard` |
 
-## 2. Timing gaps found in Android's new design
+## 2. Timing requirements
 
-| # | Problem | Effect |
+Each requirement below is one the design in §4 meets; together they keep every card at its due second.
+
+| # | Requirement | Why |
 |---|---|---|
-| A1 | Arms in **whole minutes** (`getMinDiffWithCurrentDate` → `TimeUnit.toMinutes`) and **re-arms every visit** on each 15-min reconcile, on Home and after any other visit's scan | Each card 0–60 s late, carried forward: Stage 1 card 30 ≈ **15 min late on average** (simulation, up to ~29 min) — this is the delay testers see |
-| A2 | 60 s minimum delay when a card is already due | +60 s after every reboot, app open, login or skipped scan |
-| A3 | Alarm only queues a **plain WorkManager job** (not expedited, no wake lock) | In Doze the scan waits for a maintenance window: minutes, or an hour+ in deep Doze |
-| A4 | 15-min WorkManager reconcile is its only safety net | WorkManager does not run in Doze; real gaps 1–6 h |
-| A5 | `tryLock` skips an overlapping scan; a failed scan retries without re-arming; re-arm runs on an executor after the job ended | Late cards; occasionally no alarm until the next reconcile |
-| A6 | Missing exact-alarm access → silent inexact alarm | Up to ~22 min late per card |
-| A7 | No handling of clock change, locked reboot, app update | Late or early cards |
-| A8 | A latest encounter with an unreadable time, or of a non-stage type | Cards stop for that visit, silently |
+| R1 | Arm to the second, for the earliest due card only | Whole-minute arming makes each card 0–60 s late, and the rolling rule carries it forward |
+| R2 | No minimum delay when a card is already due | A fixed delay adds up after every reboot, app open, login or skipped scan |
+| R3 | The scan runs with a wake lock, outside the app freezer | A plain background job waits for a Doze maintenance window: minutes, or an hour+ in deep Doze |
+| R4 | A safety net that runs in Doze (a watchdog alarm) | WorkManager does not run in Doze |
+| R5 | An overlapping or failed scan re-runs and always re-arms | Otherwise a card is late, or no alarm is set until the next safety-net run |
+| R6 | Exact-alarm access is required, never silently missing | Without it every alarm becomes inexact, up to ~22 min late per card |
+| R7 | Clock change, locked reboot and app update re-arm | Otherwise cards come late or early |
+| R8 | A latest encounter with an unreadable time, or of a non-stage type, never stops cards silently | Cards would stop for that visit with no sign |
 
-Kept from Android, they are right: the alarm is only a hint and due-ness is always re-derived from the database; the same card is never created twice; re-arm after every scan; cancel at Decision Pending, visit complete and logout; nothing runs when logged out; exact-alarm access required.
+Same as Android: the alarm is only a hint and due-ness is always re-derived from the database; the same card is never created twice; re-arm after every scan; cancel at Decision Pending, visit complete and logout; nothing runs when logged out; exact-alarm access required.
 
 ## 3. What the OS and our libraries actually guarantee (verified)
 
@@ -157,6 +159,6 @@ Not needed: changing the card-time rule (writing the due time instead of the cre
 
 Still to run: T6 (20 h soak), T7 (reboot), T10 (Decision Pending at the last card), T11 (exact alarms revoked), T13 (clock change), airplane mode and battery saver.
 
-## 9. What no Android app can guarantee (Android's included)
+## 9. What no Android app can guarantee
 
 Force stop; the tablet off or out of battery; before the first unlock after a reboot; eZAZI put into Samsung "Deep sleeping apps"; exact alarms revoked (Android kills the app). After any of these the next wake or app open creates one card and the schedule continues from it (no backfill, as Android).
