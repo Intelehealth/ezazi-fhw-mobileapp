@@ -1,20 +1,28 @@
+import { stateHasDistricts } from '../domain/addressMaster';
+
 /**
  * The one seam between the address screen's layout and its form state.
  *
  * District is the only piece of this screen's markup that depends on a form
- * value: it is absent until a state with districts is picked (never greyed
- * out - see PATIENT_ADDRESS_INFO_PLAN.md section 3). That would otherwise
- * break the rule that the code chat moves no markup, so the UI chat renders
- * it off this constant and the code chat replaces the read.
+ * value: it is absent until a state with districts is picked, never greyed out
+ * (PATIENT_ADDRESS_INFO_PLAN.md section 3). Village's width switch reads the
+ * same answer — full row while District is absent, half once it appears.
  *
- * UI chat: a literal. Flip it by hand to lay out both states.
+ * KEEP THIS MODULE. Its earlier header said to delete it and read
+ * `stateHasDistricts` inside the component; that was wrong, and the port doc's
+ * decision D overrules it. The screen's render tests `jest.mock` this file to
+ * drive both layouts, because the alternative — picking a state through the
+ * dropdown — needs `measureInWindow`, which the React Native test renderer
+ * never calls. Delete the module and the whole test file fails.
  *
- * Code chat: delete this module and read
- * `stateHasDistricts(watch('state'))` inside the component instead. Nothing
- * else about the markup moves.
+ * What changed when the form was wired is the LITERAL, not the module: the UI
+ * chat's `export const HAS_DISTRICT = false` is now the function below, called
+ * with `watch('state')`.
  *
- * It lives in its own file rather than at the top of the screen only so the
- * render tests can drive both layouts; a literal inside the screen cannot be
- * flipped from a test.
+ * It forwards rather than deciding anything of its own, deliberately. The rule
+ * belongs in `addressMaster`, where the schema's district rule reads it too —
+ * one call gates the render and the validation, so they cannot disagree.
  */
-export const HAS_DISTRICT = false;
+export function hasDistrict(stateName: string): boolean {
+  return stateHasDistricts(stateName);
+}

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import { newUuid } from '@/core/db/uuid';
 import { deletePatientPhoto } from '@/core/services/photo';
+import { logger } from '@/core/utils/logger';
+import { saveRegistration } from '../data/registration.repository';
 
 /**
  * The in-progress registration, shared by the two steps.
@@ -62,6 +64,27 @@ export interface AddressDraft {
 
 export type RegistrationMode = 'create' | 'edit';
 
+/**
+ * What Save hands back to the screen.
+ *
+ * A plain union, not the API layer's `ApiResult`: a failed local `transact()`
+ * is none of `ApiError`'s kinds, and dressing it as one would invite the
+ * screen to run it through `getApiErrorBanner` and show network copy for a
+ * disk write.
+ *
+ * `reason` exists for one case and earns its keep there. `busy` means a save
+ * was already in flight and this call did nothing — the screen must NOT show
+ * "could not save" for it, because the first save is still going and will very
+ * likely succeed. Only `failed` is a real failure the user has to see.
+ *
+ * `patientUuid` comes back on success because the draft is cleared by then, so
+ * the screen can no longer read it off the store — and item 6 needs it to
+ * route with.
+ */
+export type SubmitRegistrationResult =
+  | { ok: true; patientUuid: string }
+  | { ok: false; reason: 'busy' | 'failed' };
+
 interface StartRegistrationArgs {
   mode: RegistrationMode;
   /** Required for `edit` — the patient being edited. Ignored for `create`. */
@@ -74,15 +97,16 @@ interface RegistrationDraftState {
   personal: PersonalDraft | null;
   address: AddressDraft | null;
   /**
-   * Set by `submitRegistration`, which the ADDRESS screen chat adds to this
-   * file. Declared here so the shape is settled in one place and that chat
-   * extends the store rather than redefining it.
+   * True while `submitRegistration` is writing. The footer's Register Patient
+   * button is disabled off this, and the action itself re-checks it — the
+   * keyboard's Done key reaches the handler without going through the button.
    */
   isSaving: boolean;
 
   startRegistration: (args: StartRegistrationArgs) => void;
   setPersonal: (values: PersonalDraft) => void;
   setAddress: (values: AddressDraft) => void;
+  submitRegistration: () => Promise<SubmitRegistrationResult>;
   discardRegistration: () => Promise<void>;
 }
 
@@ -130,6 +154,64 @@ export const useRegistrationDraftStore = create<RegistrationDraftState>((set, ge
 
   setAddress: (values) => {
     set({ address: values });
+  },
+
+  /**
+   * Save. The ONE path from a screen to the patient row.
+   *
+   * This is the seam, not a convenience: eslint blocks presentation from
+   * importing `features/*\/data`, so the Register Patient button cannot call
+   * the repository itself. The store can, exactly as
+   * `location.store.fetchLocations()` stands between `SetupScreen` and
+   * `location.api.ts`.
+   *
+   * THE IN-FLIGHT GUARD IS NOT A NICETY. `patientUuid` is a fixed primary key,
+   * so a double tap is not a harmless second write — it is a PK collision. The
+   * second call fails, the screen says "could not save", and the patient was
+   * in fact registered. Hence `busy`, which the screen must stay quiet about.
+   *
+   * THE DRAFT IS CLEARED ON SUCCESS, not only on discard. Otherwise a real
+   * patient's name, date of birth and phone numbers sit in a module-global
+   * store for the rest of the session — and the "no row exists yet, so there
+   * is nothing to drift from" answer to tripwire 9 stops being true the moment
+   * the write returns.
+   *
+   * It never throws at the screen. A rejection from the repository becomes
+   * `{ ok: false, reason: 'failed' }` here, so the screen has one shape to
+   * handle and no try/catch of its own.
+   */
+  submitRegistration: async () => {
+    const { isSaving, mode, patientUuid, personal, address } = get();
+
+    if (isSaving) {
+      return { ok: false, reason: 'busy' };
+    }
+
+    // Unreachable through the UI — step 2 is only arrived at through step 1's
+    // Continue, which runs setPersonal, and the screen writes setAddress
+    // immediately before calling this. It is still checked rather than
+    // asserted, because the repository takes all four as non-null and the
+    // alternative is a crash on a cleared store.
+    if (patientUuid === null || personal === null || address === null) {
+      logger.error('[Registration] Save called with an incomplete draft');
+      return { ok: false, reason: 'failed' };
+    }
+
+    set({ isSaving: true });
+
+    try {
+      await saveRegistration({ mode, patientUuid, personal, address });
+    } catch (error) {
+      // The error only — never the draft. Everything in it is patient data.
+      logger.error('[Registration] Save failed', error);
+      set({ isSaving: false });
+      return { ok: false, reason: 'failed' };
+    }
+
+    // Clears isSaving too, through EMPTY.
+    set({ ...EMPTY, mode: 'create' });
+
+    return { ok: true, patientUuid };
   },
 
   /**
