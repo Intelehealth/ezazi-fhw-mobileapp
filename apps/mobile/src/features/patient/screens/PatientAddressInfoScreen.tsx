@@ -236,9 +236,15 @@ export const PatientAddressInfoScreen: React.FC = () => {
     const result = await submitRegistration();
 
     if (result.ok) {
-      // Where a successful save lands is Home, with a success toast - item 6
-      // wires it, together with the write itself. Until then the repository
-      // rejects, so this branch is unreachable.
+      // `popTo`, not `navigate` - tripwire 6: navigate() behaves like push()
+      // in nav v7, so it would leave a second Home stacked behind the first
+      // and both registration screens alive underneath. One call clears them.
+      //
+      // The toast comes after, so it is not dismissed by the transition. The
+      // draft is already cleared by submitRegistration on success, so nothing
+      // of this patient survives the hop.
+      navigation.popTo('Home');
+      showToast(t('patient.address.saveSuccess'));
       return;
     }
 

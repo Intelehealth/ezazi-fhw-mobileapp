@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { newUuid } from '@/core/db/uuid';
 import { deletePatientPhoto } from '@/core/services/photo';
+import { localIsoTimestamp } from '@/core/utils/datetime';
 import { logger } from '@/core/utils/logger';
 import { saveRegistration } from '../data/registration.repository';
 
@@ -94,6 +95,19 @@ interface StartRegistrationArgs {
 interface RegistrationDraftState {
   mode: RegistrationMode;
   patientUuid: string | null;
+  /**
+   * When this registration began — the value of the
+   * `patientRegistrationStartDateTime` attribute at save.
+   *
+   * The legacy stamps it on the Privacy Notice screen when consent is
+   * accepted, reads it back at save and clears it after. This port skips that
+   * screen, so it is stamped on entry to the flow instead, beside the uuid
+   * (Arpan, 2026-11-25). The meaning shifts slightly — flow entered rather
+   * than consent accepted — and is arguably the more accurate of the two.
+   *
+   * Local time, like every other timestamp on `tbl_patient`.
+   */
+  startedAt: string | null;
   personal: PersonalDraft | null;
   address: AddressDraft | null;
   /**
@@ -112,6 +126,7 @@ interface RegistrationDraftState {
 
 const EMPTY = {
   patientUuid: null,
+  startedAt: null,
   personal: null,
   address: null,
   isSaving: false,
@@ -145,6 +160,11 @@ export const useRegistrationDraftStore = create<RegistrationDraftState>((set, ge
       ...EMPTY,
       mode,
       patientUuid: mode === 'edit' ? (patientUuid ?? null) : newUuid(),
+      // Stamped beside the uuid, and for the same reason: this is the one
+      // moment that owns "the registration started". Edit gets one too — the
+      // attribute is only WRITTEN on create, and that is the repository's
+      // call to make, not something to encode by leaving a field null here.
+      startedAt: localIsoTimestamp(),
     });
   },
 
@@ -181,7 +201,7 @@ export const useRegistrationDraftStore = create<RegistrationDraftState>((set, ge
    * handle and no try/catch of its own.
    */
   submitRegistration: async () => {
-    const { isSaving, mode, patientUuid, personal, address } = get();
+    const { isSaving, mode, patientUuid, startedAt, personal, address } = get();
 
     if (isSaving) {
       return { ok: false, reason: 'busy' };
@@ -200,7 +220,7 @@ export const useRegistrationDraftStore = create<RegistrationDraftState>((set, ge
     set({ isSaving: true });
 
     try {
-      await saveRegistration({ mode, patientUuid, personal, address });
+      await saveRegistration({ mode, patientUuid, startedAt, personal, address });
     } catch (error) {
       // The error only — never the draft. Everything in it is patient data.
       logger.error('[Registration] Save failed', error);

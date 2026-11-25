@@ -497,18 +497,30 @@ describe('PatientAddressInfoScreen - the form', () => {
       expect(mockSetAddress).toHaveBeenCalled();
     });
 
-    it('says nothing and does not navigate on success - item 6 routes it', async () => {
+    it('goes to Home and says so on success', async () => {
       render(<PatientAddressInfoScreen />);
 
       fillValidForm();
       pressSave();
 
       await waitFor(() => {
-        expect(mockSubmitRegistration).toHaveBeenCalled();
+        expect(mockPopTo).toHaveBeenCalledWith('Home');
       });
-      expect(showToast).not.toHaveBeenCalled();
+      expect(showToast).toHaveBeenCalledWith('Patient registered.');
+    });
+
+    it('does not use navigate on success, which would stack a second Home', async () => {
+      render(<PatientAddressInfoScreen />);
+
+      fillValidForm();
+      pressSave();
+
+      // Tripwire 6: navigate() behaves like push() in nav v7, so it would
+      // leave a second Home behind the first with both steps alive under it.
+      await waitFor(() => {
+        expect(mockPopTo).toHaveBeenCalled();
+      });
       expect(mockNavigate).not.toHaveBeenCalled();
-      expect(mockPopTo).not.toHaveBeenCalled();
     });
 
     it('is blocked while a save is already in flight', () => {

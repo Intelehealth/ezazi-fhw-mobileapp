@@ -1,6 +1,7 @@
 import * as encounterTypes from '../constants/encounter';
 import * as obsConcepts from '../constants/obs';
 import * as dbLiterals from '../constants/literals';
+import * as patientAttributeNames from '../constants/patient';
 import * as providerAttributes from '../constants/provider';
 import * as visitAttributes from '../constants/visit';
 import * as wireConstants from '../constants/wire';
@@ -58,6 +59,28 @@ describe('uuid constants', () => {
     );
 
     expect(uuidShaped).toEqual([]);
+  });
+
+  it('keeps uuids out of patient.ts, the other file the sweep does not cover', () => {
+    // Same hole, same guard. patient.ts holds attribute type NAMES; the uuids
+    // behind them are resolved from tbl_patient_attribute_master, which only
+    // the pull fills, so a uuid hard-coded here would be both unguarded and
+    // wrong.
+    const uuidShaped = Object.values(patientAttributeNames).filter(
+      (value) => typeof value === 'string' && value.length === 36 && !/\s/.test(value),
+    );
+
+    expect(uuidShaped).toEqual([]);
+  });
+
+  it('spells the four patient attribute names exactly as the legacy does', () => {
+    // The lookup matches on the name. A typo yields a null type uuid, writes a
+    // row that resolves to nothing on read-back, and ships an empty attribute
+    // type on push — all silently.
+    expect(patientAttributeNames.ATTR_ALTERNATE_NUMBER).toBe('AlternateNo');
+    expect(patientAttributeNames.ATTR_PROFILE_IMAGE_TIMESTAMP).toBe('ProfileImageTimestamp');
+    expect(patientAttributeNames.ATTR_REGISTRATION_NUMBER).toBe('Ezazi Registration Number');
+    expect(patientAttributeNames.ATTR_REGISTRATION_START).toBe('patientRegistrationStartDateTime');
   });
 
   it('keeps the admission set at 15, matching the obs it writes', () => {

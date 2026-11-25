@@ -9,4 +9,5 @@
 
 export * as obsWrites from './obsWrites';
 export * as patientAttributeWrites from './patientAttributeWrites';
+export * as patientWrites from './patientWrites';
 export * as visitAttributeWrites from './visitAttributeWrites';

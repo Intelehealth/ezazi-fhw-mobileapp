@@ -387,6 +387,7 @@
       "postalCode": "Postal Code",
       "postalCodePlaceholder": "e.g. 411038",
       "submit": "Register Patient",
+      "saveSuccess": "Patient registered.",
       "a11y": {
         "selectState": "Select province or state",
         "selectDistrict": "Select district"

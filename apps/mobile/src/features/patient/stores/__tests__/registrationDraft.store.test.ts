@@ -227,9 +227,29 @@ describe('submitRegistration', () => {
     expect(save).toHaveBeenCalledWith({
       mode: 'create',
       patientUuid: FIRST_UUID,
+      // Stamped by startRegistration, not by the caller — asserted as a shape
+      // rather than a value, since it is the clock at the moment of entry.
+      startedAt: expect.any(String) as unknown as string,
       personal: PERSONAL,
       address: ADDRESS,
     });
+  });
+
+  it('stamps startedAt when the registration begins, not when it is saved', () => {
+    store().startRegistration({ mode: 'create' });
+
+    // It is the value of the patientRegistrationStartDateTime attribute. The
+    // legacy stamps it on the Privacy Notice screen, which this port skips,
+    // so entry to the flow is the moment that owns it.
+    expect(store().startedAt).toEqual(expect.any(String));
+  });
+
+  it('clears startedAt on discard, with the rest of the draft', async () => {
+    store().startRegistration({ mode: 'create' });
+
+    await store().discardRegistration();
+
+    expect(store().startedAt).toBeNull();
   });
 
   it('clears the draft and returns the uuid on success', async () => {
