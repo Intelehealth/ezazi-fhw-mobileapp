@@ -22,6 +22,8 @@ interface CaseSectionComponentProps {
   isExpanded: boolean;
   onToggle: () => void;
   onRowClick?: (row: VisitRow) => void;
+  /** Where a row leads — see VisitTableComponent's `rowHref`. */
+  rowHref?: (row: VisitRow) => string;
   /** No rows yet and the first load is still in flight. */
   isLoading?: boolean;
   /** Set when the section could not be loaded; shown in place of the table, with a Retry button. */
@@ -93,6 +95,7 @@ export function CaseSectionComponent({
   isExpanded,
   onToggle,
   onRowClick,
+  rowHref,
   isLoading = false,
   errorMessage = null,
   onRetry,
@@ -170,6 +173,7 @@ export function CaseSectionComponent({
             variant={variant}
             emptyMessage={emptyMessage}
             onRowClick={onRowClick}
+            rowHref={rowHref}
           />
         )}
         <VisitPaginationComponent

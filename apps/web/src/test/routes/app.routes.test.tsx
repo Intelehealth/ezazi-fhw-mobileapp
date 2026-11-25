@@ -1,5 +1,19 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  configure,
+  getConfig,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { useAppSelector } from '../../store/hooks';
 
 /**
@@ -110,6 +124,15 @@ async function renderAtPath(path: string) {
 }
 
 describe('AppRoutes', () => {
+  /*
+   * Every test re-imports the routes (vi.resetModules), so the first one to
+   * reach a lazy page waits for that page's whole module graph to load —
+   * often past findBy's default 1s, leaving "Loading…" on screen.
+   */
+  const defaultAsyncTimeout = getConfig().asyncUtilTimeout;
+  beforeAll(() => configure({ asyncUtilTimeout: 10_000 }));
+  afterAll(() => configure({ asyncUtilTimeout: defaultAsyncTimeout }));
+
   afterEach(() => {
     window.history.pushState(null, '', '/');
   });

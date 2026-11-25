@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { VisitTableComponent } from '../../../components/dashboard/visit-table.component';
 import type { VisitRow } from '../../../modules/dashboard/dashboard.types';
@@ -79,6 +80,27 @@ describe('VisitTableComponent', () => {
     );
 
     expect(screen.getByTitle('Twin delivery')).toHaveTextContent('ⓘ');
+  });
+
+  it("links each patient's name to the row's page, reachable by keyboard", () => {
+    const onRowClick = vi.fn();
+    render(
+      <VisitTableComponent
+        rows={[ROW]}
+        variant="active"
+        emptyMessage="empty"
+        onRowClick={onRowClick}
+        rowHref={row => `/dashboard/elcg/${row.uuid}`}
+      />,
+      { wrapper: MemoryRouter }
+    );
+
+    const link = screen.getByRole('link', { name: 'Asha Devi (F)' });
+    expect(link).toHaveAttribute('href', '/dashboard/elcg/visit-1');
+
+    /* The link navigates itself; the row's handler must not navigate again. */
+    fireEvent.click(link);
+    expect(onRowClick).not.toHaveBeenCalled();
   });
 
   it('calls onRowClick with the clicked row', () => {

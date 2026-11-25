@@ -137,10 +137,56 @@ describe('useElcgVisit', () => {
       expect.objectContaining({ value: 'abc12345' })
     );
 
-    act(() => result.current.retry());
+    /* Saving the attribute reads the visit again. */
     await waitFor(() =>
       expect(visitService.getVisitDetails).toHaveBeenCalledTimes(2)
     );
+
+    act(() => result.current.retry());
+    await waitFor(() =>
+      expect(visitService.getVisitDetails).toHaveBeenCalledTimes(3)
+    );
+    expect(visitService.addVisitAttribute).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not save a second "Visit Read" attribute when the visit is reopened from the cache', async () => {
+    const readVisit = {
+      ...VISIT,
+      attributes: [
+        {
+          uuid: 'attr-1',
+          value: 'abc12345',
+          attributeType: { display: 'Visit Read' },
+        },
+      ],
+    };
+    /* The server has the attribute once it has been saved. */
+    vi.mocked(visitService.getVisitDetails).mockResolvedValue(success(VISIT));
+    vi.mocked(visitService.addVisitAttribute).mockImplementation(async () => {
+      vi.mocked(visitService.getVisitDetails).mockResolvedValue(
+        success(readVisit)
+      );
+      return success(readVisit.attributes[0]);
+    });
+    const client = new QueryClient();
+    const shared = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    const first = renderHook(() => useElcgVisit('visit-1'), {
+      wrapper: shared,
+    });
+    await waitFor(() =>
+      expect(visitService.addVisitAttribute).toHaveBeenCalledTimes(1)
+    );
+    first.unmount();
+
+    const second = renderHook(() => useElcgVisit('visit-1'), {
+      wrapper: shared,
+    });
+    await waitFor(() => expect(second.result.current.view).not.toBeNull());
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+
     expect(visitService.addVisitAttribute).toHaveBeenCalledTimes(1);
   });
 

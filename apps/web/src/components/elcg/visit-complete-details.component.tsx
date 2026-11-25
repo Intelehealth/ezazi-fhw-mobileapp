@@ -3,6 +3,7 @@ import type {
   LcgCompletionReason,
   LcgVisitCompletion,
 } from '../../modules/dashboard/elcg/elcg.types';
+import { COMING_SOON, TooltipComponent } from '../common/tooltip.component';
 import { LcgCardComponent } from './lcg-card.component';
 
 /** partogram.component.scss's `.table-stripped td` — the value in green, its label in black. */
@@ -148,13 +149,16 @@ export function VisitCompleteDetailsComponent({
       title="Visit Complete Details"
       actions={
         completion.hasStage3 && (
-          <button
-            type="button"
-            onClick={onViewStage3}
-            className="cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white"
-          >
-            View Stage 3
-          </button>
+          <TooltipComponent label={onViewStage3 ? '' : COMING_SOON}>
+            <button
+              type="button"
+              disabled={!onViewStage3}
+              onClick={onViewStage3}
+              className="cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              View Stage 3
+            </button>
+          </TooltipComponent>
         )
       }
     >

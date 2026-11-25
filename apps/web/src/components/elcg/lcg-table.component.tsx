@@ -55,6 +55,9 @@ const GREYED_CELL_CLASS = `${CELL_CLASS} bg-[#6c757d]`;
 
 const SOS_CELL_CLASS = 'border-2 border-[red] bg-[#FFE9EF]';
 
+/** A check the FHW app marked missed — greyed, so its empty cells don't read as normal. */
+const MISSED_CELL_CLASS = 'bg-[#EEEDF2] text-[#7F7B92]';
+
 interface LcgTableComponentProps {
   title: string;
   view: ElcgView;
@@ -186,6 +189,24 @@ function PatientHeaderRows({
 function TimeCells({ columns }: { columns: LcgColumn[] }) {
   return columns.map((column, index) => {
     const isSos = Boolean(column.time) && column.isSos;
+    if (column.time && column.isMissed) {
+      return (
+        <td
+          key={index}
+          className={`${CELL_CLASS} ${isSos ? SOS_CELL_CLASS : MISSED_CELL_CLASS}`}
+        >
+          <div className="mx-auto w-fit p-0.5">
+            {formatDate(column.time)}
+            <br />
+            {formatTime(column.time)}
+            <div className="mt-1 font-bold uppercase">Missed</div>
+            {isSos && (
+              <h5 className="m-0 text-center font-bold text-[red]">SOS</h5>
+            )}
+          </div>
+        </td>
+      );
+    }
     return (
       <td
         key={index}
@@ -385,6 +406,16 @@ export function LcgTableComponent({
   const showOutcomeRow = completion !== null;
   const supportiveCareRows = SUPPORTIVE_CARE_SECTION.rows;
 
+  /* Undefined while the screen passes no handler, so the button shows as not yet available. */
+  function viewHandler(
+    kind: 'assessment' | 'plan',
+    stage: LcgStageNo,
+    index: number
+  ): (() => void) | undefined {
+    const onViewKind = kind === 'assessment' ? onViewAssessment : onViewPlan;
+    return onViewKind && (() => onViewKind(stage, index));
+  }
+
   function decisionCells(stage: LcgStageNo, kind: 'assessment' | 'plan') {
     const hours = stage === 1 ? stage1.hours : stage2.hours;
     return (
@@ -395,11 +426,7 @@ export function LcgTableComponent({
             <DecisionNotes
               entries={kind === 'assessment' ? hour.assessments : hour.plans}
               viewLabel={`View stage ${stage} hour ${index + 1} ${kind}`}
-              onView={() =>
-                kind === 'assessment'
-                  ? onViewAssessment?.(stage, index)
-                  : onViewPlan?.(stage, index)
-              }
+              onView={viewHandler(kind, stage, index)}
             />
           )
         }

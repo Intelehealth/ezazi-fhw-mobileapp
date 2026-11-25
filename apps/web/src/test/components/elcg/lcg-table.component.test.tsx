@@ -82,10 +82,12 @@ describe('LcgTableComponent', () => {
     view.stage1.columns[0] = {
       time: localIso(2026, 10, 2, 6, 0),
       isSos: false,
+      isMissed: false,
     };
     view.stage1.columns[1] = {
       time: localIso(2026, 10, 2, 6, 45),
       isSos: true,
+      isMissed: false,
     };
     renderTable(view);
 
@@ -94,6 +96,35 @@ describe('LcgTableComponent', () => {
     const sosCell = within(timeRow).getByText('SOS').closest('td');
     expect(sosCell).toHaveTextContent('06:45');
     expect(sosCell?.className).toContain('bg-[#FFE9EF]');
+  });
+
+  it('marks a missed check as missed rather than as a check with nothing to note', () => {
+    const view = buildElcgView();
+    view.stage1.columns[0] = {
+      time: localIso(2026, 10, 2, 6, 0),
+      isSos: false,
+      isMissed: true,
+    };
+    renderTable(view);
+
+    const missedCell = within(rowOf('Time')).getByText('Missed').closest('td');
+    expect(missedCell).toHaveTextContent('2026/11/0206:00');
+    expect(missedCell?.className).toContain('bg-[#EEEDF2]');
+  });
+
+  it('keeps a missed SOS check flagged as SOS', () => {
+    const view = buildElcgView();
+    view.stage1.columns[1] = {
+      time: localIso(2026, 10, 2, 6, 45),
+      isSos: true,
+      isMissed: true,
+    };
+    renderTable(view);
+
+    const missedCell = within(rowOf('Time')).getByText('Missed').closest('td');
+    expect(missedCell).toHaveTextContent('06:45');
+    expect(missedCell).toHaveTextContent('SOS');
+    expect(missedCell?.className).toContain('bg-[#FFE9EF]');
   });
 
   it('spans each hour across its sub-columns, so an SOS-widened hour stays aligned', () => {

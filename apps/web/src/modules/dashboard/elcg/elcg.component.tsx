@@ -83,7 +83,8 @@ interface ElcgComponentProps {
  *
  * The visit comes from OpenMRS (see hooks/queries/useElcgVisit.ts). The
  * actions that need a modal or screen not yet ported — past visits, print,
- * adding/viewing decisions, Stage 3, video call and chat — are left unwired.
+ * adding/viewing decisions, Stage 3, video call and chat — get no handler,
+ * so their components show them disabled with a "Coming soon" tooltip.
  * Zoom and WhatsApp sharing work as in Angular.
  */
 export function ElcgComponent({ visitUuid }: ElcgComponentProps) {

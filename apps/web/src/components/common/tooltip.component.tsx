@@ -1,11 +1,20 @@
 import type { ReactNode } from 'react';
 
-type TooltipPosition = 'below' | 'right';
+type TooltipPosition = 'below' | 'below-end' | 'right' | 'left';
 
 const POSITION_CLASS: Record<TooltipPosition, string> = {
   below: 'top-full left-1/2 mt-2 -translate-x-1/2',
+  /* Under the element, flush with its right edge — for controls at the right of the page. */
+  'below-end': 'top-full right-0 mt-2',
   right: 'top-1/2 left-full ml-2 -translate-y-1/2',
+  left: 'top-1/2 right-full mr-2 -translate-y-1/2',
 };
+
+/**
+ * The tooltip on a control whose screen or dialog has not been ported yet —
+ * shown on the disabled control instead of letting a click do nothing.
+ */
+export const COMING_SOON = 'Coming soon';
 
 interface TooltipComponentProps {
   /** Empty renders the children alone, like matTooltip's `''`. */
@@ -32,7 +41,12 @@ export function TooltipComponent({
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-30 rounded-md bg-[#7F7B92] px-2 py-1 text-xs font-normal whitespace-nowrap text-white opacity-0 transition-opacity group-focus-within/tooltip:opacity-100 group-hover/tooltip:opacity-100 ${POSITION_CLASS[position]}`}
+        /*
+         * display:none until shown, not just transparent: an invisible box
+         * still counts toward its scroll container's width, so a tooltip at
+         * the page's edge would add a horizontal scrollbar.
+         */
+        className={`pointer-events-none absolute z-30 hidden rounded-md bg-[#7F7B92] px-2 py-1 text-xs font-normal whitespace-nowrap text-white group-focus-within/tooltip:block group-hover/tooltip:block ${POSITION_CLASS[position]}`}
       >
         {label}
       </span>

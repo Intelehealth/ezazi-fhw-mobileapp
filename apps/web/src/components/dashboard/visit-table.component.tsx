@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { VisitRow } from '../../modules/dashboard/dashboard.types';
 import userIcon from '../../assets/svgs/user.svg';
 import { AlertCountBadgeComponent } from './alert-count-badge.component';
@@ -21,7 +22,13 @@ interface VisitTableComponentProps {
   rows: VisitRow[];
   variant: VisitTableVariant;
   emptyMessage: string;
+  /** A click anywhere on the row — the mouse way in. */
   onRowClick?: (row: VisitRow) => void;
+  /**
+   * Where a row leads: the patient's name becomes a real link to it, so the
+   * row can be reached and opened by keyboard (and in a new tab).
+   */
+  rowHref?: (row: VisitRow) => string;
 }
 
 export function VisitTableComponent({
@@ -29,6 +36,7 @@ export function VisitTableComponent({
   variant,
   emptyMessage,
   onRowClick,
+  rowHref,
 }: VisitTableComponentProps) {
   if (rows.length === 0) {
     return (
@@ -92,9 +100,20 @@ export function VisitTableComponent({
                     className="rounded-full"
                   />
                   <div className="ml-2 flex flex-col">
-                    <span className="font-bold">
-                      {row.patient.name} ({row.patient.gender})
-                    </span>
+                    {rowHref ? (
+                      <Link
+                        to={rowHref(row)}
+                        /* The link navigates itself; the row's click handler would navigate again. */
+                        onClick={event => event.stopPropagation()}
+                        className="font-bold text-inherit no-underline hover:underline focus-visible:underline"
+                      >
+                        {row.patient.name} ({row.patient.gender})
+                      </Link>
+                    ) : (
+                      <span className="font-bold">
+                        {row.patient.name} ({row.patient.gender})
+                      </span>
+                    )}
                     <span>{row.patient.identifier}</span>
                   </div>
                 </div>

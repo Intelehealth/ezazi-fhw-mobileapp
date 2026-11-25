@@ -7,7 +7,7 @@ import { useDashboardVisits } from '../../hooks/queries/useDashboardVisits';
 import type { VisitListState } from '../../hooks/queries/useVisitList';
 import { ROUTES } from '../../routes/paths';
 import { getApiErrorMessage } from '../../utils/error-message';
-import type { CaseSectionKey } from './dashboard.types';
+import type { CaseSectionKey, VisitRow } from './dashboard.types';
 import prioritySquare from '../../assets/svgs/priority-square.svg';
 import prescriptionSquare from '../../assets/svgs/prescription-square.svg';
 import prescriptionCompletedSquare from '../../assets/svgs/prescription-completed-square.svg';
@@ -59,6 +59,11 @@ const SECTIONS: SectionConfig[] = [
 ];
 
 const LOAD_FAILED_MESSAGE = 'Could not load cases. Please try again.';
+
+/** A visit's WHO Labour Care Guide. */
+function elcgPath(row: VisitRow): string {
+  return `${ROUTES.DASHBOARD_ELCG}/${row.uuid}`;
+}
 const LOAD_MORE_FAILED_MESSAGE = 'Could not load more cases. Please try again.';
 
 /** The stat-chip figure: unknown (a dash) until the section has loaded successfully. */
@@ -153,7 +158,8 @@ export function DashboardComponent() {
             isExpanded={expandedSections[section.key]}
             onToggle={() => toggleSection(section.key)}
             /* dashboard.component.html's `[routerLink]="['/dashboard/elcg', row.uuid]"`. */
-            onRowClick={row => navigate(`${ROUTES.DASHBOARD_ELCG}/${row.uuid}`)}
+            onRowClick={row => navigate(elcgPath(row))}
+            rowHref={elcgPath}
             isLoading={list.isLoading}
             errorMessage={
               list.error

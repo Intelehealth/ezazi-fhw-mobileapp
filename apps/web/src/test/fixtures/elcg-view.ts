@@ -62,7 +62,11 @@ export function buildHour(overrides: Partial<LcgHour> = {}): LcgHour {
 }
 
 function emptyColumns(count: number): LcgColumn[] {
-  return Array.from({ length: count }, () => ({ time: null, isSos: false }));
+  return Array.from({ length: count }, () => ({
+    time: null,
+    isSos: false,
+    isMissed: false,
+  }));
 }
 
 /** A reading row with values placed at the given sub-column indexes. */

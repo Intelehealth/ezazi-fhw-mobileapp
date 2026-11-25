@@ -1,4 +1,4 @@
-import { TooltipComponent } from '../common/tooltip.component';
+import { COMING_SOON, TooltipComponent } from '../common/tooltip.component';
 import whatsappIcon from '../../assets/svgs/whatsapp-green.svg';
 import printIcon from '../../assets/svgs/print-white.svg';
 
@@ -8,7 +8,7 @@ const BLUE_BUTTON_CLASS =
 
 /** partogram.component.scss's `.icon-action-btn`. */
 const ICON_BUTTON_CLASS =
-  'flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-[#2E1E91] transition-colors hover:bg-[#231672]';
+  'flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-[#2E1E91] transition-colors enabled:hover:bg-[#231672] disabled:cursor-not-allowed disabled:opacity-50';
 
 interface LcgToolbarComponentProps {
   pastVisitsCount: number;
@@ -24,7 +24,9 @@ interface LcgToolbarComponentProps {
 
 /**
  * The action row above the guide in partogram.component.html: "View Past
- * Details" on the left; zoom, WhatsApp share and print on the right.
+ * Details" on the left; zoom, WhatsApp share and print on the right. "View
+ * Past Details" and Print stay disabled, marked "Coming soon", until they
+ * are given a handler.
  */
 export function LcgToolbarComponent({
   pastVisitsCount,
@@ -39,10 +41,18 @@ export function LcgToolbarComponent({
 }: LcgToolbarComponentProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 py-2">
-      <TooltipComponent label={pastVisitsCount ? '' : 'No past visits'}>
+      <TooltipComponent
+        label={
+          !onViewPastDetails
+            ? COMING_SOON
+            : pastVisitsCount
+              ? ''
+              : 'No past visits'
+        }
+      >
         <button
           type="button"
-          disabled={!pastVisitsCount}
+          disabled={!onViewPastDetails || !pastVisitsCount}
           onClick={onViewPastDetails}
           className={BLUE_BUTTON_CLASS}
         >
@@ -74,7 +84,7 @@ export function LcgToolbarComponent({
         >
           Reset
         </button>
-        <TooltipComponent label="Share on WhatsApp">
+        <TooltipComponent label="Share on WhatsApp" position="below-end">
           <button
             type="button"
             aria-label="Share on WhatsApp"
@@ -84,10 +94,14 @@ export function LcgToolbarComponent({
             <img src={whatsappIcon} alt="" width={24} height={24} />
           </button>
         </TooltipComponent>
-        <TooltipComponent label="Print">
+        <TooltipComponent
+          label={onPrint ? 'Print' : `Print — ${COMING_SOON}`}
+          position="below-end"
+        >
           <button
             type="button"
             aria-label="Print"
+            disabled={!onPrint}
             onClick={onPrint}
             className={ICON_BUTTON_CLASS}
           >

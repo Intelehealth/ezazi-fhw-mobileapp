@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NetworkError, ServerError } from '@ezazi/api-client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { DashboardComponent } from '../../../modules/dashboard/dashboard.component';
 import { useDashboardVisits } from '../../../hooks/queries/useDashboardVisits';
 import {
@@ -12,7 +13,10 @@ import {
 
 const navigate = vi.hoisted(() => vi.fn());
 
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
+vi.mock('react-router-dom', async importOriginal => ({
+  ...(await importOriginal<object>()),
+  useNavigate: () => navigate,
+}));
 
 vi.mock('../../../hooks/queries/useDashboardVisits', () => ({
   useDashboardVisits: vi.fn(),
@@ -63,7 +67,7 @@ beforeEach(() => {
 
 describe('DashboardComponent', () => {
   it("shows each section's server total on its stat chip and header", () => {
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     expect(screen.getByText('Priority cases (4)')).toBeInTheDocument();
     expect(screen.getByText('In-progress cases (7)')).toBeInTheDocument();
@@ -72,7 +76,7 @@ describe('DashboardComponent', () => {
   });
 
   it('starts with priority and in-progress expanded, and completed collapsed, matching dashboard.component.html', () => {
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     expect(screen.getByText('ELCG-1042')).toBeInTheDocument();
     expect(screen.getByText('ELCG-2001')).toBeInTheDocument();
@@ -81,7 +85,7 @@ describe('DashboardComponent', () => {
 
   it('"Show all" expands every section, including completed', async () => {
     const user = userEvent.setup();
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     await user.click(screen.getByRole('button', { name: 'Show all' }));
 
@@ -92,7 +96,7 @@ describe('DashboardComponent', () => {
   });
 
   it('collapses just the Priority section on its own header click, leaving In-progress expanded', () => {
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     fireEvent.click(screen.getByText('Priority cases (4)'));
 
@@ -101,7 +105,7 @@ describe('DashboardComponent', () => {
   });
 
   it("opens a case's WHO Labour Care Guide when its row is clicked", async () => {
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     await userEvent.click(screen.getByText('ELCG-1042'));
 
@@ -115,7 +119,7 @@ describe('DashboardComponent', () => {
       })
     );
 
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading cases…');
     expect(screen.getAllByText('–')).toHaveLength(1);
@@ -136,7 +140,7 @@ describe('DashboardComponent', () => {
       })
     );
 
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
 
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent(
@@ -161,7 +165,7 @@ describe('DashboardComponent', () => {
       })
     );
 
-    render(<DashboardComponent />);
+    render(<DashboardComponent />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getAllByRole('button', { name: 'Next page' })[0]);
 
     expect(screen.getByRole('alert')).toHaveTextContent(

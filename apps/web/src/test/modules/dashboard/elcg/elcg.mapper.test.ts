@@ -234,7 +234,11 @@ describe('mapVisitToElcgView — the grid', () => {
 
     expect(view.stage1.hours[0].subColumns).toBe(3);
     expect(view.stage1.columns).toHaveLength(31);
-    expect(view.stage1.columns[2]).toEqual({ time: at('00:45'), isSos: true });
+    expect(view.stage1.columns[2]).toEqual({
+      time: at('00:45'),
+      isSos: true,
+      isMissed: false,
+    });
     expect(view.readings.baselineFhr.stage1.slice(0, 3)).toEqual([
       { value: '140', alert: null },
       { value: '142', alert: null },
@@ -311,6 +315,79 @@ describe('mapVisitToElcgView — the grid', () => {
     );
 
     expect(view.readings.pulse.stage1.every(r => r === null)).toBe(true);
+  });
+
+  describe('a check the FHW app marked missed', () => {
+    const missedMarker = () =>
+      buildObs('MISSED_ENCOUNTER', '-', {
+        concept: {
+          uuid: '35c3afdd-bb96-4b61-afb9-22a5fc2d088e',
+          display: 'MISSED_ENCOUNTER',
+        },
+      });
+
+    it('is shown as missed, and neither signs its hour nor opens its decision cells', () => {
+      const view = map(
+        buildVisitDetail({
+          encounters: [
+            buildEncounter('Stage1_Hour1_1', at('00:00'), [missedMarker()]),
+          ],
+        })
+      );
+
+      expect(view.stage1.columns[0]).toEqual({
+        time: at('00:00'),
+        isSos: false,
+        isMissed: true,
+      });
+      expect(view.stage1.hours[0]).toMatchObject({
+        initials: null,
+        hasEncounter: false,
+      });
+    });
+
+    it('leaves the hour signed by the check that was recorded', () => {
+      const view = map(
+        buildVisitDetail({
+          encounters: [
+            buildEncounter(
+              'Stage1_Hour1_1',
+              at('00:00'),
+              [buildObs('PULSE', '88')],
+              'Kavita Rao'
+            ),
+            buildEncounter(
+              'Stage1_Hour1_2',
+              at('00:30'),
+              [missedMarker()],
+              'Someone Else'
+            ),
+          ],
+        })
+      );
+
+      expect(view.stage1.columns.map(c => c.isMissed).slice(0, 2)).toEqual([
+        false,
+        true,
+      ]);
+      expect(view.stage1.hours[0].initials).toBe('Kavita Rao');
+    });
+
+    it('counts as recorded once readings were saved in it', () => {
+      const view = map(
+        buildVisitDetail({
+          encounters: [
+            buildEncounter('Stage1_Hour1_1', at('00:00'), [
+              missedMarker(),
+              buildObs('PULSE', '88'),
+            ]),
+          ],
+        })
+      );
+
+      expect(view.stage1.columns[0].isMissed).toBe(false);
+      expect(view.readings.pulse.stage1[0]?.value).toBe('88');
+    });
   });
 
   it('leaves an entry unsigned when its recorder is not known', () => {

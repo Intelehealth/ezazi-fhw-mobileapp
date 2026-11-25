@@ -50,6 +50,11 @@ export interface LcgColumn {
   /** The encounter's datetime; null for a slot nothing has been recorded in yet. */
   time: string | null;
   isSos: boolean;
+  /**
+   * The FHW app marked this check missed (a MISSED_ENCOUNTER obs) and nothing
+   * was recorded in it: the column holds no readings, not normal ones.
+   */
+  isMissed: boolean;
 }
 
 /** One hour of a stage. */

@@ -74,6 +74,30 @@ const ENCOUNTER = {
 
 const SOS_STAGE_HOUR = /Stage(\d+)_Hour(\d+)_SOS(\d+)/;
 
+/**
+ * The mobile app's missed-check marker (value `-`), written on a check left
+ * empty once the next one falls due — apps/mobile's MISSED_ENCOUNTER.
+ */
+const MISSED_ENCOUNTER_CONCEPT = '35c3afdd-bb96-4b61-afb9-22a5fc2d088e';
+
+function isMissedMarker(obs: OpenMrsVisitObs): boolean {
+  return obs.concept.uuid === MISSED_ENCOUNTER_CONCEPT;
+}
+
+/**
+ * A check is missed when it carries the marker and nothing else was recorded
+ * in it — the mobile app voids the marker once data is saved, and anything
+ * recorded wins over a marker that was left behind.
+ */
+function isMissedCheck(encounter: OpenMrsVisitEncounter): boolean {
+  if (!encounter.obs.some(isMissedMarker)) return false;
+  return encounter.obs.every(
+    obs =>
+      isMissedMarker(obs) ||
+      obs.concept.display.toLowerCase() === CONCEPT.sosStageHour.toLowerCase()
+  );
+}
+
 /** Admission obs that override the patient attributes in the header. */
 const ADMISSION_CONCEPTS: Record<string, keyof AdmissionDetails> = {
   'Hospital ID': 'hospitalId',
@@ -426,6 +450,7 @@ export function mapVisitToElcgView(
   const columns = emptyGrid<LcgColumn>(columnCounts, () => ({
     time: null,
     isSos: false,
+    isMissed: false,
   }));
   const hours: StageGrid<LcgHour> = {
     1: subColumns[1].map(count => emptyHour(count)),
@@ -453,9 +478,15 @@ export function mapVisitToElcgView(
 
   for (const { encounter, stage, hour, isSos, subColumn } of slots) {
     const column = hourStart[stage][hour - 1] + subColumn - 1;
-    columns[stage][column] = { time: encounter.encounterDatetime, isSos };
+    const isMissed = isMissedCheck(encounter);
+    columns[stage][column] = {
+      time: encounter.encounterDatetime,
+      isSos,
+      isMissed,
+    };
 
-    if (!isSos) {
+    /* A missed check recorded nothing, so it neither signs the hour nor opens its decision cells. */
+    if (!isSos && !isMissed) {
       /* The hour's last Stage encounter signs it off, as in Angular. */
       const hourRow = hours[stage][hour - 1];
       hourRow.hasEncounter = true;

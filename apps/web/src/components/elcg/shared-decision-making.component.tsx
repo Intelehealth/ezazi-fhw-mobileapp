@@ -8,6 +8,7 @@ import type {
 } from '../../modules/dashboard/elcg/elcg.types';
 import { formatDayMonthYearTime } from '../../utils/date-format';
 import { formatMedicine } from './lcg-cells.component';
+import { COMING_SOON, TooltipComponent } from '../common/tooltip.component';
 import { LcgCardComponent } from './lcg-card.component';
 import chevronIcon from '../../assets/svgs/chevron-down.svg';
 import diagnosisIcon from '../../assets/svgs/diagnosis.svg';
@@ -100,6 +101,7 @@ interface SharedDecisionMakingComponentProps {
   history: LcgDecisionHistory;
   /** False once the visit is complete — hides every panel's "Add" button. */
   canAdd: boolean;
+  /** Omitted until the Add dialogs exist: the buttons show, disabled, as "Coming soon". */
   onAdd?: (kind: LcgDecisionKind) => void;
 }
 
@@ -162,17 +164,20 @@ export function SharedDecisionMakingComponent({
           onToggle={() => toggle(panel.kind)}
           addButton={
             canAdd && (
-              <button
-                type="button"
-                aria-label={`Add ${panel.title.toLowerCase()}`}
-                onClick={event => {
-                  event.stopPropagation();
-                  onAdd?.(panel.kind);
-                }}
-                className="mr-1 cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white"
-              >
-                Add
-              </button>
+              <TooltipComponent label={onAdd ? '' : COMING_SOON}>
+                <button
+                  type="button"
+                  aria-label={`Add ${panel.title.toLowerCase()}`}
+                  disabled={!onAdd}
+                  onClick={event => {
+                    event.stopPropagation();
+                    onAdd?.(panel.kind);
+                  }}
+                  className="mr-1 cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </TooltipComponent>
             )
           }
         />
@@ -216,7 +221,13 @@ function DecisionPanel({
         aria-expanded={isExpanded}
         onClick={onToggle}
         onKeyDown={event => {
-          if (event.key === 'Enter' || event.key === ' ') onToggle();
+          /* Keys pressed on the Add button inside are the button's, not the header's. */
+          if (event.target !== event.currentTarget) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            /* Space would otherwise also scroll the page. */
+            event.preventDefault();
+            onToggle();
+          }
         }}
         className="flex h-12 cursor-pointer items-center"
       >

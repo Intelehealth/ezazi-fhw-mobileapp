@@ -7,6 +7,7 @@ import type {
 } from '../../modules/dashboard/elcg/elcg.types';
 import { formatTime } from '../../utils/date-format';
 import openInNewIcon from '../../assets/svgs/open-in-new.svg';
+import { COMING_SOON, TooltipComponent } from '../common/tooltip.component';
 
 /**
  * The building blocks of lcg-table.component.tsx — partogram.component.scss's
@@ -34,6 +35,9 @@ const ALERT_BORDER_CLASS = {
   Y: 'border-2 border-[#FD8C3E]',
 } as const;
 
+/** What the alert border means, for screen readers (the colour alone says nothing). */
+const ALERT_LABEL = { R: 'Red alert', Y: 'Yellow alert' } as const;
+
 /**
  * The dotted rule between each half-hour pair (`.brd` / `.bld`): an even
  * sub-column dots its right edge, the odd one after it its left. Collapsed
@@ -52,10 +56,13 @@ export function ValueItemComponent({
   reading?: LcgReading | null;
   children?: ReactNode;
 }) {
-  const alertClass = reading?.alert ? ALERT_BORDER_CLASS[reading.alert] : '';
+  const alert = reading?.alert;
   return (
-    <div className={`${VALUE_ITEM_CLASS} ${alertClass}`}>
+    <div
+      className={`${VALUE_ITEM_CLASS} ${alert ? ALERT_BORDER_CLASS[alert] : ''}`}
+    >
       {children ?? reading?.value}
+      {alert && <span className="sr-only"> ({ALERT_LABEL[alert]})</span>}
     </div>
   );
 }
@@ -190,7 +197,10 @@ export function MedicineNotes({ entries }: { entries: LcgNoteEntry[] }) {
   );
 }
 
-/** One hour's assessment or plan entries, with the button that opens them in full. */
+/**
+ * One hour's assessment or plan entries, with the button that opens them in
+ * full — disabled, marked "Coming soon", until it is given a handler.
+ */
 export function DecisionNotes({
   entries,
   viewLabel,
@@ -207,14 +217,17 @@ export function DecisionNotes({
           {entry.value} <Signature entry={entry} />
         </p>
       ))}
-      <button
-        type="button"
-        aria-label={viewLabel}
-        onClick={onView}
-        className="cursor-pointer rounded-full p-2 hover:bg-black/5"
-      >
-        <img src={openInNewIcon} alt="" width={24} height={24} />
-      </button>
+      <TooltipComponent label={onView ? '' : COMING_SOON}>
+        <button
+          type="button"
+          aria-label={viewLabel}
+          disabled={!onView}
+          onClick={onView}
+          className="cursor-pointer rounded-full p-2 enabled:hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <img src={openInNewIcon} alt="" width={24} height={24} />
+        </button>
+      </TooltipComponent>
     </div>
   );
 }

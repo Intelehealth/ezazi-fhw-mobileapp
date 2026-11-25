@@ -71,6 +71,39 @@ describe('useMarkVisitSeen', () => {
     });
   });
 
+  it('puts the saved attribute on the cached visit, then reads it again', async () => {
+    vi.mocked(visitService.addVisitAttribute).mockResolvedValue(
+      success({
+        uuid: 'attr-1',
+        value: 'abc12345',
+        attributeType: { display: 'Visit Read' },
+      })
+    );
+    const visit = buildVisitDetail();
+    queryClient.setQueryData(['elcg-visit', 'visit-1'], visit);
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(() => useMarkVisitSeen(), { wrapper });
+
+    await act(() => result.current.mutateAsync({ visit, viewerUuid: VIEWER }));
+
+    expect(
+      queryClient.getQueryData<typeof visit>(['elcg-visit', 'visit-1'])
+        ?.attributes
+    ).toEqual([
+      {
+        uuid: 'attr-1',
+        value: 'abc12345',
+        attributeType: {
+          uuid: VISIT_READ_ATTRIBUTE_TYPE,
+          display: 'Visit Read',
+        },
+      },
+    ]);
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['elcg-visit', 'visit-1'],
+    });
+  });
+
   it('adds the viewer to the readers already listed', async () => {
     vi.mocked(visitService.updateVisitAttribute).mockResolvedValue(
       success({
@@ -99,14 +132,14 @@ describe('useMarkVisitSeen', () => {
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
     const { result } = renderHook(() => useMarkVisitSeen(), { wrapper });
 
-    const changed = await act(() =>
+    const saved = await act(() =>
       result.current.mutateAsync({
         visit: readBy('ffff0000,abc12345'),
         viewerUuid: VIEWER,
       })
     );
 
-    expect(changed).toBe(false);
+    expect(saved).toBeNull();
     expect(visitService.addVisitAttribute).not.toHaveBeenCalled();
     expect(visitService.updateVisitAttribute).not.toHaveBeenCalled();
     expect(invalidate).not.toHaveBeenCalled();

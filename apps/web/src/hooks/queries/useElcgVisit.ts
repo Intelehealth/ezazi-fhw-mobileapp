@@ -80,13 +80,19 @@ export function useElcgVisit(visitUuid: string): ElcgVisitState {
   );
 
   const { mutate: markSeen } = useMarkVisitSeen();
-  /* Once per visit opened, not on every refetch. */
+  /*
+   * Once per visit opened, not on every refetch — and only from the server's
+   * current copy: a cached visit being refreshed in the background may
+   * predate this viewer's "Visit Read" entry.
+   */
+  const isRefreshing = visitQuery.isFetching;
   const markedVisit = useRef<string | null>(null);
   useEffect(() => {
-    if (!visit || !viewerUuid || markedVisit.current === visit.uuid) return;
+    if (!visit || !viewerUuid || isRefreshing) return;
+    if (markedVisit.current === visit.uuid) return;
     markedVisit.current = visit.uuid;
     markSeen({ visit, viewerUuid });
-  }, [visit, viewerUuid, markSeen]);
+  }, [visit, viewerUuid, isRefreshing, markSeen]);
 
   return {
     view,
