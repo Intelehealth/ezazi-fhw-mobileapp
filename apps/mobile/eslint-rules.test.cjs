@@ -21,6 +21,8 @@ async function ruleIds(code, file) {
 }
 
 const PROPS = 'no-restricted-properties';
+const SYNTAX = 'no-restricted-syntax';
+const LABOUR_TEST = 'src/features/labour-care-guide/stores/__tests__/useCaptureFormViewModel.test.tsx';
 const TS_IMPORTS = '@typescript-eslint/no-restricted-imports';
 
 test('Date.now() is refused in labour and the card services, allowed elsewhere', async () => {
@@ -30,16 +32,37 @@ test('Date.now() is refused in labour and the card services, allowed elsewhere',
   assert.ok(!(await ruleIds(code, OUTSIDE_LABOUR)).includes(PROPS));
 });
 
-test('only core/db/card.ts writes a card', async () => {
-  const code = 'declare const encounterRepo: { insertCard(): void };\nencounterRepo.insertCard();\n';
-  assert.ok((await ruleIds(code, LABOUR_REPOSITORY)).includes(PROPS));
-  assert.ok(!(await ruleIds(code, CARD_WRITER)).includes(PROPS));
+test('new Date() with no argument is refused in labour and the card services; new Date(ms) and other code are not', async () => {
+  const code = 'export const at = new Date();\n';
+  assert.ok((await ruleIds(code, LABOUR_DOMAIN)).includes(SYNTAX));
+  assert.ok((await ruleIds(code, CARD_SCAN)).includes(SYNTAX));
+  assert.ok((await ruleIds(code, CARD_WRITER)).includes(SYNTAX));
+  assert.ok((await ruleIds(code, LABOUR_REPOSITORY)).includes(SYNTAX));
+  assert.ok(!(await ruleIds('export const at = new Date(0);\n', LABOUR_DOMAIN)).includes(SYNTAX));
+  assert.ok(!(await ruleIds(code, OUTSIDE_LABOUR)).includes(SYNTAX));
+  assert.ok(!(await ruleIds(code, LABOUR_TEST)).includes(SYNTAX));
 });
 
-test('only the labour repository writes an SOS card', async () => {
-  const code = 'declare const encounterRepo: { insertSos(): void };\nencounterRepo.insertSos();\n';
-  assert.ok((await ruleIds(code, CARD_SCAN)).includes(PROPS));
-  assert.ok(!(await ruleIds(code, LABOUR_REPOSITORY)).includes(PROPS));
+test('only core/db/card.ts writes a card: by call, named import or destructuring, anywhere in src', async () => {
+  const call = 'declare const encounterRepo: { insertCard(): void };\nencounterRepo.insertCard();\n';
+  const imported = "import { insertCard } from '@/core/db/repositories/encounter';\nexport { insertCard };\n";
+  const destructured = 'declare const repo: { insertCard(): void };\nconst { insertCard } = repo;\nexport { insertCard };\n';
+  for (const code of [call, imported, destructured]) {
+    assert.ok((await ruleIds(code, LABOUR_REPOSITORY)).includes(SYNTAX));
+    assert.ok((await ruleIds(code, OUTSIDE_LABOUR)).includes(SYNTAX));
+  }
+  assert.ok(!(await ruleIds(call, CARD_WRITER)).includes(SYNTAX));
+  assert.ok(!(await ruleIds(imported, LABOUR_TEST)).includes(SYNTAX));
+});
+
+test('only the labour repository writes an SOS card: by call, named import or destructuring', async () => {
+  const call = 'declare const encounterRepo: { insertSos(): void };\nencounterRepo.insertSos();\n';
+  const imported = "import { insertSos } from '@/core/db/repositories/encounter';\nexport { insertSos };\n";
+  for (const code of [call, imported]) {
+    assert.ok((await ruleIds(code, CARD_SCAN)).includes(SYNTAX));
+    assert.ok((await ruleIds(code, CARD_WRITER)).includes(SYNTAX));
+  }
+  assert.ok(!(await ruleIds(call, LABOUR_REPOSITORY)).includes(SYNTAX));
 });
 
 test('Text comes from core/ui, not react-native', async () => {

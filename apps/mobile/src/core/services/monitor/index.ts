@@ -74,10 +74,14 @@ export function useMonitorService(enabled: boolean): void {
 
 const STATUS_POLL_MS = 5000;
 
-/** The last wake-ups (due time, how late, cards made), for the debug badge on Home. */
-export function useCardWakeLog(lines = 3): string[] {
+/**
+ * The last wake-ups (due time, how late, cards made), for the debug badge on Home. Reads nothing while
+ * `enabled` is false (release builds), so the log file is not re-read every 5 s for nurses.
+ */
+export function useCardWakeLog(enabled: boolean, lines = 3): string[] {
   const [log, setLog] = useState<string[]>([]);
   useEffect(() => {
+    if (!enabled) return;
     const read = () => {
       try {
         setLog(cardAlarm?.readWakeLog(lines) ?? []);
@@ -88,8 +92,8 @@ export function useCardWakeLog(lines = 3): string[] {
     read();
     const timer = setInterval(read, STATUS_POLL_MS);
     return () => clearInterval(timer);
-  }, [lines]);
-  return log;
+  }, [enabled, lines]);
+  return enabled ? log : [];
 }
 
 export { scanAndRearm } from './cardScheduler';

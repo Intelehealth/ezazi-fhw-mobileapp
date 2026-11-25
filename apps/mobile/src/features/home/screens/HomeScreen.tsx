@@ -27,7 +27,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
-  const wakeLog = useCardWakeLog();
+  // Dev builds only (PR #17 review): internal alarm lines in English are not for nurses.
+  const showWakeLog = __DEV__;
+  const wakeLog = useCardWakeLog(showWakeLog);
 
   const providerUuid = useAuthStore((s) => s.userUuid);
   const initialiseDb = useDbBootstrapStore((s) => s.initialise);
@@ -48,17 +50,19 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.title}>{t('home.title')}</Text>
       <Text style={styles.note}>{t('home.note')}</Text>
       {/* Temporary dev indicator for the card-alarm device runs: the last wake-ups and how late each was. */}
-      <View style={styles.monitorBadge}>
-        {wakeLog.length === 0 ? (
-          <Text style={styles.monitorText}>Card alarm: no wake-up yet</Text>
-        ) : (
-          wakeLog.map((line) => (
-            <Text key={line} style={styles.monitorText}>
-              {line}
-            </Text>
-          ))
-        )}
-      </View>
+      {showWakeLog && (
+        <View style={styles.monitorBadge}>
+          {wakeLog.length === 0 ? (
+            <Text style={styles.monitorText}>Card alarm: no wake-up yet</Text>
+          ) : (
+            wakeLog.map((line) => (
+              <Text key={line} style={styles.monitorText}>
+                {line}
+              </Text>
+            ))
+          )}
+        </View>
+      )}
       <View style={styles.btn}>
         <AppButton label={t('home.logout')} onPress={() => void logout()} variant="destructive" />
       </View>

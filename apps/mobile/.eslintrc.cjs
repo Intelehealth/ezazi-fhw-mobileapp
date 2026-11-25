@@ -51,6 +51,8 @@ const ONE_BACKGROUND_EVENT = {
 // ── UI_CONVENTIONS and LABOUR_CONVENTIONS rules (added 2026-11-24) ──
 // On rule ids nothing above uses (`@typescript-eslint/no-restricted-imports`, `no-restricted-properties`), so they
 // can never replace the rules above. An override still REPLACES its own rule id: each override lists the full set.
+// The one-writer rules and `new Date()` need selectors, so they are no-restricted-syntax entries composed through
+// SRC_SYNTAX (2026-11-25).
 const RN_TEXT = {
   group: ['react-native'],
   importNames: ['Text'],
@@ -67,21 +69,34 @@ const RN_TOAST = {
   importNames: ['ToastAndroid'],
   message: "Use showToast() from '@/core/utils/toast' (UI_CONVENTIONS section 9).",
 };
-const ONE_CARD_WRITER = {
-  object: 'encounterRepo',
-  property: 'insertCard',
-  message: 'Only writeCard (core/db/card.ts) writes a card: it writes the encounter and its marker together (LABOUR_CONVENTIONS section 3).',
-};
-const ONE_SOS_WRITER = {
-  object: 'encounterRepo',
-  property: 'insertSos',
-  message: 'Only captureSos (labourRepository) writes an SOS card (LABOUR_CONVENTIONS section 3).',
-};
+// One writer each: every way to reach the function is refused - a call through any object, a named import, and
+// destructuring - not only `encounterRepo.insertCard` (closed 2026-11-25, PR #17 review).
+const onlyWriter = (name, message) => [
+  { selector: `MemberExpression[property.name='${name}']`, message },
+  { selector: `ImportSpecifier[imported.name='${name}']`, message },
+  { selector: `ObjectPattern > Property[key.name='${name}']`, message },
+];
+const ONE_CARD_WRITER = onlyWriter(
+  'insertCard',
+  'Only writeCard (core/db/card.ts) writes a card: it writes the encounter and its marker together (LABOUR_CONVENTIONS section 3).',
+);
+const ONE_SOS_WRITER = onlyWriter(
+  'insertSos',
+  'Only captureSos (labourRepository) writes an SOS card (LABOUR_CONVENTIONS section 3).',
+);
 const NO_DATE_NOW = {
   object: 'Date',
   property: 'now',
   message: "Use nowMs() from '@/core/utils/datetime' and pass `now` down - one clock read per action (LABOUR_CONVENTIONS section 4).",
 };
+// `new Date()` with no argument reads the clock too (closed 2026-11-25, PR #17 review). `new Date(ms)` is fine.
+const NO_NEW_DATE_NOW = {
+  selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+  message: "Use nowMs() from '@/core/utils/datetime' (`new Date(nowMs())` when a Date is needed) - one clock read per action (LABOUR_CONVENTIONS section 4).",
+};
+
+// The no-restricted-syntax set for every non-test file under src/; each override below starts from it.
+const SRC_SYNTAX = [ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID, ...ONE_CARD_WRITER, ...ONE_SOS_WRITER];
 
 /** @type {import("eslint").Linter.Config} */
 // Rejected dependencies; composed into the no-restricted-imports rule and its date-utils override.
@@ -269,7 +284,6 @@ module.exports = {
 
     // ── UI_CONVENTIONS / LABOUR_CONVENTIONS (constants above; exemptions in the last overrides) ──
     '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL, RN_TOAST] }],
-    'no-restricted-properties': ['error', ONE_CARD_WRITER, ONE_SOS_WRITER],
   },
   overrides: [
     {
@@ -277,7 +291,7 @@ module.exports = {
       // are the two places a uuid literal is allowed; tests use fixtures.
       files: ['src/**/*.ts', 'src/**/*.tsx'],
       excludedFiles: ['src/core/db/constants/**', 'src/core/db/seeds/**', 'src/**/__tests__/**'],
-      rules: { 'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID] },
+      rules: { 'no-restricted-syntax': ['error', ...SRC_SYNTAX] },
     },
     {
       // A repository reaches the database ONLY through the handle it is given.
@@ -285,13 +299,7 @@ module.exports = {
       files: ['src/core/db/repositories/**/*.ts'],
       excludedFiles: ['src/**/__tests__/**'],
       rules: {
-        'no-restricted-syntax': [
-          'error',
-          ONE_BACKGROUND_EVENT,
-          ...DB_RULES,
-          NO_RAW_UUID,
-          NO_GETDB_IN_REPOSITORIES,
-        ],
+        'no-restricted-syntax': ['error', ...SRC_SYNTAX, NO_GETDB_IN_REPOSITORIES],
       },
     },
     {
@@ -304,6 +312,8 @@ module.exports = {
           NO_ZOD_UUID,
           NO_DIRECT_TRANSACTION,
           NO_RAW_UUID,
+          ...ONE_CARD_WRITER,
+          ...ONE_SOS_WRITER,
         ],
       },
     },
@@ -311,7 +321,15 @@ module.exports = {
       // The one file allowed to open a transaction — it IS the guard.
       files: ['src/core/db/tx.ts'],
       rules: {
-        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID],
+        'no-restricted-syntax': [
+          'error',
+          ONE_BACKGROUND_EVENT,
+          NO_ZOD_UUID,
+          NO_DB_CLOSE,
+          NO_RAW_UUID,
+          ...ONE_CARD_WRITER,
+          ...ONE_SOS_WRITER,
+        ],
       },
     },
     {
@@ -325,17 +343,24 @@ module.exports = {
       // One clock read per action: labour and the card services read the time through nowMs().
       files: ['src/features/labour-care-guide/**', 'src/core/services/**', 'src/core/db/card.ts'],
       excludedFiles: ['src/**/__tests__/**'],
-      rules: { 'no-restricted-properties': ['error', ONE_CARD_WRITER, ONE_SOS_WRITER, NO_DATE_NOW] },
+      rules: {
+        'no-restricted-properties': ['error', NO_DATE_NOW],
+        'no-restricted-syntax': ['error', ...SRC_SYNTAX, NO_NEW_DATE_NOW],
+      },
     },
     {
       // The one card writer.
       files: ['src/core/db/card.ts'],
-      rules: { 'no-restricted-properties': ['error', ONE_SOS_WRITER, NO_DATE_NOW] },
+      rules: {
+        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID, ...ONE_SOS_WRITER, NO_NEW_DATE_NOW],
+      },
     },
     {
       // The one SOS writer.
       files: ['src/features/labour-care-guide/data/labourRepository.ts'],
-      rules: { 'no-restricted-properties': ['error', ONE_CARD_WRITER, NO_DATE_NOW] },
+      rules: {
+        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID, ...ONE_CARD_WRITER, NO_NEW_DATE_NOW],
+      },
     },
     {
       // The app's Text wrapper.

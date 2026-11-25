@@ -89,8 +89,8 @@ a decision for the team, not a side effect of a labour task.
 ## 4. Time, text and constants
 
 **"Now" is read once, at the edge, and passed down.** Use `nowMs()` from `core/utils/datetime.ts` in stores, the card
-engine and the battery guard; pass `now` into `domain/` and the package. Never `Date.now()` in labour or the card
-services: a second clock read inside one action gives a card two different times. ([ADR-0011](adr/0011-code-rules-for-text-time-and-constants.md))
+engine and the battery guard; pass `now` into `domain/` and the package. Never `Date.now()` or an argument-less `new Date()`
+in labour or the card services: a second clock read inside one action gives a card two different times. ([ADR-0011](adr/0011-code-rules-for-text-time-and-constants.md))
 
 **Store and show dates through the shared pair.** `datetime.ts` for storage, conversion and arithmetic (encounter and obs
 in UTC, patient and visit rows in local time, as `DB_CONVENTIONS.md` says); `calendar.ts` for display. Timeline card
@@ -181,8 +181,8 @@ Every decision has a date and who decided (a role, not a person's name). A decis
 | Date libraries only in `datetime.ts` / `calendar.ts` | eslint `no-restricted-imports` |
 | No raw uuid literal outside `core/db/constants` | eslint `no-restricted-syntax` |
 | `transact`, never `.transaction(` | eslint `no-restricted-syntax` |
-| No `Date.now()` in labour, the card services and `core/db/card.ts` | eslint `no-restricted-properties` |
-| Only `writeCard` writes a card; only the labour repository writes an SOS card | eslint `no-restricted-properties` |
+| No `Date.now()` and no argument-less `new Date()` in labour, the card services and `core/db/card.ts` | eslint `no-restricted-properties` (`Date.now`), `no-restricted-syntax` (`new Date()`) |
+| Only `writeCard` writes a card; only the labour repository writes an SOS card (a call through any object, a named import or destructuring, anywhere in `src/`) | eslint `no-restricted-syntax` |
 | Hard-coded user text, raw sizes | **Not enforced yet.** Review only |
 | A child row written without its parent's sync flag | **Not enforced.** Review only; after the sync merge, by routing every child write through `core/useCases` |
 

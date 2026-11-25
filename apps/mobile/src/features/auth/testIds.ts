@@ -10,7 +10,8 @@ export const AUTH_TEST_IDS = {
   setup: {
     location: 'setup-location',
     locationList: 'setup-location-list',
-    locationOption: (locationUuid: string) => `setup-location-option-${locationUuid}`,
+    // The rendered id: LocationPickerModal adds `-option-<uuid>` to the list's id (PR #17 review).
+    locationOption: (locationUuid: string) => `setup-location-list-option-${locationUuid}`,
     username: 'setup-username',
     password: 'setup-password',
     forgotPassword: 'setup-forgot-password',
