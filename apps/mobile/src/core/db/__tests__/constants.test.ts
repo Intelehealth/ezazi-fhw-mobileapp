@@ -63,6 +63,17 @@ describe('uuid constants', () => {
     expect(new Set(obsConcepts.ADMISSION_CONCEPTS).size).toBe(15);
   });
 
+  it('maps every encounter type name back to its uuid, so card names resolve', () => {
+    const names = Object.values(encounterTypes.ENCOUNTER_TYPE_NAMES);
+    expect(new Set(names).size).toBe(names.length);
+
+    for (const [uuid, name] of Object.entries(encounterTypes.ENCOUNTER_TYPE_NAMES)) {
+      expect(encounterTypes.encounterTypeUuid(name)).toBe(uuid);
+    }
+    expect(encounterTypes.encounterTypeUuid('Stage1_Hour1_1')).toBe(encounterTypes.STAGE1_HOUR1_1);
+    expect(encounterTypes.encounterTypeUuid('Stage9_Hour1_1')).toBeNull();
+  });
+
   it('excludes bookkeeping encounters from the clinical set', () => {
     expect(encounterTypes.NON_CLINICAL_ENCOUNTER_TYPES).toEqual([
       encounterTypes.ENCOUNTER_VISIT_COMPLETE,

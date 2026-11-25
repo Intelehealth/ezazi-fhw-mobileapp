@@ -20,3 +20,7 @@ export function infusionInputLabelKey(inputId: string): string {
 export function validationMessageKey(id: string, reason: string): string {
   return `${ROOT}.validation.${id}.${reason}`;
 }
+
+export function outcomeLabelKey(outcomeId: string): string {
+  return `${ROOT}.outcome.${outcomeId}`;
+}

@@ -15,8 +15,13 @@
       "showPassword": "Show password",
       "hidePassword": "Hide password",
       "otpInput": "OTP input",
-      "close": "Close"
-    }
+      "close": "Close",
+      "increase": "Increase {{label}}",
+      "decrease": "Decrease {{label}}",
+      "search": "Search {{label}}"
+    },
+    "useTypedText": "Use “{{text}}”",
+    "tabWithErrors": "{{label}} ({{count}})"
   },
   "splash": {
     "tagline": "Empowering labour management\nthrough digital precision",
@@ -43,6 +48,11 @@
       "openSettings": "Open app settings",
       "retry": "Retry permission request"
     }
+  },
+  "exactAlarmGate": {
+    "title": "Permission required",
+    "message": "eZazi schedules an alarm for every partogram observation, so each reading is prompted at the exact minute it falls due during labour.\n\nAndroid does not grant this permission automatically. Without it the app cannot alert you on time, so it cannot be used.\n\nTap Continue, then turn on Alarms & reminders.",
+    "continue": "Continue"
   },
   "setup": {
     "title": "Welcome Back!",
@@ -250,7 +260,9 @@
     "title": "Home",
     "note": "Logged in. Active cases will appear here.",
     "logout": "Log out (EZ-943)",
-    "addPatient": "Add Patient"
+    "addPatient": "Add Patient",
+    "devTimeline": "Open test patient timeline (dev)",
+    "devStartVisit": "Start live test patient visit (dev)"
   },
   "biometric": {
     "prompt": "Authenticate to unlock eZAZI"
@@ -267,17 +279,22 @@
     "notification": {
       "title": "Low Battery",
       "body": "Battery is at {{percent}}%. Please plug in your device to keep the app running smoothly."
+    },
+    "channel": {
+      "silent": "Battery warnings",
+      "urgent": "Battery warnings (urgent)"
     }
   },
   "timeline": {
-    "ageGravida": "{{age}} years · {{gravida}}",
+    "identityLine": "{{ezId}} · {{age}} years · {{gravida}}",
+    "identityLineNoAge": "{{ezId}} · {{gravida}}",
     "viewLcg": "View LCG",
     "postpartumReport": "Postpartum Report",
     "stages": {
       "stage1": "Stage 1",
       "stage2": "Stage 2",
-      "delivery": "Delivery",
-      "earlyPostpartum": "Early Postpartum"
+      "delivery": "Delivery Outcome",
+      "earlyPostpartum": "Very Early PP"
     },
     "stageStep": "{{index}}. {{label}}",
     "stageHeading": "{{label}}",
@@ -287,13 +304,24 @@
       "dueNow": "Due Now",
       "upcoming": "Upcoming"
     },
+    "sosBadge": "SOS",
     "checkpoint": {
       "completedBody": "You have captured the observations",
       "completedRecordedAt": "Recorded at {{time}}",
-      "missedBody": "You have missed the collection of observation",
-      "dueNowBody": "Tap to capture observations",
+      "missedBody": "You have missed the collection of observations",
+      "dueNowBody": "Tap here to capture the observations",
       "upcomingBody": "Will be available at {{time}} (in {{minutes}} min)",
-      "recordNow": "Record Now"
+      "recordNow": "Record Now",
+      "show": "Show",
+      "sosCompletedBody": "You have submitted an SOS observation data",
+      "sosMissedBody": "You have missed the collection of SOS observations",
+      "sosDueNowBody": "Tap here to capture the SOS observations"
+    },
+    "sosDialog": {
+      "title": "SOS Data Entry!",
+      "message": "Are you sure to capture the data now?",
+      "cancel": "Cancel",
+      "confirm": "Yes"
     },
     "actions": {
       "sos": "SOS",
@@ -301,15 +329,336 @@
       "videoCall": "Video Call",
       "rx": "Rx"
     },
-    "endStage": "End First Stage",
+    "endStage": {
+      "stage1": "End First Stage",
+      "stage2": "End Second Stage",
+      "earlyPostpartum": "End Third Stage"
+    },
+    "endStage1Dialog": {
+      "title": "End Stage 1",
+      "message": "Are you sure you want to End Stage 1?",
+      "cancel": "Cancel",
+      "confirm": "Yes"
+    },
+    "endStageFlow": {
+      "yes": "Yes",
+      "no": "No",
+      "cancel": "Cancel",
+      "okay": "Okay",
+      "stage1Title": "Select an option",
+      "stage1NothingSelected": "Please select item",
+      "stage2Title": "Additional Information",
+      "stage2NothingSelected": "Please select an option",
+      "otherCommentPlaceholder": "Enter Other Comment",
+      "confirm": {
+        "referOtherHospital": "Are you sure you want to \"Refer to other hospital\"?",
+        "selfDischarge": "Are you sure patient wants to \"Self discharge against Medical Advice\"?",
+        "shiftToCSection": "Are you sure patient wants to \"Shift to C-Section\"?",
+        "referToIcu": "Are you sure patient wants to \"Refer to high dependency unit / ICU\"?",
+        "other": "Are you sure you want to complete visit now with \"{{text}}\"?"
+      },
+      "refer": {
+        "title": "Refer Section",
+        "hospitalName": "Hospital Name",
+        "hospitalNamePlaceholder": "Enter Hospital Name",
+        "doctorName": "Doctor Name",
+        "doctorNamePlaceholder": "Enter Doctor Name",
+        "note": "Note",
+        "notePlaceholder": "Enter Note"
+      },
+      "motherDeath": {
+        "title": "Mother Death",
+        "placeholder": "Enter Reason",
+        "required": "Please enter reason"
+      },
+      "deliveryFormLater": "The Women Delivery Details form is not available yet."
+    },
+    "outcome": {
+      "mother": "Mother Outcome: {{outcome}}",
+      "outcome": "Outcome: {{outcome}}",
+      "reason": "Reason: {{reason}}",
+      "viewMore": "View more",
+      "motherDeceasedReason": "Mother Deceased Reason:",
+      "otherComment": "Other Comment:"
+    },
     "a11y": {
       "close": "Close timeline",
+      "back": "Back",
       "viewLcg": "View Labour Care Guide",
       "postpartumReport": "View Postpartum Report",
       "sos": "Send SOS alert",
       "chat": "Open chat",
       "videoCall": "Start video call",
-      "rx": "Open prescription"
+      "rx": "Open prescription",
+      "editCard": "Edit observation"
+    },
+    "gravidaShort": "G{{gravida}}",
+    "gravidaMissing": "G-"
+  },
+  "capture": {
+    "kicker": "SCHEDULED OBSERVATION · {{stage}}",
+    "title": "Observation {{time}}",
+    "selectPlaceholder": "Select",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "update": "Update",
+    "leave": {
+      "title": "Are you sure you want to close patient observation?",
+      "message": "Are you sure you want to close the patient observation?",
+      "saveAndExit": "Save & Exit"
+    },
+    "answer": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "medicine": {
+      "title": "Add Medicine",
+      "name": "Medicine*",
+      "form": "Form*",
+      "strength": "Strength*",
+      "dosage": "Dose*",
+      "dosageUnit": "Dose Unit*",
+      "frequency": "Frequency*",
+      "route": "Route*",
+      "duration": "Duration*",
+      "durationUnit": "Duration Unit*",
+      "remark": "Remark",
+      "add": "Add",
+      "addAnother": "+ Add Medicine",
+      "edit": "Edit medicine",
+      "remove": "Remove medicine",
+      "summary": "{{name}} · {{strength}} · {{dose}} · {{route}}"
+    },
+    "notes": {
+      "placeholder": "Enter here",
+      "add": "+ Add"
+    },
+    "summary": {
+      "title": "Observation summary"
+    },
+    "saveFailed": {
+      "title": "Not saved",
+      "message": "The observation could not be saved. Please try again."
+    }
+  },
+  "partogram": {
+    "field": {
+      "companion": "Companion",
+      "painRelief": "Pain relief",
+      "oralFluid": "Oral fluid",
+      "posture": "Posture",
+      "baselineFhr": "Baseline FHR (bpm)",
+      "fhrDeceleration": "FHR deceleration",
+      "amnioticFluid": "Amniotic fluid",
+      "fetalPosition": "Fetal position",
+      "caput": "Caput",
+      "moulding": "Moulding",
+      "pulse": "Pulse",
+      "systolicBp": "Systolic BP (mmHg)",
+      "diastolicBp": "Diastolic BP (mmHg)",
+      "temperature": "Temperature (°F)",
+      "urineProtein": "Urine protein",
+      "urineAcetone": "Urine acetone",
+      "contractionsPer10Min": "Contractions / 10 min",
+      "contractionDuration": "Duration (seconds)",
+      "cervix": "Cervix (cm)",
+      "descent": "Descent",
+      "oxytocin": "Oxytocin administered?",
+      "medicine": "Medicine administered?",
+      "ivFluids": "IV fluids administered?",
+      "assessment": "Assessment",
+      "plan": "Plan",
+      "supervisorDoctor": "Supervisor / Doctor"
+    },
+    "option": {
+      "companion": {
+        "yes": "Yes",
+        "no": "No",
+        "womanDeclines": "Woman Declines"
+      },
+      "painRelief": {
+        "yes": "Yes",
+        "no": "No",
+        "womanDeclines": "Woman Declines"
+      },
+      "oralFluid": {
+        "yes": "Yes",
+        "no": "No",
+        "womanDeclines": "Woman Declines"
+      },
+      "posture": {
+        "supine": "Supine",
+        "mobile": "Mobile"
+      },
+      "fhrDeceleration": {
+        "no": "No",
+        "early": "Early",
+        "late": "Late",
+        "variable": "Variable"
+      },
+      "amnioticFluid": {
+        "intact": "I (Intact)",
+        "clear": "C (Clear fluid)",
+        "meconium1": "M+ (Meconium stained fluid-Nonsignificant)",
+        "meconium2": "M++ (Meconium stained fluid-Medium)",
+        "meconium3": "M+++ (Meconium stained fluid-Thick)",
+        "bloodStained": "B (Blood stained)"
+      },
+      "fetalPosition": {
+        "anterior": "A (Occiput anterior)",
+        "posterior": "P (Occiput posterior)",
+        "transverse": "T (Occiput transverse)"
+      },
+      "caput": {
+        "none": "0 (None)",
+        "plus1": "+",
+        "plus2": "++",
+        "plus3": "+++ (Marked)"
+      },
+      "moulding": {
+        "none": "0 (None)",
+        "plus1": "+ (Sutures apposed)",
+        "plus2": "++ (Sutures overlapped but reducible)",
+        "plus3": "+++ (Sutures overlapped but not reducible)"
+      },
+      "urineProtein": {
+        "negative": "No Proteinuria (P-)",
+        "trace": "Trace of Proteinuria (P Trace)",
+        "p1": "P1+",
+        "p2": "P2+",
+        "p3": "P3+",
+        "p4": "P4+"
+      },
+      "urineAcetone": {
+        "negative": "No Acetonuria (A-)",
+        "trace": "Trace of Acetonuria (A Trace)",
+        "a1": "A1+",
+        "a2": "A2+",
+        "a3": "A3+",
+        "a4": "A4+"
+      },
+      "cervix": {
+        "5": "5",
+        "6": "6",
+        "7": "7",
+        "8": "8",
+        "9": "9",
+        "10": "10",
+        "pushing": "Pushing"
+      },
+      "descent": {
+        "0": "0",
+        "1": "1",
+        "2": "2",
+        "3": "3",
+        "4": "4",
+        "5": "5"
+      },
+      "infusionStatus": {
+        "started": "Started",
+        "continued": "Continued",
+        "stopped": "Stopped"
+      },
+      "ivFluidType": {
+        "ringerLactate": "Ringer Lactate",
+        "normalSaline": "Normal Saline",
+        "dextrose5": "Dextrose 5% (D5)",
+        "other": "Other IV Fluid*"
+      }
+    },
+    "section": {
+      "supportiveCare": "Supportive care",
+      "baby": "Baby",
+      "woman": "Woman",
+      "labourProgress": "Labour progress",
+      "medication": "Medication",
+      "sharedDecisionMaking": "Shared decision"
+    },
+    "infusion": {
+      "oxytocinStrength": "Strength (U/L)",
+      "infusionRate": "IV infusion rate (drops/minute)",
+      "infusionStatus": "IV infusion status",
+      "ivFluidType": "Type of IV fluid"
+    },
+    "outcome": {
+      "moveToStage2": "Move to Stage 2",
+      "referOtherHospital": "Refer to other Hospital",
+      "selfDischarge": "Self discharge against Medical Advice",
+      "shiftToCSection": "Shift to C-Section",
+      "referToIcu": "Refer to high dependency unit / ICU",
+      "motherDeath": "Mother Death",
+      "stage2": {
+        "stage3EarlyPostpartum": "Stage-3 & Early Postpartum",
+        "referOtherHospital": "Refer to other Hospital",
+        "selfDischarge": "Self discharge against Medical Advice",
+        "shiftToCSection": "Shift to C-Section",
+        "referToIcu": "Refer to high dependency unit / ICU",
+        "motherDeath": "Mother Death",
+        "other": "Other"
+      }
+    },
+    "validation": {
+      "baselineFhr": {
+        "outOfRange": "Please enter Baseline FHR in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "pulse": {
+        "outOfRange": "Please enter Pulse in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "systolicBp": {
+        "outOfRange": "Please enter Systolic BP in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "diastolicBp": {
+        "outOfRange": "Please enter Diastolic BP in between {{min}} and {{max}}.\nDiastolic BP should be less than Systolic BP",
+        "notBelowSystolic": "Diastolic BP must be less than Systolic BP",
+        "enterSystolicFirst": "Enter Systolic BP before Diastolic BP",
+        "notANumber": "Please enter a number"
+      },
+      "temperature": {
+        "outOfRange": "Please enter Temperature between {{min}} and {{max}} °F",
+        "notANumber": "Please enter a number"
+      },
+      "contractionDuration": {
+        "outOfRange": "Please enter Duration of contraction in between {{min}} and {{max}}",
+        "notANumber": "Please enter a number"
+      },
+      "oxytocin": {
+        "infusionIncomplete": "Please enter all Oxytocin required field\n\nOR\n\nSelect \"No\" to continue."
+      },
+      "ivFluids": {
+        "infusionIncomplete": "Please enter all IV Fluids required field\n\nOR\n\nSelect \"No\" to continue."
+      },
+      "medicine": {
+        "medicineMissing": "Please add at least 1 medicine\n\nOR\n\nSelect \"No\" to continue."
+      },
+      "oxytocinStrength": {
+        "outOfRange": "Strength must be in range of {{min}} to {{max}}"
+      },
+      "infusionRate": {
+        "outOfRange": "Infusion Rate must be in range of {{min}} to {{max}}"
+      }
+    }
+  },
+  "cardAlert": {
+    "channelName": "New observation cards",
+    "title": "Alert!",
+    "body": "Time to collect the History data!"
+  },
+  "dialog": {
+    "a11y": {
+      "close": "Close dialog"
+    }
+  },
+  "monitor": {
+    "channelName": "Labour card check",
+    "notificationTitle": "Checking labour cards",
+    "checkFailed": {
+      "channelName": "Labour card check stopped",
+      "title": "Labour cards are not being created",
+      "body": "Open eZAZI to continue monitoring, and keep \"Alarms & reminders\" allowed for eZAZI."
     }
   }
 }

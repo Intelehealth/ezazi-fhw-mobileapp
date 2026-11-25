@@ -63,6 +63,22 @@ describe('while typing, as PartogramQueryListingAdapter does', () => {
     expect(kind(checkInfusionRateOnBlur('', 'default'))).toEqual(['accept']);
   });
 
+  it('waits on text that is not a number yet, and accepts empty input', () => {
+    expect(kind(checkStrengthTyping(null, 'default'))).toEqual(['accept']);
+    expect(kind(checkStrengthTyping('1.2.3', 'default'))).toEqual(['pending']);
+    expect(kind(checkStrengthTyping('abc', 'default'))).toEqual(['pending']);
+    expect(kind(checkInfusionRateTyping(null, 'default'))).toEqual(['accept']);
+    expect(kind(checkInfusionRateTyping('5.5', 'default'))).toEqual(['pending']); // the number keyboard cannot type it
+    expect(kind(checkInfusionRateTyping('abc', 'default'))).toEqual(['pending']);
+  });
+
+  it('leaves blood pressure alone when a value is missing or not a number', () => {
+    expect(kind(checkDiastolicTyping('120', null))).toEqual(['accept']);
+    expect(kind(checkDiastolicTyping('12a', '80'))).toEqual(['accept']);
+    expect(systolicClearsDiastolic(null, '80')).toBe(false);
+    expect(systolicClearsDiastolic('8o', '90')).toBe(false);
+  });
+
   it('names the input and range in the error', () => {
     const check = checkInfusionRateTyping('61', 'default');
     expect(check.kind === 'clear' && [check.error.id, check.error.range?.min, check.error.range?.max]).toEqual([

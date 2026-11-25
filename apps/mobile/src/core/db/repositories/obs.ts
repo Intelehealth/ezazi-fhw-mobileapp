@@ -13,6 +13,7 @@ import {
 import {
   ADMISSION_CONCEPTS,
   BIRTH_OUTCOME,
+  CERVIX_PLOT_X,
   COMPLEX_IMAGE_AD,
   COMPLEX_IMAGE_PE,
   ENCOUNTER_TYPE,
@@ -20,7 +21,7 @@ import {
   OUT_OF_TIME,
   SOS_STAGE_HOUR,
 } from '../constants/obs';
-import { PROVIDER_ROLE_DOCTOR } from '../constants/literals';
+import { MISSED_ENCOUNTER_VALUE, PROVIDER_ROLE_DOCTOR } from '../constants/literals';
 import { encounter, obs, provider } from '../schema';
 import type { Obs } from '../schema';
 import { SYNC_CLEAN, SYNC_DIRTY, VOIDED_NO, VOIDED_YES } from '../syncFlags';
@@ -137,7 +138,7 @@ export function insertEncounterType(
       encounteruuid: input.encounterUuid,
       conceptuuid: ENCOUNTER_TYPE,
       value: input.value,
-      comment: '',
+      comment: null, // Android `ObsDAO.createObs` sets none
       creator: input.creator,
       creatoruuid: input.creatorUuid,
       voided: VOIDED_NO,
@@ -159,7 +160,7 @@ export function insertMissedEncounterMarker(
     {
       encounteruuid: input.encounterUuid,
       conceptuuid: MISSED_ENCOUNTER,
-      value: '-',
+      value: MISSED_ENCOUNTER_VALUE,
       comment: '',
       creator: input.creator,
       creatoruuid: input.creatorUuid,
@@ -221,6 +222,24 @@ export function update(uuid: string, patch: ObsUpdate, on: DbHandle): void {
     .run();
 }
 
+/** The columns Android's EDIT save rewrites on a card obs (`ObsDAO.updateObs`). */
+export type CardObsRewrite = Pick<ObsInput, 'value' | 'creator' | 'creatoruuid'> & {
+  comment: string | null; // the new value's own alert code
+  created_date: string;
+};
+
+/**
+ * Rewrites one card obs in place, as Android's EDIT save does (decided 2026-10-31, Kaveri): the new
+ * value together with its own alert code, unvoided and marked for sync. The only writer that changes
+ * `comment`, and only alongside the value it codes.
+ */
+export function rewriteCardObs(uuid: string, row: CardObsRewrite, on: DbHandle): void {
+  on.update(obs)
+    .set({ ...row, voided: VOIDED_NO, modified_date: utcIsoTimestamp(), sync: SYNC_DIRTY })
+    .where(eq(obs.uuid, uuid))
+    .run();
+}
+
 /**
  * Soft delete — the only kind there is. Deliberately does NOT write `comment`:
  * the legacy stamped 'Void this' into it, destroying the alert code.
@@ -266,6 +285,19 @@ export function listByEncounter(encounterUuid: string, on: DbHandle): Obs[] {
 }
 
 /**
+ * A card's live obs, newest first. Rows saved in the same second (created_date has no
+ * millis, Android's format) fall back to insert order, so the newer write still wins.
+ */
+export function listByEncounterNewestFirst(encounterUuid: string, on: DbHandle): Obs[] {
+  return on
+    .select()
+    .from(obs)
+    .where(and(eq(obs.encounteruuid, encounterUuid), notVoided))
+    .orderBy(desc(obs.created_date), desc(sql`rowid`))
+    .all();
+}
+
+/**
  * Nurse/HW-authored rows only. NOT EXISTS rather than the legacy's
  * `creatoruuid NOT IN (SELECT useruuid ...)`, which returns NOTHING AT ALL as
  * soon as one doctor row has a null `useruuid`. Side effect of the fix: an obs
@@ -292,7 +324,8 @@ export function listByEncounterExcludingDoctors(
         ),
       ),
     )
-    .orderBy(desc(obs.created_date))
+    // Same second (no millis, Android's format): insert order, as listByEncounterNewestFirst.
+    .orderBy(desc(obs.created_date), desc(sql`rowid`))
     .all();
 }
 
@@ -526,25 +559,6 @@ export function listByEncounterAndConcepts(
     .all();
 }
 
-/**
- * The weighted alert score: 'R' scores 2, 'Y' scores 1, anything else 0.
- * A SUM, not the count its legacy name promises. No voided filter, so a voided
- * obs still contributes — preserved deliberately.
- */
-export function getEncounterAlertScore(encounterUuid: string, on: DbHandle): number {
-  const row = on
-    .select({
-      total: sql<
-        number | null
-      >`sum(case when ${obs.comment} = 'R' then 2 when ${obs.comment} = 'Y' then 1 else 0 end)`,
-    })
-    .from(obs)
-    .where(eq(obs.encounteruuid, encounterUuid))
-    .get();
-
-  return row?.total ?? 0;
-}
-
 /** One check for both legacy variants; they differed only in the concept uuid. */
 export function existsByEncounterConceptValue(
   encounterUuid: string,
@@ -735,7 +749,7 @@ export function getLatestObsByVisitAndConcepts(
           ))
         )
       END
-    ORDER BY e.encounter_time DESC, o.created_date DESC
+    ORDER BY e.encounter_time DESC, o.created_date DESC, o.rowid DESC
   `);
 
   const latest = new Map<string, RiskObs>();
@@ -748,4 +762,33 @@ export function getLatestObsByVisitAndConcepts(
   }
 
   return [...latest.values()];
+}
+
+/** One stored Cervix value with its card's time, for the package's `computeVisitRisk`. */
+export interface CervixRow {
+  value: string;
+  encounterTime: string;
+}
+
+/**
+ * A visit's Cervix values, oldest card first (Android `getCervixObsByVisit`): obs and encounter
+ * not voided, alert code and value not blank. The risk score itself lives in `@ezazi/clinical-rules`.
+ */
+export function listCervixReadingsByVisit(visitUuid: string, on: DbHandle): CervixRow[] {
+  return on
+    .select({ value: obs.value, comment: obs.comment, encounterTime: encounter.encounter_time })
+    .from(obs)
+    .innerJoin(encounter, eq(obs.encounteruuid, encounter.uuid))
+    .where(
+      and(
+        eq(encounter.visituuid, visitUuid),
+        eq(obs.voided, VOIDED_NO),
+        eq(encounter.voided, VOIDED_NO),
+        eq(obs.conceptuuid, CERVIX_PLOT_X),
+      ),
+    )
+    .orderBy(encounter.encounter_time)
+    .all()
+    .filter((row) => filled(row.comment) && filled(row.value))
+    .map((row) => ({ value: row.value ?? '', encounterTime: row.encounterTime ?? '' }));
 }

@@ -17,7 +17,7 @@ export const encounter = sqliteTable('tbl_encounter', {
   index('idx_tbl_encounter_sync').on(table.sync),
 ]);
 
-// `comment` is an alert flag ('R', 'Y', ''), not a note — it feeds the risk score.
+// `comment` is an alert code ('R', 'G', ''), not a note — it feeds the risk score.
 export const obs = sqliteTable('tbl_obs', {
   uuid: text('uuid').primaryKey(),
   encounteruuid: text('encounteruuid'),

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
@@ -27,9 +27,9 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   const { bottom: bottomInset } = useSafeAreaInsets();
 
   const gutters = {
-    paddingHorizontal: isTablet ? scale(30) : 20,
-    paddingTop:        isTablet ? scale(26) : 20,
-    paddingBottom:     (isTablet ? scale(32) : 24) + bottomInset,
+    paddingHorizontal: isTablet ? scale(30) : dimens.screenLayoutHPad,
+    paddingTop:        isTablet ? scale(26) : dimens.screenLayoutTop,
+    paddingBottom:     (isTablet ? scale(32) : spacing.lg) + bottomInset,
   };
 
   if (!scroll) {

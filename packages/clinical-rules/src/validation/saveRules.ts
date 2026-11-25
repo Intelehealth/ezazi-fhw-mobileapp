@@ -67,15 +67,15 @@ function infusionCheck(
 
 /** `ParamInfo.isValidMedicine`: after Yes, at least one medicine. */
 const medicineCheck: SaveCheck = (input) => {
-  const answer = input.medicine;
+  const answer = input[FIELD_ID.MEDICINE];
   if (answer?.answer !== 'yes' || answer.medicines.length > 0) return null;
   return validationError(FIELD_ID.MEDICINE, 'medicineMissing');
 };
 
 // Android's order (`saveObs` 711-733). Contractions per 10 min has no Save check.
 const SAVE_CHECKS: readonly SaveCheck[] = [
-  infusionCheck(FIELD_ID.OXYTOCIN, (input) => input.oxytocin, 'strength'),
-  infusionCheck(FIELD_ID.IV_FLUIDS, (input) => input.ivFluids, 'type'),
+  infusionCheck(FIELD_ID.OXYTOCIN, (input) => input[FIELD_ID.OXYTOCIN], 'strength'),
+  infusionCheck(FIELD_ID.IV_FLUIDS, (input) => input[FIELD_ID.IV_FLUIDS], 'type'),
   medicineCheck,
   rangeCheck(FIELD_ID.BASELINE_FHR, parseDecimal),
   rangeCheck(FIELD_ID.PULSE, parseDecimal),

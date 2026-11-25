@@ -34,3 +34,18 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('react-native-safe-area-context', () =>
   require('react-native-safe-area-context/jest/mock').default,
 );
+
+// react-native-pager-view is a native view; under Node it renders its pages in a plain View
+// and records setPage calls, so TabPager tests can assert on both.
+jest.mock('react-native-pager-view', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const PagerView = React.forwardRef(({ children, onPageSelected, ...props }, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      setPage: (position) => PagerView.setPageCalls.push(position),
+    }));
+    return React.createElement(View, { ...props, testID: 'pager-view', onPageSelected }, children);
+  });
+  PagerView.setPageCalls = [];
+  return { __esModule: true, default: PagerView };
+});

@@ -152,10 +152,18 @@ web-build/
 qa-videos/
 
 # Native iOS / Android build output (Expo prebuild)
-ios/
-android/
-!ios/.gitkeep
-!android/.gitkeep
+# 2026-11-06 Kaveri: `ios/` and `android/` also matched modules/card-alarm/android (hand-written Kotlin
+# source of a local Expo module), so they are anchored to this folder now. Previous lines:
+# ios/
+# android/
+# !ios/.gitkeep
+# !android/.gitkeep
+/ios/
+/android/
+!/ios/.gitkeep
+!/android/.gitkeep
+# A local module's own Gradle output.
+modules/*/android/build/
 
 # Metro / Babel cache
 .metro-health-check*

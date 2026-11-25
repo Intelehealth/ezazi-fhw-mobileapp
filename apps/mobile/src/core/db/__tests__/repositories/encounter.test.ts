@@ -12,6 +12,7 @@ import {
 import {
   existsByVisitAndType,
   findAll,
+  findByUuid,
   findByVisit,
   findCurrentStageName,
   findLatestClinicalByVisit,
@@ -22,6 +23,7 @@ import {
   findUuidByVisitAndType,
   findVisitCompleteUuid,
   insertAdmission,
+  insertCard,
   insertDeliveryOutcomeStage3,
   insertManyReplacing,
   insertSos,
@@ -154,6 +156,30 @@ describe('encounter repository', () => {
       });
     });
 
+    it('creates a timeline card from its name, unsynced, and refuses an unknown name', () => {
+      const card = {
+        uuid: 'k1',
+        visitUuid: VISIT,
+        cardName: 'Stage1_Hour1_1',
+        encounterTime: '2026-10-26 10:00:00',
+        providerUuid: 'prov-1',
+        privacyNoticeValue: null,
+      };
+      insertCard(card, db);
+
+      expect(row('k1')).toMatchObject({
+        visituuid: VISIT,
+        encounter_type_uuid: STAGE1_HOUR1_1,
+        encounter_time: '2026-10-26 10:00:00',
+        provider_uuid: 'prov-1',
+        privacynotice_value: null,
+        voided: 0,
+        sync: SYNC_DIRTY,
+      });
+      expect(() => insertCard({ ...card, uuid: 'k2', cardName: 'Stage9_Hour1_1' }, db)).toThrow('Stage9_Hour1_1');
+      expect(row('k2')).toBeUndefined();
+    });
+
     it('marks a visit complete', () => {
       insertVisitComplete(
         { uuid: 'c1', visitUuid: VISIT, providerUuid: 'dr-1', encounterTime: '2026-01-01' },
@@ -228,6 +254,15 @@ describe('encounter repository', () => {
       insertSos({ uuid: 's2', visituuid: VISIT, encounter_time: '2026-06-01' }, db);
 
       expect(findLatestSosByVisit(VISIT, db)?.uuid).toBe('s2');
+    });
+
+    it('finds one encounter by uuid, but not a voided one', () => {
+      insertSos({ uuid: 's1', visituuid: VISIT, encounter_time: '2026-01-01' }, db);
+      upsert({ uuid: 'v1', visituuid: VISIT, encounter_type_uuid: ENCOUNTER_VITALS, voided: VOIDED_YES }, db);
+
+      expect(findByUuid('s1', db)?.encounter_type_uuid).toBe(LCG_SOS);
+      expect(findByUuid('v1', db)).toBeNull();
+      expect(findByUuid('missing', db)).toBeNull();
     });
   });
 

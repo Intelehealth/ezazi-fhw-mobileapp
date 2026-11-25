@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { addDatabaseChangeListener, openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { getTableName, type Table } from 'drizzle-orm';
 
 import { schemaRelations } from './relations';
 import { schema } from './schema';
@@ -42,6 +43,30 @@ export function getDb(): ReturnType<typeof createOrm> {
 export function getRawDb(): SQLiteDatabase {
   if (!rawHandle) getDb();
   return rawHandle as SQLiteDatabase;
+}
+
+// expo-sqlite reports each changed row on its own; one card save changes ~20 rows. Changes this
+// close together are answered with a single call.
+const TABLE_CHANGE_COALESCE_MS = 50;
+
+/**
+ * Calls `listener` once after a burst of writes to any of `tables`; returns the unsubscribe, which
+ * also drops a pending call. For reads outside `useLiveQuery`.
+ */
+export function onTablesChanged(tables: readonly Table[], listener: () => void): () => void {
+  const names = new Set(tables.map((table) => getTableName(table)));
+  let pending: ReturnType<typeof setTimeout> | null = null;
+  const subscription = addDatabaseChangeListener((event) => {
+    if (!names.has(event.tableName) || pending) return;
+    pending = setTimeout(() => {
+      pending = null;
+      listener();
+    }, TABLE_CHANGE_COALESCE_MS);
+  });
+  return () => {
+    if (pending) clearTimeout(pending);
+    subscription.remove();
+  };
 }
 
 /** Whether the database has actually been opened in this process. */

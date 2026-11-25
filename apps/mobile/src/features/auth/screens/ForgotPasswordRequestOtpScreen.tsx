@@ -20,10 +20,11 @@ import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { commonStyles } from '@/core/ui/commonStyles';
 import { clientConfig } from '@/core/config/clients';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, fontSizes, letterSpacing, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { logger } from '@/core/utils/logger';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
+import { AUTH_TEST_IDS } from '../testIds';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPasswordRequest'>;
 
@@ -109,6 +110,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
           title={t('forgotPassword.request.heading')}
           subtitle={t('forgotPassword.request.instruction')}
           onBack={() => navigation.goBack()}
+          backTestID={AUTH_TEST_IDS.forgotRequest.back}
           firstFieldY={phoneRowY}
         />
       }
@@ -139,7 +141,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
             {clientConfig.phone.dialCode}
           </Text>
           <View style={styles.countryChevron}>
-            <AppIcon name="chevronDown" size={16} color={colors.darkGray} />
+            <AppIcon name="chevronDown" size={dimens.countryChevronIcon} color={colors.darkGray} />
           </View>
         </View>
 
@@ -158,6 +160,7 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
                 <TextInput
                   style={[styles.phoneInput, { fontSize: fs('input') }]}
                   placeholder={t('forgotPassword.request.phonePlaceholder')}
+                  testID={AUTH_TEST_IDS.forgotRequest.phone}
                   placeholderTextColor={colors.placeholder}
                   value={value}
                   onChangeText={(text) => {
@@ -182,10 +185,11 @@ export const ForgotPasswordRequestOtpScreen: React.FC<Props> = ({ navigation, ro
       </View>
 
       {/* ── API error banner — network/server failures from requestOtp ── */}
-      {!!banner && <ApiErrorBanner banner={banner} />}
+      {!!banner && <ApiErrorBanner banner={banner} testID={AUTH_TEST_IDS.forgotRequest.errorBanner} />}
 
       <AppButton
         label={t('forgotPassword.request.submit')}
+        testID={AUTH_TEST_IDS.forgotRequest.submit}
         onPress={handleContinue}
         disabled={!isFormValid || isSubmitting}
         style={styles.button}
@@ -199,25 +203,25 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
 
   content: {
-    paddingTop: 40,
+    paddingTop: dimens.forgotPasswordContentTop,
   },
 
   fieldLabel: {
     color: colors.fieldLabel,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: letterSpacing.caps,
     marginBottom: dimens.labelGap,
   },
 
   phoneRow: {
     flexDirection: 'row',
     alignItems:    'stretch',
-    gap:           16,
+    gap:           spacing.md,
   },
 
   button: {
-    marginTop: 48,
+    marginTop: spacing.xxl,
   },
 
   countryCard: {
@@ -225,13 +229,13 @@ const styles = StyleSheet.create({
     alignItems:        'center',
     justifyContent:    'center',
     backgroundColor:   colors.inputBg,
-    paddingHorizontal: 10,
+    paddingHorizontal: dimens.countryCardHPad,
     height:            dimens.inputHeight,
   },
 
   flag: {
-    fontSize:    20,
-    marginRight: 4,
+    fontSize:    fontSizes.countryFlag.phone,
+    marginRight: spacing.xs,
   },
 
   countryCode: {
@@ -240,7 +244,7 @@ const styles = StyleSheet.create({
   },
 
   countryChevron: {
-    marginLeft: 2,
+    marginLeft: dimens.countryChevronGap,
   },
 
   phoneInputWrapper: {
@@ -250,7 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor:   colors.white,
     minHeight:         dimens.inputHeight,
     justifyContent:    'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: dimens.inputHPad,
   },
 
   phoneInputError: {
@@ -264,6 +268,6 @@ const styles = StyleSheet.create({
   },
 
   errorText: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
 });

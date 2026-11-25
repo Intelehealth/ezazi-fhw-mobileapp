@@ -82,6 +82,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { accessToken, refreshToken, sessionId, user, provider } = result.data;
       await secureStorage.set('accessToken', accessToken);
       await secureStorage.set('refreshToken', refreshToken);
+      // Obs creator (decided 2026-10-23, B2): the user uuid, as Android; cleared with the rest on logout.
+      await secureStorage.set('creatorUuid', user.uuid);
       // provider.uuid (not the auth-gateway's own user.uuid) — matches Android's ProviderDAO
       // identity and the offline DB schema's creatoruuid/provideruuid record-attribution fields.
       // No role is stored: Android doesn't persist one from login either.

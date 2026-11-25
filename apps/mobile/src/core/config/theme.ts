@@ -126,6 +126,7 @@ const palette = {
   dialogTextStrong: '#222222', // PermissionDeniedDialog permission label
   dialogTextMuted: '#666666', // PermissionDeniedDialog reason / outline button
   dialogOverlay: 'rgba(0,0,0,0.55)',
+  progressScrim: 'rgba(255, 255, 255, 0.6)', // ApiProgressOverlay full-screen scrim
   hintGray: '#9B97AA', // Figma-verified — input hint text + field icons (Setup screen, 2026-09-15)
   secondaryTextFigma: '#4A4665', // Figma "--Secondary-text" — LOCATION/USERNAME/PASSWORD field labels
   alertFigma: '#D4154A', // Figma "--Alert" — network-error banner circle + title (Ezazi Developer File, 2026-09-22)
@@ -136,6 +137,67 @@ const palette = {
   buttonSecondaryBorderFigma: '#D5D7DA', // Figma Component 1 / "secondary button" stroke
   buttonSecondaryTextFigma: '#414651', // Figma "Gray/700" — secondary button label
   appBarBorder: '#F3F4F4', // BrandAppBar bottom hairline (Privacy Notice design)
+
+  // ── Timeline, Figma Observation flow "First Iteration" (251:364), 2026-10-26 ──
+  // Header values are Figma variables; the rest were read off the frame's render.
+  primaryTextDarkFigma: '#171334', // patient name, close icon
+  headerDividerFigma: '#F1EFFA', // header bottom border, action-bar top border
+  headerPillBg: '#F8F7FE', // View LCG / Postpartum Report
+  timelineBg: '#FCFCFC',
+  timelineAccent: '#460092', // completed dot, Due Now chip text
+  timelineRail: '#EAE4F2',
+  timelineBody: '#6F6381', // card body text
+  timelineCompletedBg: '#F1FAF5',
+  timelineCompletedBorder: '#DCF3E9',
+  timelineCompletedChipBg: '#CEFFEC',
+  timelineCompletedChipText: '#00A04B',
+  timelineMissedBorder: '#FF71A3',
+  timelineMissedDot: '#F50060',
+  timelineMissedChipBg: '#FFE7EF',
+  timelineMissedChipText: '#F0004A',
+  timelineDueBg: '#F9F6FE',
+  timelineDueBorder: '#9D7CC8',
+  timelineDueDot: '#885FBC',
+  timelineDueChipBg: '#EFE1FF',
+  timelineUpcomingBorder: '#ECE3F5',
+  timelineUpcomingDot: '#E8DEF3',
+  timelineUpcomingDotFill: '#F6F2F9',
+  timelineUpcomingChipBg: '#EFEFEF',
+  timelineActionBorder: '#EAE4F2',
+  timelineActionText: '#1E023B',
+  timelineSos: '#F0004A',
+
+  // ── ConfirmDialog, Figma "Modal" frames (Capture SOS, Save & Exit), 2026-10-26 ──
+  // Read off the frames' renders; the modal frames were not readable through Figma (rate limit).
+  dialogDangerBg: '#FFEAF0',
+  dialogWarningBg: '#FFF0E5',
+  // The badge's four 1px rings, innermost first: near-white greys fading outwards.
+  dialogRing1: '#F7F7F8',
+  dialogRing2: '#F8F9F9',
+  dialogRing3: '#FAFAFA',
+  dialogRing4: '#FCFCFC',
+  dialogWarningIcon: '#F2771A',
+  dialogNoteBg: '#F5F1FF',
+  dialogNoteBorder: '#CDBDF5',
+  dialogCloseIcon: '#A4A1B5',
+  // Success tone (Figma "Successful" modal): mint badge, green check-circle, as the password-reset dialog drew them.
+  dialogSuccessBg: '#CDFFE6',
+  dialogSuccessIcon: '#00A254',
+
+  // ── Capture controls, Figma Observation flow tabs (251:556), 2026-10-28 ──
+  // Read off Kaveri's frame screenshots (rate limit). Alert has no frame yet: provisional, the
+  // Missed-chip pink (decided 2026-10-26). Error: Figma "Record 24/25" (2026-10-29).
+  controlSelectedBg: '#F3EAFF',
+  controlSelectedBorder: '#9D7CC8',
+  controlSelectedText: '#460092',
+  controlAlertBg: '#FFE7EF',
+  controlAlertBorder: '#FF71A3',
+  controlAlertText: '#F0004A',
+  controlDisabledBg: '#F5F4F8',
+  controlErrorBorder: '#FF71A3',
+  controlErrorText: '#FB0077',
+  tabUnselectedText: '#9B97AA',
+  tabIndicator: '#460092',
 } as const;
 
 export const colors = {
@@ -147,6 +209,10 @@ export const colors = {
   primaryDark: clientConfig.theme.primaryDark,
   secondary: clientConfig.theme.secondary,
   onPrimary: palette.white,
+  // Figma "Main CTA" fill (Next, Record Now, End First Stage; file 8kkAB3TRzBFY2mSRJzkTiy, 251:709 / 251:555):
+  // left to right. Android draws these buttons flat in colorPrimary.
+  ctaGradientStart: '#2E1E91',
+  ctaGradientEnd: '#3922CF',
   black: palette.colorBlack,
   error: palette.error_red,
   // Network-error banner only (core/ui/ApiErrorBanner) — a separate, exact
@@ -182,6 +248,7 @@ export const dimens = {
   screenHPad: 28, // forgot_password_screen_padding
   inputHeight: 60, // input_height (text fields only — see buttonHeight for AppButton)
   buttonHeight: { phone: 60, tablet: 64 }, // AppButton — flat per phone/tablet, not run through useResponsive().scale()
+  compactButtonHeight: 40, // AppButton size 'compact' on phone; tablet follows its Figma frame
   otpCellHeight: { phone: 52, tablet: 64 }, // OtpInput — single-digit boxes, scaled via useResponsive().scale() on tablet
   // input_box_corner_radius — inputs and buttons, via useResponsive().cornerRadius
   cornerRadius: { phone: 8, tablet: 12 },
@@ -189,6 +256,127 @@ export const dimens = {
   labelGap: 6, // gap between label and its input
   fieldGap: 20, // vertical gap between form fields
   timelineDotSize: { phone: 28, tablet: 34 }, // TimelineCheckpointCard — checkpoint circle
+  headerNavButton: 40, // PatientHeader back / close on phone; tablet follows Figma 251:565
+  headerNavIcon: 24, // icon inside it
+  // Capture controls on phone; tablet follows the Figma tab frames via fromFigma
+  controlHeight: 44, // segmented button, number chip, picker field, stepper box
+  controlMinWidth: 72, // segmented button
+  tabIndicator: 2, // selected tab underline
+  // Labour screens, phone values (tablet sizes come from their Figma frames through fromFigma):
+  timelineDateColumn: 76, // TimelineCheckpointCard date column
+  timelineRailLine: 2, // the line joining checkpoint circles
+  timelineDotBorder: 1.5, // checkpoint circle border
+  timelineChipHeight: 22, // status chip
+  timelineSosBadgeHeight: 26, // SOS badge
+  timelineSosIcon: 14, // icon in the SOS badge
+  timelineLockBadge: 30, // lock badge on an upcoming card
+  actionBarIcon: 18, // TimelineActionBar and CaptureActionBar icons
+  actionBarPillHeight: 48, // CaptureActionBar pill
+  patientPillIcon: 16, // PatientHeader pill icon
+  headerCloseIcon: 26, // PatientHeader close glyph
+  stageProgressHeight: 4, // StageProgressBar segment
+  dialogMaxWidth: 400, // End Stage dialogs
+  dialogCloseIcon: 20, // a dialog's close glyph
+  confirmDialogBadge: 40, // ConfirmDialog tone badge, phone
+  confirmDialogMaxWidth: 360, // ConfirmDialog card, phone
+  confirmDialogPadding: 20, // ConfirmDialog card padding, phone
+  dialogNoteIcon: 16, // the info icon in a dialog note, phone
+
+  // Shared core/ui and sign-in sizes. Where a component has a tablet size, it is set in place through scale().
+  statusBarFallback: 24, // BrandAppBar, ScreenHeader, ForgotPasswordHeader: status bar height when Android reports none
+  inputHPad: 14, // AppTextField row and the phone-number box: inner horizontal padding
+  inputSlotGap: 10, // AppTextField: gap after the left icon
+  fieldIcon: 20, // the icon in a sign-in field: person, lock, location pin, chevron
+  instructionLineHeight: 20, // commonStyles.instruction
+  multilineInputMinHeight: 110, // ControlTextInput multiline (reason / comment boxes)
+  // ApiErrorBanner
+  errorBannerPadding: 12,
+  errorBannerMarginTop: 20, // both variants
+  errorBannerIcon: 20, // the "!" circle
+  errorBannerIconGap: 10, // "!" circle to text
+  errorBannerGlyphLineHeight: 15, // the "!"
+  errorBannerMessageGap: 2, // title to message, both variants
+  networkBannerPadding: 14, // network variant: padding and icon-to-text gap
+  networkBannerIcon: 44, // network variant: red circle
+  networkBannerGlyph: 20, // network variant: icon in the circle
+  // AppButton
+  buttonArrowIcon: 24, // "next" arrow, phone
+  buttonChevronGrowth: 4, // the chevron is this much larger than the label
+  // BrandAppBar, phone
+  appBarHeight: 52,
+  appBarLogoHeight: 24,
+  appBarTextLineHeight: 14, // "Last Refreshed" lines
+  appBarMenuIcon: 22,
+  appBarHPad: 20,
+  // ScreenHeader, phone
+  screenHeaderButton: 42, // back button
+  screenHeaderIcon: 18, // arrow in the back button
+  screenHeaderHeight: 56,
+  screenHeaderHPad: 12,
+  screenHeaderGap: 14, // back button to title
+  // ScreenLayout gutters, phone
+  screenLayoutHPad: 20,
+  screenLayoutTop: 20,
+  // Login and Setup (authFormScreen.styles), phone
+  authFormHPad: 30, // content horizontal padding, phone and tablet
+  authContentTop: 130, // content top padding
+  authLogoHeight: 32, // client wordmark; ForgotPasswordHeader too
+  authHeadingTop: 10, // heading under the wordmark; ForgotPasswordHeader too
+  authSubtitleTop: 6, // subtitle under the heading
+  authFirstFieldTop: 28, // first field label under the subtitle
+  authForgotTop: 10, // "Forgot password?" row under the password field
+  authIllustrationHeight: 104, // setup illustration over the first field
+  authIllustrationRight: 14, // its inset from the content's right edge
+  // ForgotPasswordHeader, phone
+  forgotHeaderBackButton: 36,
+  forgotHeaderBackIcon: 20,
+  forgotHeaderTitleTop: 108, // logo/heading block under the back button
+  forgotHeaderShieldHeight: 78,
+  forgotHeaderShieldTop: 74, // shield position until the first field is measured
+  forgotHeaderShieldGap: 12, // room between the text and the shield
+  // Forgot Password screens (request, verify, reset)
+  forgotPasswordContentTop: 40, // content top padding, all three screens
+  countryCardHPad: 10, // request: country code box, phone
+  countryChevronIcon: 16, // request: chevron in the country code box
+  countryChevronGap: 2, // request: dial code to chevron
+  otpMessageTop: 6, // verify: error / "verified" line under the OTP cells
+  otpResendTop: 20, // verify: "Didn't receive it? Resend" row
+  otpCellBorder: 1.5, // OtpInput cell
+  otpCellActiveBorder: 2, // OtpInput cell with the cursor
+  passwordToggleIcon: 22, // PasswordField eye icon
+  requirementsCardHPad: 14, // reset: password requirements card
+  requirementsCardVPad: 12,
+  requirementsCardTop: 12,
+  requirementsCardBottom: 20,
+  requirementsRowGap: 6, // between the two rows
+  requirementsColumnGap: 12, // between the two columns
+  // LocationPickerModal
+  locationDropdownMaxHeight: 260,
+  locationDropdownGap: 6, // field bottom to dropdown
+  locationStatePad: 20, // loading / empty state vertical padding
+  locationRowPad: 14, // option row padding
+  // PrivacyNoticeScreen, phone
+  privacyBackButton: 36,
+  privacyBackIcon: 18,
+  privacyTitleGap: 12, // back button to title
+  privacyBodyLineHeight: 18, // section heading and body lines
+  privacySectionPad: 12, // section vertical padding
+  privacyHeadingGap: 2, // section heading to body
+  privacyBlockGap: 20, // between the title, the sections, the consent card and Accept
+  privacyConsentPad: 12, // consent card padding
+  privacyConsentGap: 12, // checkbox to consent text
+  privacyCheckbox: 20,
+  privacyCheckboxBorder: 1.5,
+  privacyCheckboxTop: 2, // checkbox nudge to the first text line
+  privacyCheckIcon: 14,
+  // SplashScreen, phone
+  splashWordmarkWidth: 140,
+  splashWordmarkHeight: 60,
+  splashIllustrationHeight: 230,
+  splashTaglineLineHeight: 15,
+  splashTaglineTop: 12, // tagline under the wordmark
+  splashDividerLine: 32, // each line beside the heart
+  splashHeartIcon: 12, // heart between the divider lines, phone and tablet
 } as const;
 
 export const spacing = {
@@ -205,6 +393,13 @@ export const radii = {
   md: 8,
   lg: 16,
   pill: 999,
+  progressBar: 3, // StageProgressBar segment
+  chip: 6, // Timeline status chip and SOS badge
+  card: 12, // Timeline card, action-bar pills, patient pill
+  networkBanner: 14, // ApiErrorBanner network variant
+  headerBackButton: 12, // ScreenHeader back button, phone
+  forgotHeaderBackButton: 10, // ForgotPasswordHeader back button, phone
+  consentCard: 10, // PrivacyNoticeScreen consent card, phone
 } as const;
 
 // Responsive font sizes — phone / tablet (sw600dp) pairs, mirrors Android dimens.
@@ -226,6 +421,43 @@ export const fontSizes = {
   timelineCardLabel: { phone: 11, tablet: 13 }, // "COMPLETED" / "MISSED" / "DUE NOW" / "UPCOMING" badge
   timelineCardBody: { phone: 13, tablet: 15 }, // checkpoint card description line
   timelineActionLabel: { phone: 11, tablet: 13 }, // SOS / Chat / Video Call / Rx captions
+  compactButton: { phone: 14, tablet: 14 }, // AppButton size 'compact' ("Record Now")
+
+  // CardCaptureScreen title (Figma 251:581); tablet follows the frame via fromFigma
+  captureKicker: { phone: 10, tablet: 13 }, // "SCHEDULED OBSERVATION · STAGE 1"
+  captureTitle: { phone: 18, tablet: 24 }, // "Observation 9:30 AM"
+
+  // Capture controls (Figma 251:556); tablet follows the frame via fromFigma
+  controlLabel: { phone: 11, tablet: 13 }, // "COMPANION?" field caption
+  controlText: { phone: 14, tablet: 16 }, // option, chip, stepper and picker text
+  tabLabel: { phone: 12, tablet: 14 }, // "Supportive care"
+  dialogTitle: { phone: 18, tablet: 18 }, // End Stage dialog title
+  confirmTitle: { phone: 18, tablet: 20 }, // ConfirmDialog title
+  confirmMessage: { phone: 14, tablet: 14 }, // ConfirmDialog message
+  confirmNote: { phone: 13, tablet: 13 }, // ConfirmDialog note
+  // Phone sizes; on tablets the screen sets these from the Figma frame (fromFigma).
+  patientName: { phone: 20, tablet: 20 }, // PatientHeader name
+  timelineStageHeading: { phone: 20, tablet: 20 }, // "STAGE 1" heading over the cards
+  // Phone sizes; on tablets the component sets these in place through scale().
+  appBarRefreshed: { phone: 11, tablet: 11 }, // BrandAppBar "Last Refreshed" lines
+  screenHeaderTitle: { phone: 18, tablet: 18 }, // ScreenHeader title
+  otpDigit: { phone: 20, tablet: 20 }, // OtpInput digit
+  privacyTitle: { phone: 21, tablet: 21 }, // PrivacyNoticeScreen title
+  privacyHeading: { phone: 13, tablet: 13 }, // PrivacyNoticeScreen section heading
+  privacyBody: { phone: 12, tablet: 12 }, // PrivacyNoticeScreen body and bullets
+  privacyConsent: { phone: 13, tablet: 13 }, // PrivacyNoticeScreen consent text
+  splashTagline: { phone: 11, tablet: 11 }, // SplashScreen tagline
+  // Fixed sizes, the same on every device (read as .phone in a StyleSheet).
+  errorBannerGlyph: { phone: 13, tablet: 13 }, // ApiErrorBanner "!"
+  countryFlag: { phone: 20, tablet: 20 }, // ForgotPasswordRequestOtpScreen flag emoji
+  locationOption: { phone: 15, tablet: 15 }, // LocationPickerModal option text
+  splashLoading: { phone: 12, tablet: 12 }, // SplashScreen "Loading …" text
+} as const;
+
+export const letterSpacing = {
+  caps: 0.5, // capitalised labels: kickers, chips, section labels
+  button: 0.5, // AppButton label
+  splashTagline: 1.2, // SplashScreen tagline
 } as const;
 
 export const typography = {
@@ -238,5 +470,5 @@ export const typography = {
   button: { fontSize: 16, fontWeight: '600' as const },
 } as const;
 
-export const theme = { colors, dimens, spacing, radii, fontSizes, typography };
+export const theme = { colors, dimens, spacing, radii, fontSizes, letterSpacing, typography };
 export type Theme = typeof theme;

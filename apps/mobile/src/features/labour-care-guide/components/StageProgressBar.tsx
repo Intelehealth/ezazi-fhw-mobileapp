@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@/core/ui/Text';
-import { colors, spacing } from '@/core/config/theme';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { LABOUR_STAGES, type LabourStage } from '../domain/timeline.types';
 
@@ -10,14 +10,14 @@ interface StageProgressBarProps {
   activeStage: LabourStage;
 }
 
-/** Four-segment stepper across the top of TimelineScreen — current stage highlighted. */
+/** Four-segment stepper across the top of TimelineScreen — current stage highlighted (Figma 296:812). */
 export const StageProgressBar: React.FC<StageProgressBarProps> = ({ activeStage }) => {
   const { t } = useTranslation();
-  const { fs } = useResponsive();
+  const { isTablet, fs, fromFigma } = useResponsive();
   const activeIndex = LABOUR_STAGES.indexOf(activeStage);
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, isTablet && { gap: fromFigma(24) }]}>
       {LABOUR_STAGES.map((stage, index) => {
         const isActive = index === activeIndex;
         const isDone = index < activeIndex;
@@ -27,13 +27,13 @@ export const StageProgressBar: React.FC<StageProgressBarProps> = ({ activeStage 
             <View
               style={[
                 styles.bar,
-                { backgroundColor: isDone || isActive ? colors.primary : colors.border },
+                isTablet && { height: fromFigma(5), marginBottom: fromFigma(12) },
+                { backgroundColor: isDone || isActive ? colors.primary : colors.borderFigma },
               ]}
             />
             <Text
               style={[
-                styles.label,
-                { fontSize: fs('timelineStageLabel') },
+                { fontSize: isTablet ? fromFigma(16) : fs('timelineStageLabel') },
                 isActive ? styles.labelActive : styles.labelInactive,
               ]}
               numberOfLines={1}
@@ -56,17 +56,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bar: {
-    height: 4,
-    borderRadius: 2,
+    height: dimens.stageProgressHeight,
+    borderRadius: radii.progressBar,
     marginBottom: spacing.xs,
   },
-  label: {
-    fontWeight: '600',
-  },
   labelActive: {
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: colors.primaryTextFigma,
   },
   labelInactive: {
-    color: colors.textDisabled,
+    color: colors.secondaryTextFigma,
   },
 });

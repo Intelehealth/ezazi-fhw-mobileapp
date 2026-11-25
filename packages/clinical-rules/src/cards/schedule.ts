@@ -1,6 +1,7 @@
 import { STAGE } from '../constants';
 import { formatCardName } from './cardName';
 import type { CardDefinition, MonitoringStage } from './types';
+import { deepFreeze } from '../internal/deepFreeze';
 
 /**
  * Stage 1 and Stage 2 card sequences (`CardGenerationEngine.getNextEncounterTypeName` and
@@ -15,7 +16,7 @@ export interface UniformStageSchedule {
 }
 
 /** Stage 1: 15 hours, a card every 30 minutes, 30 cards. */
-export const STAGE1_SCHEDULE: UniformStageSchedule = Object.freeze({
+export const STAGE1_SCHEDULE: UniformStageSchedule = deepFreeze({
   stage: STAGE.STAGE1,
   hours: 15,
   cardsPerHour: 2,
@@ -23,7 +24,7 @@ export const STAGE1_SCHEDULE: UniformStageSchedule = Object.freeze({
 });
 
 /** Stage 2: 5 hours, a card every 15 minutes, 20 cards. */
-export const STAGE2_SCHEDULE: UniformStageSchedule = Object.freeze({
+export const STAGE2_SCHEDULE: UniformStageSchedule = deepFreeze({
   stage: STAGE.STAGE2,
   hours: 5,
   cardsPerHour: 4,
@@ -38,7 +39,7 @@ function buildUniformCards(schedule: UniformStageSchedule): readonly CardDefinit
     const hour = Math.floor(position / schedule.cardsPerHour) + 1;
     const slot = (position % schedule.cardsPerHour) + 1;
     cards.push(
-      Object.freeze({
+      deepFreeze({
         name: formatCardName(schedule.stage, hour, slot),
         stage: schedule.stage,
         hour,
@@ -51,15 +52,15 @@ function buildUniformCards(schedule: UniformStageSchedule): readonly CardDefinit
     );
   }
 
-  return Object.freeze(cards);
+  return deepFreeze(cards);
 }
 
 export const STAGE1_CARDS = buildUniformCards(STAGE1_SCHEDULE);
 export const STAGE2_CARDS = buildUniformCards(STAGE2_SCHEDULE);
 
 const CARDS_BY_STAGE: Readonly<Record<MonitoringStage, readonly CardDefinition[]>> = {
-  stage1: STAGE1_CARDS,
-  stage2: STAGE2_CARDS,
+  [STAGE.STAGE1]: STAGE1_CARDS,
+  [STAGE.STAGE2]: STAGE2_CARDS,
 };
 
 const CARDS_BY_NAME: ReadonlyMap<string, CardDefinition> = new Map(

@@ -1,86 +1,101 @@
-import { renderHook, waitFor, act } from '@testing-library/react-native';
+import '@/core/i18n';
+import { act, renderHook } from '@testing-library/react-native';
+import { AppState, type AppStateStatus } from 'react-native';
+import notifee from 'react-native-notify-kit';
+
 import { useMonitorService } from '../index';
-import { startMonitorService, stopMonitorService } from '../foregroundService';
-import { startBackboneAlerts, stopBackboneAlerts } from '../backboneTrigger';
+import { cardAlarm } from '../cardAlarmNative';
+import { scanAndRearm } from '../cardScheduler';
 
 jest.mock('react-native-notify-kit', () => ({
   __esModule: true,
-  default: { onForegroundEvent: jest.fn(() => jest.fn()) },
-  EventType: { DELIVERED: 3 },
+  default: { cancelTriggerNotifications: jest.fn().mockResolvedValue(undefined) },
 }));
+jest.mock('../cardAlarmNative', () => ({
+  cardAlarm: { start: jest.fn(), stop: jest.fn(), setTexts: jest.fn(), setCheckFailedTexts: jest.fn(), readWakeLog: jest.fn(() => []) },
+}));
+jest.mock('../cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('../cardScanTask', () => ({ runCardScanTask: jest.fn() }));
+jest.mock('@/core/utils/logger', () => ({ logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() } }));
 
-jest.mock('../foregroundService', () => ({
-  startMonitorService: jest.fn().mockResolvedValue(undefined),
-  stopMonitorService: jest.fn().mockResolvedValue(undefined),
-  getTickCount: jest.fn(),
-  subscribeTickCount: jest.fn(),
-  registerMonitorForegroundServiceHandler: jest.fn(),
-}));
-
-jest.mock('../backboneTrigger', () => ({
-  startBackboneAlerts: jest.fn().mockResolvedValue(undefined),
-  stopBackboneAlerts: jest.fn().mockResolvedValue(undefined),
-  handleTriggerDelivered: jest.fn(),
-  getBackboneStatus: jest.fn(),
-}));
+const native = cardAlarm as jest.Mocked<NonNullable<typeof cardAlarm>>;
+let appStateListener: ((state: AppStateStatus) => void) | null = null;
+const removeAppState = jest.fn();
 
 describe('useMonitorService', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    appStateListener = null;
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+      appStateListener = listener as (state: AppStateStatus) => void;
+      return { remove: removeAppState } as unknown as ReturnType<typeof AppState.addEventListener>;
+    });
+  });
 
-  it('does nothing while disabled', () => {
+  it('does nothing while logged out', () => {
     renderHook(() => useMonitorService(false));
 
-    expect(startMonitorService).not.toHaveBeenCalled();
-    expect(startBackboneAlerts).not.toHaveBeenCalled();
-    expect(stopMonitorService).not.toHaveBeenCalled();
+    expect(native.start).not.toHaveBeenCalled();
+    expect(native.stop).not.toHaveBeenCalled();
+    expect(scanAndRearm).not.toHaveBeenCalled();
   });
 
-  it('starts the heartbeat and the alarm chain once enabled', async () => {
+  it('on login: starts the alarms, cancels the old monitor triggers, and catches up', () => {
     renderHook(() => useMonitorService(true));
 
-    await waitFor(() => expect(startBackboneAlerts).toHaveBeenCalledTimes(1));
-    expect(startMonitorService).toHaveBeenCalledTimes(1);
+    expect(native.start).toHaveBeenCalledTimes(1);
+    // The scan service's notification texts come from en.json (no hard-coded English in Kotlin).
+    expect(native.setTexts).toHaveBeenCalledWith('Labour card check', 'Checking labour cards');
+    expect(native.setCheckFailedTexts).toHaveBeenCalledWith(
+      'Labour card check stopped',
+      'Labour cards are not being created',
+      'Open eZAZI to continue monitoring, and keep "Alarms & reminders" allowed for eZAZI.',
+    );
+    expect(notifee.cancelTriggerNotifications).toHaveBeenCalledWith(['labour-monitor-trigger', 'battery-guard-trigger']);
+    expect(scanAndRearm).toHaveBeenCalledWith('login');
   });
 
-  it('stops both the service and the alarm chain when disabled (logout)', async () => {
+  it('scans and re-arms on every return to the app', () => {
+    renderHook(() => useMonitorService(true));
+
+    act(() => appStateListener?.('background'));
+    act(() => appStateListener?.('active'));
+
+    expect(scanAndRearm).toHaveBeenLastCalledWith('resume');
+    expect(scanAndRearm).toHaveBeenCalledTimes(2);
+  });
+
+  it('logout stops the alarms', () => {
     const { rerender } = renderHook(({ enabled }: { enabled: boolean }) => useMonitorService(enabled), {
       initialProps: { enabled: true },
     });
-    await waitFor(() => expect(startBackboneAlerts).toHaveBeenCalled());
 
-    await act(async () => {
-      rerender({ enabled: false });
-    });
+    rerender({ enabled: false });
 
-    await waitFor(() => {
-      expect(stopBackboneAlerts).toHaveBeenCalled();
-      expect(stopMonitorService).toHaveBeenCalled();
-    });
+    expect(native.stop).toHaveBeenCalledTimes(1);
+    expect(removeAppState).toHaveBeenCalledTimes(1);
   });
 
-  it('stops everything on unmount', async () => {
+  it('keeps running on unmount: the app swiped away while still logged in', () => {
     const { unmount } = renderHook(() => useMonitorService(true));
-    await waitFor(() => expect(startBackboneAlerts).toHaveBeenCalled());
 
-    await act(async () => {
-      unmount();
-    });
+    unmount();
 
-    await waitFor(() => {
-      expect(stopBackboneAlerts).toHaveBeenCalled();
-      expect(stopMonitorService).toHaveBeenCalled();
-    });
+    expect(native.stop).not.toHaveBeenCalled();
+    expect(removeAppState).toHaveBeenCalledTimes(1);
   });
 
-  it('still stops the alarm chain if stopping the foreground service throws', async () => {
-    (stopMonitorService as jest.Mock).mockRejectedValueOnce(new Error('native failure'));
-    const { unmount } = renderHook(() => useMonitorService(true));
-    await waitFor(() => expect(startBackboneAlerts).toHaveBeenCalled());
-
-    await act(async () => {
-      unmount();
+  it('a failing native start or stop does not throw', () => {
+    native.start.mockImplementationOnce(() => {
+      throw new Error('no module');
+    });
+    native.stop.mockImplementationOnce(() => {
+      throw new Error('no module');
+    });
+    const { rerender } = renderHook(({ enabled }: { enabled: boolean }) => useMonitorService(enabled), {
+      initialProps: { enabled: true },
     });
 
-    await waitFor(() => expect(stopBackboneAlerts).toHaveBeenCalled());
+    expect(() => rerender({ enabled: false })).not.toThrow();
   });
 });

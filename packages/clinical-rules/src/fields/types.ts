@@ -17,6 +17,7 @@ export interface OptionDefinition {
   readonly value: string;
   readonly labelKey: string;
   readonly androidLabel: string; // Android's English text, the default label
+  readonly alert?: true; // Android's alert engine stores "R" for this value
 }
 
 /**

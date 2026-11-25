@@ -1,3 +1,5 @@
+import type { CardAccess } from '@ezazi/clinical-rules';
+
 /** One of the four stages shown in the timeline's stage stepper. */
 export type LabourStage = 'stage1' | 'stage2' | 'delivery' | 'earlyPostpartum';
 
@@ -16,15 +18,23 @@ export interface TimelineCheckpoint {
   /** When this observation was scheduled to be captured. */
   scheduledAt: string;
   status: CheckpointStatus;
+  /** An SOS card (LCG_SOS): same states as any card, its own badge and wording (Android `getSosContentRes`). */
+  isSos?: boolean;
   /** Only set when status === 'completed'. */
   recordedAt?: string;
+  /** The stored card (absent on the projected upcoming card). */
+  encounterUuid?: string;
+  cardName?: string;
+  /** How a tap opens the card, from `getCardStatus`. */
+  access?: CardAccess;
+  showEditIcon?: boolean;
 }
 
 export interface PatientSummary {
   id: string;
   name: string;
   ezId: string;
-  ageYears: number;
+  ageYears: number | null; // null without a date of birth: the age is left out (Kaveri, 2026-11-18)
   /** Obstetric gravida/para shorthand, e.g. "G1". */
   gravidaLabel: string;
 }

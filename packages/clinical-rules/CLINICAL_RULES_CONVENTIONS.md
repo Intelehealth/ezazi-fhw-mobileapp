@@ -30,12 +30,14 @@ Companion docs: `README.md` · `apps/mobile/ARCHITECTURE_RULES.md` §7a, §9 · 
 - No clinical value is written in an app.
 - The same rules apply to every client; only range min/max may differ, through a profile (§7a).
 - Never read `@ezazi/config`; the app passes the profile id.
-- Exported data is deep-frozen.
+- Exported data is deep-frozen with `deepFreeze`, constants included.
 
 ## 4. One place for every name and number
 
-- **Names live in `src/constants/` only.** This covers field, input, section and stage ids; concept keys; card name parts; stored values; and translation keys. Reference the constant; never retype the string.
-- **Numbers live in `src/ranges/` only.** Min/max go in `baseRanges.ts`; keystroke limits go in `inputLimits.ts`.
+- **Names live in `src/constants/` only.** This covers field, input, section and stage ids; concept keys; card name parts; stored marker values; and translation keys. Reference the constant; never retype the string, not even as an object key.
+- **Option values live with their field** in the field data, in Android order. Never repeat one elsewhere.
+- **Range and limit numbers live in `src/ranges/` only.** Min/max go in `baseRanges.ts`; keystroke limits go in `inputLimits.ts`.
+- **Card schedule numbers live in `cards/schedule.ts` only** (hours, cards per hour, interval).
 - A new field gets its id, concept key and limits added there first.
 - Build card names and translation keys with the helpers, never by hand.
 - `constants/__tests__/centralNames.test.ts` fails on any name written outside `constants/`.

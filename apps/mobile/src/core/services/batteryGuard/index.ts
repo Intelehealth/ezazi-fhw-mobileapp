@@ -1,14 +1,6 @@
-import { useEffect } from 'react';
-import notifee, { EventType } from 'react-native-notify-kit';
+import { useEffect, useRef } from 'react';
 import { logger } from '@/core/utils/logger';
-import {
-  acknowledgeDialog,
-  BATTERY_TRIGGER_NOTIFICATION_ID,
-  checkPendingDialog,
-  handleCheckTriggerDelivered,
-  startBatteryGuard,
-  stopBatteryGuard,
-} from './batteryGuard';
+import { acknowledgeDialog, checkPendingDialog, startBatteryGuard, stopBatteryGuard } from './batteryGuard';
 import { useBatteryGuardStore } from './batteryGuard.store';
 
 /**
@@ -17,6 +9,14 @@ import { useBatteryGuardStore } from './batteryGuard.store';
  * and the same reason: no battery guard before a health worker is logged in.
  */
 export function useBatteryGuard(enabled: boolean): void {
+  // Only logout (`enabled` true → false) stops the guard, as with useMonitorService: an unmount alone
+  // (the app swiped away from Recents) leaves the process and the login running.
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    if (enabledRef.current && !enabled) void stopBatteryGuard();
+    enabledRef.current = enabled;
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -30,19 +30,7 @@ export function useBatteryGuard(enabled: boolean): void {
         useBatteryGuardStore.getState().showDialog(percent);
       }
     });
-
-    // Same foreground/background split as the labour-monitor trigger —
-    // index.js's onBackgroundEvent only catches a delivery while backgrounded.
-    const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.DELIVERED && detail.notification?.id === BATTERY_TRIGGER_NOTIFICATION_ID) {
-        void handleCheckTriggerDelivered();
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      void stopBatteryGuard();
-    };
+    // The checks themselves run from the native battery alarm (monitor/cardScanTask.ts), app open or not.
   }, [enabled]);
 }
 

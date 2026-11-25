@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { clientConfig } from '@/core/config/clients';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
@@ -22,9 +22,15 @@ import { useResponsive } from '@/core/ui/hooks/useResponsive';
  * uses for its illustration over the USERNAME field.
  */
 
-// assets/clients/default/setup_logo.png natural aspect ratio (width / height)
-// — same asset + ratio LoginScreen/SetupScreen already use.
-const LOGO_ASPECT = 364 / 144;
+// Header logo and its natural aspect ratio (width / height), read from the
+// asset itself: a client without setupLogo (Nepal) falls back to its own
+// logo, whose shape differs from the default 364 x 144 wordmark — a fixed
+// ratio letterboxed it into a sliver.
+const LOGO_SOURCE = clientConfig.assets.setupLogo ?? clientConfig.assets.logo;
+const LOGO_ASPECT = (() => {
+  const resolved = Image.resolveAssetSource?.(LOGO_SOURCE as number);
+  return resolved?.width && resolved?.height ? resolved.width / resolved.height : 364 / 144;
+})();
 
 // assets/clients/default/forgot_password_shield.png natural aspect ratio (165 / 198)
 const SHIELD_ASPECT = 165 / 198;
@@ -38,6 +44,8 @@ interface ForgotPasswordHeaderProps {
    *  land exactly there. See shieldTop below for why this replaced a tuned
    *  constant. */
   firstFieldY?: number | null;
+  /** QA locator of the back button. */
+  backTestID?: string;
 }
 
 export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
@@ -45,6 +53,7 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   subtitle,
   onBack,
   firstFieldY,
+  backTestID,
 }) => {
   const { t } = useTranslation();
   const { isTablet, fs, scale } = useResponsive();
@@ -53,12 +62,12 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
 
   // Phone only: push below the status bar to avoid overlap (mirrors the old WaveHeader).
   const statusBarH = !isTablet && Platform.OS === 'android'
-    ? (StatusBar.currentHeight ?? 24)
+    ? (StatusBar.currentHeight ?? dimens.statusBarFallback)
     : 0;
 
-  const logoH = isTablet ? scale(44) : 32;
+  const logoH = isTablet ? scale(44) : dimens.authLogoHeight;
   const logoW = logoH * LOGO_ASPECT;
-  const shieldH = isTablet ? scale(106) : 78;
+  const shieldH = isTablet ? scale(106) : dimens.forgotHeaderShieldHeight;
   const shieldW = shieldH * SHIELD_ASPECT;
   // Pushes the shield down past the heading/subtitle so its bottom edge
   // lands on the first field's top border below (RN doesn't clip overflow,
@@ -82,10 +91,10 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
   const measuredShieldTop = firstFieldY != null && titleRowWindowY != null
     ? firstFieldY - titleRowWindowY - shieldH
     : null;
-  const shieldTop = measuredShieldTop ?? (isTablet ? 223 - shieldH : 74);
+  const shieldTop = measuredShieldTop ?? (isTablet ? 223 - shieldH : dimens.forgotHeaderShieldTop);
 
   return (
-    <View style={[styles.container, { paddingTop: statusBarH + (isTablet ? scale(24) : 16) }]}>
+    <View style={[styles.container, { paddingTop: statusBarH + (isTablet ? scale(24) : spacing.md) }]}>
       <TouchableOpacity
         style={[
           styles.backBtn,
@@ -99,8 +108,9 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
         accessibilityRole="button"
         accessibilityLabel={t('common.a11y.goBack')}
         activeOpacity={0.8}
+        testID={backTestID}
       >
-        <AppIcon name="chevronLeft" size={isTablet ? scale(24) : 20} color={colors.primary} />
+        <AppIcon name="chevronLeft" size={isTablet ? scale(24) : dimens.forgotHeaderBackIcon} color={colors.primary} />
       </TouchableOpacity>
 
       {/* Logo + heading + subtitle stack in normal flow; the shield badge is
@@ -110,14 +120,14 @@ export const ForgotPasswordHeader: React.FC<ForgotPasswordHeaderProps> = ({
           gets — requested specifically for phone, tablet's 90dp is unchanged. */}
       <View
         ref={titleRowRef}
-        style={[styles.titleRow, { marginTop: isTablet ? 90 : 108 }]}
+        style={[styles.titleRow, { marginTop: isTablet ? 90 : dimens.forgotHeaderTitleTop }]}
         onLayout={() => {
           titleRowRef.current?.measureInWindow((_x, y) => setTitleRowWindowY(y));
         }}
       >
-        <View style={[styles.titleBlock, { paddingRight: shieldW + 12 }]}>
+        <View style={[styles.titleBlock, { paddingRight: shieldW + dimens.forgotHeaderShieldGap }]}>
           <Image
-            source={clientConfig.assets.setupLogo ?? clientConfig.assets.logo}
+            source={LOGO_SOURCE}
             style={{ width: logoW, height: logoH }}
             resizeMode="contain"
           />
@@ -162,9 +172,9 @@ const styles = StyleSheet.create({
   },
 
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: dimens.forgotHeaderBackButton,
+    height: dimens.forgotHeaderBackButton,
+    borderRadius: radii.forgotHeaderBackButton,
     borderWidth: 1,
     borderColor: colors.gray_2,
     backgroundColor: colors.white,
@@ -188,11 +198,11 @@ const styles = StyleSheet.create({
   heading: {
     color: colors.textPrimary,
     fontWeight: '700',
-    marginTop: 10,
+    marginTop: dimens.authHeadingTop,
   },
 
   subtitle: {
     color: colors.darkGray,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
 });

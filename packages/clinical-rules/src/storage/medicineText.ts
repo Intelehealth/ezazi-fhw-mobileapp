@@ -1,4 +1,5 @@
 import { javaTrim } from '../internal/javaTrim';
+import { deepFreeze } from '../internal/deepFreeze';
 
 /**
  * One Medicine obs value: Android `Medicine.toDBFormat()`, one obs per medicine:
@@ -20,13 +21,23 @@ export interface MedicineEntry {
 }
 
 /** `Medicine.isValidMedicine`: the parts a medicine must have before it can be saved. */
-export const MEDICINE_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = Object.freeze([
+export const MEDICINE_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = deepFreeze([
   'name',
   'strength',
   'dosage',
   'dosageUnit',
   'form',
   'route',
+]);
+
+/**
+ * What RN requires before a medicine can be added: Android's `isValidMedicine` parts plus Duration and its
+ * unit, which Android marks with * but never checks (Kaveri, 2026-11-18; open point 19).
+ */
+export const MEDICINE_ADD_REQUIRED_FIELDS: readonly (keyof MedicineEntry)[] = deepFreeze([
+  ...MEDICINE_REQUIRED_FIELDS,
+  'duration',
+  'durationUnit',
 ]);
 
 /** The text Android stores for one medicine. */

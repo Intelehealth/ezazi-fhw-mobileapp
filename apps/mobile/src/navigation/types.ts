@@ -1,5 +1,4 @@
-import type { LabourStage, PatientSummary, TimelineCheckpoint } from '@/features/labour-care-guide/domain/timeline.types';
-
+import type { CardAccess } from '@ezazi/clinical-rules';
 /**
  * Navigation type definitions — central source of truth.
  * Add new screens here so route names are type-safe.
@@ -21,16 +20,17 @@ export type RootStackParamList = {
 
   // App stack
   Home: undefined;
-  // All optional — TimelineScreen falls back to sample data when omitted
-  // (no patient/checkpoint repository exists yet; see MOBILE_STACK.md §9).
-  Timeline:
-    | {
-        patient?: PatientSummary;
-        checkpoints?: TimelineCheckpoint[];
-        activeStage?: LabourStage;
-      }
-    | undefined;
+  /** The visit whose labour timeline is shown, read from the database. */
+  Timeline: VisitRouteParams;
+  /** One card of that visit, opened from Record Now to capture its observations. */
+  // `access`: how the Timeline opens the card (Record Now = write; Show = edit or read).
+  CardCapture: VisitRouteParams & { encounterUuid: string; access: Exclude<CardAccess, 'none'> };
 };
+
+/** Every labour route names its visit; the patient app bar reads it from here. */
+export interface VisitRouteParams {
+  visitUuid: string;
+}
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

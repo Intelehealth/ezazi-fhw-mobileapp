@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { nowMs } from '@/core/utils/datetime';
+
 /**
  * App-wide "Last Refreshed" time shown in BrandAppBar. One source so every
  * screen's app bar agrees; the sync engine calls markRefreshed() on success.
@@ -11,6 +13,6 @@ interface SyncStatusState {
 
 export const useSyncStatusStore = create<SyncStatusState>((set) => ({
   // TODO: seed from the persisted last-sync time once the sync engine exists.
-  lastRefreshedAt: new Date(),
-  markRefreshed: (at = new Date()) => set({ lastRefreshedAt: at }),
+  lastRefreshedAt: new Date(nowMs()),
+  markRefreshed: (at = new Date(nowMs())) => set({ lastRefreshedAt: at }),
 }));

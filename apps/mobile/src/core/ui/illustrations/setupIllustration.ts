@@ -5,7 +5,7 @@
  * provided as Group.svg and converted 1:1 here.
  *
  * Follows the same "raw path data, screen renders <Svg><Path/></Svg>" convention
- * as the icon/wave registry in core/ui/icons.tsx and core/ui/illustrations/splashIllustration.ts.
+ * as the icon registry (core/ui/icons/) and core/ui/illustrations/splashIllustration.ts.
  */
 export const setupIllustration = {
   viewBox: '0 0 267 177',

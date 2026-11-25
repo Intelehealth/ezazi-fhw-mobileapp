@@ -22,11 +22,12 @@ import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { setupIllustration } from '@/core/ui/illustrations/setupIllustration';
 import { clientConfig } from '@/core/config/clients';
-import { colors } from '@/core/config/theme';
+import { colors, dimens } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
 import { showToast } from '@/core/utils/toast';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
+import { AUTH_TEST_IDS } from '../testIds';
 
 /**
  * Same layout/tokens as SetupScreen — Figma calls for an identical screen,
@@ -73,9 +74,9 @@ export const LoginScreen: React.FC = () => {
   // ── Brand header — client wordmark (left) + illustration (absolute, top-right) ──
   // logoH is the visible glyph height now that setup_logo.png is pre-cropped
   // (no baked-in padding), so this can stay compact without looking tiny.
-  const logoH = isTablet ? scale(46) : 32;
+  const logoH = isTablet ? scale(46) : dimens.authLogoHeight;
   const logoW = logoH * LOGO_ASPECT;
-  const illustrationH = isTablet ? scale(130) : 104;
+  const illustrationH = isTablet ? scale(130) : dimens.authIllustrationHeight;
   const illustrationW = illustrationH * ILLUSTRATION_ASPECT;
   // Measured (not guessed) from the USERNAME field's actual onLayout position
   // — see usernameFieldY below — so the illustration's bottom edge lands
@@ -87,7 +88,7 @@ export const LoginScreen: React.FC = () => {
   const illustrationTop = usernameFieldY !== null ? usernameFieldY - illustrationH + 1 : 0;
   // Inset from the right content edge, so the illustration doesn't sit flush
   // against it (per Figma).
-  const illustrationRight = isTablet ? scale(20) : 14;
+  const illustrationRight = isTablet ? scale(20) : dimens.authIllustrationRight;
 
   // login() lives in the auth store, not this screen — it owns talking to
   // sessionApi, persisting tokens, and marking the store authenticated.
@@ -121,7 +122,7 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <FormScreenLayout
-      contentStyle={[styles.content, { paddingTop: isTablet ? scale(190) : 130 }]}
+      contentStyle={[styles.content, { paddingTop: isTablet ? scale(190) : dimens.authContentTop }]}
     >
       {/*
         ── Top section — logo, heading and the USERNAME field all sit in
@@ -148,7 +149,7 @@ export const LoginScreen: React.FC = () => {
           style={[
             styles.fieldLabel,
             styles.firstFieldLabel,
-            { fontSize: fs('label') - 1, marginTop: isTablet ? scale(36) : 28 },
+            { fontSize: fs('label') - 1, marginTop: isTablet ? scale(36) : dimens.authFirstFieldTop },
           ]}
         >
           {t('login.username')}
@@ -160,13 +161,14 @@ export const LoginScreen: React.FC = () => {
             render={({ field: { value, onChange } }) => (
               <AppTextField
                 placeholder={t('login.usernamePlaceholder')}
+                testID={AUTH_TEST_IDS.login.username}
                 value={value}
                 onChangeText={(text) => {
                   onChange(text);
                   if (errors.username) clearErrors('username');
                 }}
                 error={errors.username?.message}
-                leftSlot={<AppIcon name="person" size={20} color={colors.icon} />}
+                leftSlot={<AppIcon name="person" size={dimens.fieldIcon} color={colors.icon} />}
                 autoCapitalize="none"
                 autoCorrect={false}
                 returnKeyType="next"
@@ -200,13 +202,14 @@ export const LoginScreen: React.FC = () => {
         render={({ field: { value, onChange } }) => (
           <PasswordField
             placeholder={t('login.passwordPlaceholder')}
+            testID={AUTH_TEST_IDS.login.password}
             value={value}
             onChangeText={(text) => {
               onChange(text);
               if (errors.password) clearErrors('password');
             }}
             error={errors.password?.message}
-            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            leftSlot={<AppIcon name="lock" size={dimens.fieldIcon} color={colors.icon} />}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
@@ -219,6 +222,7 @@ export const LoginScreen: React.FC = () => {
         accessibilityRole="link"
         accessibilityLabel={t('login.forgotPassword')}
         onPress={() => navigation.navigate('ForgotPasswordRequest', { origin: 'Login' })}
+        testID={AUTH_TEST_IDS.login.forgotPassword}
       >
         <Text style={[styles.forgotText, { fontSize: fs('link') }]}>
           {t('login.forgotPassword')}
@@ -226,12 +230,13 @@ export const LoginScreen: React.FC = () => {
       </TouchableOpacity>
 
       {/* ── API error banner — credentials/network/server failures from handleLogin ── */}
-      {!!banner && <ApiErrorBanner banner={banner} />}
+      {!!banner && <ApiErrorBanner banner={banner} testID={AUTH_TEST_IDS.login.errorBanner} />}
 
       {/* ── Login button — always enabled; the zod resolver surfaces per-field
           errors when tapped with empty/invalid fields. ── */}
       <AppButton
         label={t('login.submit')}
+        testID={AUTH_TEST_IDS.login.submit}
         onPress={handleLogin}
         disabled={isSubmitting}
         style={styles.loginButton}

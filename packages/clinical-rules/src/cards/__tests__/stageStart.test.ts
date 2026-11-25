@@ -5,12 +5,13 @@ import { STAGE1_CARDS, STAGE2_CARDS } from '../schedule';
 const NOW = Date.UTC(2026, 9, 14, 8, 0, 0);
 
 describe('getStageStart', () => {
-  it('starts Stage 1 with Stage1_Hour1_1, no marker and no privacy notice (AdmissionWriter)', () => {
+  // Deviation (2026-10-27): Android's AdmissionWriter writes no marker on Stage1_Hour1_1.
+  it('starts Stage 1 with Stage1_Hour1_1, the NORMAL marker and no privacy notice', () => {
     expect(getStageStart('stage1', NOW)).toEqual({
       stage: 'stage1',
       card: STAGE1_CARDS[0],
       encounterTime: '2026-10-14 08:00:00',
-      marker: null,
+      marker: 'NORMAL',
       privacyNoticeValue: null,
       decisionPending: 'false',
     });

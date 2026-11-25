@@ -18,6 +18,10 @@ export const NEPAL_CLIENT_CONFIG: ClientConfig = {
   },
   assets: {
     logo: require('../../../../assets/clients/nepal/logo.png'),
+    // Client-neutral shield + padlock badge (Figma) — shared with default so
+    // the Forgot Password header shows it in Nepal builds (eas.json bakes
+    // EXPO_PUBLIC_CLIENT_ID=nepal into every profile).
+    forgotPasswordShield: require('../../../../assets/clients/default/forgot_password_shield.png'),
     logoSize: {
       splash: { phone: { width: 240, height: 200 }, tablet: { width: 280, height: 250 } },
       login:  { phone: { width: 300, height: 280 }, tablet: { width: 340, height: 340 } },

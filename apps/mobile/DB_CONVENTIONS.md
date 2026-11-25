@@ -39,6 +39,11 @@ lookup wrote rows with a blank `person_attribute_type_uuid` instead of failing.
 
 One file per entity under `repositories/`, mirroring `schema/` and `constants/`.
 
+**A timeline card spans two tables, so its writer is `core/db/card.ts`, not a repository** (added
+2026-10-27, Kaveri). `writeCard` writes the encounter and its `NORMAL` marker obs for every timer and
+stage-start card, Stage 1's first card included, which Android leaves unmarked. SOS cards carry their
+`SOS_STAGE_HOUR` label instead and are written by the labour repository.
+
 ---
 
 ## 2. Transactions
@@ -80,9 +85,18 @@ reaches OpenMRS. `closeVisit` sets `enddate` and `SYNC_DIRTY` together; anything
 SQLite's `INSERT OR REPLACE` is DELETE+INSERT, so any column the server omitted reverts to its DDL
 default. That is the legacy bug that un-voids a server-voided visit on **every re-sync**.
 
+<!-- Superseded 2026-10-23 (Kaveri): Android's live alert engine (getAlertNameUpdated on
+whitelabel-master) writes only 'R' and 'G'; the 'Y' codes exist only in its unused older function.
+Original text kept for reference:
 **Never overwrite `tbl_obs.comment`.** It is not a note. It holds an alert code — `'R'` severe,
 `'Y'` warning, `''` — and is the **sole input to the risk score**. The legacy's
 `markedAsVoidedObsToDb` stomps it, destroying whatever alert was there.
+-->
+**Never overwrite `tbl_obs.comment`.** It is not a note. It holds an alert code — `'R'` past the
+alert threshold, `'G'` within it, `''` when the field is empty — and is the **sole input to the risk
+score**. Codes and the risk score are computed in `@ezazi/clinical-rules`, as Android's
+`getAlertNameUpdated` and `VisitAlertProcessor` do. Obs that are never coded keep Android's value:
+NULL for infusion, "No", note, SOS label and NORMAL marker obs; `''` for medicine and Missed rows. The legacy's `markedAsVoidedObsToDb` stomps it, destroying whatever alert was there. The one writer that changes it is `obs.rewriteCardObs`, an edited card's save, and only together with the value it codes (2026-10-31).
 
 **No hard deletes. Anywhere.** Deletion is the `voided` flag. No repository gets a `delete()`.
 
@@ -92,8 +106,17 @@ Written as obs under `ENCOUNTER_ADMISSION`, read back through the obs repository
 attribute fallback and no region branch. Four registration-only values stay attributes: registration
 number, profile-image timestamp, alternate number, registration start time.
 
+<!-- Superseded 2026-10-31 (Kaveri): an edited card is now saved as Android does, rewriting its rows
+in place, until the write-new question is decided (see LABOUR_OPEN_POINTS.md). Original text kept for reference:
 **Editing an obs means writing a new one.** Reads take the first row per concept ordered by
 `created_date DESC`, so the latest wins and the previous value survives as history.
+-->
+**An edited card rewrites its rows in place, as Android** (decided 2026-10-31, Kaveri, until the
+write-new question is settled). `buildEditedCardObs` names each row to rewrite by uuid and
+`obs.rewriteCardObs` overwrites its value with that value's own alert code, unvoided and unsynced; a
+field with no row gets a new one and a stale "No" is voided. Medicines and notes follow Android's
+lists: a new or edited medicine is a new row and the old one is not voided (an open point in
+`LABOUR_OPEN_POINTS.md`).
 
 ---
 
@@ -203,9 +226,16 @@ flipped `sync` in the same statement, or that you did not overwrite `tbl_obs.com
 
 ## 9. Per-table specifics
 
+<!-- Superseded 2026-10-27 (Kaveri): the Missed marker's filled columns were added as a fifth. Original text kept for reference:
 Four behaviours that are not guessable from the schema.
+-->
+Five behaviours that are not guessable from the schema.
 
 **`obs.getAdmissionValues` is latest-wins, so admission values are never UPDATED.** It orders by `created_date DESC` and takes the first row per concept. Correcting a value means **writing a new obs**; the previous one survives as history. There is no update path and no write-once restriction — do not add either. This is also why `writeOne` always sets `created_date`: four legacy writers left it NULL, and a NULL sorts arbitrarily under that `ORDER BY`, which breaks latest-wins outright.
+
+**The Missed marker fills `creatoruuid` and `created_date`** (added 2026-10-27, Kaveri). Android's
+`checkObsAndCreateMissedObs` leaves both NULL; ours goes through `writeOne` like every other obs, so it
+sorts and pushes the same way.
 
 **The visit-attribute pull is whitelisted.** `visitAttribute.upsertManyFromPull` writes only the types in `PULLED_VISIT_ATTRIBUTE_TYPES`; the server offers far more than we store. An unrecognised type is returned in `skipped`, not dropped silently — so a new server attribute shows up as a reported skip rather than as missing data nobody noticed.
 

@@ -1,0 +1,56 @@
+import React from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+
+import { colors, letterSpacing, spacing } from '@/core/config/theme';
+
+import { useControlSizes } from './hooks/useControlSizes';
+import { useResponsive } from './hooks/useResponsive';
+import { DangerTriangleIcon } from './icons';
+import { Text } from './Text';
+
+interface FormFieldProps {
+  label: string;
+  /** Shown in red under the control; the control draws its own red border. */
+  error?: string;
+  children: React.ReactNode;
+  /** Placement only (margins, flex) — never colours or sizing. */
+  style?: StyleProp<ViewStyle>;
+}
+
+/** A capture field: its upper-case caption, the control, and an error line (Figma 251:556, "Record 24"). */
+export const FormField: React.FC<FormFieldProps> = ({ label, error, children, style }) => {
+  const sizes = useControlSizes();
+  const { fs } = useResponsive();
+
+  return (
+    <View style={style}>
+      <Text style={[styles.label, { fontSize: sizes.label }]}>{label.toUpperCase()}</Text>
+      {children}
+      {!!error && (
+        <View accessible accessibilityRole="alert" style={styles.errorRow}>
+          <DangerTriangleIcon size={fs('error')} color={colors.controlErrorText} />
+          <Text style={[styles.error, { fontSize: fs('error') }]}>{error}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  label: {
+    color: colors.secondaryTextFigma,
+    fontWeight: '700',
+    letterSpacing: letterSpacing.caps,
+    marginBottom: spacing.sm,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  error: {
+    flex: 1,
+    color: colors.controlErrorText,
+  },
+});

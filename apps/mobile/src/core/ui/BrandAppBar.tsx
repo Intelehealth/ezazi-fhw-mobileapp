@@ -8,19 +8,18 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from './Text';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, fontSizes, spacing } from '@/core/config/theme';
 import { clientConfig } from '@/core/config/clients';
-import { formatDate, isBsDefault } from '@/core/utils/calendar';
+import { format24HourTime, formatDate, isBsDefault } from '@/core/utils/calendar';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useSyncStatusStore } from '@/core/session/syncStatus.store';
 
 /**
  * The app bar — client wordmark, "Last Refreshed" + hamburger menu. Mounted by
  * the navigator (`brandAppBar` in navigation/screenOptions), never by a screen.
- * Tablet sizes are the design's (600dp reference); phone has its own literals.
+ * Tablet sizes are the design's (600dp reference); phone sizes are theme tokens.
  */
 
 // setup_logo.png is pre-cropped (no padding) — same aspect as authFormScreen.styles
@@ -33,20 +32,20 @@ interface BrandAppBarProps {
 
 /** "15 Bhadra 2083 BS 01:19" (Nepal) / "15 Aug 2026 01:19" (AD clients). */
 const formatLastRefreshed = (date: Date, bsSuffix: string): string =>
-  `${formatDate(date)}${isBsDefault() ? ` ${bsSuffix}` : ''} ${dayjs(date).format('HH:mm')}`;
+  `${formatDate(date)}${isBsDefault() ? ` ${bsSuffix}` : ''} ${format24HourTime(date)}`;
 
 export const BrandAppBar: React.FC<BrandAppBarProps> = ({ onMenuPress }) => {
   const { t } = useTranslation();
   const lastRefreshedAt = useSyncStatusStore(s => s.lastRefreshedAt);
   const { isTablet, scale } = useResponsive();
 
-  const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0;
-  const barHeight  = isTablet ? scale(56) : 52;
-  const logoH      = isTablet ? scale(28) : 24;
-  const textSize   = isTablet ? scale(13) : 11;
-  const textLineH  = isTablet ? scale(17) : 14;
-  const menuSize   = isTablet ? scale(24) : 22;
-  const hPad       = isTablet ? scale(30) : 20;
+  const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? dimens.statusBarFallback) : 0;
+  const barHeight  = isTablet ? scale(56) : dimens.appBarHeight;
+  const logoH      = isTablet ? scale(28) : dimens.appBarLogoHeight;
+  const textSize   = isTablet ? scale(13) : fontSizes.appBarRefreshed.phone;
+  const textLineH  = isTablet ? scale(17) : dimens.appBarTextLineHeight;
+  const menuSize   = isTablet ? scale(24) : dimens.appBarMenuIcon;
+  const hPad       = isTablet ? scale(30) : dimens.appBarHPad;
 
   const menuIcon = <AppIcon name="menu" size={menuSize} color={colors.secondaryTextFigma} />;
 
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
   right: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           24,
+    gap:           spacing.lg,
   },
 
   refreshTxt: {

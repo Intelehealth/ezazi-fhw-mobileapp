@@ -1,0 +1,102 @@
+import { DECISION_PENDING_SET, summarizeVisitOutcome } from '@ezazi/clinical-rules';
+import type { TimelineVisitFacts, VisitOutcomeObs, VisitOutcomeSummary } from '@ezazi/clinical-rules';
+
+import { LCG_SOS, encounterTypeName } from '@/core/db/constants/encounter';
+import {
+  END_2ND_STAGE_OTHER,
+  ENCOUNTER_TYPE,
+  MISSED_ENCOUNTER,
+  MOTHER_DECEASED,
+  MOTHER_DECEASED_FLAG,
+  OBS_GRAVIDA,
+  REFER_TYPE,
+  SOS_STAGE_HOUR,
+} from '@/core/db/constants/obs';
+import { DECISION_PENDING } from '@/core/db/constants/visit';
+import { encounterRepo, obsRepo, patientRepo, visitAttributeRepo, visitRepo } from '@/core/db/repositories';
+import type { DbHandle } from '@/core/db/tx';
+
+import type { PatientRow, TimelineCardRow } from '../domain/timelineModel';
+
+/** Everything the timeline needs about one visit, read in one go. */
+export interface TimelineSnapshot {
+  cards: TimelineCardRow[];
+  visit: TimelineVisitFacts;
+  currentCardName: string | null;
+  /** A completed visit's outcome (Android `getCompletedVisitType`); null while the visit is open. */
+  outcome: VisitOutcomeSummary | null;
+}
+
+// The outcome rows of the VISIT_COMPLETE encounter, by the package's concept key.
+const OUTCOME_KEY_BY_CONCEPT = new Map<string, keyof VisitOutcomeObs>([
+  [REFER_TYPE, 'REFER_TYPE'],
+  [MOTHER_DECEASED, 'MOTHER_DECEASED'],
+  [MOTHER_DECEASED_FLAG, 'MOTHER_DECEASED_FLAG'],
+  [END_2ND_STAGE_OTHER, 'END_2ND_STAGE_OTHER'],
+]);
+
+function readOutcome(visitCompleteUuid: string, on: DbHandle): VisitOutcomeSummary {
+  const obs: VisitOutcomeObs = {};
+  for (const row of obsRepo.listByEncounter(visitCompleteUuid, on)) {
+    const key = row.conceptuuid ? OUTCOME_KEY_BY_CONCEPT.get(row.conceptuuid) : undefined;
+    if (key && row.value !== null) obs[key] = row.value;
+  }
+  return summarizeVisitOutcome(obs);
+}
+
+// Rows that describe the card rather than record an observation.
+const NOT_OBSERVATIONS = new Set<string>([ENCOUNTER_TYPE, SOS_STAGE_HOUR, MISSED_ENCOUNTER]);
+
+function readCard(row: { uuid: string; encounter_type_uuid: string | null; encounter_time: string | null }, on: DbHandle): TimelineCardRow {
+  const hasRealObs = obsRepo.hasRealObs(row.uuid, on);
+  const recorded = hasRealObs
+    ? obsRepo
+        .listByEncounter(row.uuid, on)
+        .filter((obs) => obs.conceptuuid && !NOT_OBSERVATIONS.has(obs.conceptuuid) && obs.created_date)
+        .map((obs) => obs.created_date as string)
+        .sort()
+        .at(-1) ?? null
+    : null;
+
+  return {
+    encounterUuid: row.uuid,
+    cardName: row.encounter_type_uuid ? encounterTypeName(row.encounter_type_uuid) : null,
+    isSos: row.encounter_type_uuid === LCG_SOS,
+    encounterTime: row.encounter_time ?? '',
+    hasRealObs,
+    hasMissedMarker: !hasRealObs && obsRepo.hasDataObs(row.uuid, on),
+    recordedAt: recorded,
+  };
+}
+
+/** The visit's patient as the patient app bar shows it, or null when the visit has none. */
+export function readPatient(visitUuid: string, on: DbHandle): PatientRow | null {
+  const patientUuid = visitRepo.findPatientUuidByVisit(visitUuid, on);
+  const header = patientUuid ? patientRepo.getPatientHeader(patientUuid, on) : null;
+  if (!patientUuid || !header) return null;
+
+  return {
+    patientUuid,
+    openmrsId: header.openmrs_id,
+    firstName: header.first_name,
+    middleName: header.middle_name,
+    lastName: header.last_name,
+    dateOfBirth: patientRepo.getDateOfBirth(patientUuid, on),
+    gravida: obsRepo.getAdmissionValues(visitUuid, on)[OBS_GRAVIDA] ?? null,
+  };
+}
+
+/** The visit's cards (oldest first) and open / holder / Decision Pending facts. */
+export function readTimeline(visitUuid: string, providerUuid: string | null, on: DbHandle): TimelineSnapshot {
+  const visitCompleteUuid = encounterRepo.findVisitCompleteUuid(visitUuid, on);
+  return {
+    cards: encounterRepo.findTimelineByVisit(visitUuid, on).map((row) => readCard(row, on)),
+    visit: {
+      decisionPending: visitAttributeRepo.findValue(visitUuid, DECISION_PENDING, on) === DECISION_PENDING_SET,
+      visitComplete: visitCompleteUuid !== null,
+      isVisitHolder: providerUuid !== null && visitRepo.hasProviderAccess(visitUuid, providerUuid, on),
+    },
+    currentCardName: encounterRepo.findCurrentStageName(visitUuid, on),
+    outcome: visitCompleteUuid ? readOutcome(visitCompleteUuid, on) : null,
+  };
+}

@@ -48,7 +48,88 @@ const ONE_BACKGROUND_EVENT = {
     'onBackgroundEvent may only be registered once, in index.js — a second registration replaces the first and silently kills the other alarm chains. Add an `else if` branch for your trigger id there (ARCHITECTURE_RULES §11).',
 };
 
+// ── UI_CONVENTIONS and LABOUR_CONVENTIONS rules (added 2026-11-24) ──
+// On rule ids nothing above uses (`@typescript-eslint/no-restricted-imports`, `no-restricted-properties`), so they
+// can never replace the rules above. An override still REPLACES its own rule id: each override lists the full set.
+// The one-writer rules and `new Date()` need selectors, so they are no-restricted-syntax entries composed through
+// SRC_SYNTAX (2026-11-25).
+const RN_TEXT = {
+  group: ['react-native'],
+  importNames: ['Text'],
+  message: "Import Text from '@/core/ui/Text' - it sets the app font (UI_CONVENTIONS section 2).",
+};
+const RN_MODAL = {
+  group: ['react-native'],
+  importNames: ['Modal'],
+  message:
+    'Use a shared dialog (ConfirmDialog, PickerField) instead of a new Modal, so every dialog looks and closes the same way (UI_CONVENTIONS sections 4-6).',
+};
+const RN_TOAST = {
+  group: ['react-native'],
+  importNames: ['ToastAndroid'],
+  message: "Use showToast() from '@/core/utils/toast' (UI_CONVENTIONS section 9).",
+};
+// One writer each: every way to reach the function is refused - a call through any object, a named import, and
+// destructuring - not only `encounterRepo.insertCard` (closed 2026-11-25, PR #17 review).
+const onlyWriter = (name, message) => [
+  { selector: `MemberExpression[property.name='${name}']`, message },
+  { selector: `ImportSpecifier[imported.name='${name}']`, message },
+  { selector: `ObjectPattern > Property[key.name='${name}']`, message },
+];
+const ONE_CARD_WRITER = onlyWriter(
+  'insertCard',
+  'Only writeCard (core/db/card.ts) writes a card: it writes the encounter and its marker together (LABOUR_CONVENTIONS section 3).',
+);
+const ONE_SOS_WRITER = onlyWriter(
+  'insertSos',
+  'Only captureSos (labourRepository) writes an SOS card (LABOUR_CONVENTIONS section 3).',
+);
+const NO_DATE_NOW = {
+  object: 'Date',
+  property: 'now',
+  message: "Use nowMs() from '@/core/utils/datetime' and pass `now` down - one clock read per action (LABOUR_CONVENTIONS section 4).",
+};
+// `new Date()` with no argument reads the clock too (closed 2026-11-25, PR #17 review). `new Date(ms)` is fine.
+const NO_NEW_DATE_NOW = {
+  selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+  message: "Use nowMs() from '@/core/utils/datetime' (`new Date(nowMs())` when a Date is needed) - one clock read per action (LABOUR_CONVENTIONS section 4).",
+};
+
+// The no-restricted-syntax set for every non-test file under src/; each override below starts from it.
+const SRC_SYNTAX = [ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID, ...ONE_CARD_WRITER, ...ONE_SOS_WRITER];
+
 /** @type {import("eslint").Linter.Config} */
+// Rejected dependencies; composed into the no-restricted-imports rule and its date-utils override.
+const REJECTED_IMPORTS = [
+  {
+    group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
+    message:
+      'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
+  },
+  {
+    group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
+    message:
+      "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
+  },
+  {
+    group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
+    message:
+      'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
+  },
+  {
+    group: ['@ezazi/clinical-rules/*'],
+    message:
+      "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
+  },
+];
+
+// Every date operation goes through core/utils: datetime (storage, conversion, arithmetic), calendar (display) (Kaveri, 2026-10-28).
+const DATE_LIBRARIES = {
+  group: ['dayjs', 'dayjs/*', 'nepali-date-converter'],
+  message:
+    "Use '@/core/utils/datetime' (storage, conversion, arithmetic) or '@/core/utils/calendar' (display) — the only places date libraries are used. Add a helper there if one is missing.",
+};
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -115,40 +196,7 @@ module.exports = {
     // These four were evaluated and rejected. WatermelonDB in particular was
     // fully removed in the SDK 57 migration (no New-Architecture support) and
     // must not come back. Prose in a doc stops nobody; this does.
-    'no-restricted-imports': [
-      'error',
-      {
-        patterns: [
-          {
-            group: ['@nozbe/watermelondb', '@nozbe/watermelondb/*'],
-            message:
-              'WatermelonDB is rejected and was removed in the SDK 57 migration — it has no New-Arch support (ARCHITECTURE_RULES §9). Use expo-sqlite + Drizzle.',
-          },
-          {
-            group: ['redux', 'redux/*', '@reduxjs/toolkit', '@reduxjs/toolkit/*', 'react-redux', 'react-redux/*'],
-            message:
-              "Redux/RTK is rejected (ARCHITECTURE_RULES §9) — its server-cache model fights the local-DB-first design. Session/UI state goes in zustand; clinical data lives in the DB.",
-          },
-          {
-            group: ['realm', 'realm/*', '@realm/*', '@powersync/*'],
-            message:
-              'Realm and PowerSync are rejected (ARCHITECTURE_RULES §9). The offline store is expo-sqlite + Drizzle; sync is our own single-seam engine.',
-          },
-          {
-            group: ['@ezazi/clinical-rules/*'],
-            message:
-              "Import '@ezazi/clinical-rules' from the package root only — its index.ts is the public API that mobile and web share; internal files may move (ARCHITECTURE_RULES §9).",
-          },
-        ],
-      },
-    ],
-
-    // ── Background services: one onBackgroundEvent, app-wide (ARCHITECTURE_RULES §11) ──
-    // notify-kit keeps only ONE onBackgroundEvent handler per app — registering
-    // a second silently replaces the first, which kills the other service's
-    // self-rescheduling alarm chain with no error. The single handler lives in
-    // index.js (outside src/, so this rule never fires on it); a new service
-    // adds a branch there instead of registering its own.
+    'no-restricted-imports': ['error', { patterns: [...REJECTED_IMPORTS, DATE_LIBRARIES] }],
 
     // ── Architecture boundaries (ARCHITECTURE_RULES §4 · MOBILE_STACK §3) ──
     // This rule is the enforcement that lets the docs stop describing which
@@ -167,15 +215,22 @@ module.exports = {
               to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
             },
             message:
-              'Feature isolation: {{from.feature}} must not import {{target.feature}} internals. Share via core/* or @ezazi/*, never feature-to-feature. See MOBILE_STACK section 6.',
+              'Feature isolation: {{ from.captured.feature }} must not import {{ to.captured.feature }} internals. Share via core/* or @ezazi/*, never feature-to-feature. See MOBILE_STACK section 6.',
           },
           {
             // ...but a feature may import its OWN folder. This rule follows the
             // broad disallow above on purpose - the plugin is last-write-wins,
             // so the narrower same-feature carve-out re-permits it.
             from: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] } } },
+            // `captured` + `from.captured.*` is the plugin's (v7) syntax; the earlier `feature: '{{from.feature}}'`
+            // was never resolved, so this carve-out re-allowed every feature (2026-11-06 Kaveri, audit M5).
             allow: {
-              to: { element: { types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] }, feature: '{{from.feature}}' } },
+              to: {
+                element: {
+                  types: { anyOf: ['feature-screens', 'feature-components', 'feature-stores', 'feature-data', 'feature-domain'] },
+                  captured: { feature: '{{ from.captured.feature }}' },
+                },
+              },
             },
           },
           {
@@ -226,6 +281,9 @@ module.exports = {
     // ── core/db invariants (DB_CONVENTIONS — D16a) ──
     // Defined at the top of this file and composed per-override below.
     'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES],
+
+    // ── UI_CONVENTIONS / LABOUR_CONVENTIONS (constants above; exemptions in the last overrides) ──
+    '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL, RN_TOAST] }],
   },
   overrides: [
     {
@@ -233,7 +291,7 @@ module.exports = {
       // are the two places a uuid literal is allowed; tests use fixtures.
       files: ['src/**/*.ts', 'src/**/*.tsx'],
       excludedFiles: ['src/core/db/constants/**', 'src/core/db/seeds/**', 'src/**/__tests__/**'],
-      rules: { 'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID] },
+      rules: { 'no-restricted-syntax': ['error', ...SRC_SYNTAX] },
     },
     {
       // A repository reaches the database ONLY through the handle it is given.
@@ -241,13 +299,7 @@ module.exports = {
       files: ['src/core/db/repositories/**/*.ts'],
       excludedFiles: ['src/**/__tests__/**'],
       rules: {
-        'no-restricted-syntax': [
-          'error',
-          ONE_BACKGROUND_EVENT,
-          ...DB_RULES,
-          NO_RAW_UUID,
-          NO_GETDB_IN_REPOSITORIES,
-        ],
+        'no-restricted-syntax': ['error', ...SRC_SYNTAX, NO_GETDB_IN_REPOSITORIES],
       },
     },
     {
@@ -260,6 +312,8 @@ module.exports = {
           NO_ZOD_UUID,
           NO_DIRECT_TRANSACTION,
           NO_RAW_UUID,
+          ...ONE_CARD_WRITER,
+          ...ONE_SOS_WRITER,
         ],
       },
     },
@@ -267,8 +321,71 @@ module.exports = {
       // The one file allowed to open a transaction — it IS the guard.
       files: ['src/core/db/tx.ts'],
       rules: {
-        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, NO_ZOD_UUID, NO_DB_CLOSE, NO_RAW_UUID],
+        'no-restricted-syntax': [
+          'error',
+          ONE_BACKGROUND_EVENT,
+          NO_ZOD_UUID,
+          NO_DB_CLOSE,
+          NO_RAW_UUID,
+          ...ONE_CARD_WRITER,
+          ...ONE_SOS_WRITER,
+        ],
       },
+    },
+    {
+      // The two files allowed to use the date libraries.
+      files: ['src/core/utils/datetime.ts', 'src/core/utils/calendar.ts'],
+      rules: { 'no-restricted-imports': ['error', { patterns: REJECTED_IMPORTS }] },
+    },
+
+    // ── UI_CONVENTIONS / LABOUR_CONVENTIONS exemptions. General first; later entries win. ──
+    {
+      // One clock read per action: labour and the card services read the time through nowMs().
+      files: ['src/features/labour-care-guide/**', 'src/core/services/**', 'src/core/db/card.ts'],
+      excludedFiles: ['src/**/__tests__/**'],
+      rules: {
+        'no-restricted-properties': ['error', NO_DATE_NOW],
+        'no-restricted-syntax': ['error', ...SRC_SYNTAX, NO_NEW_DATE_NOW],
+      },
+    },
+    {
+      // The one card writer.
+      files: ['src/core/db/card.ts'],
+      rules: {
+        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID, ...ONE_SOS_WRITER, NO_NEW_DATE_NOW],
+      },
+    },
+    {
+      // The one SOS writer.
+      files: ['src/features/labour-care-guide/data/labourRepository.ts'],
+      rules: {
+        'no-restricted-syntax': ['error', ONE_BACKGROUND_EVENT, ...DB_RULES, NO_RAW_UUID, ...ONE_CARD_WRITER, NO_NEW_DATE_NOW],
+      },
+    },
+    {
+      // The app's Text wrapper.
+      files: ['src/core/ui/Text.tsx'],
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_MODAL, RN_TOAST] }] },
+    },
+    {
+      // The toast helper.
+      files: ['src/core/utils/toast.ts'],
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_MODAL] }] },
+    },
+    {
+      // The shared dialogs; the End Stage dialogs (to become Figma's choice sheet); the location dropdown.
+      files: [
+        'src/core/ui/ConfirmDialog.tsx',
+        'src/core/ui/PickerField.tsx',
+        'src/features/labour-care-guide/components/EndStageDialogs.tsx',
+        'src/features/auth/components/LocationPickerModal.tsx',
+      ],
+      rules: { '@typescript-eslint/no-restricted-imports': ['error', { patterns: [RN_TEXT, RN_TOAST] }] },
+    },
+    {
+      // Tests build fixtures with the writers and fake clocks, and query react-native's Text and Modal.
+      files: ['src/**/__tests__/**'],
+      rules: { 'no-restricted-properties': 'off', '@typescript-eslint/no-restricted-imports': 'off' },
     },
   ],
   ignorePatterns: [

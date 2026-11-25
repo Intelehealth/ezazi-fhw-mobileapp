@@ -178,6 +178,15 @@ describe('getCardErrors details', () => {
     expect(getCardErrors({ values: { systolicBp: '12.5' } }, 'default')[0]?.reason).toBe('notANumber');
   });
 
+  it('reports a diastolic that is not a number, but not a diastolic next to a bad systolic', () => {
+    expect(getCardErrors({ values: { systolicBp: '120', diastolicBp: '8o' } }, 'default').map((e) => [e.id, e.reason])).toEqual([
+      ['diastolicBp', 'notANumber'],
+    ]);
+    expect(getCardErrors({ values: { systolicBp: '12o', diastolicBp: '80' } }, 'default').map((e) => [e.id, e.reason])).toEqual([
+      ['systolicBp', 'notANumber'],
+    ]);
+  });
+
   it('does not range-check contractions per 10 minutes (Android has no Save check)', () => {
     expect(getCardErrors({ values: { contractionsPer10Min: '9' } }, 'default')).toEqual([]);
   });

@@ -1,5 +1,5 @@
 import { clientConfig } from '@/core/config/clients';
-import { PHONE_REGEX, createForgotPasswordRequestFormSchema } from '../forgotPasswordRequestForm.schema';
+import { HEALTH_WORKER_ROLE, PHONE_REGEX, createForgotPasswordRequestFormSchema } from '../forgotPasswordRequestForm.schema';
 
 const t = (key: string) => key;
 const NAMESPACE = 'forgotPassword.request.errors';
@@ -51,4 +51,10 @@ describe('createForgotPasswordRequestFormSchema', () => {
     }
   });
 
+});
+
+describe('HEALTH_WORKER_ROLE', () => {
+  it('is the nurse role value the server sends, from core/db/constants', () => {
+    expect(HEALTH_WORKER_ROLE).toBe('Organizational: Nurse');
+  });
 });

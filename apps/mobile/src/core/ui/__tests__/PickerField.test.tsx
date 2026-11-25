@@ -1,0 +1,81 @@
+import '@/core/i18n';
+import { StyleSheet } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+
+import { colors } from '@/core/config/theme';
+
+import { PickerField } from '../PickerField';
+
+const OPTIONS = [
+  { value: 'C', label: 'Clear' },
+  { value: 'M+++', label: 'Thick meconium', alert: true },
+];
+
+const setup = (props: Partial<React.ComponentProps<typeof PickerField>> = {}) => {
+  const onChange = jest.fn();
+  render(<PickerField label="Amniotic fluid" options={OPTIONS} value={null} onChange={onChange} placeholder="Select" {...props} />);
+  return onChange;
+};
+
+const fieldStyle = () => StyleSheet.flatten(screen.getByRole('button', { name: 'Amniotic fluid' }).props.style);
+
+describe('PickerField', () => {
+  it('shows the placeholder until something is picked', () => {
+    setup();
+    expect(screen.getByText('Select')).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Clear' })).toBeNull();
+  });
+
+  it('opens the sheet, reports the pick and closes', () => {
+    const onChange = setup();
+    fireEvent.press(screen.getByRole('button', { name: 'Amniotic fluid' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Thick meconium' }));
+
+    expect(onChange).toHaveBeenCalledWith('M+++');
+    expect(screen.queryByRole('radio', { name: 'Clear' })).toBeNull();
+  });
+
+  it('shows the picked label, pink for an alert value', () => {
+    setup({ value: 'M+++' });
+    expect(screen.getByText('Thick meconium')).toBeTruthy();
+    expect(fieldStyle().borderColor).toBe(colors.controlAlertBorder);
+  });
+
+  it('outlines in red on error', () => {
+    setup({ error: true });
+    expect(fieldStyle().borderColor).toBe(colors.controlErrorBorder);
+  });
+
+  it('does not open when disabled', () => {
+    setup({ disabled: true });
+    fireEvent.press(screen.getByRole('button', { name: 'Amniotic fluid' }));
+    expect(screen.queryByRole('radio', { name: 'Clear' })).toBeNull();
+  });
+});
+
+describe('PickerField with free text', () => {
+  it('filters the list by the typed text and can keep text that matches nothing', () => {
+    const onChange = setup({ freeText: true });
+    fireEvent.press(screen.getByRole('button', { name: 'Amniotic fluid' }));
+    fireEvent.changeText(screen.getByLabelText('Search Amniotic fluid'), 'thick');
+
+    expect(screen.queryByRole('radio', { name: 'Clear' })).toBeNull();
+    expect(screen.getByRole('radio', { name: 'Thick meconium' })).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Search Amniotic fluid'), 'Brownish');
+    fireEvent.press(screen.getByText('Use “Brownish”'));
+    expect(onChange).toHaveBeenCalledWith('Brownish');
+  });
+
+  it('shows a typed value that is not in the list', () => {
+    setup({ freeText: true, value: 'Brownish' });
+    expect(screen.getByText('Brownish')).toBeTruthy();
+  });
+
+  it('shows the pick but does not open when read-only', () => {
+    setup({ value: 'C', readOnly: true });
+    expect(screen.getByText('Clear')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Amniotic fluid' }));
+    expect(screen.queryByRole('radio', { name: 'Thick meconium' })).toBeNull();
+  });
+});

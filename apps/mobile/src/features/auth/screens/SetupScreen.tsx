@@ -24,11 +24,12 @@ import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
 import { setupIllustration } from '@/core/ui/illustrations/setupIllustration';
 import { clientConfig } from '@/core/config/clients';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { useAuthStore } from '@/core/session/auth.store';
 import { showToast } from '@/core/utils/toast';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
+import { AUTH_TEST_IDS } from '../testIds';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Setup'>;
 
@@ -104,9 +105,9 @@ export const SetupScreen: React.FC = () => {
   // ── Brand header — client wordmark (left) + illustration (absolute, top-right) ──
   // logoH is the visible glyph height now that setup_logo.png is pre-cropped
   // (no baked-in padding), so this can stay compact without looking tiny.
-  const logoH = isTablet ? scale(46) : 32;
+  const logoH = isTablet ? scale(46) : dimens.authLogoHeight;
   const logoW = logoH * LOGO_ASPECT;
-  const illustrationH = isTablet ? scale(130) : 104;
+  const illustrationH = isTablet ? scale(130) : dimens.authIllustrationHeight;
   const illustrationW = illustrationH * ILLUSTRATION_ASPECT;
   // Measured (not guessed) from the LOCATION field's actual onLayout position
   // — see locationFieldY below — so the illustration's bottom edge lands
@@ -118,7 +119,7 @@ export const SetupScreen: React.FC = () => {
   const illustrationTop = locationFieldY !== null ? locationFieldY - illustrationH + 1 : 0;
   // Inset from the right content edge, so the illustration doesn't sit flush
   // against it (per Figma).
-  const illustrationRight = isTablet ? scale(20) : 14;
+  const illustrationRight = isTablet ? scale(20) : dimens.authIllustrationRight;
 
   // login() lives in the auth store, not this screen — it owns talking to
   // sessionApi, persisting tokens, and marking the store authenticated.
@@ -151,7 +152,7 @@ export const SetupScreen: React.FC = () => {
   return (
     <>
     <FormScreenLayout
-      contentStyle={[styles.content, { paddingTop: isTablet ? scale(190) : 130 }]}
+      contentStyle={[styles.content, { paddingTop: isTablet ? scale(190) : dimens.authContentTop }]}
     >
       {/*
         ── Top section — logo, heading and the LOCATION field all sit in normal
@@ -178,7 +179,7 @@ export const SetupScreen: React.FC = () => {
           style={[
             styles.fieldLabel,
             styles.firstFieldLabel,
-            { fontSize: fs('label') - 1, marginTop: isTablet ? scale(36) : 28 },
+            { fontSize: fs('label') - 1, marginTop: isTablet ? scale(36) : dimens.authFirstFieldTop },
           ]}
         >
           {t('setup.location')}
@@ -191,6 +192,7 @@ export const SetupScreen: React.FC = () => {
               ref={locationFieldRef}
               accessibilityRole="button"
               accessibilityLabel={t('setup.locationPlaceholder')}
+              testID={AUTH_TEST_IDS.setup.location}
               activeOpacity={0.7}
               onPress={openLocationPicker}
               onLayout={(e) => setLocationFieldY(e.nativeEvent.layout.y)}
@@ -201,11 +203,11 @@ export const SetupScreen: React.FC = () => {
                 editable={false}
                 pointerEvents="none"
                 error={errors.location?.message}
-                leftSlot={<AppIcon name="locationPin" size={20} color={colors.icon} />}
+                leftSlot={<AppIcon name="locationPin" size={dimens.fieldIcon} color={colors.icon} />}
                 rightSlot={
                   isLocationsLoading
                     ? <ActivityIndicator size="small" color={colors.icon} />
-                    : <AppIcon name="chevronDown" size={20} color={colors.icon} />
+                    : <AppIcon name="chevronDown" size={dimens.fieldIcon} color={colors.icon} />
                 }
               />
             </TouchableOpacity>
@@ -237,13 +239,14 @@ export const SetupScreen: React.FC = () => {
         render={({ field: { value, onChange } }) => (
           <AppTextField
             placeholder={t('setup.usernamePlaceholder')}
+            testID={AUTH_TEST_IDS.setup.username}
             value={value}
             onChangeText={(text) => {
               onChange(text);
               if (errors.username) clearErrors('username');
             }}
             error={errors.username?.message}
-            leftSlot={<AppIcon name="person" size={20} color={colors.icon} />}
+            leftSlot={<AppIcon name="person" size={dimens.fieldIcon} color={colors.icon} />}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
@@ -261,13 +264,14 @@ export const SetupScreen: React.FC = () => {
         render={({ field: { value, onChange } }) => (
           <PasswordField
             placeholder={t('setup.passwordPlaceholder')}
+            testID={AUTH_TEST_IDS.setup.password}
             value={value}
             onChangeText={(text) => {
               onChange(text);
               if (errors.password) clearErrors('password');
             }}
             error={errors.password?.message}
-            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            leftSlot={<AppIcon name="lock" size={dimens.fieldIcon} color={colors.icon} />}
             returnKeyType="done"
             onSubmitEditing={handleSetup}
           />
@@ -280,6 +284,7 @@ export const SetupScreen: React.FC = () => {
         accessibilityRole="link"
         accessibilityLabel={t('setup.forgotPassword')}
         onPress={() => navigation.navigate('ForgotPasswordRequest', { origin: 'Setup' })}
+        testID={AUTH_TEST_IDS.setup.forgotPassword}
       >
         <Text style={[styles.forgotText, { fontSize: fs('link') }]}>
           {t('setup.forgotPassword')}
@@ -293,6 +298,7 @@ export const SetupScreen: React.FC = () => {
         style={styles.tempLoginRow}
         accessibilityRole="link"
         accessibilityLabel={t('setup.tempNavLogin')}
+        testID={AUTH_TEST_IDS.setup.goToLogin}
         onPress={() => navigation.navigate('Login')}
       >
         <Text style={[styles.tempLoginText, { fontSize: fs('link') }]}>
@@ -305,6 +311,7 @@ export const SetupScreen: React.FC = () => {
         style={styles.tempLoginRow}
         accessibilityRole="link"
         accessibilityLabel={t('setup.tempNavPrivacy')}
+        testID={AUTH_TEST_IDS.setup.goToPrivacy}
         onPress={() => navigation.navigate('PrivacyNotice')}
       >
         <Text style={[styles.tempLoginText, { fontSize: fs('link') }]}>
@@ -317,12 +324,13 @@ export const SetupScreen: React.FC = () => {
           can't run until a location is picked, which can't happen while the
           fetch is still failing). `banner` wins when both happen to be set,
           since it reflects the user's latest action. ── */}
-      {!!(banner ?? locationBanner) && <ApiErrorBanner banner={(banner ?? locationBanner)!} />}
+      {!!(banner ?? locationBanner) && <ApiErrorBanner banner={(banner ?? locationBanner)!} testID={AUTH_TEST_IDS.setup.errorBanner} />}
 
       {/* ── Login button — always enabled; the zod resolver surfaces per-field
           errors when tapped with empty/invalid fields. ── */}
       <AppButton
         label={t('setup.submit')}
+        testID={AUTH_TEST_IDS.setup.submit}
         onPress={handleSetup}
         disabled={isSubmitting}
         style={styles.loginButton}
@@ -340,6 +348,7 @@ export const SetupScreen: React.FC = () => {
         setLocationPickerVisible(false);
       }}
       onClose={() => setLocationPickerVisible(false)}
+      testID={AUTH_TEST_IDS.setup.locationList}
     />
     </>
   );
@@ -352,7 +361,7 @@ const localStyles = StyleSheet.create({
   // TEMPORARY — see the dev/QA nav shortcut comment above.
   tempLoginRow: {
     alignSelf: 'flex-start',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 
   tempLoginText: {

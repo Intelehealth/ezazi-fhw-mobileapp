@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import {
   Linking,
-  Platform,
   StyleSheet,
-  ToastAndroid,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -14,8 +12,10 @@ import { ScreenLayout } from '@/core/ui/ScreenLayout';
 import { AppButton } from '@/core/ui/AppButton';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, fontSizes, radii, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
+import { AUTH_TEST_IDS } from '../testIds';
+import { showToast } from '@/core/utils/toast';
 
 // config.json → privacyNoticeText
 const PRIVACY_URL = 'https://www.intelehealth.org/privacy-policy';
@@ -55,10 +55,6 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
     },
   ];
 
-  const toast = (msg: string) => {
-    if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
-  };
-
   // Accept stays disabled until the consent box is ticked (design) —
   // Reject keeps PrivacyNoticeActivity.java's read-first toast.
   const handleAccept = () => {
@@ -67,24 +63,24 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleReject = () => {
-    if (!checked) { toast(t('privacy.toastReadFirst')); return; }
-    toast(t('privacy.toastReject'));
+    if (!checked) { showToast(t('privacy.toastReadFirst')); return; }
+    showToast(t('privacy.toastReject'));
     navigation.goBack();
   };
 
   // ── Responsive values — tablet = design (600dp reference), phone scaled down ──
-  const TEXT_INSET  = isTablet ? scale(40) : 24; // sections stop short of the card's right edge
-  const BACK_SZ     = isTablet ? scale(40) : 36;
-  const BACK_ICON   = isTablet ? scale(20) : 18;
-  const TITLE_SZ    = isTablet ? scale(25) : 21;
-  const HEAD_SZ     = isTablet ? scale(15) : 13;
-  const BODY_SZ     = isTablet ? scale(14) : 12;
-  const BODY_LH     = isTablet ? scale(20) : 18;
-  const SEC_PAD     = isTablet ? scale(15) : 12;
-  const CHECK_SZ    = isTablet ? scale(24) : 20;
-  const CONSENT_SZ  = isTablet ? scale(15) : 13;
-  const BLOCK_GAP   = isTablet ? scale(26) : 20;
-  const BTN_GAP     = isTablet ? scale(24) : 16;
+  const TEXT_INSET  = isTablet ? scale(40) : spacing.lg; // sections stop short of the card's right edge
+  const BACK_SZ     = isTablet ? scale(40) : dimens.privacyBackButton;
+  const BACK_ICON   = isTablet ? scale(20) : dimens.privacyBackIcon;
+  const TITLE_SZ    = isTablet ? scale(25) : fontSizes.privacyTitle.phone;
+  const HEAD_SZ     = isTablet ? scale(15) : fontSizes.privacyHeading.phone;
+  const BODY_SZ     = isTablet ? scale(14) : fontSizes.privacyBody.phone;
+  const BODY_LH     = isTablet ? scale(20) : dimens.privacyBodyLineHeight;
+  const SEC_PAD     = isTablet ? scale(15) : dimens.privacySectionPad;
+  const CHECK_SZ    = isTablet ? scale(24) : dimens.privacyCheckbox;
+  const CONSENT_SZ  = isTablet ? scale(15) : fontSizes.privacyConsent.phone;
+  const BLOCK_GAP   = isTablet ? scale(26) : dimens.privacyBlockGap;
+  const BTN_GAP     = isTablet ? scale(24) : spacing.md;
 
   const bodyText = { fontSize: BODY_SZ, lineHeight: BODY_LH };
 
@@ -93,8 +89,9 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
       {/* ── Back button + title ── */}
       <View style={styles.titleRow}>
         <TouchableOpacity
-          style={[styles.backBtn, { width: BACK_SZ, height: BACK_SZ, borderRadius: isTablet ? scale(10) : 8 }]}
+          style={[styles.backBtn, { width: BACK_SZ, height: BACK_SZ, borderRadius: isTablet ? scale(10) : radii.md }]}
           onPress={() => navigation.goBack()}
+          testID={AUTH_TEST_IDS.privacy.back}
           accessibilityRole="button"
           accessibilityLabel={t('common.a11y.goBack')}
           activeOpacity={0.7}
@@ -118,7 +115,7 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
             ]}
           >
             {sec.heading != null && (
-              <Text style={[styles.heading, { fontSize: HEAD_SZ, lineHeight: BODY_LH, marginBottom: 2 }]}>
+              <Text style={[styles.heading, { fontSize: HEAD_SZ, lineHeight: BODY_LH, marginBottom: dimens.privacyHeadingGap }]}>
                 {sec.heading}
               </Text>
             )}
@@ -140,7 +137,7 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
 
             {sec.bullets?.map(b => (
-              <View key={b} style={[styles.bulletRow, { marginTop: 4 }]}>
+              <View key={b} style={[styles.bulletRow, { marginTop: spacing.xs }]}>
                 <Text style={[styles.bulletDot, bodyText]}>{'•'}</Text>
                 <Text style={[styles.body, bodyText, styles.flex1]}>{b}</Text>
               </View>
@@ -155,11 +152,12 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
           styles.consentCard,
           {
             marginTop: BLOCK_GAP - SEC_PAD,
-            padding: isTablet ? scale(16) : 12,
-            borderRadius: isTablet ? scale(12) : 10,
+            padding: isTablet ? scale(16) : dimens.privacyConsentPad,
+            borderRadius: isTablet ? scale(12) : radii.consentCard,
           },
         ]}
         onPress={() => setChecked(v => !v)}
+        testID={AUTH_TEST_IDS.privacy.consent}
         activeOpacity={0.7}
         accessibilityRole="checkbox"
         accessibilityState={{ checked }}
@@ -167,11 +165,11 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={[
           styles.checkbox,
-          { width: CHECK_SZ, height: CHECK_SZ, borderRadius: isTablet ? scale(5) : 4 },
+          { width: CHECK_SZ, height: CHECK_SZ, borderRadius: isTablet ? scale(5) : radii.sm },
           checked && styles.checkboxChecked,
         ]}>
           {checked && (
-            <AppIcon name="check" size={isTablet ? scale(16) : 14} color={colors.white} />
+            <AppIcon name="check" size={isTablet ? scale(16) : dimens.privacyCheckIcon} color={colors.white} />
           )}
         </View>
 
@@ -185,6 +183,7 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
       {/* ── Accept + Reject ── */}
       <AppButton
         label={t('privacy.accept')}
+        testID={AUTH_TEST_IDS.privacy.accept}
         onPress={handleAccept}
         disabled={!checked}
         disabledTone="brand"
@@ -193,6 +192,7 @@ export const PrivacyNoticeScreen: React.FC<Props> = ({ navigation }) => {
 
       <AppButton
         label={t('privacy.reject')}
+        testID={AUTH_TEST_IDS.privacy.reject}
         onPress={handleReject}
         variant="secondary"
         style={{ marginTop: BTN_GAP }}
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           12,
+    gap:           dimens.privacyTitleGap,
   },
 
   backBtn: {
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
 
   bulletRow: {
     flexDirection: 'row',
-    gap:           8,
+    gap:           spacing.sm,
   },
 
   bulletDot: {
@@ -260,19 +260,19 @@ const styles = StyleSheet.create({
   consentCard: {
     flexDirection:   'row',
     alignItems:      'flex-start',
-    gap:             12,
+    gap:             dimens.privacyConsentGap,
     borderWidth:     1,
     borderColor:     colors.borderFigma,
     backgroundColor: colors.white,
   },
 
   checkbox: {
-    borderWidth:     1.5,
+    borderWidth:     dimens.privacyCheckboxBorder,
     borderColor:     colors.borderFigma,
     backgroundColor: colors.white,
     alignItems:      'center',
     justifyContent:  'center',
-    marginTop:       2,
+    marginTop:       dimens.privacyCheckboxTop,
     flexShrink:      0,
   },
 

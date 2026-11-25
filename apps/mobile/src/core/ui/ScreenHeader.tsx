@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from './Text';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, fontSizes, radii } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 
 /**
@@ -26,11 +26,11 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack }) => 
   const { t } = useTranslation();
   const { isTablet, scale } = useResponsive();
 
-  const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0;
-  const btnSize    = isTablet ? scale(48) : 42;
-  const iconSize   = isTablet ? scale(22) : 18;
-  const barHeight  = isTablet ? scale(64) : 56;
-  const titleSize  = isTablet ? scale(22) : 18;
+  const statusBarH = Platform.OS === 'android' ? (StatusBar.currentHeight ?? dimens.statusBarFallback) : 0;
+  const btnSize    = isTablet ? scale(48) : dimens.screenHeaderButton;
+  const iconSize   = isTablet ? scale(22) : dimens.screenHeaderIcon;
+  const barHeight  = isTablet ? scale(64) : dimens.screenHeaderHeight;
+  const titleSize  = isTablet ? scale(22) : fontSizes.screenHeaderTitle.phone;
 
   return (
     <View style={[styles.container, { paddingTop: statusBarH }]}>
@@ -38,7 +38,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack }) => 
         <TouchableOpacity
           style={[
             styles.backBtn,
-            { width: btnSize, height: btnSize, borderRadius: isTablet ? scale(14) : 12 },
+            { width: btnSize, height: btnSize, borderRadius: isTablet ? scale(14) : radii.headerBackButton },
           ]}
           onPress={onBack}
           accessibilityRole="button"
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection:     'row',
     alignItems:        'center',
-    paddingHorizontal: 12,
-    gap:               14,
+    paddingHorizontal: dimens.screenHeaderHPad,
+    gap:               dimens.screenHeaderGap,
   },
 
   backBtn: {

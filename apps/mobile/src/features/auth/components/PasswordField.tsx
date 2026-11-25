@@ -8,7 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { AppTextField } from '@/core/ui/AppTextField';
 import { AppIcon } from '@/core/ui/icons';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, spacing } from '@/core/config/theme';
 
 /**
  * AppTextField with an inline show/hide toggle.
@@ -22,7 +22,7 @@ interface PasswordFieldProps extends Omit<TextInputProps, 'secureTextEntry'> {
 }
 
 export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
-  ({ label, error, leftSlot, ...inputProps }, ref) => {
+  ({ label, error, leftSlot, testID, ...inputProps }, ref) => {
     const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
 
@@ -33,6 +33,7 @@ export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
         error={error}
         leftSlot={leftSlot}
         secureTextEntry={!showPassword}
+        testID={testID}
         autoCapitalize="none"
         autoCorrect={false}
         rightSlot={
@@ -46,10 +47,11 @@ export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
                 : t('common.a11y.showPassword')
             }
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            testID={testID && `${testID}-toggle`}
           >
             <AppIcon
               name={showPassword ? 'eyeOff' : 'eyeOpen'}
-              size={22}
+              size={dimens.passwordToggleIcon}
               color={colors.icon}
             />
           </TouchableOpacity>
@@ -64,6 +66,6 @@ PasswordField.displayName = 'PasswordField';
 
 const styles = StyleSheet.create({
   eyeBtn: {
-    paddingLeft: 8,
+    paddingLeft: spacing.sm,
   },
 });

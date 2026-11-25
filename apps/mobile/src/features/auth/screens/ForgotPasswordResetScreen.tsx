@@ -19,9 +19,10 @@ import { AppButton } from '@/core/ui/AppButton';
 import { FormScreenLayout } from '@/core/ui/FormScreenLayout';
 import { AppIcon } from '@/core/ui/icons';
 import { Text } from '@/core/ui/Text';
-import { colors, dimens } from '@/core/config/theme';
+import { colors, dimens, letterSpacing, spacing } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import { getApiErrorBanner, type ErrorBanner } from '@/core/utils/apiErrorBanner';
+import { AUTH_TEST_IDS } from '../testIds';
 
 // Figma — static requirements list, not a live-validated checklist (no
 // screenshot shows an item turning "checked" even with a password typed).
@@ -100,6 +101,7 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
           title={t('forgotPassword.reset.heading')}
           subtitle={t('forgotPassword.reset.subtitle')}
           onBack={() => navigation.goBack()}
+          backTestID={AUTH_TEST_IDS.forgotReset.back}
           firstFieldY={newPasswordFieldY}
         />
       }
@@ -114,13 +116,14 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
             ref={newPasswordRef}
             label={t('forgotPassword.reset.newPassword')}
             placeholder={t('forgotPassword.reset.newPasswordPlaceholder')}
+            testID={AUTH_TEST_IDS.forgotReset.newPassword}
             value={value}
             onChangeText={(text) => {
               onChange(text);
               if (errors.newPassword) clearErrors('newPassword');
             }}
             error={errors.newPassword?.message}
-            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            leftSlot={<AppIcon name="lock" size={dimens.fieldIcon} color={colors.icon} />}
             returnKeyType="next"
             onSubmitEditing={() => confirmRef.current?.focus()}
             onLayout={() => {
@@ -175,13 +178,14 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
             ref={confirmRef}
             label={t('forgotPassword.reset.confirmPassword')}
             placeholder={t('forgotPassword.reset.confirmPasswordPlaceholder')}
+            testID={AUTH_TEST_IDS.forgotReset.confirmPassword}
             value={value}
             onChangeText={(text) => {
               onChange(text);
               if (errors.confirmPassword) clearErrors('confirmPassword');
             }}
             error={errors.confirmPassword?.message}
-            leftSlot={<AppIcon name="lock" size={20} color={colors.icon} />}
+            leftSlot={<AppIcon name="lock" size={dimens.fieldIcon} color={colors.icon} />}
             returnKeyType="done"
             onSubmitEditing={handleSave}
           />
@@ -189,16 +193,17 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
       />
 
       {/* ── API error banner — network/server failures from resetPassword ── */}
-      {!!banner && <ApiErrorBanner banner={banner} />}
+      {!!banner && <ApiErrorBanner banner={banner} testID={AUTH_TEST_IDS.forgotReset.errorBanner} />}
 
       <AppButton
         label={t('forgotPassword.reset.submit')}
+        testID={AUTH_TEST_IDS.forgotReset.submit}
         onPress={handleSave}
         disabled={!isFormValid || isSubmitting}
         style={styles.button}
       />
 
-      <PasswordResetSuccessDialog visible={showSuccess} onBackToLogin={handleBackToLogin} />
+      <PasswordResetSuccessDialog visible={showSuccess} testID={AUTH_TEST_IDS.forgotReset.successDialog} onBackToLogin={handleBackToLogin} />
     </FormScreenLayout>
   );
 };
@@ -206,32 +211,32 @@ export const ForgotPasswordResetScreen: React.FC<Props> = ({ navigation, route }
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   content: {
-    paddingTop: 40,
+    paddingTop: dimens.forgotPasswordContentTop,
   },
 
   requirementsCard: {
     backgroundColor: colors.colorPrimaryLighter,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginTop: 12,
-    marginBottom: 20,
+    paddingHorizontal: dimens.requirementsCardHPad,
+    paddingVertical: dimens.requirementsCardVPad,
+    marginTop: dimens.requirementsCardTop,
+    marginBottom: dimens.requirementsCardBottom,
   },
 
   requirementsLabel: {
     color: colors.darkGray,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: letterSpacing.caps,
+    marginBottom: spacing.sm,
   },
 
   requirementsGrid: {
-    gap: 6,
+    gap: dimens.requirementsRowGap,
   },
 
   requirementsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: dimens.requirementsColumnGap,
   },
 
   requirementText: {
@@ -240,6 +245,6 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    marginTop: 48,
+    marginTop: spacing.xxl,
   },
 });

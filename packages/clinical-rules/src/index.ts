@@ -12,13 +12,23 @@ export {
   PRIVACY_NOTICE_VALUE,
   NO_RESPONSE_VALUE,
   IV_FLUID_OTHER_VALUE,
+  ALERT_CODE,
+  MOTHER_DECEASED_YES,
+  STAGE1_OUTCOME,
+  STAGE2_OUTCOME,
+  STAGE2_OTHER_CONCEPT_KEY,
+  REFER_TYPE_OTHER_VALUE,
+  OUTCOME_TEXT_MAX_LENGTH,
+  OUTCOME_CONCEPT_KEY,
+  outcomeLabelKey,
   fieldLabelKey,
   optionLabelKey,
   sectionLabelKey,
   infusionInputLabelKey,
   validationMessageKey,
 } from './constants';
-export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId } from './constants';
+export type { FieldId, ConceptKey, InfusionInputId, SectionId, StageId, AlertCode, Stage1OutcomeId, OutcomeConceptKey } from './constants';
+export type { Stage2OutcomeId } from './constants';
 
 export {
   STAGE1_SCHEDULE,
@@ -35,6 +45,14 @@ export type { UniformStageSchedule } from './cards/schedule';
 export { decideNextStep, getUpcomingStep } from './cards/decideNextStep';
 export { getStageStart } from './cards/stageStart';
 export { formatCardName, formatSosName } from './cards/cardName';
+export { getCardStatus } from './cards/cardStatus';
+export type {
+  CardState,
+  CardAccess,
+  CardStatus,
+  TimelineCardFacts,
+  TimelineVisitFacts,
+} from './cards/cardStatus';
 export type {
   MonitoringStage,
   CardMarker,
@@ -65,7 +83,23 @@ export {
   INFUSION_INPUT_LABELS,
   OTHER_TYPE_TEXT,
 } from './fields/infusionInputs';
-export { filterFreeText } from './fields/textInput';
+export {
+  MEDICINE_CATALOGUE,
+  catalogueLabel,
+  findCatalogueMedicine,
+  MEDICINE_FORM_OPTIONS,
+  MEDICINE_STRENGTH_OPTIONS,
+  MEDICINE_DOSE_UNIT_OPTIONS,
+  MEDICINE_ROUTE_OPTIONS,
+  MEDICINE_FREQUENCY_OPTIONS,
+  MEDICINE_DURATION_UNIT_OPTIONS,
+} from './fields/medicineInputs';
+export type { CatalogueMedicine } from './fields/medicineInputs';
+export { FIELD_CONTROLS, getFieldControl } from './fields/fieldControls';
+export type { FieldControl } from './fields/fieldControls';
+export { getStepperSpec } from './fields/stepper';
+export type { StepperSpec } from './fields/stepper';
+export { filterFreeText, filterDigits } from './fields/textInput';
 export type {
   FieldFrequency,
   OptionDefinition,
@@ -79,6 +113,8 @@ export type {
 } from './fields/types';
 
 export { BASE_RANGES } from './ranges/baseRanges';
+export { ALERT_THRESHOLDS } from './ranges/alertThresholds';
+export { STEPPER_STEPS } from './ranges/stepperSteps';
 export { INPUT_LIMITS, INFUSION_INPUT_LIMITS } from './ranges/inputLimits';
 export type { LimitedInputId, LimitedInfusionInputId } from './ranges/inputLimits';
 export {
@@ -100,11 +136,38 @@ export type {
   IntegerLimits,
   DecimalLimits,
   TextLimits,
+  AlertThresholdId,
+  AlertThreshold,
+  AlertThresholdTable,
+  StepperId,
 } from './ranges/types';
+
+export { getAlertCode } from './alerts/alertCode';
+export { RISK_FIELD_IDS, computeVisitRisk, formatVisitRisk } from './alerts/riskScore';
+export type { RiskObs, CervixReading } from './alerts/riskScore';
+export { RISK_SCORE } from './ranges/riskScore';
+
+export { STAGE1_OUTCOMES, VISIT_COMPLETE_BACKDATE_MINUTES } from './outcomes/stage1Outcomes';
+export type { OutcomeDefinition } from './outcomes/stage1Outcomes';
+export { decideEndStage1 } from './outcomes/decideEndStage1';
+export type { OutcomeDetails, OutcomeObs, EndStage1Decision } from './outcomes/decideEndStage1';
+export { STAGE2_OUTCOMES } from './outcomes/stage2Outcomes';
+export type { Stage2OutcomeDefinition } from './outcomes/stage2Outcomes';
+export { decideEndStage2 } from './outcomes/decideEndStage2';
+export type { EndStage2Decision, EndStage2Details, Stage2OutcomeObs } from './outcomes/decideEndStage2';
+export { summarizeVisitOutcome, MOTHER_DEATH_OUTCOME_LABEL } from './outcomes/visitOutcome';
+export type { VisitOutcomeObs, VisitOutcomeSummary } from './outcomes/visitOutcome';
+
+export { buildNewCardObs } from './save/newCardObs';
+export type { ObsDraft, CardNotes } from './save/newCardObs';
+export { buildEditedCardObs } from './save/editedCardObs';
+export type { StoredObs, CardEdit, ObsRewrite } from './save/editedCardObs';
 
 export { encodeInfusion, decodeInfusion } from './storage/infusionJson';
 export type { InfusionEntry } from './storage/infusionJson';
-export { encodeMedicine, decodeMedicine, MEDICINE_REQUIRED_FIELDS } from './storage/medicineText';
+export { encodeMedicine, decodeMedicine, MEDICINE_REQUIRED_FIELDS, MEDICINE_ADD_REQUIRED_FIELDS } from './storage/medicineText';
+// Java's String.trim() (what Android trims stored values with): the app must match values the same way.
+export { javaTrim } from './internal/javaTrim';
 export type { MedicineEntry } from './storage/medicineText';
 export { isNoResponse } from './storage/noResponse';
 

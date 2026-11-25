@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterFreeText } from '../textInput';
+import { filterDigits, filterFreeText } from '../textInput';
 
 describe('filterFreeText (Android FirstLetterUpperCaseInputFilter)', () => {
   it('upper-cases the first character', () => {
@@ -28,3 +28,12 @@ describe('filterFreeText (Android FirstLetterUpperCaseInputFilter)', () => {
     expect(filterFreeText('डॉ')).toBe('');
   });
 });
+
+describe('filterDigits (Android android:digits="1234567890")', () => {
+  it('keeps only the digits', () => {
+    expect(filterDigits('2 tabs')).toBe('2');
+    expect(filterDigits('1.5')).toBe('15');
+    expect(filterDigits('')).toBe('');
+  });
+});
+

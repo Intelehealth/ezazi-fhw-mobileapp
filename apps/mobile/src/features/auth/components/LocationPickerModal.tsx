@@ -10,7 +10,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, fontSizes, spacing } from '@/core/config/theme';
 import { Text } from '@/core/ui/Text';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { LoginLocation } from '@/features/auth/stores/location.store';
@@ -37,12 +37,15 @@ interface LocationPickerModalProps {
   anchor: FieldAnchor | null;
   onSelect: (location: LoginLocation) => void;
   onClose: () => void;
+  /** QA locator of the list; each option is `<testID>-option-<uuid>`. */
+  testID?: string;
 }
 
-const MAX_DROPDOWN_HEIGHT = 260;
-const DROPDOWN_GAP = 6;
+const MAX_DROPDOWN_HEIGHT = dimens.locationDropdownMaxHeight;
+const DROPDOWN_GAP = dimens.locationDropdownGap;
 
 export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
+  testID,
   visible,
   locations,
   isLoading,
@@ -103,6 +106,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                     onPress={() => onSelect(item)}
                     accessibilityRole="button"
                     accessibilityLabel={item.display}
+                    testID={testID && `${testID}-option-${item.uuid}`}
                   >
                     <Text style={styles.rowText}>{item.display}</Text>
                   </TouchableOpacity>
@@ -136,13 +140,13 @@ const styles = StyleSheet.create({
   },
 
   stateBox: {
-    paddingVertical: 20,
+    paddingVertical: dimens.locationStatePad,
   },
 
   emptyText: {
     color:             colors.textSecondary,
     textAlign:         'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
 
   list: {
@@ -150,13 +154,13 @@ const styles = StyleSheet.create({
   },
 
   row: {
-    paddingHorizontal: 14,
-    paddingVertical:   14,
+    paddingHorizontal: dimens.locationRowPad,
+    paddingVertical:   dimens.locationRowPad,
   },
 
   rowText: {
     color:    colors.textPrimary,
-    fontSize: 15,
+    fontSize: fontSizes.locationOption.phone,
   },
 
   separator: {

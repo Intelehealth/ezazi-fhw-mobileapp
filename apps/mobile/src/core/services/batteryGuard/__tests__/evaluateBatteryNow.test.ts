@@ -167,6 +167,24 @@ describe('evaluateBatteryNow', () => {
     });
   });
 
+  it('a sound level passed between two checks (5 minutes apart) still sounds', async () => {
+    await AsyncStorage.setItem(BATTERY_LAST_NOTIFIED_PERCENT_KEY, '31');
+    setPower(29);
+
+    await evaluateBatteryNow();
+
+    expect(lastNotification().android.channelId).toBe(BATTERY_ALERT_CHANNEL_ID);
+  });
+
+  it('does not sound again for a level already warned below', async () => {
+    await AsyncStorage.setItem(BATTERY_LAST_NOTIFIED_PERCENT_KEY, '29');
+    setPower(28);
+
+    await evaluateBatteryNow();
+
+    expect(lastNotification().android.channelId).toBe(BATTERY_SILENT_CHANNEL_ID);
+  });
+
   it('does not throw when posting the notification fails', async () => {
     (notifee.displayNotification as jest.Mock).mockRejectedValueOnce(new Error('native failure'));
     setPower(33);

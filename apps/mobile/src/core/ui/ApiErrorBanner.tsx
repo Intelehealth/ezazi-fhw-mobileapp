@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from './Text';
 import { NetworkErrorIcon } from './icons';
-import { colors } from '@/core/config/theme';
+import { colors, dimens, fontSizes, radii } from '@/core/config/theme';
 import { useResponsive } from '@/core/ui/hooks/useResponsive';
 import type { ErrorBanner } from '@/core/utils/apiErrorBanner';
 
@@ -23,17 +23,19 @@ import type { ErrorBanner } from '@/core/utils/apiErrorBanner';
 
 interface ApiErrorBannerProps {
   banner: ErrorBanner;
+  /** QA locator. */
+  testID?: string;
 }
 
-export const ApiErrorBanner: React.FC<ApiErrorBannerProps> = ({ banner }) => {
+export const ApiErrorBanner: React.FC<ApiErrorBannerProps> = ({ banner, testID }) => {
   const { t } = useTranslation();
   const { fs, cornerRadius } = useResponsive();
 
   if (banner.variant === 'network') {
     return (
-      <View style={styles.networkBanner}>
+      <View style={styles.networkBanner} testID={testID}>
         <View style={styles.networkIconCircle}>
-          <NetworkErrorIcon size={20} />
+          <NetworkErrorIcon size={dimens.networkBannerGlyph} />
         </View>
         <View style={styles.textWrap}>
           <Text style={[styles.networkTitle, { fontSize: fs('label') }]}>{banner.title}</Text>
@@ -44,7 +46,7 @@ export const ApiErrorBanner: React.FC<ApiErrorBannerProps> = ({ banner }) => {
   }
 
   return (
-    <View style={[styles.banner, { borderRadius: cornerRadius }]}>
+    <View style={[styles.banner, { borderRadius: cornerRadius }]} testID={testID}>
       <View style={styles.icon}>
         <Text style={styles.iconGlyph}>{t('common.errorIconGlyph')}</Text>
       </View>
@@ -61,25 +63,25 @@ const styles = StyleSheet.create({
     flexDirection:   'row',
     alignItems:      'flex-start',
     backgroundColor: colors.colorEmergencyBg,
-    padding:         12,
-    marginTop:       20,
+    padding:         dimens.errorBannerPadding,
+    marginTop:       dimens.errorBannerMarginTop,
   },
 
   icon: {
-    width:            20,
-    height:           20,
-    borderRadius:     10,
+    width:            dimens.errorBannerIcon,
+    height:           dimens.errorBannerIcon,
+    borderRadius:     dimens.errorBannerIcon / 2,
     backgroundColor:  colors.error,
     alignItems:       'center',
     justifyContent:   'center',
-    marginRight:      10,
+    marginRight:      dimens.errorBannerIconGap,
     marginTop:        1,
   },
 
   iconGlyph: {
     color:      colors.white,
-    fontSize:   13,
-    lineHeight: 15,
+    fontSize:   fontSizes.errorBannerGlyph.phone,
+    lineHeight: dimens.errorBannerGlyphLineHeight,
     fontWeight: '700',
   },
 
@@ -94,7 +96,7 @@ const styles = StyleSheet.create({
 
   message: {
     color:     colors.textSecondary,
-    marginTop: 2,
+    marginTop: dimens.errorBannerMessageGap,
   },
 
   // ── Network-error variant — Figma sizing (Ezazi Developer File "Frame
@@ -106,16 +108,16 @@ const styles = StyleSheet.create({
     flexDirection:   'row',
     alignItems:      'flex-start',
     backgroundColor: colors.networkBannerBg,
-    padding:         14,
-    borderRadius:    14,
-    gap:             14,
-    marginTop:       20,
+    padding:         dimens.networkBannerPadding,
+    borderRadius:    radii.networkBanner,
+    gap:             dimens.networkBannerPadding,
+    marginTop:       dimens.errorBannerMarginTop,
   },
 
   networkIconCircle: {
-    width:            44,
-    height:           44,
-    borderRadius:     22,
+    width:            dimens.networkBannerIcon,
+    height:           dimens.networkBannerIcon,
+    borderRadius:     dimens.networkBannerIcon / 2,
     backgroundColor:  colors.networkBannerAlert,
     alignItems:       'center',
     justifyContent:   'center',
@@ -128,6 +130,6 @@ const styles = StyleSheet.create({
 
   networkMessage: {
     color:     colors.networkBannerMessage,
-    marginTop: 2,
+    marginTop: dimens.errorBannerMessageGap,
   },
 });
