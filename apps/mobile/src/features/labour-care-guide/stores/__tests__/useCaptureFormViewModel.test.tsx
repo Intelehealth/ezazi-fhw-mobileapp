@@ -106,6 +106,63 @@ describe('useCaptureFormViewModel', () => {
     expect(onSaved).not.toHaveBeenCalled();
   });
 
+  it('a quick double tap on Save saves once (PR #17 review)', async () => {
+    const { result, onSaved } = setup();
+    act(() => result.current.setTabIndex(3));
+    act(() => {
+      result.current.goNext();
+      result.current.goNext();
+    });
+    act(() => result.current.save());
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveCard).toHaveBeenCalledTimes(1);
+    expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('Save is disabled from the tap and stays disabled after a save, as the screen leaves', async () => {
+    const { result, onSaved } = setup();
+    act(() => result.current.setTabIndex(3));
+    act(() => result.current.goNext());
+    expect(result.current.nextDisabled).toBe(true);
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(result.current.saveState).toBe('saving');
+    act(() => result.current.goNext());
+    await act(async () => {});
+    expect(saveCard).toHaveBeenCalledTimes(1);
+  });
+
+  it('a card with errors can be saved once they are fixed', async () => {
+    const { result, onSaved } = setup();
+    act(() => result.current.form.setInfusionAnswer('oxytocin', 'yes'));
+    act(() => result.current.setTabIndex(3));
+    act(() => result.current.goNext());
+    await waitFor(() => expect(result.current.tabIndex).toBe(2));
+    expect(result.current).toMatchObject({ saveState: 'idle', nextDisabled: false });
+
+    act(() => result.current.form.setInfusionAnswer('oxytocin', 'no'));
+    act(() => result.current.setTabIndex(3));
+    act(() => result.current.goNext());
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(saveCard).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failed save can be tried again', async () => {
+    (readWriterIdentity as jest.Mock).mockResolvedValueOnce(null);
+    const { result, onSaved } = setup();
+    act(() => result.current.setTabIndex(3));
+    act(() => result.current.goNext());
+    await waitFor(() => expect(result.current.saveState).toBe('failed'));
+
+    act(() => result.current.dismissSaveError());
+    act(() => result.current.goNext());
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(saveCard).toHaveBeenCalledTimes(1);
+  });
+
   it('opens a submitted card with its saved values', () => {
     const { result } = setup('edit', STORED);
     expect(result.current.readOnly).toBe(false);

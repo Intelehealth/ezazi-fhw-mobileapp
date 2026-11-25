@@ -20,6 +20,11 @@ async function cancelLegacyMonitor(): Promise<void> {
 function startMonitor(): void {
   try {
     cardAlarm?.setTexts(i18n.t('monitor.channelName'), i18n.t('monitor.notificationTitle'));
+    cardAlarm?.setCheckFailedTexts(
+      i18n.t('monitor.checkFailed.channelName'),
+      i18n.t('monitor.checkFailed.title'),
+      i18n.t('monitor.checkFailed.body'),
+    );
     cardAlarm?.start();
   } catch (error) {
     logger.error('[monitor] start failed', error);

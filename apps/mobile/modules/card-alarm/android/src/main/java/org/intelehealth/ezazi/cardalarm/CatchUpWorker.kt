@@ -22,6 +22,8 @@ class CatchUpWorker(context: Context, params: WorkerParameters) : Worker(context
     val now = System.currentTimeMillis()
     if (dueAt > 0 && now > dueAt + MISSED_AFTER_MS) {
       CardAlarmState.appendLog(context, "catchUp due=$dueAt vsDue=${now - dueAt}ms")
+      // Without exact-alarm access the alarm below is inexact and may not start the scan: say so now.
+      if (!CardAlarmScheduler.canScheduleExact(context)) CardCheckFailedAlert.show(context, "noExactAccess")
       CardAlarmScheduler.set(context, CardAlarmScheduler.Slot.CATCH_UP, now + 1_000L, dueAt)
     }
     return Result.success()

@@ -19,6 +19,9 @@ internal object CardAlarmState {
   private const val KEY_NEXT_DUE_AT = "nextDueAt"
   private const val KEY_CHANNEL_NAME = "channelName"
   private const val KEY_NOTIFICATION_TITLE = "notificationTitle"
+  private const val KEY_CHECK_FAILED_CHANNEL = "checkFailedChannelName"
+  private const val KEY_CHECK_FAILED_TITLE = "checkFailedTitle"
+  private const val KEY_CHECK_FAILED_BODY = "checkFailedBody"
   private const val LOG_FILE = "card-wakes.log"
   private const val LOG_MAX_BYTES = 256 * 1024L
 
@@ -42,6 +45,25 @@ internal object CardAlarmState {
   fun channelName(context: Context) = prefs(context).getString(KEY_CHANNEL_NAME, null) ?: "Labour card check"
 
   fun notificationTitle(context: Context) = prefs(context).getString(KEY_NOTIFICATION_TITLE, null) ?: "Checking labour cards"
+
+  /** The card-check-failed notification ([CardCheckFailedAlert]) in the app's language (en.json), set by JS. */
+  fun setCheckFailedTexts(context: Context, channelName: String, title: String, body: String) {
+    prefs(context).edit()
+      .putString(KEY_CHECK_FAILED_CHANNEL, channelName)
+      .putString(KEY_CHECK_FAILED_TITLE, title)
+      .putString(KEY_CHECK_FAILED_BODY, body)
+      .apply()
+  }
+
+  fun checkFailedChannelName(context: Context) =
+    prefs(context).getString(KEY_CHECK_FAILED_CHANNEL, null) ?: "Labour card check stopped"
+
+  fun checkFailedTitle(context: Context) =
+    prefs(context).getString(KEY_CHECK_FAILED_TITLE, null) ?: "Labour cards are not being created"
+
+  fun checkFailedBody(context: Context) =
+    prefs(context).getString(KEY_CHECK_FAILED_BODY, null)
+      ?: "Open eZAZI to continue monitoring, and keep \"Alarms & reminders\" allowed for eZAZI."
 
   fun setNextDueAt(context: Context, dueAt: Long) {
     prefs(context).edit().putLong(KEY_NEXT_DUE_AT, dueAt).apply()

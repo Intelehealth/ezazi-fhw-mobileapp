@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SECTION_ID } from '@ezazi/clinical-rules';
 import type { CardAccess, CardLayout, SectionId, StoredObs } from '@ezazi/clinical-rules';
 
@@ -81,19 +81,23 @@ export function useCaptureFormViewModel({
     if (onMedicationTab && !readOnly) showMedication();
   }, [onMedicationTab]); // eslint-disable-line react-hooks/exhaustive-deps -- once per arrival
   const [saveState, setSaveState] = useState<SaveState>('idle');
+  // One save at a time, decided at the tap: React state is not updated yet when a second quick tap arrives
+  // (the checks before saving are async), and a second save would take the edit path and store the notes
+  // twice (PR #17 review). Released when the checks fail or the save fails; kept after a save, as the screen
+  // is leaving.
+  const saveLock = useRef(false);
   const isLastTab = tabIndex === tabs.length - 1;
 
   const save = async (values: CaptureFormValues) => {
-    setSaveState('saving');
     try {
       const writer = await readWriterIdentity();
       if (!writer) throw new Error('no logged-in writer');
       const card = toCardInput(values, layout);
       saveCard({ visitUuid, encounterUuid, card, notes: values.notes, addedAt: values.addedAt, writer, now: nowMs() }, getDb());
-      setSaveState('idle');
       onSaved();
     } catch (error: unknown) {
       logger.error('[capture] card save failed', error);
+      saveLock.current = false;
       setSaveState('failed');
     }
   };
@@ -104,7 +108,17 @@ export function useCaptureFormViewModel({
   };
 
   const trySave = () => {
-    if (!readOnly && saveState !== 'saving') submit((values) => void save(values), jumpTo);
+    if (readOnly || saveLock.current) return;
+    saveLock.current = true;
+    setSaveState('saving');
+    submit(
+      (values) => void save(values),
+      (firstTab) => {
+        saveLock.current = false;
+        setSaveState('idle');
+        jumpTo(firstTab);
+      },
+    );
   };
   const isFirstTab = tabIndex === 0;
   // Android: "Save" on a new card, "Update" on an edited one (PartogramDataCaptureActivity 145).

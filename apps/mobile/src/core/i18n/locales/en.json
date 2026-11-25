@@ -654,6 +654,11 @@
   },
   "monitor": {
     "channelName": "Labour card check",
-    "notificationTitle": "Checking labour cards"
+    "notificationTitle": "Checking labour cards",
+    "checkFailed": {
+      "channelName": "Labour card check stopped",
+      "title": "Labour cards are not being created",
+      "body": "Open eZAZI to continue monitoring, and keep \"Alarms & reminders\" allowed for eZAZI."
+    }
   }
 }

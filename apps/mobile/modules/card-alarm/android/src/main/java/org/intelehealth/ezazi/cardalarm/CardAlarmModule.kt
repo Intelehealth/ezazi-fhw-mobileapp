@@ -27,6 +27,7 @@ class CardAlarmModule : Module() {
     Function("stop") {
       CardAlarmState.setRunning(context, false)
       CardAlarmScheduler.cancelAll(context)
+      CardCheckFailedAlert.clear(context)
       CardAlarmState.setNextDueAt(context, 0L)
       CatchUpWorker.cancel(context)
     }
@@ -38,6 +39,11 @@ class CardAlarmModule : Module() {
       CardAlarmState.setTexts(context, channelName, notificationTitle)
     }
 
+    /** The card-check-failed notification's texts, from the app's translations. */
+    Function("setCheckFailedTexts") { channelName: String, title: String, body: String ->
+      CardAlarmState.setCheckFailedTexts(context, channelName, title, body)
+    }
+
     /** The due time the card alarms are armed for (epoch ms); 0 when none. */
     Function("nextDueAt") { CardAlarmState.nextDueAt(context).toDouble() }
 
@@ -47,6 +53,8 @@ class CardAlarmModule : Module() {
       CardAlarmState.setNextDueAt(context, dueAt.toLong())
       val kind = CardAlarmScheduler.set(context, CardAlarmScheduler.Slot.MAIN, mainAt.toLong(), dueAt.toLong())
       CardAlarmScheduler.set(context, CardAlarmScheduler.Slot.WATCHDOG, watchdogAt.toLong(), dueAt.toLong())
+      // Exact again ("Alarms & reminders" allowed): background checks work, so the warning goes.
+      if (kind != "inexact") CardCheckFailedAlert.clear(context)
       kind
     }
 

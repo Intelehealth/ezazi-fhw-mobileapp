@@ -12,7 +12,7 @@ jest.mock('react-native-notify-kit', () => ({
   default: { cancelTriggerNotifications: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock('../cardAlarmNative', () => ({
-  cardAlarm: { start: jest.fn(), stop: jest.fn(), setTexts: jest.fn(), readWakeLog: jest.fn(() => []) },
+  cardAlarm: { start: jest.fn(), stop: jest.fn(), setTexts: jest.fn(), setCheckFailedTexts: jest.fn(), readWakeLog: jest.fn(() => []) },
 }));
 jest.mock('../cardScheduler', () => ({ scanAndRearm: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../cardScanTask', () => ({ runCardScanTask: jest.fn() }));
@@ -46,6 +46,11 @@ describe('useMonitorService', () => {
     expect(native.start).toHaveBeenCalledTimes(1);
     // The scan service's notification texts come from en.json (no hard-coded English in Kotlin).
     expect(native.setTexts).toHaveBeenCalledWith('Labour card check', 'Checking labour cards');
+    expect(native.setCheckFailedTexts).toHaveBeenCalledWith(
+      'Labour card check stopped',
+      'Labour cards are not being created',
+      'Open eZAZI to continue monitoring, and keep "Alarms & reminders" allowed for eZAZI.',
+    );
     expect(notifee.cancelTriggerNotifications).toHaveBeenCalledWith(['labour-monitor-trigger', 'battery-guard-trigger']);
     expect(scanAndRearm).toHaveBeenCalledWith('login');
   });

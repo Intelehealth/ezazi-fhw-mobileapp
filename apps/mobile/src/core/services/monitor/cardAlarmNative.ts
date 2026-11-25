@@ -9,6 +9,8 @@ interface CardAlarmModule {
   stop(): void;
   isRunning(): boolean;
   setTexts(channelName: string, notificationTitle: string): void;
+  /** The "labour cards are not being created" notification, shown when a background check cannot run. */
+  setCheckFailedTexts(channelName: string, title: string, body: string): void;
   nextDueAt(): number;
   armCards(dueAt: number, mainAt: number, watchdogAt: number): AlarmKind;
   disarmCards(): void;

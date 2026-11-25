@@ -86,10 +86,12 @@ class CardScanService : HeadlessJsTaskService() {
       try {
         ContextCompat.startForegroundService(context, intent)
       } catch (error: Exception) {
-        // e.g. ForegroundServiceStartNotAllowedException: logged so a device run shows it; the watchdog
-        // alarm or the catch-up job tries again.
+        // e.g. ForegroundServiceStartNotAllowedException (an inexact alarm, once exact-alarm access is
+        // revoked): logged, and the nurse is told to open the app; the watchdog or catch-up job tries again.
         Log.e(TAG, "could not start the card scan service ($reason)", error)
         CardAlarmState.appendLog(context, "startFailed reason=$reason error=${error.javaClass.simpleName}")
+        // The nurse must open the app, or no card is created (PR #17 review).
+        CardCheckFailedAlert.show(context, "startFailed")
       }
     }
   }

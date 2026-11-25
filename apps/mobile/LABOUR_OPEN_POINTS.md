@@ -34,6 +34,9 @@ A decision that shapes the architecture, a data format or a rule many files foll
 | 12 | Tapping a selected option again | Keeps it selected | (dialogs) | Keep · clear the choice · **kept selected for now; to be asked to the PO (2026-11-06)** |
 | 24 | A failed End Stage write (End Stage 1 or 2) | Logged; nothing is half-written (one transaction). The dialog closes with no message and the nurse stays on the Timeline | Not checked | Show "Not saved" and keep the dialog open, as a failed card save does (2026-11-18) · keep · **found 2026-11-24 while writing the labour architecture docs** |
 | 25 | The card engine's missed marker and its card's sync flag | `insertMissedEncounterMarker` writes the obs but does not mark its card encounter dirty. Harmless today (nothing syncs); once sync runs, a missed marker added to a card already pushed is never sent | — (Android has no push-by-parent) | Mark the encounter dirty in the same transaction now · or switch to the sync branch's `obsWrites.recordMissedEncounter` when his sync branch is merged · **parked for a decision (2026-11-24); found while checking the sync branch** |
+| 26 | Magnesium Sulfate 20% strength in the medicine catalogue (PR #17 review) | `500 mg/mL`, the same as the 50% entry below it; a 20% solution is 200 mg/mL, so a 4 mL dose reads as 2 g instead of 0.8 g | The catalogue is copied from Android's `medicines.json`; Android's `arrays_ezazi.xml` lists only the 50% entry | Keep Android's value · correct it to 200 mg/mL in both apps after clinical sign-off · **parked for a decision (2026-11-25): kept as Android meanwhile** |
+| 27 | A session from before the creator uuid was stored (PR #17 review) | `creatorUuid` is stored at login since 2026-10-23; a tablet still logged in from an older build has none, so cards are not generated, Save shows "Not saved", SOS and End Stage do nothing, until the nurse logs in again | — | Treat a missing `creatorUuid` as "needs login" at startup · leave it (only test tablets; no release yet; test data is dummy) · **parked (2026-11-25)** |
+| 28 | A server pull can overwrite an offline edit (PR #17 review) | Edits rewrite rows in place; `obs.ts` `upsertManyFromServer` marks the server row clean without checking for unsent local changes. Not called yet (no pull engine) | — | Skip rows with unsent local changes · **check after the sync branch is merged whether it still exists (2026-11-25)** |
 <!-- 2026-11-06: settled, see Settled 2026-11-06
 | 13 | "−" on an empty stepper | Fills the starting value, as "+" | (no steppers) | Keep · do nothing |
 -->
@@ -104,6 +107,7 @@ A decision that shapes the architecture, a data format or a rule many files foll
 
 | Date | Point | Decision (who) |
 |---|---|---|
+| 2026-11-25 | Backspacing Systolic clears Diastolic (PR #17 review, `useCaptureForm.ts`): kept as Android | Module owner |
 | 2026-11-24 | End Stage 1 and 2 dialogs: follow the Figma "Complete Stage" design (Backend-Developer-file, section Stage 3 & 4) instead of Android's dialogs. The Figma file "Backend-Developer-file" is the design source from now on | Module owner |
 | 2026-11-24 | Toasts: Android's system toast, as Android (Figma has no toast design) | Module owner |
 | 2026-11-18 | Point 3, notes on an edited card: kept as Android (rewritten as they are, new ones added, none removed) | Module owner |
