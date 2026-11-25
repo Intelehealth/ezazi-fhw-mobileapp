@@ -14,6 +14,7 @@ import {
 import {
   buildDecisionEditor,
   buildElcgView,
+  buildHour,
 } from '../../../fixtures/elcg-view';
 import { showToast } from '../../../../services/toast';
 
@@ -243,6 +244,54 @@ describe('ElcgComponent', () => {
     expect(
       screen.getByRole('heading', { name: 'Labour Care Guide Nepal' })
     ).toBeInTheDocument();
+  });
+
+  describe("viewing an hour's assessment or plan", () => {
+    function withRecordedHours() {
+      const view = buildElcgView();
+      const signed = {
+        initial: 'Dr. Joshi',
+        obsDatetime: '2026-11-02T01:40:00.000Z',
+      };
+      view.stage1.hours[1] = buildHour({
+        hasEncounter: true,
+        assessments: [{ uuid: 'a-1', value: 'Raised FHR', ...signed }],
+        plans: [{ uuid: 'p-1', value: 'Recheck in 15 min', ...signed }],
+      });
+      view.stage2.hours[0] = buildHour({ subColumns: 4, hasEncounter: true });
+      mockVisit({ view });
+    }
+
+    it("opens the hour's assessment, and closes it", async () => {
+      withRecordedHours();
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'View stage 1 hour 2 assessment' })
+      );
+
+      const dialog = screen.getByRole('dialog', {
+        name: 'ASSESSMENT [Stage 1] [ Hour 2]',
+      });
+      expect(dialog).toHaveTextContent('Raised FHR');
+      await userEvent.click(
+        screen.getAllByRole('button', { name: 'Close' }).at(-1) as HTMLElement
+      );
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it("opens the hour's plan, in either stage", async () => {
+      withRecordedHours();
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'View stage 2 hour 1 plan' })
+      );
+
+      expect(
+        screen.getByRole('dialog', { name: 'PLAN [Stage 2] [ Hour 1]' })
+      ).toHaveTextContent('Nothing was recorded in this hour.');
+    });
   });
 
   describe('Shared Decision Making — Add', () => {

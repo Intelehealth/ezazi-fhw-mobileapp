@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { AddDecisionDialogComponent } from '../../../../../modules/dashboard/elcg/decisions/add-decision-dialog.component';
@@ -467,5 +467,36 @@ describe('saved rows', () => {
         value: expect.stringContaining('| 500 mg |'),
       },
     ]);
+  });
+});
+
+describe('closing', () => {
+  it.each([
+    'assessment',
+    'plan',
+    'medication',
+    'oxytocin',
+    'ivFluids',
+  ] as const)(
+    'keeps the %s dialog open on a click outside it or Escape',
+    async kind => {
+      const { onClose } = renderDialog(kind);
+      const dialog = screen.getByRole('dialog');
+
+      /* The dimmed backdrop around the panel. */
+      fireEvent.mouseDown(dialog.parentElement as HTMLElement);
+      await userEvent.keyboard('{Escape}');
+
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    }
+  );
+
+  it.each(['Cancel', 'Close'])('closes on its %s button', async name => {
+    const { onClose } = renderDialog('medication');
+
+    await userEvent.click(screen.getByRole('button', { name }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

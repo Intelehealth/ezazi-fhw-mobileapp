@@ -58,6 +58,7 @@ export function buildHour(overrides: Partial<LcgHour> = {}): LcgHour {
     hasEncounter: false,
     assessments: [],
     plans: [],
+    prescribed: { medication: [], oxytocin: [], ivFluids: [] },
     ...overrides,
   };
 }

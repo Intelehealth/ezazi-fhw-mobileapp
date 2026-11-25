@@ -398,6 +398,54 @@ describe('mapVisitToElcgView — decisions and medication', () => {
     expect(view.history.plan).toHaveLength(1);
   });
 
+  it("gathers the doctor's prescriptions in each hour, not the nurse's", () => {
+    const view = map(
+      buildVisitDetail({
+        encounters: [
+          buildEncounter('Stage1_Hour1_1', at('00:00'), [
+            buildObs('Medicine Prescribed', 'Tablet | Iron', { by: DOCTOR }),
+            buildObs('Medicine', 'Paracetamol::500 mg'),
+          ]),
+          buildEncounter('Stage1_Hour1_2', at('00:30'), [
+            buildObs(
+              'Oxytocin U/l, Drops per min, Prescribed',
+              '{"strength":5,"infusionRate":20,"infusionStatus":"Start"}',
+              { by: DOCTOR }
+            ),
+            buildObs(
+              'IV fluids Prescribed',
+              '{"type":"Normal Saline","infusionRate":30,"infusionStatus":"Start"}',
+              { by: DOCTOR }
+            ),
+            buildObs('IV fluids', 'NO'),
+          ]),
+          buildEncounter('Stage1_Hour2_1', at('01:00'), [
+            buildObs('Medicine Prescribed', 'Capsule | Ampicillin', {
+              by: DOCTOR,
+            }),
+          ]),
+        ],
+      })
+    );
+
+    const [hour1, hour2] = view.stage1.hours;
+    expect(hour1.prescribed.medication.map(m => m.value)).toEqual([
+      'Tablet | Iron',
+    ]);
+    expect(hour1.prescribed.oxytocin.map(o => o.value)).toEqual([
+      { strength: 5, infusionRate: 20, infusionStatus: 'Start' },
+    ]);
+    expect(hour1.prescribed.ivFluids).toHaveLength(1);
+    expect(hour2.prescribed.medication.map(m => m.value)).toEqual([
+      'Capsule | Ampicillin',
+    ]);
+    expect(view.stage1.hours[2].prescribed).toEqual({
+      medication: [],
+      oxytocin: [],
+      ivFluids: [],
+    });
+  });
+
   it("lists the doctor's prescriptions before the nurse's entry in each medication cell", () => {
     const view = map(
       buildVisitDetail({

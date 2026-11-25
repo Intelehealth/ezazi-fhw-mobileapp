@@ -602,13 +602,18 @@ export function mapVisitToElcgView(
     }
   }
 
-  /* An hour's assessment and plan cells gather every one of its sub-columns. */
+  /* An hour's assessment and plan cells (and its prescriptions) gather every one of its sub-columns. */
   for (const stage of [1, 2] as const) {
     hours[stage].forEach((hourRow, index) => {
       const start = hourStart[stage][index];
       const end = start + hourRow.subColumns;
       hourRow.assessments = assessments[stage].slice(start, end).flat();
       hourRow.plans = plans[stage].slice(start, end).flat();
+      hourRow.prescribed = {
+        medication: medicinePrescribed[stage].slice(start, end).flat(),
+        oxytocin: oxytocinPrescribed[stage].slice(start, end).flat(),
+        ivFluids: ivPrescribed[stage].slice(start, end).flat(),
+      };
     });
   }
 
@@ -669,5 +674,6 @@ function emptyHour(subColumns: number): LcgHour {
     hasEncounter: false,
     assessments: [],
     plans: [],
+    prescribed: { medication: [], oxytocin: [], ivFluids: [] },
   };
 }

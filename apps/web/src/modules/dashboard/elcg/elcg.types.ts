@@ -66,6 +66,15 @@ export interface LcgHour {
   /** Every sub-column's entries for the hour, oldest first. */
   assessments: LcgNoteEntry[];
   plans: LcgNoteEntry[];
+  /**
+   * The doctor's prescriptions in the hour, oldest first — listed under the
+   * plan when the hour's plan is opened (getEncounterPlanData()).
+   */
+  prescribed: {
+    medication: LcgNoteEntry[];
+    oxytocin: LcgOxytocinEntry[];
+    ivFluids: LcgIvFluidEntry[];
+  };
 }
 
 export interface LcgStage {

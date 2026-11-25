@@ -27,7 +27,8 @@ interface DecisionDialogComponentProps {
  * The `.add-plan-modal` frame every Shared Decision Making dialog shares
  * (add-assessment, prescribe-plan, prescribe-medication, prescribe-oxytocin,
  * prescribe-iv-fluid): a title bar with a close button, the form's rows on a
- * grey panel, the kind's history below it, and Cancel / Save.
+ * grey panel, the kind's history below it, and Cancel / Save. Only Cancel
+ * and the Close button close it — not a click outside, nor Escape.
  */
 export function DecisionDialogComponent({
   title,
@@ -42,7 +43,11 @@ export function DecisionDialogComponent({
   const close = isSaving ? undefined : onClose;
 
   return (
-    <ModalOverlayComponent onClose={close}>
+    /*
+     * No onClose on the overlay: a click outside or Escape must not throw
+     * away a half-filled form, so only Cancel and the Close button close it.
+     */
+    <ModalOverlayComponent>
       <div
         role="dialog"
         aria-modal="true"
@@ -76,23 +81,7 @@ export function DecisionDialogComponent({
 
           {history.length > 0 && (
             <div className="mb-3 rounded-xl bg-[#F7F7FA] px-5 py-3">
-              <ul className="m-0 list-none p-0 text-base md:list-disc md:pl-6">
-                {history.map(item => (
-                  <li
-                    key={item.uuid}
-                    className="mb-1 border-b border-[rgba(178,175,190,0.2)]"
-                  >
-                    <div className="flex flex-col items-start md:flex-row md:flex-nowrap">
-                      <span className="grow py-1.5 text-[#1B163A]">
-                        {item.label}
-                      </span>
-                      <span className="py-1.5 text-xs font-bold whitespace-nowrap text-[#007bff]">
-                        {item.meta}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <DecisionHistoryList items={history} />
             </div>
           )}
 
@@ -116,6 +105,34 @@ export function DecisionDialogComponent({
         </form>
       </div>
     </ModalOverlayComponent>
+  );
+}
+
+/**
+ * `.items-list` — entries with who recorded them and when, in blue on the
+ * right: the history under each Add dialog, and the View dialogs' lists.
+ */
+export function DecisionHistoryList({
+  items,
+}: {
+  items: DecisionHistoryItem[];
+}) {
+  return (
+    <ul className="m-0 list-none p-0 text-base md:list-disc md:pl-6">
+      {items.map(item => (
+        <li
+          key={item.uuid}
+          className="mb-1 border-b border-[rgba(178,175,190,0.2)]"
+        >
+          <div className="flex flex-col items-start md:flex-row md:flex-nowrap">
+            <span className="grow py-1.5 text-[#1B163A]">{item.label}</span>
+            <span className="py-1.5 text-xs font-bold whitespace-nowrap text-[#007bff]">
+              {item.meta}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

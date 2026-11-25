@@ -5,6 +5,7 @@ import { LcgTableComponent } from '../../../components/elcg/lcg-table.component'
 import { LcgToolbarComponent } from '../../../components/elcg/lcg-toolbar.component';
 import { LcgViewportComponent } from '../../../components/elcg/lcg-viewport.component';
 import { SharedDecisionMakingComponent } from '../../../components/elcg/shared-decision-making.component';
+import { ViewDecisionsDialogComponent } from '../../../components/elcg/view-decisions-dialog.component';
 import { VisitCompleteDetailsComponent } from '../../../components/elcg/visit-complete-details.component';
 import { WebrtcControlsComponent } from '../../../components/elcg/webrtc-controls.component';
 import { useSaveDecisions } from '../../../hooks/mutations/useSaveDecisions';
@@ -14,6 +15,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { getApiErrorMessage } from '../../../utils/error-message';
 import { AddDecisionDialogComponent } from './decisions/add-decision-dialog.component';
 import type { ObsChange } from './decisions/decision.rows';
+import { decisionView, type ViewedHour } from './decisions/view-decisions';
 import type { ElcgView, LcgDecisionKind } from './elcg.types';
 
 /** The decision being added, and the encounter it was opened on. */
@@ -98,7 +100,7 @@ interface ElcgComponentProps {
  * Shared Decision Making card's "Add" buttons open their dialogs and record
  * on the latest encounter (decisions/, hooks/mutations/useSaveDecisions.ts).
  * The actions that need a modal or screen not yet ported — past visits,
- * print, viewing decisions, Stage 3, video call and chat — are left
+ * print, Stage 3, video call and chat — are left
  * unwired. Zoom and WhatsApp sharing work as in Angular.
  */
 export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
@@ -108,6 +110,7 @@ export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
   const [viewResets, setViewResets] = useState(0);
   const viewerUuid = useAppSelector(state => state.auth.user?.uuid ?? null);
   const [openDecision, setOpenDecision] = useState<OpenDecision | null>(null);
+  const [viewedHour, setViewedHour] = useState<ViewedHour | null>(null);
   const { mutate: saveDecisions, isPending: isSavingDecisions } =
     useSaveDecisions(visitUuid);
 
@@ -199,7 +202,16 @@ export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
       />
 
       <LcgViewportComponent key={viewResets} zoom={ZOOM_LEVELS[zoomIndex]}>
-        <LcgTableComponent title={guideTitle()} view={view} />
+        <LcgTableComponent
+          title={guideTitle()}
+          view={view}
+          onViewAssessment={(stage, hourIndex) =>
+            setViewedHour({ kind: 'assessment', stage, hourIndex })
+          }
+          onViewPlan={(stage, hourIndex) =>
+            setViewedHour({ kind: 'plan', stage, hourIndex })
+          }
+        />
       </LcgViewportComponent>
 
       <SharedDecisionMakingComponent
@@ -218,6 +230,18 @@ export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
           isSaving={isSavingDecisions}
           onSave={saveDecision(openDecision)}
           onClose={() => setOpenDecision(null)}
+        />
+      )}
+
+      {viewedHour && (
+        <ViewDecisionsDialogComponent
+          {...decisionView(
+            viewedHour,
+            view[viewedHour.stage === 1 ? 'stage1' : 'stage2'].hours[
+              viewedHour.hourIndex
+            ]
+          )}
+          onClose={() => setViewedHour(null)}
         />
       )}
 

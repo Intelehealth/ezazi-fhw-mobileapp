@@ -213,7 +213,19 @@ export function DecisionNotes({
         onClick={onView}
         className="cursor-pointer rounded-full p-2 hover:bg-black/5"
       >
-        <img src={openInNewIcon} alt="" width={24} height={24} />
+        {/*
+          Angular's open_in_new is an icon-font glyph, which the cell's
+          vertical writing turns a further 90° on top of its 180° rotation —
+          leaving the arrow pointing up-left. An image is not turned by the
+          writing mode, so it takes that 90° itself.
+        */}
+        <img
+          src={openInNewIcon}
+          alt=""
+          width={24}
+          height={24}
+          className="rotate-90"
+        />
       </button>
     </div>
   );
