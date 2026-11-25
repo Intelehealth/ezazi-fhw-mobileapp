@@ -8,7 +8,9 @@ import { RootNavigator } from '@/navigation/RootNavigator';
 import { ThemeProvider } from '@/core/ui/ThemeContext';
 import { useMonitorService } from '@/core/services/monitor';
 import { useBatteryGuard } from '@/core/services/batteryGuard';
+import { useDbDevTools } from '@/core/db/devtools';
 import { useAuthStore } from '@/core/session/auth.store';
+import { useDbBootstrapStore } from '@/core/session/dbBootstrap.store';
 import '@/core/i18n';
 
 // Keep the native splash up until Lato is loaded — core/ui/Text.tsx assumes
@@ -24,9 +26,15 @@ void SplashScreen.preventAutoHideAsync();
 export default function App() {
   const [fontsLoaded] = useFonts({ Lato_400Regular, Lato_700Bold });
   const authStatus = useAuthStore((s) => s.status);
+  const dbPhase = useDbBootstrapStore((s) => s.phase);
 
   useMonitorService(authStatus === 'authenticated');
   useBatteryGuard(authStatus === 'authenticated');
+
+  // Drizzle Studio, dev builds only. `dbPhase` is passed as a re-render
+  // trigger and is never read — core/db/devtools.ts says why the handle
+  // cannot simply be fetched here.
+  useDbDevTools(dbPhase);
 
   useEffect(() => {
     if (fontsLoaded) {
