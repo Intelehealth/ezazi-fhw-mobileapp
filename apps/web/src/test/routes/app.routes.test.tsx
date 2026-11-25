@@ -71,6 +71,11 @@ vi.mock('../../hooks/queries/useElcgVisit', async () => {
   };
 });
 
+/* The Shared Decision Making save needs a QueryClient; its own suite covers it. */
+vi.mock('../../hooks/mutations/useSaveDecisions', () => ({
+  useSaveDecisions: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 /* The change-password form's mutation needs a QueryClient; its own suite covers it. */
 vi.mock('../../hooks/mutations/useChangePassword', () => ({
   useChangePassword: () => ({ mutate: vi.fn(), isPending: false }),

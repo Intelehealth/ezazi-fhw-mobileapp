@@ -474,6 +474,80 @@ describe('mapVisitToElcgView — decisions and medication', () => {
   });
 });
 
+describe('mapVisitToElcgView — the Add dialogs', () => {
+  it('records decisions on the furthest encounter of the furthest stage reached', () => {
+    const hour2 = buildEncounter('Stage1_Hour2_1', at('01:00'));
+    const view = map(
+      buildVisitDetail({
+        encounters: [
+          hour2,
+          /* Hour 1 half-filled: Angular would stop here; the guide has moved on. */
+          buildEncounter('Stage1_Hour1_1', at('00:00')),
+        ],
+      })
+    );
+
+    expect(view.decisions.patientUuid).toBe('pat-1');
+    expect(view.decisions.encounterUuid).toBe(hour2.uuid);
+  });
+
+  it('moves to the second stage once it has begun, SOS checks included', () => {
+    const sos = buildSosEncounter(2, 1, at('03:10'));
+    const view = map(
+      buildVisitDetail({
+        encounters: [
+          buildEncounter('Stage1_Hour3_1', at('02:00')),
+          buildEncounter('Stage2_Hour1_1', at('03:00')),
+          sos,
+        ],
+      })
+    );
+
+    expect(view.decisions.encounterUuid).toBe(sos.uuid);
+  });
+
+  it('has nowhere to record before the first hourly reading', () => {
+    expect(map(buildVisitDetail()).decisions.encounterUuid).toBeNull();
+  });
+
+  it("lists the prescribed concept's whole history, and the latest encounter's entries with who recorded them", () => {
+    const earlier = buildObs('Medicine Prescribed', 'Tablet | Iron', {
+      by: DOCTOR,
+      obsDatetime: at('00:10'),
+    });
+    const latest = buildObs(
+      'Oxytocin U/l, Drops per min, Prescribed',
+      '{"strength":5,"infusionRate":10,"infusionStatus":"Start"}',
+      { by: DOCTOR, obsDatetime: at('01:05') }
+    );
+    const view = map(
+      buildVisitDetail({
+        encounters: [
+          buildEncounter('Stage1_Hour1_1', at('00:00'), [
+            earlier,
+            buildObs('Medicine', 'Paracetamol::500 mg'),
+          ]),
+          buildEncounter('Stage1_Hour2_1', at('01:00'), [latest]),
+        ],
+      })
+    );
+
+    /* The nurse's own Medicine is history on the card, not in the dialog. */
+    expect(view.decisions.medication.history.map(m => m.value)).toEqual([
+      'Tablet | Iron',
+    ]);
+    expect(view.decisions.medication.current).toEqual([]);
+    expect(view.decisions.oxytocin.current).toEqual([
+      expect.objectContaining({
+        uuid: latest.uuid,
+        value: { strength: 5, infusionRate: 10, infusionStatus: 'Start' },
+        creatorUuid: latest.creator?.uuid,
+      }),
+    ]);
+    expect(view.decisions.oxytocin.history).toHaveLength(1);
+  });
+});
+
 describe('mapVisitToElcgView — completion', () => {
   function completed(
     visitCompleteObs: ReturnType<typeof buildObs>[] | null,

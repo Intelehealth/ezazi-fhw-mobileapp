@@ -143,6 +143,37 @@ export interface LcgDecisionHistory {
 
 export type LcgDecisionKind = keyof LcgDecisionHistory;
 
+/** An entry with the OpenMRS user who recorded it — only they may edit it. */
+export type LcgOwnedEntry<TEntry> = TEntry & { creatorUuid: string | null };
+
+/**
+ * What one "Add" dialog of the Shared Decision Making card opens with —
+ * partogram.component.ts's getPastData(): the prescribed concept's whole
+ * history, listed under the form, and the entries already on the encounter
+ * new ones are recorded against, which the signed-in user may still edit.
+ */
+export interface LcgDecisionSource<TEntry> {
+  /** Every entry of the kind's prescribed concept, newest first. */
+  history: TEntry[];
+  /** The entries on `LcgDecisionEditor.encounterUuid`, newest first. */
+  current: LcgOwnedEntry<TEntry>[];
+}
+
+export interface LcgDecisionEditor {
+  patientUuid: string;
+  /**
+   * The latest Stage / SOS encounter on the guide — getLatestEncounterUuid():
+   * every decision is recorded against it. Null until the first one exists.
+   */
+  encounterUuid: string | null;
+  assessment: LcgDecisionSource<LcgNoteEntry>;
+  plan: LcgDecisionSource<LcgNoteEntry>;
+  /** Medicine Prescribed only — the nurse's own Medicine entries are not editable here. */
+  medication: LcgDecisionSource<LcgNoteEntry>;
+  oxytocin: LcgDecisionSource<LcgOxytocinEntry>;
+  ivFluids: LcgDecisionSource<LcgIvFluidEntry>;
+}
+
 /** Why the visit was completed — the Visit Complete encounter's reading. */
 export type LcgCompletionReason =
   | { kind: 'out-of-time'; reason: string }
@@ -182,6 +213,8 @@ export interface ElcgView {
   readings: Record<LcgReadingKey, LcgStageValues<LcgReading | null>>;
   medication: LcgMedication;
   history: LcgDecisionHistory;
+  /** The data behind the Shared Decision Making card's "Add" dialogs. */
+  decisions: LcgDecisionEditor;
   /** Null while the visit is still in progress. */
   completion: LcgVisitCompletion | null;
   /** The patient's other visits — "View Past Details" is disabled at 0. */

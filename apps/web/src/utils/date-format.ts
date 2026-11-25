@@ -54,6 +54,18 @@ export function formatDayMonthYearTime(
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${formatTime(value)}`;
 }
 
+/** `DD-MM-YYYY hh:mm AM` in local time (Angular's `date:'dd-MM-YYYY hh:mm a'`), or null. */
+export function formatDayMonthYearTime12h(
+  value: string | null | undefined
+): string | null {
+  const date = parseDate(value);
+  if (!date) return null;
+  const hours = date.getHours();
+  const hours12 = hours % 12 === 0 ? 12 : hours % 12;
+  const meridiem = hours < 12 ? 'AM' : 'PM';
+  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(hours12)}:${pad(date.getMinutes())} ${meridiem}`;
+}
+
 const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T/;
 const DAY_MONTH_YEAR =

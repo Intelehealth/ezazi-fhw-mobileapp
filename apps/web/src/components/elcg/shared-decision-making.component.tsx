@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
+import {
+  ivFluidLabel,
+  oxytocinLabel,
+} from '../../modules/dashboard/elcg/decisions/decision.rows';
 import type {
   LcgDecisionHistory,
   LcgDecisionKind,
-  LcgIvFluidEntry,
   LcgNoteEntry,
-  LcgOxytocinEntry,
 } from '../../modules/dashboard/elcg/elcg.types';
 import { formatDayMonthYearTime } from '../../utils/date-format';
 import { formatMedicine } from './lcg-cells.component';
@@ -34,19 +36,6 @@ interface PanelConfig {
 
 function noteItems(entries: LcgNoteEntry[], format = (value: string) => value) {
   return entries.map(entry => ({ ...entry, label: format(entry.value) }));
-}
-
-function oxytocinLabel(entry: LcgOxytocinEntry): string {
-  if (typeof entry.value === 'string') return entry.value;
-  const { infusionStatus, strength, infusionRate } = entry.value;
-  return `${infusionStatus.toUpperCase()} OXYTOCIN - ${strength} U/L (${infusionRate} drops/minute)`;
-}
-
-function ivFluidLabel(entry: LcgIvFluidEntry): string {
-  if (typeof entry.value === 'string') return entry.value;
-  const { infusionStatus, type, otherType, infusionRate } = entry.value;
-  const fluid = otherType ? `${type} ${otherType}` : type;
-  return `${infusionStatus.toUpperCase()} IV - ${fluid} (${infusionRate} drops/minute)`;
 }
 
 /** The five panels, in partogram.component.html's order. */

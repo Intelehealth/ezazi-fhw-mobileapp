@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NetworkError } from '@ezazi/api-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,11 @@ import {
   useElcgVisit,
   type ElcgVisitState,
 } from '../../../../hooks/queries/useElcgVisit';
-import { buildElcgView } from '../../../fixtures/elcg-view';
+import {
+  buildDecisionEditor,
+  buildElcgView,
+} from '../../../fixtures/elcg-view';
+import { showToast } from '../../../../services/toast';
 
 /* CLIENT_ID is resolved once at load; a getter lets a test switch client. */
 const client = vi.hoisted(() => ({ id: 'default' }));
@@ -26,6 +30,22 @@ vi.mock('../../../../config/clients', async importOriginal => ({
 vi.mock('../../../../hooks/queries/useElcgVisit', () => ({
   useElcgVisit: vi.fn(),
 }));
+
+/* Saving decisions has its own suite (useSaveDecisions.test.tsx). */
+const saveDecisions = vi.hoisted(() => ({
+  mutate: vi.fn(),
+  isPending: false,
+}));
+vi.mock('../../../../hooks/mutations/useSaveDecisions', () => ({
+  useSaveDecisions: () => saveDecisions,
+}));
+
+vi.mock('../../../../store/hooks', () => ({
+  useAppSelector: (select: (state: unknown) => unknown) =>
+    select({ auth: { user: { uuid: 'doctor-1' } } }),
+}));
+
+vi.mock('../../../../services/toast', () => ({ showToast: vi.fn() }));
 
 function mockVisit(state: Partial<ElcgVisitState> = {}) {
   vi.mocked(useElcgVisit).mockReturnValue({
@@ -68,6 +88,9 @@ function currentZoom(): number {
 
 beforeEach(() => {
   mockVisit();
+  saveDecisions.mutate.mockReset();
+  saveDecisions.isPending = false;
+  vi.mocked(showToast).mockReset();
 });
 
 afterEach(() => {
@@ -216,5 +239,90 @@ describe('ElcgComponent', () => {
     expect(
       screen.getByRole('heading', { name: 'Labour Care Guide Nepal' })
     ).toBeInTheDocument();
+  });
+
+  describe('Shared Decision Making — Add', () => {
+    async function addAssessment(text: string) {
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add assessment' })
+      );
+      await userEvent.type(
+        screen.getByPlaceholderText('Enter assessment'),
+        text
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    }
+
+    it('records a new assessment on the latest encounter, and closes once saved', async () => {
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await addAssessment('Progressing normally');
+
+      expect(saveDecisions.mutate).toHaveBeenCalledWith(
+        {
+          kind: 'assessment',
+          patientUuid: 'patient-1',
+          encounterUuid: 'enc-latest',
+          changes: [{ action: 'create', value: 'Progressing normally' }],
+        },
+        expect.any(Object)
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      const [, { onSuccess }] = saveDecisions.mutate.mock.calls[0];
+      act(() => onSuccess());
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('closes and says so when saving fails', async () => {
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await addAssessment('Raised FHR');
+      const [, { onError }] = saveDecisions.mutate.mock.calls[0];
+      act(() => onError(new NetworkError()));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(showToast).toHaveBeenCalledWith(
+        'Could not save',
+        expect.any(String),
+        'error'
+      );
+    });
+
+    it('opens the dialog of each kind', async () => {
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      for (const [button, title] of [
+        ['Add plan', 'PLAN'],
+        ['Add medication', 'MEDICATION'],
+        ['Add oxytocin', 'OXYTOCIN'],
+        ['Add iv fluids', 'IV FLUIDS'],
+      ]) {
+        await userEvent.click(screen.getByRole('button', { name: button }));
+        expect(screen.getByRole('dialog', { name: title })).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      }
+      expect(saveDecisions.mutate).not.toHaveBeenCalled();
+    });
+
+    it('explains that nothing can be added before the first reading', async () => {
+      mockVisit({
+        view: buildElcgView({
+          decisions: buildDecisionEditor({ encounterUuid: null }),
+        }),
+      });
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add assessment' })
+      );
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(showToast).toHaveBeenCalledWith(
+        'No reading recorded yet',
+        expect.any(String),
+        'warning'
+      );
+    });
   });
 });

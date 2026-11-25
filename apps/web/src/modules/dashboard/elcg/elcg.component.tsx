@@ -7,9 +7,20 @@ import { LcgViewportComponent } from '../../../components/elcg/lcg-viewport.comp
 import { SharedDecisionMakingComponent } from '../../../components/elcg/shared-decision-making.component';
 import { VisitCompleteDetailsComponent } from '../../../components/elcg/visit-complete-details.component';
 import { WebrtcControlsComponent } from '../../../components/elcg/webrtc-controls.component';
+import { useSaveDecisions } from '../../../hooks/mutations/useSaveDecisions';
 import { useElcgVisit } from '../../../hooks/queries/useElcgVisit';
+import { showToast } from '../../../services/toast';
+import { useAppSelector } from '../../../store/hooks';
 import { getApiErrorMessage } from '../../../utils/error-message';
-import type { ElcgView } from './elcg.types';
+import { AddDecisionDialogComponent } from './decisions/add-decision-dialog.component';
+import type { ObsChange } from './decisions/decision.rows';
+import type { ElcgView, LcgDecisionKind } from './elcg.types';
+
+/** The decision being added, and the encounter it was opened on. */
+interface OpenDecision {
+  kind: LcgDecisionKind;
+  encounterUuid: string;
+}
 
 /**
  * ngx-panzoom's levels as partogram.component.ts configures it — 1.5× per
@@ -37,6 +48,8 @@ function shareOnWhatsApp(view: ElcgView) {
 }
 
 const LOAD_FAILED_MESSAGE = 'Could not load this visit. Please try again.';
+const SAVE_FAILED_MESSAGE =
+  'Some changes could not be saved. Please check the guide and try again.';
 
 /**
  * Loading / failure placeholder in place of the guide. `role` makes screen
@@ -82,15 +95,21 @@ interface ElcgComponentProps {
  * once the visit is complete, its completion details.
  *
  * The visit comes from OpenMRS (see hooks/queries/useElcgVisit.ts). The
- * actions that need a modal or screen not yet ported — past visits, print,
- * adding/viewing decisions, Stage 3, video call and chat — are left unwired.
- * Zoom and WhatsApp sharing work as in Angular.
+ * Shared Decision Making card's "Add" buttons open their dialogs and record
+ * on the latest encounter (decisions/, hooks/mutations/useSaveDecisions.ts).
+ * The actions that need a modal or screen not yet ported — past visits,
+ * print, viewing decisions, Stage 3, video call and chat — are left
+ * unwired. Zoom and WhatsApp sharing work as in Angular.
  */
 export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
   const { view, isLoading, error, retry } = useElcgVisit(visitUuid);
   const [zoomIndex, setZoomIndex] = useState(DEFAULT_ZOOM_INDEX);
   /* Bumped by Reset: remounting the viewport drops its pan, like pan-zoom's resetView(). */
   const [viewResets, setViewResets] = useState(0);
+  const viewerUuid = useAppSelector(state => state.auth.user?.uuid ?? null);
+  const [openDecision, setOpenDecision] = useState<OpenDecision | null>(null);
+  const { mutate: saveDecisions, isPending: isSavingDecisions } =
+    useSaveDecisions(visitUuid);
 
   /*
    * A completed visit opens on its completion details, as Angular scrolls to
@@ -118,6 +137,49 @@ export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
     );
   }
 
+  const { decisions } = view;
+
+  function addDecision(kind: LcgDecisionKind) {
+    if (!decisions.encounterUuid) {
+      showToast(
+        'No reading recorded yet',
+        'Decisions can be added once the first labour reading has been recorded for this visit.',
+        'warning'
+      );
+      return;
+    }
+    setOpenDecision({ kind, encounterUuid: decisions.encounterUuid });
+  }
+
+  function saveDecision({ kind, encounterUuid }: OpenDecision) {
+    return (changes: ObsChange[]) => {
+      if (changes.length === 0) {
+        setOpenDecision(null);
+        return;
+      }
+      saveDecisions(
+        {
+          kind,
+          patientUuid: decisions.patientUuid,
+          encounterUuid,
+          changes,
+        },
+        {
+          onSuccess: () => setOpenDecision(null),
+          /* Closed either way: what did save is already on the refreshed guide. */
+          onError: error => {
+            setOpenDecision(null);
+            showToast(
+              'Could not save',
+              getApiErrorMessage(error, SAVE_FAILED_MESSAGE),
+              'error'
+            );
+          },
+        }
+      );
+    };
+  }
+
   return (
     /* partogram.component.html's outer `.intel-card` > `.card-body`. */
     <div className={`${INTEL_CARD_CLASS} p-6`}>
@@ -143,7 +205,21 @@ export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
       <SharedDecisionMakingComponent
         history={view.history}
         canAdd={view.completion === null}
+        onAdd={addDecision}
       />
+
+      {openDecision && (
+        <AddDecisionDialogComponent
+          /* A fresh form for every opening. */
+          key={`${openDecision.kind}-${openDecision.encounterUuid}`}
+          kind={openDecision.kind}
+          decisions={decisions}
+          viewerUuid={viewerUuid}
+          isSaving={isSavingDecisions}
+          onSave={saveDecision(openDecision)}
+          onClose={() => setOpenDecision(null)}
+        />
+      )}
 
       {view.completion && (
         <VisitCompleteDetailsComponent completion={view.completion} />

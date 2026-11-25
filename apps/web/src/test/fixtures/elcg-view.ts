@@ -1,6 +1,7 @@
 import type {
   ElcgView,
   LcgColumn,
+  LcgDecisionEditor,
   LcgHour,
   LcgReading,
   LcgReadingKey,
@@ -98,6 +99,23 @@ export function entryValues<T>(
   };
 }
 
+/** No decisions yet, recorded against `enc-latest`. */
+export function buildDecisionEditor(
+  overrides: Partial<LcgDecisionEditor> = {}
+): LcgDecisionEditor {
+  const empty = () => ({ history: [], current: [] });
+  return {
+    patientUuid: 'patient-1',
+    encounterUuid: 'enc-latest',
+    assessment: empty(),
+    plan: empty(),
+    medication: empty(),
+    oxytocin: empty(),
+    ivFluids: empty(),
+    ...overrides,
+  };
+}
+
 export function buildElcgView(overrides: Partial<ElcgView> = {}): ElcgView {
   return {
     visitUuid: 'visit-1',
@@ -137,6 +155,7 @@ export function buildElcgView(overrides: Partial<ElcgView> = {}): ElcgView {
       oxytocin: [],
       ivFluids: [],
     },
+    decisions: buildDecisionEditor(),
     completion: null,
     pastVisitsCount: 0,
     ...overrides,

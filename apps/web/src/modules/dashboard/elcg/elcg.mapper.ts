@@ -9,7 +9,9 @@ import type {
   ElcgView,
   LcgColumn,
   LcgCompletionReason,
+  LcgDecisionEditor,
   LcgDecisionHistory,
+  LcgDecisionKind,
   LcgHour,
   LcgIvFluidEntry,
   LcgIvFluidValue,
@@ -17,6 +19,7 @@ import type {
   LcgNoteEntry,
   LcgOxytocinEntry,
   LcgOxytocinValue,
+  LcgOwnedEntry,
   LcgPatientInfo,
   LcgReading,
   LcgReadingKey,
@@ -171,6 +174,87 @@ function signedEntry(obs: OpenMrsVisitObs): LcgNoteEntry {
     value: valueText(obs.value),
     initial: initialsOf(obs.creator?.person?.display),
     obsDatetime: obs.obsDatetime,
+  };
+}
+
+function ownedEntry<TValue>(
+  obs: OpenMrsVisitObs,
+  parse: (text: string) => TValue
+): LcgOwnedEntry<LcgSignedEntryOf<TValue>> {
+  const entry = signedEntry(obs);
+  return {
+    ...entry,
+    value: parse(entry.value),
+    creatorUuid: obs.creator?.uuid ?? null,
+  };
+}
+
+type LcgSignedEntryOf<TValue> = Omit<LcgNoteEntry, 'value'> & {
+  value: TValue;
+};
+
+/**
+ * getLatestEncounterUuid(): the encounter new decisions are recorded on —
+ * the furthest-placed Stage / SOS encounter of the furthest stage reached.
+ * (Angular stops at the first empty sub-column instead, which lands on an
+ * earlier hour whenever one was left half-filled.)
+ */
+function latestSlot(slots: Slot[], hourStart: StageGrid<number>): Slot | null {
+  let latest: Slot | null = null;
+  let latestRank = -1;
+  for (const slot of slots) {
+    const column = hourStart[slot.stage][slot.hour - 1] + slot.subColumn - 1;
+    const rank = slot.stage * 10_000 + column;
+    if (rank > latestRank) {
+      latest = slot;
+      latestRank = rank;
+    }
+  }
+  return latest;
+}
+
+/** The latest encounter's entries of each prescribed concept, newest first. */
+function readDecisionEditor(
+  visit: OpenMrsVisitDetail,
+  latest: Slot | null,
+  history: { [K in LcgDecisionKind]: LcgDecisionEditor[K]['history'] }
+): LcgDecisionEditor {
+  const obs = [...(latest?.encounter.obs ?? [])].sort(newestFirst);
+  const current = <TValue>(concept: string, parse: (text: string) => TValue) =>
+    obs
+      .filter(o => o.concept.display === concept)
+      .map(o => ownedEntry(o, parse));
+  const asText = (text: string) => text;
+
+  return {
+    patientUuid: visit.patient.uuid,
+    encounterUuid: latest?.encounter.uuid ?? null,
+    assessment: {
+      history: history.assessment,
+      current: current(CONCEPT.assessment, asText),
+    },
+    plan: {
+      history: history.plan,
+      current: current(CONCEPT.plan, asText),
+    },
+    medication: {
+      history: history.medication,
+      current: current(CONCEPT.medicinePrescribed, asText),
+    },
+    oxytocin: {
+      history: history.oxytocin,
+      current: current(
+        CONCEPT.oxytocinPrescribed,
+        parseStructured<LcgOxytocinValue>
+      ),
+    },
+    ivFluids: {
+      history: history.ivFluids,
+      current: current(
+        CONCEPT.ivFluidsPrescribed,
+        parseStructured<LcgIvFluidValue>
+      ),
+    },
   };
 }
 
@@ -553,6 +637,15 @@ export function mapVisitToElcgView(
       .sort(newestFirst),
   };
 
+  /* The dialogs list the prescribed concept only, as getPastData() hands them. */
+  const decisions = readDecisionEditor(visit, latestSlot(slots, hourStart), {
+    assessment: history.assessment,
+    plan: history.plan,
+    medication: allEntries(medicinePrescribed).sort(newestFirst),
+    oxytocin: allEntries(oxytocinPrescribed).sort(newestFirst),
+    ivFluids: allEntries(ivPrescribed).sort(newestFirst),
+  });
+
   return {
     visitUuid: visit.uuid,
     patient: readPatientInfo(visit),
@@ -563,6 +656,7 @@ export function mapVisitToElcgView(
     ) as ElcgView['readings'],
     medication,
     history,
+    decisions,
     completion: readCompletion(visit, hasStage3),
     pastVisitsCount,
   };
