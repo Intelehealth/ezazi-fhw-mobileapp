@@ -4,7 +4,6 @@ import {
   DecisionSelect,
   FIELD_CLASS,
 } from '../../../../components/elcg/decision-dialog.component';
-import { formatDayMonthYearTime12h } from '../../../../utils/date-format';
 import type { LcgOxytocinEntry } from '../elcg.types';
 import { INFUSION_STATUSES } from './decision.catalog';
 import {
@@ -13,6 +12,7 @@ import {
   oxytocinRow,
   serializeOxytocin,
   type OxytocinRow,
+  recordedBy,
 } from './decision.rows';
 import { oxytocinFormSchema } from './decision.validation';
 import type { DecisionDialogProps } from './decision-dialog.types';
@@ -30,7 +30,7 @@ export function OxytocinDecisionDialogComponent({
   onSave,
   onClose,
 }: DecisionDialogProps<LcgOxytocinEntry>) {
-  const { form, fields, submit } = useDecisionForm<
+  const { form, fields, setField, submit } = useDecisionForm<
     OxytocinRow,
     LcgOxytocinEntry
   >({
@@ -54,7 +54,7 @@ export function OxytocinDecisionDialogComponent({
       history={source.history.map(entry => ({
         uuid: entry.uuid,
         label: oxytocinLabel(entry),
-        meta: `${entry.initial} (${formatDayMonthYearTime12h(entry.obsDatetime) ?? ''})`,
+        meta: recordedBy(entry),
       }))}
     >
       {fields.map((field, index) => {
@@ -102,11 +102,11 @@ export function OxytocinDecisionDialogComponent({
             >
               <DecisionSelect
                 id={id('status')}
+                value={rows[index].infusionStatus}
                 options={INFUSION_STATUSES}
-                current={rows[index]?.infusionStatus}
                 placeholder="Select infusion status"
                 invalid={Boolean(rowErrors?.infusionStatus)}
-                {...form.register(`rows.${index}.infusionStatus`)}
+                onChange={value => setField(index, 'infusionStatus', value)}
               />
             </DecisionField>
           </div>

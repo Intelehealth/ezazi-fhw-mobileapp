@@ -56,7 +56,9 @@ describe('SetupNewPasswordComponent', () => {
     expect(screen.getByText('nurse1')).toBeInTheDocument();
 
     /* alt="" images have no accessible "img" role, hence container.querySelector here. */
-    const avatar = container.querySelector('img.rounded-full') as HTMLImageElement;
+    const avatar = container.querySelector(
+      'img.rounded-full'
+    ) as HTMLImageElement;
     expect(avatar.src).toBe(new URL(userIcon, window.location.href).href);
     expect(container.querySelector('img[src*="personimage"]')).toBeNull();
   });

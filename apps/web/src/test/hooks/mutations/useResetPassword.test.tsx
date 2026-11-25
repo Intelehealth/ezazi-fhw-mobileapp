@@ -31,7 +31,11 @@ describe('useResetPassword', () => {
     const { result } = renderHook(() => useResetPassword(), { wrapper });
 
     act(() =>
-      result.current.mutate({ userUuid: 'u-1', newPassword: 'Abcdef1$', resetToken: 'reset-tok' })
+      result.current.mutate({
+        userUuid: 'u-1',
+        newPassword: 'Abcdef1$',
+        resetToken: 'reset-tok',
+      })
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -49,12 +53,18 @@ describe('useResetPassword', () => {
   it('rejects and shows an error toast on an invalid/expired reset token', async () => {
     vi.mocked(authService.resetPassword).mockResolvedValue({
       ok: false,
-      error: new ApiError('api', 'Reset token does not match this account', { status: 401 }),
+      error: new ApiError('api', 'Reset token does not match this account', {
+        status: 401,
+      }),
     });
     const { result } = renderHook(() => useResetPassword(), { wrapper });
 
     act(() =>
-      result.current.mutate({ userUuid: 'u-1', newPassword: 'Abcdef1$', resetToken: 'stale-tok' })
+      result.current.mutate({
+        userUuid: 'u-1',
+        newPassword: 'Abcdef1$',
+        resetToken: 'stale-tok',
+      })
     );
 
     await waitFor(() => expect(result.current.isError).toBe(true));

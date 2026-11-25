@@ -22,6 +22,13 @@ import type {
 } from '../../../../types/profile.types';
 import type { AuthUser } from '../../../../types/auth.types';
 
+/*
+ * The full profile form is heavy: under a coverage run, filling and
+ * submitting it can pass vitest's 5s default (as in forgot-username's suite).
+ * Raised for this file only.
+ */
+vi.setConfig({ testTimeout: 20000 });
+
 vi.mock('../../../../services/profile.service', () => ({
   profileService: {
     getProvider: vi.fn(),

@@ -7,13 +7,19 @@ import VerificationMethodPage from '../../../../pages/auth/verification-method/v
 describe('VerificationMethodPage', () => {
   it('renders the real verification-method module through a router carrying its required route state', () => {
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter
           initialEntries={[
-            { pathname: '/auth/verification-method', state: { username: 'nurse1' } },
+            {
+              pathname: '/auth/verification-method',
+              state: { username: 'nurse1' },
+            },
           ]}
         >
           <VerificationMethodPage />

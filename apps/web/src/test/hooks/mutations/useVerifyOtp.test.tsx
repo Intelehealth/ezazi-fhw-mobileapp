@@ -30,12 +30,22 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('useVerifyOtp', () => {
   it('POSTs verifyFor: "password" plus the phone fields and resolves with userUuid + resetToken', async () => {
     vi.mocked(authService.verifyOtp).mockResolvedValue(
-      success({ verified: true, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 })
+      success({
+        verified: true,
+        userUuid: 'u-1',
+        resetToken: 'reset-tok',
+        expiresIn: 300,
+      })
     );
     const { result } = renderHook(() => useVerifyOtp(), { wrapper });
 
     act(() =>
-      result.current.mutate({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91', otp: '123456' })
+      result.current.mutate({
+        verifyFor: 'password',
+        phoneNumber: '9876543210',
+        countryCode: '91',
+        otp: '123456',
+      })
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -58,10 +68,19 @@ describe('useVerifyOtp', () => {
     const { result } = renderHook(() => useVerifyOtp(), { wrapper });
 
     act(() =>
-      result.current.mutate({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91', otp: '000000' })
+      result.current.mutate({
+        verifyFor: 'password',
+        phoneNumber: '9876543210',
+        countryCode: '91',
+        otp: '000000',
+      })
     );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(showToast).toHaveBeenCalledWith('Error', 'Invalid or expired code', 'error');
+    expect(showToast).toHaveBeenCalledWith(
+      'Error',
+      'Invalid or expired code',
+      'error'
+    );
   });
 });

@@ -9,6 +9,8 @@ describe('forgotPasswordSchema', () => {
   });
 
   it('accepts any non-empty username (matches Angular: required only)', () => {
-    expect(forgotPasswordSchema.safeParse({ username: 'nurse1' }).success).toBe(true);
+    expect(forgotPasswordSchema.safeParse({ username: 'nurse1' }).success).toBe(
+      true
+    );
   });
 });

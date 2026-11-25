@@ -414,9 +414,7 @@ describe('profileService.validateProviderAttribute', () => {
   });
 
   it('maps a rejected request into a failure result instead of throwing', async () => {
-    vi.mocked(httpClient.post).mockRejectedValue(
-      new Error('network down')
-    );
+    vi.mocked(httpClient.post).mockRejectedValue(new Error('network down'));
 
     const result = await profileService.validateProviderAttribute({
       attributeType: 'phoneNumber',

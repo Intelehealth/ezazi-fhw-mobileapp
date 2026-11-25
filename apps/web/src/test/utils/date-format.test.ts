@@ -3,6 +3,7 @@ import {
   formatDate,
   formatDateTime,
   formatDayMonthYearTime,
+  formatDayMonthYearTime12h,
   formatTime,
   parseClinicalDate,
 } from '../../utils/date-format';
@@ -65,6 +66,21 @@ describe('formatDayMonthYearTime', () => {
 
   it.each([null, undefined, '', 'not a date'])('returns null for %j', value => {
     expect(formatDayMonthYearTime(value)).toBeNull();
+  });
+});
+
+describe('formatDayMonthYearTime12h', () => {
+  it.each([
+    [new Date(2026, 10, 2, 7, 5), '02-11-2026 07:05 AM'],
+    [new Date(2026, 10, 2, 0, 30), '02-11-2026 12:30 AM'],
+    [new Date(2026, 10, 2, 12, 0), '02-11-2026 12:00 PM'],
+    [new Date(2026, 10, 2, 19, 45), '02-11-2026 07:45 PM'],
+  ])('formats %s as %s, in local time', (date, expected) => {
+    expect(formatDayMonthYearTime12h(date.toISOString())).toBe(expected);
+  });
+
+  it.each([null, undefined, '', 'not a date'])('returns null for %j', value => {
+    expect(formatDayMonthYearTime12h(value)).toBeNull();
   });
 });
 

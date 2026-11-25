@@ -3,13 +3,16 @@ import {
   emptyIvFluidRow,
   emptyMedicationRow,
   emptyNoteRow,
+  emptyOxytocinRow,
   ivFluidLabel,
+  ivFluidRow,
   medicationLabel,
   medicationRow,
   oxytocinLabel,
   oxytocinRow,
   parseMedicine,
   planObsChanges,
+  recordedBy,
   serializeIvFluid,
   serializeMedication,
   serializeNote,
@@ -171,5 +174,90 @@ describe('planObsChanges', () => {
         serializeNote
       )
     ).toEqual([]);
+  });
+});
+
+describe('reading saved entries into rows', () => {
+  it('reads saved IV fluids, numbers as text', () => {
+    expect(
+      ivFluidRow({
+        uuid: 'obs-1',
+        value: {
+          type: 'Other',
+          otherType: 'Mannitol',
+          infusionRate: 20 as unknown as string,
+          infusionStatus: 'Start',
+        },
+        ...SIGNED,
+      })
+    ).toEqual({
+      obsUuid: 'obs-1',
+      isDeleted: false,
+      type: 'Other',
+      otherType: 'Mannitol',
+      infusionRate: '20',
+      infusionStatus: 'Start',
+    });
+  });
+
+  it('opens a plain-text oxytocin or IV value as an empty row to fill in', () => {
+    expect(oxytocinRow({ uuid: 'o', value: 'NO', ...SIGNED })).toEqual({
+      ...emptyOxytocinRow(),
+      obsUuid: 'o',
+    });
+    expect(ivFluidRow({ uuid: 'i', value: 'NO', ...SIGNED })).toEqual({
+      ...emptyIvFluidRow(),
+      obsUuid: 'i',
+    });
+  });
+
+  it('stores no other IV type when "Other" was left blank', () => {
+    expect(
+      JSON.parse(
+        serializeIvFluid({
+          ...emptyIvFluidRow(),
+          type: 'Other',
+          otherType: ' ',
+        })
+      ).otherType
+    ).toBeNull();
+  });
+
+  it('reads a medicine value that holds only its form', () => {
+    expect(parseMedicine('Tablet')).toMatchObject({
+      typeOfMedicine: 'Tablet',
+      medicineName: '',
+      strength: '',
+    });
+  });
+
+  it('reads an amount with an empty unit', () => {
+    expect(
+      parseMedicine('Tablet | Iron | 5 mg | 2:: | OD | Oral | ::Days')
+    ).toMatchObject({
+      dosage: '2',
+      dosageUnit: '',
+      duration: '',
+      durationUnit: 'Days',
+    });
+  });
+});
+
+describe('recordedBy', () => {
+  const entry = {
+    initial: 'Dr. Joshi',
+    obsDatetime: new Date(2026, 10, 2, 19, 5).toISOString(),
+  };
+
+  it('says who recorded an entry and when', () => {
+    expect(recordedBy(entry)).toBe('Dr. Joshi (02-11-2026 07:05 PM)');
+  });
+
+  it('gives only the time where the dialog lists no name', () => {
+    expect(recordedBy(entry, false)).toBe('(02-11-2026 07:05 PM)');
+  });
+
+  it('leaves the time blank when it cannot be read', () => {
+    expect(recordedBy({ ...entry, obsDatetime: 'bad' })).toBe('Dr. Joshi ()');
   });
 });

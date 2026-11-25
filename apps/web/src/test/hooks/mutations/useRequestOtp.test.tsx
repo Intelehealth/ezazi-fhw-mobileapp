@@ -31,7 +31,11 @@ describe('useRequestOtp', () => {
     const { result } = renderHook(() => useRequestOtp(), { wrapper });
 
     act(() =>
-      result.current.mutate({ otpFor: 'password', phoneNumber: '9876543210', countryCode: '91' })
+      result.current.mutate({
+        otpFor: 'password',
+        phoneNumber: '9876543210',
+        countryCode: '91',
+      })
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -50,11 +54,18 @@ describe('useRequestOtp', () => {
   it('rejects and shows an error toast on a backend validation failure (e.g. the email-tab case)', async () => {
     vi.mocked(authService.requestOtp).mockResolvedValue({
       ok: false,
-      error: new ApiError('api', 'phoneNumber must be 4-15 digits', { status: 400 }),
+      error: new ApiError('api', 'phoneNumber must be 4-15 digits', {
+        status: 400,
+      }),
     });
     const { result } = renderHook(() => useRequestOtp(), { wrapper });
 
-    act(() => result.current.mutate({ otpFor: 'password', phoneNumber: 'nurse1@example.com' }));
+    act(() =>
+      result.current.mutate({
+        otpFor: 'password',
+        phoneNumber: 'nurse1@example.com',
+      })
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(showToast).toHaveBeenCalledWith(

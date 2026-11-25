@@ -11,8 +11,14 @@ function renderScreen() {
   return render(
     <MemoryRouter initialEntries={['/auth/forgot-password']}>
       <Routes>
-        <Route path="/auth/forgot-password" element={<ForgotPasswordComponent />} />
-        <Route path="/auth/verification-method" element={<DestinationProbe />} />
+        <Route
+          path="/auth/forgot-password"
+          element={<ForgotPasswordComponent />}
+        />
+        <Route
+          path="/auth/verification-method"
+          element={<DestinationProbe />}
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -29,7 +35,9 @@ describe('ForgotPasswordComponent', () => {
   it('shows a validation message after a submit attempt with username left blank', async () => {
     const { container } = renderScreen();
     fireEvent.submit(container.querySelector('form')!);
-    expect(await screen.findByText('Please enter username')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Please enter username')
+    ).toBeInTheDocument();
   });
 
   it('does NOT call any API — it navigates straight to verification-method with the username in route state', async () => {
@@ -42,6 +50,8 @@ describe('ForgotPasswordComponent', () => {
     await waitFor(() => expect(submitButton).not.toBeDisabled());
     fireEvent.click(submitButton);
 
-    expect(await screen.findByText('verification-method-screen')).toBeInTheDocument();
+    expect(
+      await screen.findByText('verification-method-screen')
+    ).toBeInTheDocument();
   });
 });

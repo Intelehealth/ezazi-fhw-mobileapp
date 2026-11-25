@@ -10,7 +10,9 @@ const TABS = [
 describe('TabSwitcherComponent', () => {
   it('highlights the active tab and calls onChange with the clicked tab id', () => {
     const onChange = vi.fn();
-    render(<TabSwitcherComponent tabs={TABS} active="phone" onChange={onChange} />);
+    render(
+      <TabSwitcherComponent tabs={TABS} active="phone" onChange={onChange} />
+    );
 
     const phoneTab = screen.getByRole('button', { name: 'Mobile number' });
     const emailTab = screen.getByRole('button', { name: 'Email ID' });

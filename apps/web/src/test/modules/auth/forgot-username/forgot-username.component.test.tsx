@@ -46,7 +46,9 @@ describe('ForgotUsernameComponent', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByPlaceholderText('Enter Mobile Number')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter Mobile Number')
+    ).toBeInTheDocument();
     const submitButton = screen.getByRole('button', { name: /next/i });
     expect(submitButton).toBeDisabled();
 
@@ -90,7 +92,9 @@ describe('ForgotUsernameComponent', () => {
     // forgot-username.validation.ts's PHONE_REGEX comment, that fails the
     // regex check (not the min-length one), so the message is "valid", not
     // "enter mobile number".
-    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole('button', { name: /next/i }).closest('form')!
+    );
 
     expect(
       await screen.findByText('Please enter valid mobile number')
@@ -107,9 +111,13 @@ describe('ForgotUsernameComponent', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
     expect(screen.getByPlaceholderText('Enter Email ID')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Enter Mobile Number')).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('Enter Mobile Number')
+    ).not.toBeInTheDocument();
 
-    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole('button', { name: /next/i }).closest('form')!
+    );
     expect(await screen.findByText('Please enter email')).toBeInTheDocument();
     expect(mutate).not.toHaveBeenCalled();
   });

@@ -26,6 +26,8 @@ export interface DecisionForm<TRow> {
   fields: { id: string }[];
   addRow: () => void;
   removeRow: (index: number) => void;
+  /** Sets one field of one row — for fields that are not native inputs. */
+  setField: (index: number, field: keyof TRow & string, value: string) => void;
   submit: (event?: BaseSyntheticEvent) => Promise<void>;
 }
 
@@ -94,9 +96,17 @@ export function useDecisionForm<TRow extends DecisionRowBase, TEntry>({
     }
   }
 
+  function setField(index: number, field: keyof TRow & string, value: string) {
+    form.setValue(`rows.${index}.${field}` as never, value as never, {
+      shouldDirty: true,
+      /* Like the native inputs: re-checked as it changes once Save was pressed. */
+      shouldValidate: form.formState.isSubmitted,
+    });
+  }
+
   const submit = form.handleSubmit(values =>
     onSave(planObsChanges(values.rows, initialRows, serialize))
   );
 
-  return { form, fields, addRow, removeRow, submit };
+  return { form, fields, addRow, removeRow, setField, submit };
 }

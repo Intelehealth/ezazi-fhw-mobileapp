@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NetworkError } from '@ezazi/api-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,9 +40,12 @@ vi.mock('../../../../hooks/mutations/useSaveDecisions', () => ({
   useSaveDecisions: () => saveDecisions,
 }));
 
+/* The signed-in user; a test may sign them out. */
+const auth = vi.hoisted(() => ({
+  user: { uuid: 'doctor-1' } as { uuid: string } | null,
+}));
 vi.mock('../../../../store/hooks', () => ({
-  useAppSelector: (select: (state: unknown) => unknown) =>
-    select({ auth: { user: { uuid: 'doctor-1' } } }),
+  useAppSelector: (select: (state: unknown) => unknown) => select({ auth }),
 }));
 
 vi.mock('../../../../services/toast', () => ({ showToast: vi.fn() }));
@@ -87,6 +90,7 @@ function currentZoom(): number {
 }
 
 beforeEach(() => {
+  auth.user = { uuid: 'doctor-1' };
   mockVisit();
   saveDecisions.mutate.mockReset();
   saveDecisions.isPending = false;
@@ -303,6 +307,51 @@ describe('ElcgComponent', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       }
       expect(saveDecisions.mutate).not.toHaveBeenCalled();
+    });
+
+    it('closes without saving when nothing was changed', async () => {
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add assessment' })
+      );
+      /* Remove the one empty line, leaving nothing to record. */
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove assessment' })
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      );
+      expect(saveDecisions.mutate).not.toHaveBeenCalled();
+    });
+
+    it('opens no entries for editing when nobody is signed in', async () => {
+      auth.user = null;
+      mockVisit({
+        view: buildElcgView({
+          decisions: buildDecisionEditor({
+            plan: {
+              history: [],
+              current: [
+                {
+                  uuid: 'p-1',
+                  value: 'Rest',
+                  creatorUuid: 'doctor-1',
+                  initial: 'Dr',
+                  obsDatetime: '2026-11-02T00:00:00.000Z',
+                },
+              ],
+            },
+          }),
+        }),
+      });
+      render(<ElcgComponent visitUuid="visit-1" />);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Add plan' }));
+
+      expect(screen.getByPlaceholderText('Enter plan')).toHaveValue('');
     });
 
     it('explains that nothing can be added before the first reading', async () => {

@@ -5,13 +5,13 @@ import {
   DeleteRowButton,
   FIELD_CLASS,
 } from '../../../../components/elcg/decision-dialog.component';
-import { formatDayMonthYearTime12h } from '../../../../utils/date-format';
 import type { LcgNoteEntry } from '../elcg.types';
 import {
   emptyNoteRow,
   noteRow,
   serializeNote,
   type NoteRow,
+  recordedBy,
 } from './decision.rows';
 import { noteFormSchema } from './decision.validation';
 import type { DecisionDialogProps } from './decision-dialog.types';
@@ -64,11 +64,11 @@ export function NoteDecisionDialogComponent({
       history={source.history.map(entry => ({
         uuid: entry.uuid,
         label: entry.value,
-        meta: `(${formatDayMonthYearTime12h(entry.obsDatetime) ?? ''})`,
+        meta: recordedBy(entry, false),
       }))}
     >
       {fields.map((field, index) =>
-        rows[index]?.isDeleted ? null : (
+        rows[index].isDeleted ? null : (
           <div
             key={field.id}
             className="mt-2 grid grid-cols-[1fr_auto] items-start gap-2"

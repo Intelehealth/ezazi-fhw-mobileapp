@@ -3,7 +3,10 @@ import { setupNewPasswordSchema } from '../../../../modules/auth/setup-new-passw
 
 describe('setupNewPasswordSchema', () => {
   it('rejects an empty password/confirmPassword', () => {
-    const result = setupNewPasswordSchema.safeParse({ password: '', confirmPassword: '' });
+    const result = setupNewPasswordSchema.safeParse({
+      password: '',
+      confirmPassword: '',
+    });
     expect(result.success).toBe(false);
   });
 

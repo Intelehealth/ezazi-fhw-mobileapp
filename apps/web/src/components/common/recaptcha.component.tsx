@@ -3,7 +3,10 @@ import { useEffect, useRef } from 'react';
 declare global {
   interface Window {
     grecaptcha?: {
-      render: (container: HTMLElement, params: Record<string, unknown>) => number;
+      render: (
+        container: HTMLElement,
+        params: Record<string, unknown>
+      ) => number;
     };
     __onGrecaptchaLoad?: () => void;
   }
@@ -34,13 +37,20 @@ const SCRIPT_SRC = `https://www.google.com/recaptcha/api.js?onload=${CALLBACK_NA
  * run before `.render` exists. The `onload` param is what Google itself
  * calls exactly when it's truly ready.
  */
-export function RecaptchaComponent({ siteKey, onChange }: RecaptchaComponentProps) {
+export function RecaptchaComponent({
+  siteKey,
+  onChange,
+}: RecaptchaComponentProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     function renderWidget() {
-      if (!containerRef.current || !window.grecaptcha?.render || widgetIdRef.current !== null) {
+      if (
+        !containerRef.current ||
+        !window.grecaptcha?.render ||
+        widgetIdRef.current !== null
+      ) {
         return;
       }
       widgetIdRef.current = window.grecaptcha.render(containerRef.current, {

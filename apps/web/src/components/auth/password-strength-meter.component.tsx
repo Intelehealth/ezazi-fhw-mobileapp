@@ -25,7 +25,8 @@ export function PasswordStrengthMeterComponent({
   return (
     <div className="mb-4">
       <p className="text-sm text-[#7F7B92]">
-        Password strength: <span className="font-bold text-[#2E1E91]">{LEVEL_LABELS[level]}</span>
+        Password strength:{' '}
+        <span className="font-bold text-[#2E1E91]">{LEVEL_LABELS[level]}</span>
       </p>
       <div className="my-2 flex gap-[10px]">
         {Array.from({ length: SEGMENT_COUNT }, (_, i) => i + 1).map(segment => (

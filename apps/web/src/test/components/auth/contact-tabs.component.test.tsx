@@ -19,11 +19,17 @@ describe('ContactTabsComponent', () => {
       />
     );
 
-    expect(screen.getByPlaceholderText('Enter Mobile Number')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter Mobile Number')
+    ).toBeInTheDocument();
     // The country selector button carries role="combobox" (it opens a
     // listbox of countries), overriding its implicit <button> role.
-    expect(screen.getByRole('combobox', { name: 'Country selector' })).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Enter Email ID')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', { name: 'Country selector' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('Enter Email ID')
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
     expect(onActiveChange).toHaveBeenCalledWith('email');
@@ -64,9 +70,8 @@ describe('ContactTabsComponent', () => {
     // clicks the wrapping div's own padding (label's next sibling per
     // contact-tabs.component.tsx's JSX), which forwardClickToCountrySelector
     // then forwards to that button, opening the dropdown.
-    const clickForwardingDiv = container.querySelector(
-      'label[for="phone"]'
-    )!.nextElementSibling as HTMLElement;
+    const clickForwardingDiv = container.querySelector('label[for="phone"]')!
+      .nextElementSibling as HTMLElement;
     fireEvent.click(clickForwardingDiv);
 
     expect(combobox).toHaveAttribute('aria-expanded', 'true');

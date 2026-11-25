@@ -65,12 +65,16 @@ function renderScreen(state?: { username?: string }) {
 describe('VerificationMethodComponent', () => {
   it('redirects to forgot-password when no username is present in route state', async () => {
     renderScreen(undefined);
-    expect(await screen.findByText('forgot-password-screen')).toBeInTheDocument();
+    expect(
+      await screen.findByText('forgot-password-screen')
+    ).toBeInTheDocument();
   });
 
   it('renders the phone/email tabs (reused from forgot-username) when username is present', () => {
     renderScreen({ username: 'nurse1' });
-    expect(screen.getByPlaceholderText('Enter Mobile Number')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter Mobile Number')
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: 'Choose verification method' })
     ).toBeInTheDocument();
@@ -100,7 +104,9 @@ describe('VerificationMethodComponent', () => {
     // field defaults to a bare "+91" (dial code only), which fails the
     // regex check per forgot-username.validation.ts's PHONE_REGEX comment
     // (this schema is reused verbatim here).
-    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole('button', { name: /next/i }).closest('form')!
+    );
 
     expect(
       await screen.findByText('Please enter valid mobile number')
@@ -112,7 +118,9 @@ describe('VerificationMethodComponent', () => {
     renderScreen({ username: 'nurse1' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
-    fireEvent.submit(screen.getByRole('button', { name: /next/i }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole('button', { name: /next/i }).closest('form')!
+    );
 
     expect(await screen.findByText('Please enter email')).toBeInTheDocument();
     expect(mutate).not.toHaveBeenCalled();

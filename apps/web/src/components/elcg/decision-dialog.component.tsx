@@ -1,4 +1,5 @@
-import type { FormEventHandler, ReactNode, SelectHTMLAttributes } from 'react';
+import type { FormEventHandler, ReactNode } from 'react';
+import { ComboboxComponent } from '../common/combobox.component';
 import { ModalOverlayComponent } from '../common/modal-overlay.component';
 import closeIcon from '../../assets/svgs/close-x.svg';
 import deleteIcon from '../../assets/svgs/delete-icon.svg';
@@ -46,7 +47,8 @@ export function DecisionDialogComponent({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[95vh] w-[1000px] max-w-full flex-col rounded-xl bg-white font-['DM_Sans']"
+        /* styles.scss's `.modal-lg`: 1086px, at most 90% of the window. */
+        className="flex max-h-[95vh] w-[1086px] max-w-[90%] flex-col rounded-xl bg-white font-['DM_Sans']"
       >
         <div className="flex h-[70px] shrink-0 items-center justify-between p-6">
           <h6 id={titleId} className="m-0 text-xl font-bold text-[#1B163A]">
@@ -165,39 +167,39 @@ export function DecisionField({
 }
 
 /**
- * ng-select's single-choice dropdown, as a native select. `current` keeps a
- * saved value that is not one of the options (an older list's entry)
- * selectable, rather than silently showing the placeholder.
+ * ng-select's searchable single-choice dropdown (`.visit-select`): typing
+ * filters the list, and only a listed value can be chosen. A saved value
+ * that is not one of the options (an older list's entry) is kept in the
+ * list rather than silently shown as empty.
  */
 export function DecisionSelect({
+  id,
+  value,
   options,
   placeholder,
   invalid,
-  current,
-  ...rest
-}: SelectHTMLAttributes<HTMLSelectElement> & {
+  onChange,
+}: {
+  id: string;
+  value: string;
   options: string[];
   placeholder: string;
   invalid?: boolean;
-  current?: string;
+  onChange: (value: string) => void;
 }) {
   const choices =
-    current && !options.includes(current) ? [current, ...options] : options;
+    value && !options.includes(value) ? [value, ...options] : options;
   return (
-    <select
-      {...rest}
-      aria-invalid={invalid}
-      className={`${FIELD_CLASS} cursor-pointer`}
-    >
-      <option value="" disabled>
-        {placeholder}
-      </option>
-      {choices.map(option => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
+    <ComboboxComponent
+      id={id}
+      value={value}
+      options={choices.map(option => ({ key: option, label: option }))}
+      placeholder={placeholder}
+      invalid={invalid}
+      allowCustom={false}
+      onSelect={option => onChange(option.label)}
+      className={FIELD_CLASS}
+    />
   );
 }
 

@@ -16,7 +16,8 @@ const SIGNED = {
 
 function renderDialog(
   kind: LcgDecisionKind,
-  decisions: LcgDecisionEditor = buildDecisionEditor()
+  decisions: LcgDecisionEditor = buildDecisionEditor(),
+  isSaving = false
 ) {
   const onSave = vi.fn();
   const onClose = vi.fn();
@@ -25,7 +26,7 @@ function renderDialog(
       kind={kind}
       decisions={decisions}
       viewerUuid={ME}
-      isSaving={false}
+      isSaving={isSaving}
       onSave={onSave}
       onClose={onClose}
     />
@@ -36,9 +37,16 @@ function renderDialog(
 const save = () =>
   userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
+/** Opens a dropdown and picks one of its options. */
+async function choose(label: string, option: string) {
+  await userEvent.click(screen.getByLabelText(label));
+  await userEvent.click(screen.getByRole('option', { name: option }));
+}
+
 /** The validation messages shown — some read like their field's placeholder. */
-const errors = () =>
-  screen.queryAllByRole('alert').map(alert => alert.textContent);
+const errors = async () =>
+  /* Validation runs asynchronously after Save; wait for its messages to render. */
+  (await screen.findAllByRole('alert')).map(alert => alert.textContent);
 
 describe('Assessment / Plan dialog', () => {
   it('opens on one empty line and requires it before saving', async () => {
@@ -49,7 +57,7 @@ describe('Assessment / Plan dialog', () => {
     ).toBeInTheDocument();
     await save();
 
-    expect(errors()).toEqual(['Enter assessment']);
+    expect(await errors()).toEqual(['Enter assessment']);
     expect(onSave).not.toHaveBeenCalled();
   });
 
@@ -134,15 +142,9 @@ describe('Medication dialog', () => {
     expect(screen.getByLabelText('Route of Medicine *')).toHaveValue('Oral');
 
     await userEvent.type(screen.getByLabelText('Dosage *'), '1');
-    await userEvent.selectOptions(
-      screen.getByLabelText('Frequency *'),
-      'Thrice daily (TID)'
-    );
+    await choose('Frequency *', 'Thrice daily (TID)');
     await userEvent.type(screen.getByLabelText('Duration *'), '3');
-    await userEvent.selectOptions(
-      screen.getByLabelText('Duration Unit *'),
-      'Days'
-    );
+    await choose('Duration Unit *', 'Days');
     await save();
 
     expect(onSave).toHaveBeenCalledWith([
@@ -169,7 +171,7 @@ describe('Medication dialog', () => {
 
     await save();
 
-    expect(errors()).toEqual([
+    expect(await errors()).toEqual([
       'Enter medicine name',
       'Enter type',
       'Enter strength',
@@ -198,7 +200,7 @@ describe('Oxytocin dialog', () => {
     );
     await save();
 
-    expect(errors()).toEqual([
+    expect(await errors()).toEqual([
       'Strength should be between 1 to 10',
       'Infusion rate should be between 5 to 60',
       'Select infusion status',
@@ -239,10 +241,7 @@ describe('Oxytocin dialog', () => {
       screen.getByLabelText('Infusion Rate (drops/minute)*'),
       '20'
     );
-    await userEvent.selectOptions(
-      screen.getByLabelText('Infusion Status*'),
-      'Continue'
-    );
+    await choose('Infusion Status*', 'Continue');
     await save();
 
     expect(onSave).toHaveBeenCalledWith([
@@ -259,21 +258,15 @@ describe('IV fluids dialog', () => {
     const { onSave } = renderDialog('ivFluids');
 
     expect(screen.queryByLabelText('Other IV Type*')).toBeNull();
-    await userEvent.selectOptions(
-      screen.getByLabelText('Type of IV Fluid*'),
-      'Other'
-    );
+    await choose('Type of IV Fluid*', 'Other');
     await userEvent.type(
       screen.getByLabelText('IV Infusion Rate (drops/minute)*'),
       '30'
     );
-    await userEvent.selectOptions(
-      screen.getByLabelText('Infusion Status*'),
-      'Start'
-    );
+    await choose('Infusion Status*', 'Start');
     await save();
 
-    expect(errors()).toEqual(['Enter other type']);
+    expect(await errors()).toEqual(['Enter other type']);
     expect(onSave).not.toHaveBeenCalled();
 
     await userEvent.type(screen.getByLabelText('Other IV Type*'), 'Mannitol');
@@ -305,5 +298,174 @@ describe('IV fluids dialog', () => {
     expect(
       within(screen.getByRole('dialog')).getByText('IV FLUIDS')
     ).toBeInTheDocument();
+  });
+});
+
+describe('while saving', () => {
+  it('says so, and cannot be closed or saved again half-way through', async () => {
+    const { onClose, onSave } = renderDialog(
+      'plan',
+      buildDecisionEditor(),
+      true
+    );
+
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();
+    await userEvent.keyboard('{Escape}');
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+describe('saved rows', () => {
+  const ivEntry = {
+    uuid: 'i-1',
+    value: {
+      type: 'Ringer Lactate',
+      infusionRate: '20',
+      infusionStatus: 'start',
+    },
+    ...SIGNED,
+  };
+
+  it('keeps a saved value from outside the list selectable', async () => {
+    renderDialog(
+      'ivFluids',
+      buildDecisionEditor({
+        ivFluids: {
+          history: [ivEntry],
+          current: [{ ...ivEntry, creatorUuid: ME }],
+        },
+      })
+    );
+
+    expect(screen.getByLabelText('Infusion Status*')).toHaveValue('start');
+    await userEvent.click(screen.getByLabelText('Infusion Status*'));
+    expect(
+      screen.getAllByRole('option').map(option => option.textContent)
+    ).toEqual(['start', 'Start', 'Continue', 'Stop']);
+    /* And the order is listed below the form. */
+    expect(
+      screen.getByText('START IV - Ringer Lactate (20 drops/minute)')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Dr. Joshi (02-11-2026 07:05 PM)')
+    ).toBeInTheDocument();
+  });
+
+  it('voids a saved IV fluid that is removed', async () => {
+    const { onSave } = renderDialog(
+      'ivFluids',
+      buildDecisionEditor({
+        ivFluids: { history: [], current: [{ ...ivEntry, creatorUuid: ME }] },
+      })
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove IV fluid' })
+    );
+    expect(screen.queryByLabelText('Type of IV Fluid*')).toBeNull();
+    await save();
+
+    expect(onSave).toHaveBeenCalledWith([{ action: 'delete', uuid: 'i-1' }]);
+  });
+
+  it('checks each IV fluid on its own', async () => {
+    const { onSave } = renderDialog(
+      'ivFluids',
+      buildDecisionEditor({
+        ivFluids: {
+          history: [],
+          current: [
+            {
+              ...ivEntry,
+              value: { ...ivEntry.value, infusionStatus: 'Start' },
+              creatorUuid: ME,
+            },
+          ],
+        },
+      })
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Prescribe New' })
+    );
+    await save();
+
+    /* Only the new, empty order is flagged. */
+    expect(await errors()).toEqual([
+      'Enter type',
+      'Enter infusion rate',
+      'Select infusion status',
+    ]);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  const medicine = {
+    uuid: 'm-1',
+    value:
+      'Tablet | Paracetamol | 650 mg | 1::Tab | Thrice daily (TID) | Oral | 3::Days',
+    ...SIGNED,
+  };
+
+  it('lists earlier prescriptions, and voids one removed', async () => {
+    const { onSave } = renderDialog(
+      'medication',
+      buildDecisionEditor({
+        medication: {
+          history: [medicine],
+          current: [{ ...medicine, creatorUuid: ME }],
+        },
+      })
+    );
+
+    expect(
+      screen.getByText(
+        'Tablet Paracetamol 650 mg 1 Tab Thrice daily (TID) Oral for 3 Days'
+      )
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove medicine' })
+    );
+    await save();
+
+    expect(onSave).toHaveBeenCalledWith([{ action: 'delete', uuid: 'm-1' }]);
+  });
+
+  it('takes a strength typed in or picked from the list', async () => {
+    const { onSave } = renderDialog(
+      'medication',
+      buildDecisionEditor({
+        medication: {
+          history: [],
+          current: [{ ...medicine, creatorUuid: ME }],
+        },
+      })
+    );
+    const strength = screen.getByLabelText('Strength *');
+
+    await userEvent.clear(strength);
+    await userEvent.type(strength, '325 mg');
+    await save();
+    expect(onSave).toHaveBeenLastCalledWith([
+      {
+        action: 'update',
+        uuid: 'm-1',
+        value: expect.stringContaining('| 325 mg |'),
+      },
+    ]);
+
+    await userEvent.clear(strength);
+    await userEvent.click(screen.getByRole('option', { name: '500 mg' }));
+    await save();
+    expect(onSave).toHaveBeenLastCalledWith([
+      {
+        action: 'update',
+        uuid: 'm-1',
+        value: expect.stringContaining('| 500 mg |'),
+      },
+    ]);
   });
 });

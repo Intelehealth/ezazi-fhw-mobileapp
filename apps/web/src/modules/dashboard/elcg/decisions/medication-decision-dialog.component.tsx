@@ -7,7 +7,6 @@ import {
   DeleteRowButton,
   FIELD_CLASS,
 } from '../../../../components/elcg/decision-dialog.component';
-import { formatDayMonthYearTime12h } from '../../../../utils/date-format';
 import type { LcgNoteEntry } from '../elcg.types';
 import {
   DOSAGE_UNITS,
@@ -18,6 +17,7 @@ import {
   MEDICINE_ROUTES,
   MEDICINE_STRENGTHS,
   medicinePresetLabel,
+  type MedicinePreset,
 } from './decision.catalog';
 import {
   emptyMedicationRow,
@@ -25,6 +25,7 @@ import {
   medicationRow,
   serializeMedication,
   type MedicationRow,
+  recordedBy,
 } from './decision.rows';
 import { medicationFormSchema } from './decision.validation';
 import type { DecisionDialogProps } from './decision-dialog.types';
@@ -34,6 +35,10 @@ const MEDICINE_OPTIONS = MEDICINE_PRESETS.map(preset => ({
   key: String(preset.id),
   label: medicinePresetLabel(preset),
 }));
+
+const PRESETS_BY_KEY = new Map(
+  MEDICINE_PRESETS.map(preset => [String(preset.id), preset])
+);
 
 const STRENGTH_OPTIONS = MEDICINE_STRENGTHS.map(strength => ({
   key: strength,
@@ -55,7 +60,7 @@ export function MedicationDecisionDialogComponent({
   onSave,
   onClose,
 }: DecisionDialogProps<LcgNoteEntry>) {
-  const { form, fields, addRow, removeRow, submit } = useDecisionForm<
+  const { form, fields, addRow, removeRow, setField, submit } = useDecisionForm<
     MedicationRow,
     LcgNoteEntry
   >({
@@ -70,16 +75,9 @@ export function MedicationDecisionDialogComponent({
   const rows = form.watch('rows');
   const errors = form.formState.errors.rows;
 
-  function setField(index: number, field: TextField, value: string) {
-    form.setValue(`rows.${index}.${field}`, value, {
-      shouldDirty: true,
-      shouldValidate: form.formState.isSubmitted,
-    });
-  }
-
   function pickPreset(index: number, key: string) {
-    const preset = MEDICINE_PRESETS.find(p => String(p.id) === key);
-    if (!preset) return;
+    /* The key comes from MEDICINE_OPTIONS, so it always names a preset. */
+    const preset = PRESETS_BY_KEY.get(key) as MedicinePreset;
     setField(index, 'medicineName', preset.name);
     setField(index, 'typeOfMedicine', preset.form);
     setField(index, 'strength', preset.strength);
@@ -96,30 +94,51 @@ export function MedicationDecisionDialogComponent({
       history={source.history.map(entry => ({
         uuid: entry.uuid,
         label: medicationLabel(entry.value),
-        meta: `${entry.initial} (${formatDayMonthYearTime12h(entry.obsDatetime) ?? ''})`,
+        meta: recordedBy(entry),
       }))}
     >
       {fields.map((field, index) => {
         const row = rows[index];
-        if (!row || row.isDeleted) return null;
+        if (row.isDeleted) return null;
         const rowErrors = errors?.[index];
         const id = (name: string) => `medication-${index}-${name}`;
         const error = (name: TextField) => rowErrors?.[name]?.message;
         const invalid = (name: TextField) => Boolean(rowErrors?.[name]);
 
+        /* A listed choice, from the styled dropdown. */
+        const select = (
+          name: TextField,
+          options: string[],
+          placeholder: string
+        ) => (
+          <DecisionSelect
+            id={id(name)}
+            value={row[name]}
+            options={options}
+            placeholder={placeholder}
+            invalid={invalid(name)}
+            onChange={value => setField(index, name, value)}
+          />
+        );
+
         return (
+          /*
+           * Four equal columns, so every placeholder shows in full — Angular's
+           * 12-column split leaves "Select medicine form" and "Select
+           * duration unit" too narrow to read.
+           */
           <div
             key={field.id}
-            className="mt-2 grid items-start gap-x-4 border-t border-[rgba(178,175,190,0.2)] pt-2 first:border-t-0 first:pt-0 md:grid-cols-12"
+            className="mt-2 grid items-start gap-x-4 border-t border-[rgba(178,175,190,0.2)] pt-2 first:border-t-0 first:pt-0 md:grid-cols-4"
           >
             <DecisionField
-              htmlFor={id('medicine')}
+              htmlFor={id('medicineName')}
               label="Medicine *"
               error={error('medicineName')}
-              className="md:col-span-4"
+              className="md:col-span-2"
             >
               <ComboboxComponent
-                id={id('medicine')}
+                id={id('medicineName')}
                 value={row.medicineName}
                 options={MEDICINE_OPTIONS}
                 placeholder="Enter medicine name"
@@ -130,25 +149,16 @@ export function MedicationDecisionDialogComponent({
               />
             </DecisionField>
             <DecisionField
-              htmlFor={id('form')}
+              htmlFor={id('typeOfMedicine')}
               label="Form *"
               error={error('typeOfMedicine')}
-              className="md:col-span-2"
             >
-              <DecisionSelect
-                id={id('form')}
-                options={MEDICINE_FORMS}
-                current={row.typeOfMedicine}
-                placeholder="Select medicine form"
-                invalid={invalid('typeOfMedicine')}
-                {...form.register(`rows.${index}.typeOfMedicine`)}
-              />
+              {select('typeOfMedicine', MEDICINE_FORMS, 'Select medicine form')}
             </DecisionField>
             <DecisionField
               htmlFor={id('strength')}
               label="Strength *"
               error={error('strength')}
-              className="md:col-span-2"
             >
               <ComboboxComponent
                 id={id('strength')}
@@ -161,11 +171,11 @@ export function MedicationDecisionDialogComponent({
                 className={FIELD_CLASS}
               />
             </DecisionField>
+
             <DecisionField
               htmlFor={id('dosage')}
               label="Dosage *"
               error={error('dosage')}
-              className="md:col-span-2"
             >
               <input
                 id={id('dosage')}
@@ -179,56 +189,31 @@ export function MedicationDecisionDialogComponent({
               />
             </DecisionField>
             <DecisionField
-              htmlFor={id('dosage-unit')}
+              htmlFor={id('dosageUnit')}
               label="Dosage Unit *"
               error={error('dosageUnit')}
-              className="md:col-span-2"
             >
-              <DecisionSelect
-                id={id('dosage-unit')}
-                options={DOSAGE_UNITS}
-                current={row.dosageUnit}
-                placeholder="Enter dosage unit"
-                invalid={invalid('dosageUnit')}
-                {...form.register(`rows.${index}.dosageUnit`)}
-              />
+              {select('dosageUnit', DOSAGE_UNITS, 'Enter dosage unit')}
             </DecisionField>
-
             <DecisionField
               htmlFor={id('frequency')}
               label="Frequency *"
               error={error('frequency')}
-              className="md:col-span-3"
             >
-              <DecisionSelect
-                id={id('frequency')}
-                options={MEDICINE_FREQUENCIES}
-                current={row.frequency}
-                placeholder="Select frequency"
-                invalid={invalid('frequency')}
-                {...form.register(`rows.${index}.frequency`)}
-              />
+              {select('frequency', MEDICINE_FREQUENCIES, 'Select frequency')}
             </DecisionField>
             <DecisionField
-              htmlFor={id('route')}
+              htmlFor={id('routeOfMedicine')}
               label="Route of Medicine *"
               error={error('routeOfMedicine')}
-              className="md:col-span-2"
             >
-              <DecisionSelect
-                id={id('route')}
-                options={MEDICINE_ROUTES}
-                current={row.routeOfMedicine}
-                placeholder="Select route"
-                invalid={invalid('routeOfMedicine')}
-                {...form.register(`rows.${index}.routeOfMedicine`)}
-              />
+              {select('routeOfMedicine', MEDICINE_ROUTES, 'Select route')}
             </DecisionField>
+
             <DecisionField
               htmlFor={id('duration')}
               label="Duration *"
               error={error('duration')}
-              className="md:col-span-2"
             >
               <input
                 id={id('duration')}
@@ -242,25 +227,16 @@ export function MedicationDecisionDialogComponent({
               />
             </DecisionField>
             <DecisionField
-              htmlFor={id('duration-unit')}
+              htmlFor={id('durationUnit')}
               label="Duration Unit *"
               error={error('durationUnit')}
-              className="md:col-span-2"
             >
-              <DecisionSelect
-                id={id('duration-unit')}
-                options={DURATION_UNITS}
-                current={row.durationUnit}
-                placeholder="Select duration unit"
-                invalid={invalid('durationUnit')}
-                {...form.register(`rows.${index}.durationUnit`)}
-              />
+              {select('durationUnit', DURATION_UNITS, 'Select duration unit')}
             </DecisionField>
             <DecisionField
               htmlFor={id('remark')}
               label="Remark"
               error={error('remark')}
-              className="md:col-span-2"
             >
               <input
                 id={id('remark')}
@@ -271,7 +247,7 @@ export function MedicationDecisionDialogComponent({
                 {...form.register(`rows.${index}.remark`)}
               />
             </DecisionField>
-            <div className="mb-4 md:col-span-1 md:pt-7">
+            <div className="mb-4 w-12 md:pt-7">
               <DeleteRowButton
                 label="Remove medicine"
                 onClick={() => removeRow(index)}

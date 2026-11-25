@@ -36,7 +36,12 @@ export function OtpInputComponent({
   function setDigit(index: number, digit: string) {
     const next = digits.slice();
     next[index] = digit;
-    onChange(next.map(d => d || EMPTY_SLOT).join('').trimEnd());
+    onChange(
+      next
+        .map(d => d || EMPTY_SLOT)
+        .join('')
+        .trimEnd()
+    );
   }
 
   function handleChange(index: number, raw: string) {

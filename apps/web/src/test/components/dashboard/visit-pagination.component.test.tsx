@@ -57,7 +57,9 @@ describe('VisitPaginationComponent', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Previous page' })
+    ).toBeDisabled();
   });
 
   it('disables Next on the last page and calls onPageIndexChange(pageIndex + 1) before it', () => {

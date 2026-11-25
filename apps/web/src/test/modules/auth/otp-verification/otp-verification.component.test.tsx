@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OtpVerificationComponent } from '../../../../modules/auth/otp-verification/otp-verification.component';
@@ -23,11 +29,19 @@ function SetupPasswordProbe() {
 
 function renderScreen(state: Record<string, unknown> | undefined) {
   return render(
-    <MemoryRouter initialEntries={[{ pathname: '/auth/otp-verification', state }]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/auth/otp-verification', state }]}
+    >
       <Routes>
-        <Route path="/auth/otp-verification" element={<OtpVerificationComponent />} />
+        <Route
+          path="/auth/otp-verification"
+          element={<OtpVerificationComponent />}
+        />
         <Route path="/auth/login" element={<LoginProbe />} />
-        <Route path="/auth/setup-new-password" element={<SetupPasswordProbe />} />
+        <Route
+          path="/auth/setup-new-password"
+          element={<SetupPasswordProbe />}
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -62,16 +76,26 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
   });
 
   it('shows the masked phone number and starts the 60s countdown (no Resend link yet)', () => {
-    renderScreen({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' });
+    renderScreen({
+      verifyFor: 'password',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    });
     expect(screen.getByText(/98765\*\*\*\*\*10/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Resend' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Resend' })
+    ).not.toBeInTheDocument();
   });
 
   it('reveals Resend after the 60s countdown elapses and re-requests the OTP with the same fields on click', () => {
     // Fake timers only for this synchronous test — findBy/waitFor elsewhere
     // in this suite poll via real setTimeout, which fake timers would freeze.
     vi.useFakeTimers();
-    renderScreen({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' });
+    renderScreen({
+      verifyFor: 'password',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    });
 
     act(() => {
       vi.advanceTimersByTime(60_000);
@@ -90,7 +114,11 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
 
   it('stays at 0 (does not go negative) once the countdown has already elapsed', () => {
     vi.useFakeTimers();
-    renderScreen({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' });
+    renderScreen({
+      verifyFor: 'password',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    });
 
     act(() => {
       // Past the 60s the countdown needs to reach 0 — the extra 5s exercises
@@ -104,7 +132,12 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
 
   it('verifies with phoneNumber/countryCode/username/otp and navigates to setup-new-password with the returned userUuid + resetToken', async () => {
     verifyOtpMutate.mockImplementation((_vars, { onSuccess }) =>
-      onSuccess({ verified: true, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 })
+      onSuccess({
+        verified: true,
+        userUuid: 'u-1',
+        resetToken: 'reset-tok',
+        expiresIn: 300,
+      })
     );
     renderScreen({
       verifyFor: 'password',
@@ -140,13 +173,19 @@ describe('OtpVerificationComponent — verifyFor: "password"', () => {
 
 describe('OtpVerificationComponent — validation', () => {
   it('shows an OTP validation error on an invalid submit attempt', async () => {
-    renderScreen({ verifyFor: 'password', phoneNumber: '9876543210', countryCode: '91' });
+    renderScreen({
+      verifyFor: 'password',
+      phoneNumber: '9876543210',
+      countryCode: '91',
+    });
 
     // The Verify button stays disabled until all 6 digits are filled (see
     // the "verifies with phoneNumber/countryCode/otp" test) — fireEvent.submit
     // bypasses that disabled state, exercising react-hook-form's own
     // validation on an empty otp field.
-    fireEvent.submit(screen.getByRole('button', { name: 'Verify' }).closest('form')!);
+    fireEvent.submit(
+      screen.getByRole('button', { name: 'Verify' }).closest('form')!
+    );
 
     expect(await screen.findByText('Please enter otp')).toBeInTheDocument();
     expect(verifyOtpMutate).not.toHaveBeenCalled();
@@ -161,7 +200,9 @@ describe('OtpVerificationComponent — verifyFor: "username"', () => {
   });
 
   it('verifies with email/otp, shows the "Username Sent" toast, and navigates back to login (no resetToken/userUuid needed)', async () => {
-    verifyOtpMutate.mockImplementation((_vars, { onSuccess }) => onSuccess({ verified: true }));
+    verifyOtpMutate.mockImplementation((_vars, { onSuccess }) =>
+      onSuccess({ verified: true })
+    );
     renderScreen({ verifyFor: 'username', email: 'nurse1@example.com' });
 
     typeOtp('123456');

@@ -40,7 +40,11 @@ function daysInMonth(year: number, month: number): number {
 
 /** Moves to `month`/`year`, clamping the day (31 Jan -> 28 Feb). */
 function withMonth(date: Date, year: number, month: number): Date {
-  return new Date(year, month, Math.min(date.getDate(), daysInMonth(year, month)));
+  return new Date(
+    year,
+    month,
+    Math.min(date.getDate(), daysInMonth(year, month))
+  );
 }
 
 type View = 'day' | 'month' | 'year';
@@ -81,7 +85,9 @@ export function DatePickerComponent({
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>('day');
-  const [active, setActive] = useState<Date>(() => selected ?? maxDate ?? new Date());
+  const [active, setActive] = useState<Date>(
+    () => selected ?? maxDate ?? new Date()
+  );
   const [yearPage, setYearPage] = useState(0);
 
   function openCalendar() {
@@ -115,7 +121,9 @@ export function DatePickerComponent({
 
   const year = active.getFullYear();
   const month = active.getMonth();
-  const maxYear = maxDate ? maxDate.getFullYear() : new Date().getFullYear() + 50;
+  const maxYear = maxDate
+    ? maxDate.getFullYear()
+    : new Date().getFullYear() + 50;
   const isDisabled = (date: Date) => maxDate !== null && date > maxDate;
 
   const firstWeekday = new Date(year, month, 1).getDay();
@@ -126,12 +134,25 @@ export function DatePickerComponent({
   ];
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const prevMonth = withMonth(active, month === 0 ? year - 1 : year, (month + 11) % 12);
-  const nextMonth = withMonth(active, month === 11 ? year + 1 : year, (month + 1) % 12);
-  const canGoNext = !maxDate || new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1) <= maxDate;
+  const prevMonth = withMonth(
+    active,
+    month === 0 ? year - 1 : year,
+    (month + 11) % 12
+  );
+  const nextMonth = withMonth(
+    active,
+    month === 11 ? year + 1 : year,
+    (month + 1) % 12
+  );
+  const canGoNext =
+    !maxDate ||
+    new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1) <= maxDate;
   const canGoPrev = prevMonth.getFullYear() >= MIN_YEAR;
 
-  const firstYear = Math.max(MIN_YEAR, maxYear - YEARS_PER_PAGE + 1 - yearPage * YEARS_PER_PAGE);
+  const firstYear = Math.max(
+    MIN_YEAR,
+    maxYear - YEARS_PER_PAGE + 1 - yearPage * YEARS_PER_PAGE
+  );
   const years = Array.from(
     { length: Math.min(YEARS_PER_PAGE, maxYear - firstYear + 1) },
     (_, i) => firstYear + i
@@ -142,7 +163,10 @@ export function DatePickerComponent({
 
   return (
     <div ref={rootRef} className="relative">
-      <label htmlFor={id} className="mb-1 block text-sm font-bold text-[#1B163A]">
+      <label
+        htmlFor={id}
+        className="mb-1 block text-sm font-bold text-[#1B163A]"
+      >
         {label}
       </label>
       <div className="relative">
@@ -282,7 +306,10 @@ export function DatePickerComponent({
             <div className="px-2">
               <div className="grid grid-cols-7 border-b border-[#E0E0E0] pb-1 text-center text-xs text-[#6B677D]">
                 {WEEKDAYS.map((day, index) => (
-                  <span key={index} className="py-2 underline decoration-dotted">
+                  <span
+                    key={index}
+                    className="py-2 underline decoration-dotted"
+                  >
                     {day}
                   </span>
                 ))}
@@ -302,7 +329,8 @@ export function DatePickerComponent({
                     );
                   }
                   const date = new Date(year, month, day);
-                  const isSelected = selected !== null && toIso(date) === toIso(selected);
+                  const isSelected =
+                    selected !== null && toIso(date) === toIso(selected);
                   const disabled = isDisabled(date);
                   return (
                     <button

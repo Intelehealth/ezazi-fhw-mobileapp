@@ -27,7 +27,9 @@ export function TabSwitcherComponent({
           type="button"
           onClick={() => onChange(tab.id)}
           className={`flex h-12 flex-1 cursor-pointer items-center justify-center rounded-lg text-base font-bold text-[#2E1E91] ${
-            active === tab.id ? 'bg-white shadow-[0px_2px_6px_rgba(27,22,58,0.08)]' : ''
+            active === tab.id
+              ? 'bg-white shadow-[0px_2px_6px_rgba(27,22,58,0.08)]'
+              : ''
           }`}
         >
           {tab.label}

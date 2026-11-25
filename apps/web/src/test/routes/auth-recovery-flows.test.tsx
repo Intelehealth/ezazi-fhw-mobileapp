@@ -75,9 +75,8 @@ async function renderAtPath(path: string) {
   // object) than the one app.routes' own dependency tree picks up via this
   // dynamic import, which silently breaks "No QueryClient set" style context
   // matching despite a provider visibly wrapping the tree.
-  const { QueryClient, QueryClientProvider } = await import(
-    '@tanstack/react-query'
-  );
+  const { QueryClient, QueryClientProvider } =
+    await import('@tanstack/react-query');
   const { AppRoutes } = await import('../../routes/app.routes');
   // main.tsx is the only place QueryClientProvider normally wraps AppRoutes
   // (App.tsx itself doesn't) — the new screens' real useRequestOtp/
@@ -129,20 +128,34 @@ beforeEach(() => {
   // already guarantees that shape reaches here) — the substring "fail" in
   // either identifier is this suite's own deliberate failure trigger, not a
   // real auth-gateway convention.
-  vi.mocked(authService.requestOtp).mockImplementation(async ({ phoneNumber, email }) => {
-    const identifier = phoneNumber ?? email ?? '';
-    return identifier.toLowerCase().includes('fail')
-      ? failure(new ApiError('api', 'Something went wrong, please try again.', { status: 500 }))
-      : success({ message: 'If the account exists, an OTP has been sent.' });
-  });
-  vi.mocked(authService.verifyOtp).mockImplementation(async ({ verifyFor, otp }) =>
-    otp === '000000'
-      ? failure(new ApiError('api', 'Invalid or expired code', { status: 401 }))
-      : success(
-          verifyFor === 'username'
-            ? { verified: true }
-            : { verified: true, userUuid: 'u-1', resetToken: 'reset-tok', expiresIn: 300 }
-        )
+  vi.mocked(authService.requestOtp).mockImplementation(
+    async ({ phoneNumber, email }) => {
+      const identifier = phoneNumber ?? email ?? '';
+      return identifier.toLowerCase().includes('fail')
+        ? failure(
+            new ApiError('api', 'Something went wrong, please try again.', {
+              status: 500,
+            })
+          )
+        : success({ message: 'If the account exists, an OTP has been sent.' });
+    }
+  );
+  vi.mocked(authService.verifyOtp).mockImplementation(
+    async ({ verifyFor, otp }) =>
+      otp === '000000'
+        ? failure(
+            new ApiError('api', 'Invalid or expired code', { status: 401 })
+          )
+        : success(
+            verifyFor === 'username'
+              ? { verified: true }
+              : {
+                  verified: true,
+                  userUuid: 'u-1',
+                  resetToken: 'reset-tok',
+                  expiresIn: 300,
+                }
+          )
   );
   vi.mocked(authService.resetPassword).mockResolvedValue(
     success({ message: 'Password reset successful.' })
@@ -157,7 +170,9 @@ describe('forgot-username recovery flow', () => {
   it('walks login -> forgot-username (phone tab) -> otp-verification -> back to login (success)', async () => {
     await renderAtPath('/auth/login');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Username ?' }));
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Forgot Username ?' })
+    );
     expect(
       await screen.findByRole('heading', { name: 'Forgot Username' })
     ).toBeInTheDocument();
@@ -192,7 +207,9 @@ describe('forgot-username recovery flow', () => {
   it('walks login -> forgot-username (email tab) -> otp-verification -> back to login (success)', async () => {
     await renderAtPath('/auth/login');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Username ?' }));
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Forgot Username ?' })
+    );
     await screen.findByRole('heading', { name: 'Forgot Username' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
@@ -220,7 +237,9 @@ describe('forgot-username recovery flow', () => {
   it('failure path: an email containing "fail" keeps the user on forgot-username (requestOtp rejects)', async () => {
     await renderAtPath('/auth/login');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Username ?' }));
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Forgot Username ?' })
+    );
     await screen.findByRole('heading', { name: 'Forgot Username' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Email ID' }));
@@ -249,7 +268,9 @@ describe('forgot-password recovery flow', () => {
   it('walks login -> forgot-password -> verification-method (phone tab) -> otp-verification -> setup-new-password -> login (success)', async () => {
     await renderAtPath('/auth/login');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Password ?' }));
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Forgot Password ?' })
+    );
     expect(
       await screen.findByRole('heading', { name: 'Forgot Password' })
     ).toBeInTheDocument();
@@ -290,9 +311,12 @@ describe('forgot-password recovery flow', () => {
       otp: '123456',
     });
 
-    fireEvent.input(screen.getByPlaceholderText('Enter or generate new password'), {
-      target: { value: 'Abcdefg1$' },
-    });
+    fireEvent.input(
+      screen.getByPlaceholderText('Enter or generate new password'),
+      {
+        target: { value: 'Abcdefg1$' },
+      }
+    );
     fireEvent.input(screen.getByPlaceholderText('Re-enter new password'), {
       target: { value: 'Abcdefg1$' },
     });
@@ -307,10 +331,12 @@ describe('forgot-password recovery flow', () => {
     });
   });
 
-  it('walks the same flow via verification-method\'s email tab (success — auth-gateway now supports email for password reset too)', async () => {
+  it("walks the same flow via verification-method's email tab (success — auth-gateway now supports email for password reset too)", async () => {
     await renderAtPath('/auth/login');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Password ?' }));
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Forgot Password ?' })
+    );
     await screen.findByRole('heading', { name: 'Forgot Password' });
 
     fireEvent.input(screen.getByPlaceholderText('Enter username'), {
@@ -337,7 +363,9 @@ describe('forgot-password recovery flow', () => {
   it('failure path: OTP 000000 keeps the user on otp-verification instead of reaching setup-new-password', async () => {
     await renderAtPath('/auth/login');
 
-    fireEvent.click(await screen.findByRole('link', { name: 'Forgot Password ?' }));
+    fireEvent.click(
+      await screen.findByRole('link', { name: 'Forgot Password ?' })
+    );
     await screen.findByRole('heading', { name: 'Forgot Password' });
 
     fireEvent.input(screen.getByPlaceholderText('Enter username'), {

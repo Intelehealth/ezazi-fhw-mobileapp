@@ -7,7 +7,10 @@ import SetupNewPasswordPage from '../../../../pages/auth/setup-new-password/setu
 describe('SetupNewPasswordPage', () => {
   it('renders the real setup-new-password module through a router carrying its required route state', () => {
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     render(
       <QueryClientProvider client={queryClient}>
@@ -15,7 +18,11 @@ describe('SetupNewPasswordPage', () => {
           initialEntries={[
             {
               pathname: '/auth/setup-new-password',
-              state: { username: 'nurse1', userUuid: 'u-1', resetToken: 'reset-tok' },
+              state: {
+                username: 'nurse1',
+                userUuid: 'u-1',
+                resetToken: 'reset-tok',
+              },
             },
           ]}
         >

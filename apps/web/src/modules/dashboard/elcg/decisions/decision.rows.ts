@@ -3,6 +3,7 @@ import type {
   LcgNoteEntry,
   LcgOxytocinEntry,
 } from '../elcg.types';
+import { formatDayMonthYearTime12h } from '../../../../utils/date-format';
 import { OTHER_IV_FLUID_TYPE } from './decision.catalog';
 
 /**
@@ -175,8 +176,9 @@ export function emptyMedicationRow(): MedicationRow {
 /** `amount::unit` → [amount, unit]; anything without the separator has neither. */
 function splitAmount(part: string | undefined): [string, string] {
   if (!part?.includes('::')) return ['', ''];
+  /* Holds the separator, so there is always an amount and a unit (maybe empty). */
   const [amount, unit] = part.split('::');
-  return [amount ?? '', unit ?? ''];
+  return [amount, unit];
 }
 
 /**
@@ -190,7 +192,8 @@ export function parseMedicine(
   const [dosage, dosageUnit] = splitAmount(parts[3]);
   const [duration, durationUnit] = splitAmount(parts[6]);
   return {
-    typeOfMedicine: parts[0] ?? '',
+    /* split() always yields a first part. */
+    typeOfMedicine: parts[0],
     medicineName: parts[1] ?? '',
     strength: parts[2] ?? '',
     dosage,
@@ -277,4 +280,17 @@ export function planObsChanges<TRow extends DecisionRowBase>(
     }
   }
   return changes;
+}
+
+/**
+ * A dialog history line's "who and when" — `Dr. Joshi (02-11-2026 07:05 PM)`
+ * (prescribe-*'s `{{initial}} ({{obsDatetime|date}})`), or just the time in
+ * brackets, as add-assessment / prescribe-plan list it.
+ */
+export function recordedBy(
+  entry: { initial: string; obsDatetime: string },
+  withInitial = true
+): string {
+  const when = `(${formatDayMonthYearTime12h(entry.obsDatetime) ?? ''})`;
+  return withInitial ? `${entry.initial} ${when}` : when;
 }
