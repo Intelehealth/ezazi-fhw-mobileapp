@@ -22,6 +22,8 @@ interface CaseSectionComponentProps {
   isExpanded: boolean;
   onToggle: () => void;
   onRowClick?: (row: VisitRow) => void;
+  /** Where a row leads — see VisitTableComponent's `rowHref`. */
+  rowHref?: (row: VisitRow) => string;
   /** No rows yet and the first load is still in flight. */
   isLoading?: boolean;
   /** Set when the section could not be loaded; shown in place of the table, with a Retry button. */
@@ -93,6 +95,7 @@ export function CaseSectionComponent({
   isExpanded,
   onToggle,
   onRowClick,
+  rowHref,
   isLoading = false,
   errorMessage = null,
   onRetry,
@@ -170,6 +173,7 @@ export function CaseSectionComponent({
             variant={variant}
             emptyMessage={emptyMessage}
             onRowClick={onRowClick}
+            rowHref={rowHref}
           />
         )}
         <VisitPaginationComponent
@@ -277,7 +281,15 @@ export function CaseSectionComponent({
         />
       </div>
 
-      {isExpanded && <div className="px-6 pb-6">{renderBody()}</div>}
+      {/* The divider under the title is the body's top border, as Angular's
+          .mat-expansion-panel-body::after draws it, so it shows while loading,
+          empty or failed too — not only above a table. Angular's #EFE8FF is
+          near-invisible on white, hence the darker tone. */}
+      {isExpanded && (
+        <div className="mx-6 border-t border-[#E0E0E0] pb-6">
+          {renderBody()}
+        </div>
+      )}
     </div>
   );
 }
