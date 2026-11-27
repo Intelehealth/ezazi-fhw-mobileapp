@@ -13,14 +13,22 @@ export interface SaveDecisionsInput {
   changes: ObsChange[];
 }
 
+/** Where a dialog's new obs go. */
+export interface ObsChangeTarget {
+  concept: string;
+  patientUuid: string;
+  /** The latest encounter — new obs are recorded on it. */
+  encounterUuid: string;
+}
+
 function applyChange(
   change: ObsChange,
-  { kind, patientUuid, encounterUuid }: Omit<SaveDecisionsInput, 'changes'>
+  { concept, patientUuid, encounterUuid }: ObsChangeTarget
 ): Promise<ApiResult<unknown>> {
   switch (change.action) {
     case 'create':
       return obsService.createObs({
-        concept: DECISION_CONCEPTS[kind],
+        concept,
         person: patientUuid,
         obsDatetime: new Date().toISOString(),
         value: change.value,
@@ -31,6 +39,22 @@ function applyChange(
     case 'delete':
       return obsService.deleteObs(change.uuid);
   }
+}
+
+/**
+ * Creates, updates and voids every obs of a saved decision dialog at once —
+ * the Angular handlers' loop over the dialog's result. Throws the first
+ * failure once all have settled, so whatever could save did.
+ */
+export async function saveObsChanges(
+  changes: ObsChange[],
+  target: ObsChangeTarget
+): Promise<void> {
+  const results = await Promise.all(
+    changes.map(change => applyChange(change, target))
+  );
+  const failed = results.find(result => !result.ok);
+  if (failed && !failed.ok) throw failed.error;
 }
 
 /**
@@ -45,13 +69,12 @@ export function useSaveDecisions(visitUuid: string) {
   const queryClient = useQueryClient();
 
   return useMutation<void, ApiError, SaveDecisionsInput>({
-    mutationFn: async ({ changes, ...target }) => {
-      const results = await Promise.all(
-        changes.map(change => applyChange(change, target))
-      );
-      const failed = results.find(result => !result.ok);
-      if (failed && !failed.ok) throw failed.error;
-    },
+    mutationFn: ({ changes, kind, patientUuid, encounterUuid }) =>
+      saveObsChanges(changes, {
+        concept: DECISION_CONCEPTS[kind],
+        patientUuid,
+        encounterUuid,
+      }),
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: ['elcg-visit', visitUuid] }),
   });

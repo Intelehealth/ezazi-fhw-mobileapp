@@ -20,7 +20,7 @@ import referralIcon from '../../assets/svgs/referral.svg';
 import plusIcon from '../../assets/svgs/plus.svg';
 import minusIcon from '../../assets/svgs/minus.svg';
 
-interface HistoryItem {
+export interface HistoryItem {
   uuid: string;
   label: string;
   initial: string;
@@ -151,17 +151,10 @@ export function SharedDecisionMakingComponent({
           onToggle={() => toggle(panel.kind)}
           addButton={
             canAdd && (
-              <button
-                type="button"
-                aria-label={`Add ${panel.title.toLowerCase()}`}
-                onClick={event => {
-                  event.stopPropagation();
-                  onAdd?.(panel.kind);
-                }}
-                className="mr-1 cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white"
-              >
-                Add
-              </button>
+              <DecisionAddButton
+                label={`Add ${panel.title.toLowerCase()}`}
+                onClick={() => onAdd?.(panel.kind)}
+              />
             )
           }
         />
@@ -171,12 +164,43 @@ export function SharedDecisionMakingComponent({
 }
 
 /**
+ * A panel header's "Add" button. It sits inside the header's toggle, so a
+ * click opens the dialog without also collapsing the panel.
+ */
+export function DecisionAddButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={event => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="mr-1 cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white"
+    >
+      Add
+    </button>
+  );
+}
+
+/** partogram.component.html's history line meta: `Name (DD-MM-YYYY HH:mm)`. */
+function lcgHistoryMeta(item: HistoryItem): string {
+  return `${item.initial} (${formatDayMonthYearTime(item.obsDatetime) ?? ''})`;
+}
+
+/**
  * One `<mat-expansion-panel>`: icon, title and Add button, collapsing its
  * history list. Sized as partogram.component.scss's `.intel-accordion-con`
  * lays it out — 24px padding around a 48px header, 24px apart (10px on
  * small screens).
  */
-function DecisionPanel({
+export function DecisionPanel({
   title,
   icon,
   items,
@@ -184,6 +208,7 @@ function DecisionPanel({
   isShaded,
   onToggle,
   addButton,
+  formatMeta = lcgHistoryMeta,
 }: {
   title: string;
   icon: string;
@@ -192,6 +217,8 @@ function DecisionPanel({
   isShaded: boolean;
   onToggle: () => void;
   addButton: ReactNode;
+  /** The "who and when" shown after each history line. */
+  formatMeta?: (item: HistoryItem) => string;
 }) {
   return (
     <div
@@ -226,7 +253,7 @@ function DecisionPanel({
                   {item.label}
                 </span>
                 <span className="py-1.5 text-xs font-bold whitespace-nowrap text-[#007bff]">
-                  {item.initial} ({formatDayMonthYearTime(item.obsDatetime)})
+                  {formatMeta(item)}
                 </span>
               </div>
             </li>

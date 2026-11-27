@@ -24,6 +24,8 @@ export const ROUTES = {
   DASHBOARD_CHANGE_PASSWORD: '/dashboard/change-password',
   /** WHO LCG view of one visit — `${DASHBOARD_ELCG}/:visitUuid`; the search modal's "View" target. */
   DASHBOARD_ELCG: '/dashboard/elcg',
+  /** Stage 4 (early postpartum) report of one visit — `${DASHBOARD_POSTPARTUM_REPORT}/:visitUuid`, opened from the LCG view. */
+  DASHBOARD_POSTPARTUM_REPORT: '/dashboard/postpartum-report',
   NOT_FOUND: '*',
 } as const;
 

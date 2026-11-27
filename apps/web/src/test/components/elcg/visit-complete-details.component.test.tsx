@@ -112,7 +112,11 @@ describe('VisitCompleteDetailsComponent', () => {
     );
   });
 
-  it('links to Stage 3 only when a Stage 3 outcome was recorded', async () => {
+  /*
+   * TEMP: skipped while "View Stage 3" is shown on every completed visit for
+   * the Postpartum Report's mock data — re-enable with the hasStage3 condition.
+   */
+  it.skip('links to Stage 3 only when a Stage 3 outcome was recorded', async () => {
     const onViewStage3 = vi.fn();
     const { rerender } = render(
       <VisitCompleteDetailsComponent
@@ -130,6 +134,20 @@ describe('VisitCompleteDetailsComponent', () => {
         onViewStage3={onViewStage3}
       />
     );
+    await userEvent.click(screen.getByRole('button', { name: 'View Stage 3' }));
+
+    expect(onViewStage3).toHaveBeenCalledTimes(1);
+  });
+
+  it('links to Stage 3 on any completed visit while the report shows mock data', async () => {
+    const onViewStage3 = vi.fn();
+    render(
+      <VisitCompleteDetailsComponent
+        completion={newborn()}
+        onViewStage3={onViewStage3}
+      />
+    );
+
     await userEvent.click(screen.getByRole('button', { name: 'View Stage 3' }));
 
     expect(onViewStage3).toHaveBeenCalledTimes(1);

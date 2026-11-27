@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CLIENT_ID } from '../../../config/clients';
 import { INTEL_CARD_CLASS } from '../../../components/elcg/lcg-card.component';
 import { LcgTableComponent } from '../../../components/elcg/lcg-table.component';
@@ -12,6 +13,7 @@ import { useSaveDecisions } from '../../../hooks/mutations/useSaveDecisions';
 import { useElcgVisit } from '../../../hooks/queries/useElcgVisit';
 import { showToast } from '../../../services/toast';
 import { useAppSelector } from '../../../store/hooks';
+import { ROUTES } from '../../../routes/paths';
 import { getApiErrorMessage } from '../../../utils/error-message';
 import { AddDecisionDialogComponent } from './decisions/add-decision-dialog.component';
 import type { ObsChange } from './decisions/decision.rows';
@@ -99,12 +101,15 @@ interface ElcgComponentProps {
  * The visit comes from OpenMRS (see hooks/queries/useElcgVisit.ts). The
  * Shared Decision Making card's "Add" buttons open their dialogs and record
  * on the latest encounter (decisions/, hooks/mutations/useSaveDecisions.ts).
+ * "View Stage 3" (shown once a DELIVERY_OUTCOME_STAGE3 encounter exists, as
+ * partogram.component.ts's hasStage3Trigger) opens the Postpartum Report.
  * The actions that need a modal or screen not yet ported — past visits,
- * print, Stage 3, video call and chat — are left
+ * print, video call and chat — are left
  * unwired. Zoom and WhatsApp sharing work as in Angular.
  */
 export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
   const { view, isLoading, error, retry } = useElcgVisit(visitUuid);
+  const navigate = useNavigate();
   const [zoomIndex, setZoomIndex] = useState(DEFAULT_ZOOM_INDEX);
   /* Bumped by Reset: remounting the viewport drops its pan, like pan-zoom's resetView(). */
   const [viewResets, setViewResets] = useState(0);
@@ -246,7 +251,12 @@ export function ElcgComponent({ visitUuid }: ElcgComponentProps) {
       )}
 
       {view.completion && (
-        <VisitCompleteDetailsComponent completion={view.completion} />
+        <VisitCompleteDetailsComponent
+          completion={view.completion}
+          onViewStage3={() =>
+            navigate(`${ROUTES.DASHBOARD_POSTPARTUM_REPORT}/${visitUuid}`)
+          }
+        />
       )}
 
       <WebrtcControlsComponent />

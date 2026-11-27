@@ -201,32 +201,40 @@ export function DecisionNotes({
   onView?: () => void;
 }) {
   return (
-    <div className={NOTE_ITEM_CLASS}>
-      {entries.map(entry => (
-        <p key={entry.uuid} className="m-0">
-          {entry.value} <Signature entry={entry} />
-        </p>
-      ))}
-      <button
-        type="button"
-        aria-label={viewLabel}
-        onClick={onView}
-        className="cursor-pointer rounded-full p-2 hover:bg-black/5"
-      >
-        {/*
+    /*
+     * Centred by a flex row: a vertical-writing block in a table cell
+     * stretches to the cell's width despite `mx-auto w-fit`, leaving the
+     * entries and the button against its left edge. As a flex item it takes
+     * its content's width, so the group sits in the middle of the hour.
+     */
+    <div className="flex justify-center">
+      <div className={NOTE_ITEM_CLASS}>
+        {entries.map(entry => (
+          <p key={entry.uuid} className="m-0">
+            {entry.value} <Signature entry={entry} />
+          </p>
+        ))}
+        <button
+          type="button"
+          aria-label={viewLabel}
+          onClick={onView}
+          className="cursor-pointer rounded-full p-2 hover:bg-black/5"
+        >
+          {/*
           Angular's open_in_new is an icon-font glyph, which the cell's
           vertical writing turns a further 90° on top of its 180° rotation —
           leaving the arrow pointing up-left. An image is not turned by the
           writing mode, so it takes that 90° itself.
         */}
-        <img
-          src={openInNewIcon}
-          alt=""
-          width={24}
-          height={24}
-          className="rotate-90"
-        />
-      </button>
+          <img
+            src={openInNewIcon}
+            alt=""
+            width={24}
+            height={24}
+            className="rotate-90"
+          />
+        </button>
+      </div>
     </div>
   );
 }

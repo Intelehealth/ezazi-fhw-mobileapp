@@ -122,7 +122,7 @@ type AdmissionDetails = Record<
 export interface ElcgViewContext {
   /** The patient's other visits, for "View Past Details". */
   pastVisitsCount: number;
-  /** Stage 3 is offered to the Nepal client only (Angular's `environment.hasStage3`). */
+  /** Angular's `environment.hasStage3` — offers "View Stage 3" once a Stage 3 outcome exists. */
   hasStage3: boolean;
 }
 

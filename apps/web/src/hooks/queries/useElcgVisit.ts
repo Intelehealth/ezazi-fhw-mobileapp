@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { skipToken, useQuery } from '@tanstack/react-query';
 import type { ApiError } from '@ezazi/api-client';
-import { CLIENT_ID } from '../../config/clients';
 import { patientService } from '../../services/patient.service';
 import { visitService } from '../../services/visit.service';
 import { useAppSelector } from '../../store/hooks';
@@ -73,7 +72,8 @@ export function useElcgVisit(visitUuid: string): ElcgVisitState {
       visit
         ? mapVisitToElcgView(visit, {
             pastVisitsCount,
-            hasStage3: CLIENT_ID === 'nepal',
+            /* Angular's `environment.hasStage3` — on for every client. */
+            hasStage3: true,
           })
         : null,
     [visit, pastVisitsCount]

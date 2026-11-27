@@ -38,11 +38,59 @@ export function formatDate(value: string | null | undefined): string | null {
   return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
 }
 
+/**
+ * `YYYY/MM/DD HH:mm` in local time, or null — stage3.component.ts's
+ * formatColTime() for AD clients.
+ */
+export function formatDateTime24h(
+  value: string | null | undefined
+): string | null {
+  const date = formatDate(value);
+  return date && `${date} ${formatTime(value)}`;
+}
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/**
+ * `YYYY MMMM DD` (e.g. `2026 November 26`) in local time, or null —
+ * stage3.component.ts's formatDateYMD() for AD clients.
+ */
+export function formatYearMonthNameDay(
+  value: string | null | undefined
+): string | null {
+  const date = parseDate(value);
+  if (!date) return null;
+  return `${date.getFullYear()} ${MONTH_NAMES[date.getMonth()]} ${pad(date.getDate())}`;
+}
+
 /** 24-hour `HH:mm` in local time (Angular's `date:'HH:mm'`), or null. */
 export function formatTime(value: string | null | undefined): string | null {
   const date = parseDate(value);
   if (!date) return null;
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** 12-hour `hh:mm AM` in local time (moment's `hh:mm A`), or null. */
+export function formatTime12h(value: string | null | undefined): string | null {
+  const date = parseDate(value);
+  if (!date) return null;
+  const hours = date.getHours();
+  const hours12 = hours % 12 === 0 ? 12 : hours % 12;
+  const meridiem = hours < 12 ? 'AM' : 'PM';
+  return `${pad(hours12)}:${pad(date.getMinutes())} ${meridiem}`;
 }
 
 /** `DD-MM-YYYY HH:mm` in local time (Angular's `date:'dd-MM-YYYY HH:mm'`), or null. */

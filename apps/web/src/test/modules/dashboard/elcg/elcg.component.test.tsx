@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { NetworkError } from '@ezazi/api-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -104,8 +105,35 @@ afterEach(() => {
 });
 
 describe('ElcgComponent', () => {
+  it('opens the Postpartum Report from "View Stage 3" once a Stage 3 outcome exists', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    mockVisit({
+      view: buildElcgView({
+        completion: { reason: null, birth: null, hasStage3: true },
+      }),
+    });
+    render(
+      <MemoryRouter initialEntries={['/dashboard/elcg/visit-1']}>
+        <Routes>
+          <Route
+            path="/dashboard/elcg/:visitUuid"
+            element={<ElcgComponent visitUuid="visit-1" />}
+          />
+          <Route
+            path="/dashboard/postpartum-report/:visitUuid"
+            element={<p>Postpartum report page</p>}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'View Stage 3' }));
+
+    expect(screen.getByText('Postpartum report page')).toBeInTheDocument();
+  });
+
   it('renders the guide, the decision history and the call controls', () => {
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     expect(
       screen.getByRole('heading', { name: 'WHO LABOUR CARE GUIDE VIEW' })
@@ -117,7 +145,7 @@ describe('ElcgComponent', () => {
   });
 
   it('loads the visit it is given', () => {
-    render(<ElcgComponent visitUuid="visit-42" />);
+    render(<ElcgComponent visitUuid="visit-42" />, { wrapper: MemoryRouter });
 
     expect(useElcgVisit).toHaveBeenCalledWith('visit-42');
   });
@@ -125,7 +153,7 @@ describe('ElcgComponent', () => {
   it('says the visit is loading until it arrives', () => {
     mockVisit({ view: null, isLoading: true });
 
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading visit…');
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -135,7 +163,7 @@ describe('ElcgComponent', () => {
     const retry = vi.fn();
     mockVisit({ view: null, error: new NetworkError(), retry });
 
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent(
@@ -158,7 +186,7 @@ describe('ElcgComponent', () => {
       }),
     });
 
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     expect(screen.getByText('Visit Complete Details')).toBeInTheDocument();
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
@@ -166,7 +194,7 @@ describe('ElcgComponent', () => {
 
   it('zooms in and out one step at a time, and resets to actual size', async () => {
     const user = userEvent.setup();
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
     expect(currentZoom()).toBe(ZOOM_LEVELS[2]);
 
     await user.click(screen.getByRole('button', { name: 'Zoom In [+]' }));
@@ -179,7 +207,7 @@ describe('ElcgComponent', () => {
 
   it("resets the guide's pan along with the zoom", async () => {
     const user = userEvent.setup();
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
     const mountsBefore = viewportMounts.count;
 
     await user.click(screen.getByRole('button', { name: 'Zoom In [+]' }));
@@ -191,7 +219,7 @@ describe('ElcgComponent', () => {
 
   it('stops zooming in at the largest step', async () => {
     const user = userEvent.setup();
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
     const zoomIn = screen.getByRole('button', { name: 'Zoom In [+]' });
 
     await user.click(zoomIn);
@@ -203,7 +231,7 @@ describe('ElcgComponent', () => {
 
   it('shares the patient and a link to this page on WhatsApp', async () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Share on WhatsApp' })
@@ -225,7 +253,7 @@ describe('ElcgComponent', () => {
       },
     });
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Share on WhatsApp' })
@@ -239,7 +267,7 @@ describe('ElcgComponent', () => {
   it("titles the guide after Nepal's Labour Care Guide for the Nepal client", () => {
     client.id = 'nepal';
 
-    render(<ElcgComponent visitUuid="visit-1" />);
+    render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
     expect(
       screen.getByRole('heading', { name: 'Labour Care Guide Nepal' })
@@ -264,7 +292,7 @@ describe('ElcgComponent', () => {
 
     it("opens the hour's assessment, and closes it", async () => {
       withRecordedHours();
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await userEvent.click(
         screen.getByRole('button', { name: 'View stage 1 hour 2 assessment' })
@@ -282,7 +310,7 @@ describe('ElcgComponent', () => {
 
     it("opens the hour's plan, in either stage", async () => {
       withRecordedHours();
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await userEvent.click(
         screen.getByRole('button', { name: 'View stage 2 hour 1 plan' })
@@ -307,7 +335,7 @@ describe('ElcgComponent', () => {
     }
 
     it('records a new assessment on the latest encounter, and closes once saved', async () => {
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await addAssessment('Progressing normally');
 
@@ -328,7 +356,7 @@ describe('ElcgComponent', () => {
     });
 
     it('closes and says so when saving fails', async () => {
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await addAssessment('Raised FHR');
       const [, { onError }] = saveDecisions.mutate.mock.calls[0];
@@ -343,7 +371,7 @@ describe('ElcgComponent', () => {
     });
 
     it('opens the dialog of each kind', async () => {
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       for (const [button, title] of [
         ['Add plan', 'PLAN'],
@@ -359,7 +387,7 @@ describe('ElcgComponent', () => {
     });
 
     it('closes without saving when nothing was changed', async () => {
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await userEvent.click(
         screen.getByRole('button', { name: 'Add assessment' })
@@ -396,7 +424,7 @@ describe('ElcgComponent', () => {
           }),
         }),
       });
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await userEvent.click(screen.getByRole('button', { name: 'Add plan' }));
 
@@ -409,7 +437,7 @@ describe('ElcgComponent', () => {
           decisions: buildDecisionEditor({ encounterUuid: null }),
         }),
       });
-      render(<ElcgComponent visitUuid="visit-1" />);
+      render(<ElcgComponent visitUuid="visit-1" />, { wrapper: MemoryRouter });
 
       await userEvent.click(
         screen.getByRole('button', { name: 'Add assessment' })

@@ -2,11 +2,53 @@ import { describe, expect, it } from 'vitest';
 import {
   formatDate,
   formatDateTime,
+  formatDateTime24h,
   formatDayMonthYearTime,
   formatDayMonthYearTime12h,
   formatTime,
+  formatTime12h,
+  formatYearMonthNameDay,
   parseClinicalDate,
 } from '../../utils/date-format';
+
+describe('formatDateTime24h', () => {
+  it('formats as YYYY/MM/DD HH:mm in local time', () => {
+    expect(formatDateTime24h(new Date(2026, 10, 26, 21, 5).toISOString())).toBe(
+      '2026/11/26 21:05'
+    );
+  });
+
+  it.each([null, undefined, '', 'not a date'])('returns null for %j', value => {
+    expect(formatDateTime24h(value)).toBeNull();
+  });
+});
+
+describe('formatYearMonthNameDay', () => {
+  it('formats as YYYY MMMM DD in local time', () => {
+    expect(formatYearMonthNameDay(new Date(2026, 10, 6, 8).toISOString())).toBe(
+      '2026 November 06'
+    );
+  });
+
+  it.each([null, undefined, '', 'not a date'])('returns null for %j', value => {
+    expect(formatYearMonthNameDay(value)).toBeNull();
+  });
+});
+
+describe('formatTime12h', () => {
+  it('formats as hh:mm AM|PM in local time, midnight and noon as 12', () => {
+    expect(formatTime12h(new Date(2026, 0, 1, 0, 5).toISOString())).toBe(
+      '12:05 AM'
+    );
+    expect(formatTime12h(new Date(2026, 0, 1, 13, 30).toISOString())).toBe(
+      '01:30 PM'
+    );
+  });
+
+  it.each([null, undefined, '', 'not a date'])('returns null for %j', value => {
+    expect(formatTime12h(value)).toBeNull();
+  });
+});
 
 describe('formatDateTime', () => {
   it('formats as YYYY/MM/DD hh:mm am|pm in local time', () => {

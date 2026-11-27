@@ -44,6 +44,9 @@ const HwProfilePage = lazy(
   () => import('../pages/dashboard/hw-profile/hw-profile.page')
 );
 const ElcgPage = lazy(() => import('../pages/dashboard/elcg/elcg.page'));
+const PostpartumReportPage = lazy(
+  () => import('../pages/dashboard/postpartum-report/postpartum-report.page')
+);
 const NotFoundPage = lazy(() => import('../pages/not-found/not-found.page'));
 
 /**
@@ -148,6 +151,14 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<RouteLoader />}>
               <ElcgPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={`${ROUTES.DASHBOARD_POSTPARTUM_REPORT}/:visitUuid`}
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <PostpartumReportPage />
             </Suspense>
           }
         />

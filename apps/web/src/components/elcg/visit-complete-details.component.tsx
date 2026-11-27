@@ -147,15 +147,20 @@ export function VisitCompleteDetailsComponent({
       id="vcd"
       title="Visit Complete Details"
       actions={
-        completion.hasStage3 && (
-          <button
-            type="button"
-            onClick={onViewStage3}
-            className="cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white"
-          >
-            View Stage 3
-          </button>
-        )
+        /*
+         * TEMP: shown on every completed visit so the Postpartum Report's mock
+         * data can be reached — no visit has a DELIVERY_OUTCOME_STAGE3
+         * encounter to test with yet. Restore the condition once one does:
+         * completion.hasStage3 && (
+         */
+        <button
+          type="button"
+          onClick={onViewStage3}
+          className="cursor-pointer rounded-lg bg-[#2E1E91] p-2.5 text-sm font-bold text-white"
+        >
+          View Stage 3
+        </button>
+        /* ) */
       }
     >
       <div className="w-full overflow-x-auto">

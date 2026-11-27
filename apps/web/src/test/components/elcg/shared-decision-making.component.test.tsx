@@ -68,6 +68,22 @@ describe('SharedDecisionMakingComponent', () => {
     expect(screen.queryByText('Encourage mobility')).not.toBeInTheDocument();
   });
 
+  it('leaves the time blank when the entry has no readable date', () => {
+    render(
+      <SharedDecisionMakingComponent
+        history={{
+          ...HISTORY,
+          assessment: [{ ...HISTORY.assessment[0], obsDatetime: 'not a date' }],
+        }}
+        canAdd
+      />
+    );
+
+    fireEvent.click(screen.getByText('Assessment'));
+
+    expect(screen.getByText('Dr. Joshi ()')).toBeInTheDocument();
+  });
+
   it('"Show all" expands every panel, formatting each kind of entry', async () => {
     render(<SharedDecisionMakingComponent history={HISTORY} canAdd />);
 
